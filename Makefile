@@ -89,6 +89,7 @@ KIWI_XC_HOST_PORT ?= 22
 .PHONY: all
 all: check_detect make_prereq
 	@make $(MAKE_ARGS) build_makefile_inc
+#	@make $(MAKE_ARGS) make_binary
 	@make $(MAKE_ARGS) make_all
 
 .PHONY: skip
@@ -167,7 +168,7 @@ else
 endif
 
 PKGS = 
-PKGS_O3 = pkgs/utf8 pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA
+PKGS_O3 = pkgs/utf8 pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA pkgs/ant_switch
 
 # Each extension can have an optional Makefile:
 # The extension can opt-out of being included via EXT_SKIP (e.g. BBAI only, not Debian 7 etc.)
@@ -181,8 +182,10 @@ EXT_DEFINES =
 LIBS_DEP =
 LIBS =
 
-PVT_EXT_DIR = ../extensions
-PVT_EXT_DIRS = $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/)))
+PVT_EXT_DIR := ../extensions
+PVT_EXT_DIRS_ := $(sort $(dir $(wildcard $(PVT_EXT_DIR)/*/extensions/*/)))
+# remove ant_switch since we now host it internally
+PVT_EXT_DIRS := $(subst ../extensions/ant_switch/extensions/ant_switch/,,$(PVT_EXT_DIRS_))
 # included first to get value of OTHER_DIR before INT_EXT_DIRS definition
 -include $(wildcard $(addsuffix Makefile,$(PVT_EXT_DIRS)))
 
@@ -203,7 +206,9 @@ endif
 -include $(wildcard $(addsuffix Makefile,$(INT_EXT_DIRS)))
 EXT_DIRS = $(PVT_EXT_DIRS) $(INT_EXT_DIRS)
 
-PVT_EXTS = $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
+PVT_EXTS_ := $(subst $(PVT_EXT_DIR)/,,$(wildcard $(PVT_EXT_DIR)/*))
+# remove ant_switch since we now host it internally
+PVT_EXTS := $(subst ant_switch,,$(PVT_EXTS_))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
@@ -499,6 +504,41 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
+PLAT_KIWI_BIN := kiwi_$(VER)_$(PLAT).bin
+HAS_KIWI_BIN := $(shell test -x bin/$(PLAT_KIWI_BIN) && echo true)
+
+.PHONY: make_binary
+make_binary:
+    ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	    @make make_all
+    else
+        ifeq ($(BINARY_INSTALL),true)
+	        @echo "----------------"
+	        @echo "make_binary: $(PLAT_KIWI_BIN)"
+            ifeq ($(HAS_KIWI_BIN),true)
+	            @echo "   => exists: not compiling from sources"
+	            @echo "   => cp bin/$(PLAT_KIWI_BIN) $(BUILD_DIR)/kiwi.bin"
+	            @cp bin/$(PLAT_KIWI_BIN) $(BUILD_DIR)/kiwi.bin
+	            @echo "----------------"
+            else
+	            @echo "   => doesn't exist: compiling from sources"
+	            @echo "----------------"
+	            @make $(MAKE_ARGS) make_all
+	            @echo "   => cp $(BUILD_DIR)/kiwi.bin bin/$(PLAT_KIWI_BIN)"
+	            @cp $(BUILD_DIR)/kiwi.bin bin/$(PLAT_KIWI_BIN)
+            endif
+        else
+	        @make $(MAKE_ARGS) make_all
+        endif
+    endif
+	@echo "make_binary DONE"
+
+.PHONY: force
+force: make_prereq
+	rm -f bin/$(PLAT_KIWI_BIN) bin/$(PLAT_KIWID_BIN)
+	@make $(MAKE_ARGS) build_makefile_inc
+	@make $(MAKE_ARGS) make_binary
+
 
 ################################
 # build included makefile
@@ -620,7 +660,6 @@ $(GEN_NOIP2): pkgs/noip2/noip2.c
 #
 # CHECK
 #	does google analytics html head insert still work?
-#	x ant_switch still works?
 #	x update from v1.2 still works?
 #	mobile works okay?
 #
@@ -1100,19 +1139,19 @@ DISABLE_WS:
         ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
         else
 	        @echo "disable unwanted services"
-	        -@systemctl stop nodered.service >/dev/null 2>&1
-	        -@systemctl disable nodered.service >/dev/null 2>&1
-	        -@systemctl stop lightdm.service >/dev/null 2>&1
-	        -@systemctl disable lightdm.service >/dev/null 2>&1
-	        -@systemctl stop nginx.service >/dev/null 2>&1
-	        -@systemctl disable nginx.service >/dev/null 2>&1
+	        -@systemctl stop nodered.service >/dev/null 2>&1 || true
+	        -@systemctl disable nodered.service >/dev/null 2>&1 || true
+	        -@systemctl stop lightdm.service >/dev/null 2>&1 || true
+	        -@systemctl disable lightdm.service >/dev/null 2>&1 || true
+	        -@systemctl stop nginx.service >/dev/null 2>&1 || true
+	        -@systemctl disable nginx.service >/dev/null 2>&1 || true
             ifeq ($(BBAI_64),true)
-	            -@systemctl stop bb-code-server.service >/dev/null 2>&1
-	            -@systemctl disable bb-code-server.service >/dev/null 2>&1
+	            -@systemctl stop bb-code-server.service >/dev/null 2>&1 || true
+	            -@systemctl disable bb-code-server.service >/dev/null 2>&1 || true
             endif
             ifeq ($(BBAI),true)
-	            -@systemctl stop bonescript-autorun.service >/dev/null 2>&1
-	            -@systemctl disable bonescript-autorun.service >/dev/null 2>&1
+	            -@systemctl stop bonescript-autorun.service >/dev/null 2>&1 || true
+	            -@systemctl disable bonescript-autorun.service >/dev/null 2>&1 || true
             endif
         endif
     endif
@@ -1309,6 +1348,7 @@ endif
 .PHONY: install
 install: make_prereq
 	@# don't use MAKE_ARGS here!
+#	make make_install_binary
 	make make_install
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
@@ -1338,6 +1378,38 @@ else
         endif
 endif
 endif
+
+PLAT_KIWID_BIN := kiwid_$(VER)_$(PLAT).bin
+HAS_KIWID_BIN := $(shell test -x bin/$(PLAT_KIWID_BIN) && echo true)
+
+.PHONY: make_install_binary
+make_install_binary:
+    ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+	    @make make_install
+    else
+        ifeq ($(BINARY_INSTALL),true)
+	        @echo "----------------"
+	        @echo "make_install_binary: $(PLAT_KIWID_BIN)"
+            ifeq ($(HAS_KIWID_BIN),true)
+	            @echo "   => exists: not installing from sources"
+	            @echo "   => cp bin/$(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin"
+	            @cp bin/$(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin
+	            touch $(BUILD_DIR)/kiwid.bin
+	            @echo "----------------"
+	            @make make_install
+            else
+	            @echo "   => doesn't exist: installing from sources"
+	            @echo "----------------"
+	            @# don't use MAKE_ARGS here!
+	            @make make_install
+	            @echo "   => cp $(BUILD_DIR)/kiwid.bin bin/$(PLAT_KIWID_BIN)"
+	            @cp $(BUILD_DIR)/kiwid.bin bin/$(PLAT_KIWID_BIN)
+            endif
+        else
+	        @make make_install
+        endif
+    endif
+	@echo "make_install_binary DONE"
 
 .PHONY: make_install
 make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
@@ -1620,66 +1692,67 @@ force_update:
 
 dump_eeprom:
 	@echo "KiwiSDR cape EEPROM:"
-ifeq ($(DEBIAN_VERSION),7)
-	-hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
-else
-ifeq ($(BBAI_64),true)
-	-hexdump -C /sys/bus/i2c/devices/5-0054/eeprom
-else
-ifeq ($(BBAI),true)
-	-hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
-else
-ifeq ($(RPI),true)
-	-hexdump -C /sys/bus/i2c/devices/1-0050/eeprom
-else
-	-hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
-endif
-endif
-endif
-endif
+    ifeq ($(DEBIAN_VERSION),7)
+	    -hexdump -C /sys/bus/i2c/devices/1-0054/eeprom
+    else
+    ifeq ($(BBAI_64),true)
+	    -hexdump -C /sys/bus/i2c/devices/5-0054/eeprom
+    else
+    ifeq ($(BBAI),true)
+	    -hexdump -C /sys/bus/i2c/devices/3-0054/eeprom
+    else
+    ifeq ($(RPI),true)
+	    -hexdump -C /sys/bus/i2c/devices/1-0050/eeprom
+    else
+	    -hexdump -C /sys/bus/i2c/devices/2-0054/eeprom
+    endif
+    endif
+    endif
+    endif
+
+dump_eeprom_all: dump_eeprom
 	@echo
 	@echo "BeagleBone EEPROM:"
-ifeq ($(BBAI_64),true)
-	-hexdump -C /sys/bus/i2c/devices/2-0050/eeprom
-else
-ifeq ($(BBAI),true)
-	@echo "(none on BBAI)"
-else
-	-hexdump -C /sys/bus/i2c/devices/0-0050/eeprom
-endif
-endif
+    ifeq ($(BBAI_64),true)
+	    -hexdump -C /sys/bus/i2c/devices/2-0050/eeprom
+    else
+    ifeq ($(BBAI),true)
+	    @echo "(none on BBAI)"
+    else
+	    -hexdump -C /sys/bus/i2c/devices/0-0050/eeprom
+    endif
+    endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-# selectively transfer files to the target so everything isn't compiled each time
-GET_TOOLS_EXCLUDE_RSYNC := true
--include tools/Makefile
-EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
-	"verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
-RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) \
-    $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(addprefix --exclude , $(TOOLS_EXCLUDE_RSYNC)) \
-    $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
-RSYNC_ARGS_DRYRUN = -n $(RSYNC_ARGS)
+    # selectively transfer files to the target so everything isn't compiled each time
+    GET_TOOLS_EXCLUDE_RSYNC := true
+    -include tools/Makefile
+    EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
+        "verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
+    RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) \
+        $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(addprefix --exclude , $(TOOLS_EXCLUDE_RSYNC)) \
+        $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
+    RSYNC_ARGS_DRYRUN = -n $(RSYNC_ARGS)
 
-RSYNC_USER ?= root
-RSYNC_DIR ?= /root
-RSYNC_REPO ?= $(RSYNC_DIR)/$(REPO_NAME)
-RSYNC_SRC ?= .
-RSYNC_DST ?= $(RSYNC_REPO)
-PORT ?= 22
+    RSYNC_USER ?= root
+    RSYNC_DIR ?= /root
+    RSYNC_REPO ?= $(RSYNC_DIR)/$(REPO_NAME)
+    RSYNC_SRC ?= .
+    RSYNC_DST ?= $(RSYNC_REPO)
+    PORT ?= 22
 
-ifeq ($(PORT),22)
-	RSYNC = rsync
-else
-	RSYNC = rsync -e "ssh -p $(PORT) -l $(RSYNC_USER)"
-endif
+    ifeq ($(PORT),22)
+        RSYNC = rsync
+    else
+        RSYNC = rsync -e "ssh -p $(PORT) -l $(RSYNC_USER)"
+    endif
 
-rsync_su:
-	$(RSYNC) $(RSYNC_ARGS)
+    rsync_su:
+	    $(RSYNC) $(RSYNC_ARGS)
 
-rsync_dryrun:
-	$(RSYNC) $(RSYNC_ARGS_DRYRUN)
-
+    rsync_dryrun:
+	    $(RSYNC) $(RSYNC_ARGS_DRYRUN)
 endif
 
 
@@ -1794,44 +1867,43 @@ clone:
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-# used by scgit alias
-copy_to_git:
-	@(echo 'current dir is:'; pwd)
-	@echo
-	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
-	@echo '################################'
-#	@echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
-#	@echo '################################'
-	@echo -n 'did you make install to rebuild the optimized files? '
-	@read not_used
-	make clean_dist
-	rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
+    # used by scgit alias
+    copy_to_git:
+	    @(echo 'current dir is:'; pwd)
+	    @echo
+	    @(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
+	    @echo '################################'
+#	    @echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
+#	    @echo '################################'
+	    @echo -n 'did you make install to rebuild the optimized files? '
+	    @read not_used
+	    make clean_dist
+	    rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
-copy_from_git:
-	@(echo 'current dir is:'; pwd)
-	@echo
-	@(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
-	@echo -n 'are you sure? '
-	@read not_used
-	make clean_dist
-	rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
+    copy_from_git:
+	    @(echo 'current dir is:'; pwd)
+	    @echo
+	    @(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
+	    @echo -n 'are you sure? '
+	    @read not_used
+	    make clean_dist
+	    rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
 
-# used by gdiff et al aliases
-GITDIFF_EXCLUDE := --exclude=.DS_Store --exclude=.git \
-    --exclude=k --exclude=d --exclude=g --exclude=n --exclude=ng
-GITDIFF_EXCLUDE2 := $(GITDIFF_EXCLUDE) --exclude="*.min.*"
+    # used by gdiff et al aliases
+    GITDIFF_EXCLUDE := --exclude=.DS_Store --exclude=.git \
+        --exclude=k --exclude=d --exclude=g --exclude=n --exclude=ng
+    GITDIFF_EXCLUDE2 := $(GITDIFF_EXCLUDE) --exclude="*.min.*"
 
-gitdiff:
-	colordiff -br $(GITDIFF_EXCLUDE2) $(GITAPP)/$(REPO_NAME) . || true
-gitdiff_context:
-	colordiff -br -C 10 $(GITDIFF_EXCLUDE2) $(GITAPP)/$(REPO_NAME) . || true
-gitdiff_brief:
-	colordiff -br --brief $(GITDIFF_EXCLUDE) $(GITAPP)/$(REPO_NAME) . || true
-gitdiff_no_big:
-	colordiff -br $(GITDIFF_EXCLUDE2) --exclude="*.json" --exclude=EiBi.h --exclude=sked-current.csv $(GITAPP)/$(REPO_NAME) . || true
-gitdiff2:
-	colordiff -br $(GITDIFF_EXCLUDE2) ../../../sdr/KiwiSDR/$(REPO_NAME) . || true
-
+    gitdiff:
+	    colordiff -br $(GITDIFF_EXCLUDE2) $(GITAPP)/$(REPO_NAME) . || true
+    gitdiff_context:
+	    colordiff -br -C 10 $(GITDIFF_EXCLUDE2) $(GITAPP)/$(REPO_NAME) . || true
+    gitdiff_brief:
+	    colordiff -br --brief $(GITDIFF_EXCLUDE) $(GITAPP)/$(REPO_NAME) . || true
+    gitdiff_no_big:
+	    colordiff -br $(GITDIFF_EXCLUDE2) --exclude="*.json" --exclude=EiBi.h --exclude=sked-current.csv $(GITAPP)/$(REPO_NAME) . || true
+    gitdiff2:
+	    colordiff -br $(GITDIFF_EXCLUDE2) ../../../sdr/KiwiSDR/$(REPO_NAME) . || true
 endif
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
@@ -1845,85 +1917,84 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	    -cp unix_env/shadow /etc/shadow
 	    sum *.bit
 
-/usr/bin/xz:
-	apt-get -y $(APT_GET_FORCE) install xz-utils
+    /usr/bin/xz:
+	    apt-get -y $(APT_GET_FORCE) install xz-utils
 
 
-ifeq ($(BBAI_64),true)
-    SD_CARD_MMC_COPY := 1
-    SD_CARD_MMC_PART := p2
-    DISTRO_DEBIAN_VER := 11.9
-    DD_SIZE := 6000M
-else ifeq ($(BBAI),true)
-    SD_CARD_MMC_COPY := 0
-    SD_CARD_MMC_PART := p1
-    DISTRO_DEBIAN_VER := 11.9
-    DD_SIZE := 3500M
-else ifeq ($(BBG_BBB),true)
-    SD_CARD_MMC_COPY := 0
-    SD_CARD_MMC_PART := p1
-    DISTRO_DEBIAN_VER := 11.9
-    DD_SIZE := 3000M
-endif
-
-# zero sd card first so .img.xz file is more compact on subsequent compression
-backup_zero:
-	lsblk
-	-dd if=/dev/zero of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) status=progress
-	make backup
-	fsck /dev/mmcblk$(SD_CARD_MMC_COPY)$(SD_CARD_MMC_PART)
-
-# makefile version of admin backup tab
-backup:
-    ifeq ($(DEBIAN_11_AND_LATER),true)
-	    cp /etc/beagle-flasher/$(PLAT_BACKUP)-emmc-to-microsd /etc/default/beagle-flasher
-	    (cd /root/$(REPO_NAME)/tools; bash ./$(PLAT_BACKUP)-flasher.sh)
-    else
-	    (cd /root/$(REPO_NAME)/tools; bash ./kiwiSDR-make-microSD-flasher-from-eMMC.sh)
+    ifeq ($(BBAI_64),true)
+        SD_CARD_MMC_COPY := 1
+        SD_CARD_MMC_PART := p2
+        DISTRO_DEBIAN_VER := 11.9
+        DD_SIZE := 6000M
+    else ifeq ($(BBAI),true)
+        SD_CARD_MMC_COPY := 0
+        SD_CARD_MMC_PART := p1
+        DISTRO_DEBIAN_VER := 11.9
+        DD_SIZE := 3500M
+    else ifeq ($(BBG_BBB),true)
+        SD_CARD_MMC_COPY := 0
+        SD_CARD_MMC_PART := p1
+        DISTRO_DEBIAN_VER := 11.9
+        DD_SIZE := 3000M
     endif
 
-# Use "make backup_zero" above to make filesystem holes zeros for better compression.
-#
-# DANGER: DD_SIZE must be larger than the partition "used" size computed by the "d.mb" command alias.
-# Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
-# filled with zeroed bytes (which of course is a disaster).
-#
-TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
+    # zero sd card first so .img.xz file is more compact on subsequent compression
+    backup_zero:
+	    lsblk
+	    -dd if=/dev/zero of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) status=progress
+	    make backup
+	    fsck /dev/mmcblk$(SD_CARD_MMC_COPY)$(SD_CARD_MMC_PART)
 
-create_img_from_sd: /usr/bin/xz
-	@echo "--- this takes about an hour"
-	@echo "--- KiwiSDR server will be stopped to maximize write speed"
-	lsblk
-	@echo "CAUTION: SD_CARD_MMC_COPY = $(SD_CARD_MMC_COPY)"
-	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
-	@echo -n 'ARE YOU SURE? '
-	@read not_used
-	make stop
-	date
-	dd if=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > $(TO_IMG)
-	sha256sum $(TO_IMG)
-	date
+    # makefile version of admin backup tab
+    backup:
+        ifeq ($(DEBIAN_11_AND_LATER),true)
+	        cp /etc/beagle-flasher/$(PLAT_BACKUP)-emmc-to-microsd /etc/default/beagle-flasher
+	        (cd /root/$(REPO_NAME)/tools; bash ./$(PLAT_BACKUP)-flasher.sh)
+        else
+	        (cd /root/$(REPO_NAME)/tools; bash ./kiwiSDR-make-microSD-flasher-from-eMMC.sh)
+        endif
+
+    # Use "make backup_zero" above to make filesystem holes zeros for better compression.
+    #
+    # DANGER: DD_SIZE must be larger than the partition "used" size computed by the "d.mb" command alias.
+    # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
+    # filled with zeroed bytes (which of course is a disaster).
+    #
+    TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
+
+    create_img_from_sd: /usr/bin/xz
+	    @echo "--- this takes about an hour"
+	    @echo "--- KiwiSDR server will be stopped to maximize write speed"
+	    lsblk
+	    @echo "CAUTION: SD_CARD_MMC_COPY = $(SD_CARD_MMC_COPY)"
+	    @echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
+	    @echo -n 'ARE YOU SURE? '
+	    @read not_used
+	    make stop
+	    date
+	    dd if=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M iflag=count_bytes count=$(DD_SIZE) | xz --verbose > $(TO_IMG)
+	    sha256sum $(TO_IMG)
+	    date
 
 
-ifeq ($(BBAI_64),true)
-    FROM_IMG = ~/bbai64-emmc-flasher-debian-11.7-minimal-arm64-2023-09-02-6gb.img.xz
-else ifeq ($(BBAI),true)
-    FROM_IMG = ~/am57xx-eMMC-flasher-debian-11.7-minimal-armhf-2023-09-02-2gb.img.xz
-else ifeq ($(BBG_BBB),true)
-    FROM_IMG = ~/am335x-eMMC-flasher-debian-11.8-minimal-armhf-2023-10-07-2gb.img.xz
-endif
+    ifeq ($(BBAI_64),true)
+        FROM_IMG = ~/bbai64-emmc-flasher-debian-11.7-minimal-arm64-2023-09-02-6gb.img.xz
+    else ifeq ($(BBAI),true)
+        FROM_IMG = ~/am57xx-eMMC-flasher-debian-11.7-minimal-armhf-2023-09-02-2gb.img.xz
+    else ifeq ($(BBG_BBB),true)
+        FROM_IMG = ~/am335x-eMMC-flasher-debian-11.8-minimal-armhf-2023-10-07-2gb.img.xz
+    endif
 
-create_sd_from_img: /usr/bin/xz
-	lsblk
-	@echo "CAUTION: SD_CARD_MMC_COPY = $(SD_CARD_MMC_COPY)"
-	@echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
-	@echo -n 'ARE YOU SURE? '
-	@read not_used
-	@echo -n 'ARE YOU *REALLY* SURE? /dev/mmcblk$(SD_CARD_MMC_COPY) WILL BE OVERWRITTEN! '
-	@read not_used
-	date
-	xzcat -v $(FROM_IMG) | dd of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M
-	blockdev --flushbufs /dev/mmcblk$(SD_CARD_MMC_COPY)
-	date
-
+    create_sd_from_img: /usr/bin/xz
+	    lsblk
+	    @echo "CAUTION: SD_CARD_MMC_COPY = $(SD_CARD_MMC_COPY)"
+	    @echo "CAUTION: VERIFY FROM THE LIST ABOVE THAT THE SD CARD IS THE MMC NUMBER SHOWN"
+	    @echo -n 'ARE YOU SURE? '
+	    @read not_used
+	    @echo -n 'ARE YOU *REALLY* SURE? /dev/mmcblk$(SD_CARD_MMC_COPY) WILL BE OVERWRITTEN! '
+	    @read not_used
+	    date
+	    xzcat -v $(FROM_IMG) | dd of=/dev/mmcblk$(SD_CARD_MMC_COPY) bs=1M
+	    blockdev --flushbufs /dev/mmcblk$(SD_CARD_MMC_COPY)
+	    date
 endif
