@@ -1,0 +1,13 @@
+You need:
+- Nano V3.0 CH340G/FT232 ATmega328P MINI USB 5V 16M Micro-controller Board Arduino
+- ENC28J60 Ethernet Shield For Arduino Nano V3.0 RJ45 Webserver Module CF
+
+And you have to build your antenna switch hardware too.
+
+Arduino code is available in arduino-nano-netshield subdirectory here or at:
+https://raw.githubusercontent.com/OH1KK/KiwiSDR-antenna-switch-extension/arduino-nano-enc29J60-netshield/docs/arduino-nano-netshield/ant_switch_arduino_netshield.ino
+
+You need to modify IP address, netmask and gateway of code.
+
+Put ip address you set into file on Kiwi: /etc/default/netshield
+If that file doesn't the default ip address used will be 192.168.0.19

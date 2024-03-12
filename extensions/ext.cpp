@@ -28,6 +28,7 @@ Boston, MA  02110-1301, USA.
 #include "gps.h"
 #include "rx.h"
 #include "ext_int.h"
+#include "ant_switch.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -193,8 +194,6 @@ void ext_register(ext_t *ext)
 {
 	check(n_exts < N_EXT);
 	ext_list[n_exts] = ext;
-	if (strcmp(ext->name, "ant_switch") == 0)
-	    have_ant_switch_ext = true;
 	printf("ext_register: #%d \"%s\"\n", n_exts, ext->name);
 	n_exts++;
 }
@@ -274,6 +273,7 @@ extint_t extint;
 void extint_setup()
 {
 	extint_init();
+	ant_switch_init();
 }
 
 void extint_send_extlist(conn_t *conn)
@@ -323,6 +323,7 @@ void extint_load_extension_configs(conn_t *conn)
 		ext_t *ext = ext_list[i];
 		send_msg_encoded(conn, "ADM", "ext_call", "%s_config_html", ext->name);
 	}
+	send_msg(conn, false, "ADM ext_configs_done");
 }
 
 void extint_ext_users_init(int rx_chan)

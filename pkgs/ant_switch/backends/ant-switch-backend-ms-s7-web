@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# The MIT License (MIT)
+#
+# ant-switch-backend-ms-s7-web - MS-S7-WEB backend script
+#
+# This is part of KiwiSDR antenna switch extension
+#
+# Copyright (c) 2019 Kari Karvonen, DK9SAS
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+IPADDRESS=192.168.11.100
+VERSION=1.03
+CURLEXEC=/usr/bin/curl
+CURLOPTS=" --silent --connect-timeout 1"
+
+CONFFILE=/etc/default/ms-s7-web
+[ -r $CONFFILE ] && . $CONFFILE
+
+AntSW_ShowBackend() {
+    echo "ms-s7-web v$VERSION 8ch $IPADDRESS"
+	echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-ms-s7-web.txt"
+}
+
+AntSW_SetAddress() {
+    if [[ -z "${1// }" ]]; then
+        echo -n "Enter IP address (currently $IPADDRESS): "
+        read ip
+    else
+        ip=$1
+    fi
+    if [ "x$ip" != "x" ]; then
+        echo "IPADDRESS=\"$ip\"" >$CONFFILE
+    fi
+}
+
+AntSW_Get () {
+	if [ -z "$1" ]
+	then
+		# zero length
+		sleep 1
+	else
+		REPLY=`$CURLEXEC $CURLOPTS $1`
+		if [ "x$REPLY" == "x" ]; then
+			# failed. Let's try again.
+			REPLY=`$CURLEXEC $CURLOPTS $1`
+		fi
+		if [ "x$REPLY" == "x" ]; then
+			# failed again. One more shot.
+			REPLY=`$CURLEXEC $CURLOPTS $1`
+		fi
+	fi
+}
+
+AntSW_Post () {
+	if [ -z "$1" ]
+	then
+		# zero length
+		sleep 1
+	else
+		REPLY=`$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' $1`
+		if [ "x$REPLY" == "x" ]; then
+			# failed, let's try again
+			REPLY=`$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' $1`
+		fi
+		if [ "x$REPLY" == "x" ]; then
+			# failed again, one more shot
+			REPLY=`$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' $1`
+		fi
+	fi
+}
+
+AntSW_GroundAll() {
+	for s in 0 1 2 3 4 5 6; do
+		AntSW_Post "-d pin=$s -d val=1 http://$IPADDRESS/dout.cgi"
+		#$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' -d pin=$s -d val=1 http://$IPADDRESS/dout.cgi > /dev/null
+	done
+}
+
+AntSW_Initialize() {
+	# Test connectivity to MS-S7-WEB otherwise log timeouts
+	AntSW_Get "http://$IPADDRESS/widget.cgi"
+	if [ "x$REPLY" == "x" ]; then
+		echo "Unable to connect MS-S7-WEB at $IPADDRESS"
+		echo "Please check network connectivity."
+		exit 1
+	fi
+}
+
+AntSW_SelectAntenna() {
+	ANT=$(($1-1))
+	AntSW_Post "-d pin=$ANT -d val=0 http://$IPADDRESS/dout.cgi"
+}
+
+AntSW_DeSelectAntenna() {
+	ANT=$(($1-1))
+	AntSW_Post "-d pin=$ANT -d val=1 http://$IPADDRESS/dout.cgi"
+}
+
+AntSW_ToggleAntenna() {
+	ANT=$(($1-1))
+	# Read antenna status
+    AntSW_Get "http://$IPADDRESS/io.cgi"
+    digits=`echo $REPLY | sed 's/[^0-9]*//g'`
+    thisbits=${digits:$ANT:1}
+	if [ "x$thisbits" == "x0" ]; then
+		AntSW_SelectAntenna $1
+	else
+		AntSW_DeSelectAntenna $1 
+	fi
+}
+
+AntSW_ShowSelected() {
+	# Read antenna status
+	AntSW_Get "http://$IPADDRESS/io.cgi"
+	digits=`echo $REPLY | sed 's/[^0-9]*//g'`
+
+	antennafound=0
+	selectedantennas=''
+	for s in 0 1 2 3 4 5 6; do
+		thisbit=${digits:${s}:1}
+		if [ "x$thisbit" == "x1" ]; then
+			selectedantennas="${selectedantennas}$(($s+1)),"
+			antennafound=$(($antennafound+1))
+		fi
+	done
+	thisbits=${digits:0:7}
+	if [ "x$thisbits" == "x0000000" ]; then
+		# All antenna inputs are grounded
+		antennafound=1
+		selectedantennas="g,"
+	fi
+	selectedantennas=${selectedantennas::-1}
+
+	echo -n "Selected antennas: "
+	echo $selectedantennas
+}
+
+AntSW_Configure() {
+	echo "Current IP address is $IPADDRESS"
+	echo "Enter new IP address or CTRL-C to abort"
+	read IPADDRESS
+	if valid_ip $IPADDRESS; then 
+		AntSW_VerifyConnectivity
+		echo "# KiwiSDR MS-S7-WEB ant_switch extension" > $CONFFILE
+		echo "IPADDRESS=$IPADDRESS" >> $CONFFILE
+		if [ -r $CONFFILE ]; then
+			echo "Created configuration file $CONFFILE"
+		else
+			echo "Configuration file $CONFFILE creation failed. Installation aborted."
+			exit 1
+		fi
+	else
+		echo "Invalid IP address. Configuration not saved."
+		exit 1
+	fi
+}
+
+function valid_ip() {
+    local  ip=$1
+    local  stat=1
+
+    if [[ $ip =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+        OIFS=$IFS
+        IFS='.'
+        ip=($ip)
+        IFS=$OIFS
+        [[ ${ip[0]} -le 255 && ${ip[1]} -le 255 \
+            && ${ip[2]} -le 255 && ${ip[3]} -le 255 ]]
+        stat=$?
+    fi
+    return $stat
+}

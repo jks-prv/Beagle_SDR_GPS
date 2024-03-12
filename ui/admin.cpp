@@ -42,6 +42,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "FT8.h"
 #include "kiwi_ui.h"
+#include "ant_switch.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -328,7 +329,7 @@ void c2s_admin(void *param)
 	conn_t *conn = (conn_t *) param;
 	rx_common_init(conn);
 	char *sb, *sb2;
-	char *cmd_p, *buf_m;
+	char *cmd_p, *buf_m, *reply;
 	
 	nbuf_t *nb = NULL;
 	while (TRUE) {
@@ -425,7 +426,7 @@ void c2s_admin(void *param)
 
 			if (strcmp(cmd, "SET snr_meas") == 0) {
                 if (SNR_meas_tid) {
-                    TaskWakeupF(SNR_meas_tid, TWF_CANCEL_DEADLINE);
+                    TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));
                 }
 				continue;
 			}
@@ -470,7 +471,6 @@ void c2s_admin(void *param)
 					background_mode? "/usr/local/bin" : (BUILD_DIR "/gen"), args_m);
 				kiwi_asfree(args_m);
 				printf("DUC: %s\n", cmd_p);
-				char *reply;
 				int stat;
 				reply = non_blocking_cmd(cmd_p, &stat);
 				kiwi_asfree(cmd_p);
@@ -515,7 +515,6 @@ void c2s_admin(void *param)
 
 			    if (reg) {
                     // FIXME: validate unencoded user & host for allowed characters
-                    char *reply;
                     asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s&a=%d\"", proxy_server, user_m, host_m, rev_auto);
                     reply = non_blocking_cmd(cmd_p, &status);
                     printf("proxy register: %s\n", cmd_p);
@@ -539,6 +538,9 @@ void c2s_admin(void *param)
                     printf("proxy register: %s\n", cmd_p);
                     system(cmd_p);
 
+                    // NB: can't use e.g. non_blocking_cmd() here to get the authorization status
+                    // because frpc doesn't fork and return on authorization success.
+                    // So the non_blocking_cmd() will hang.
                     system("killall -q frpc; sleep 1");
                     if (background_mode)
                         system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
@@ -568,7 +570,6 @@ void c2s_admin(void *param)
 				kiwi_str_decode_inplace(host_m);
 				kiwi_str_decode_inplace(pwd_m);
 				int rc = CLONED_SCP_ERROR;
-			    char *reply;
 			    const char *files;
 			    #define CLONE_FILE "sudo sshpass -p \'%s\' scp -o \"StrictHostKeyChecking no\" root@%s:/root/kiwi.config/%s /root/kiwi.config 2>&1 >/dev/null"
 
@@ -716,8 +717,6 @@ void c2s_admin(void *param)
                 // proxy always uses a fixed port number
                 int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
                 int server_port = (dom_sel == DOM_SEL_REV)? PROXY_SERVER_PORT : net.port_ext;
-                int status;
-			    char *reply;
 		        asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
 		            server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
@@ -1313,11 +1312,16 @@ void c2s_admin(void *param)
 				}
 				continue;
 			}
+			
+			if (kiwi_str_begins_with(cmd, "ADM antsw_")) {
+			    if (ant_switch_admin_msgs(conn, cmd))
+			        continue;
+			}
 
-			i = strcmp(cmd, "ADM get_ant_switch_nch");
+            // reload cfg of all connected users
+			i = strcmp(cmd, "ADM reload_cfg");
 			if (i == 0) {
-			    //printf("ADM get_ant_switch_nch\n");
-                send_msg(conn, SM_NO_DEBUG, "ADM ant_switch_nch=%d", kiwi.ant_switch_nch);
+                cfg_cfg.update_seq++;
 				continue;
 			}
 

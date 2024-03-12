@@ -1,0 +1,21 @@
+Antenna switching schedules can be done using KiwiSDR's crontab.
+
+Execute /root/Beagle_SDR_GPS/pkgs/ant_switch/ant-switch-frontend script for help.
+
+You can test antenna switching from linux console and when you are familar how it works, you can
+make schedule to crontab.
+
+1. Open ssh root shell to KiwiSDR
+2. Edit crontab
+3. Save
+
+Example crontab commands
+
+# Format is: minute hour day_of_month month day_of_week user command
+#
+# On every morning 06:00 select antenna 1
+0 6 * * * root /root/Beagle_SDR_GPS/pkgs/ant_switch/ant-switch-frontend 1
+# On every midday 12:00 select antenna 2
+0 12 * * * root /root/Beagle_SDR_GPS/pkgs/ant_switch/ant-switch-frontend 2
+# On every afternoon 18:00 select antenna 3
+0 12 * * * root /root/Beagle_SDR_GPS/pkgs/ant_switch/ant-switch-frontend 3

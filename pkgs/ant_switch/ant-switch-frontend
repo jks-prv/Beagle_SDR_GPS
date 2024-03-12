@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+# The MIT License (MIT)
+#	
+# ant-switch-frontend - glue between KiwiSDR and antenna switches
+#
+# This is part of KiwiSDR antenna switch extension
+#
+# Copyright (c) 2018-2024 Kari Karvonen
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+VERSION=1.1
+BACKEND_FILE=/root/kiwi.config/ant-switch-backend
+BACKEND_DIR=/root/Beagle_SDR_GPS/pkgs/ant_switch/backends
+BACKEND_PREFIX=${BACKEND_DIR}/ant-switch-backend-
+
+AntSW_LoadBackend() {
+    if [ -r $BACKEND_FILE ]; then
+        . $BACKEND_FILE
+        # unless backend sets N_CH default to 8 channels
+        N_CH=${N_CH-8}
+        #echo "N_CH=${N_CH}"
+    else
+        echo "No backend selected? Use \"bs\" command to select one."
+        #echo "Cannot load or execute backend file $BACKEND_FILE"
+        exit 1
+    fi
+}
+
+AntSW_SelectBackendMatching() {
+    # match leading chars in backend name (first wins if multiple matches)
+    # index origin 1
+    BE=$(echo ${BACKEND_PREFIX}$1*)
+    BE=${BE%% *}
+    BE_NAME=${BE##${BACKEND_PREFIX}}
+    #echo ${BE}
+    
+    if [ -r "${BE}" ]; then
+        echo "Selected backend: ${BE_NAME}";
+        valid_backend_selected=1
+        rm -f ${BACKEND_FILE}
+        ln -s ${BE} ${BACKEND_FILE}
+    else
+        echo "Invalid selection $1. Try again."
+    fi
+}
+
+AntSW_SelectBackend() {
+	valid_backend_selected=0
+
+    if [[ -z "${1// }" ]]; then
+        # interactive
+        while [ "$valid_backend_selected" == 0 ]; do
+            echo "Available antenna switch backends:"
+            for backend in ${BACKEND_PREFIX}*; do
+                name=`basename $backend`
+                name=`echo $name | sed 's/ant-switch-backend-//'`
+                echo $name
+            done
+            echo ""
+            if [[ -z "${BACKEND// }" ]]; then
+                BACKEND="ms-s7-web"
+            fi
+            echo -n "which backend you would like to use (default: $BACKEND) ? "
+            read selected_backend
+            if [[ -z "${selected_backend// }" ]]; then
+                selected_backend=$BACKEND
+            fi
+            AntSW_SelectBackendMatching ${selected_backend}
+        done
+    else
+        selected_backend=$1
+        if [[ -z "${selected_backend// }" ]]; then
+            selected_backend="ms-s7-web"
+        fi
+        AntSW_SelectBackendMatching ${selected_backend}
+    fi
+}
+
+# not currently used
+AntSW_SelectBackendNumber() {
+        # alternatives
+        #i=1
+        #for backend in ${BACKEND_PREFIX}*; do
+        #    BE=${backend%% *}
+        #    BE=${BE##${BACKEND_PREFIX}}
+        #    BEA[$i]=${BE}
+        #    i=$(($i+1))
+        #done
+        
+        cd $BACKEND_DIR
+        BEA=`echo * | sed 's/ant-switch-backend-//g'`
+        BEA=($BEA)
+
+    echo $1 ${BEA[$1]}
+    AntSW_SelectBackendMatching ${BEA[$1]}
+}
+
+AntSW_EnumerateBackends() {
+    cd $BACKEND_DIR
+    echo `echo * | sed 's/ant-switch-backend-//g'`
+}
+
+AntSW_ShowUsage() {
+	echo "ant-switch-frontend - glue between KiwiSDR and antenna switches"
+	echo "Version $VERSION Copyright (c) 2018-2024 Kari Karvonen"
+	echo ""
+	echo "Usage: $0 command"
+    echo ""
+	echo "Basic antenna switching commands"
+	for s in 1 2 3 4 5 6 7 8 9 10; do
+        echo "$s  = Switch to antenna $s"
+	done
+	echo "g  = Ground all antennas"
+	echo "tg = Ground all antennas. Alias to g."
+
+	echo ""
+	echo "Status query commands"
+	echo "s  = Status. Show currently selected antennas"
+	echo "q  = Query. Alias to status"
+	echo ""
+	echo "Advanced antenna switching commands"
+	echo "+x = Antenna mixing. Add simultanious antenna x"
+	echo "-x = Antenna mixing. Remove simultanous antenna x"
+	echo "tx = Antenna mixing. Toggle simultanous antenna x"
+	echo "     Example: t2 = toggles Antenna 2 state on/off"
+	echo ""
+	echo "bs = Select backend"
+	echo "bi = Backend information. Show selected backend"
+	echo "     and it's configuration / help"
+	echo "sa = Set antenna switch address, IP or URL (if applicable)."
+	echo "h = help"
+}
+
+AntSW_Validate() {
+    if [[ ${1} -gt ${N_CH} ]] ; then
+        echo "Backend doesn't support antenna $1 (range 1-${N_CH})"
+        exit 1;
+    fi
+}
+
+case $1 in
+	1|2|3|4|5|6|7|8|9|10)
+        AntSW_LoadBackend
+		AntSW_Validate $1
+		AntSW_Initialize
+        AntSW_GroundAll
+		AntSW_SelectAntenna $1
+		;;
+	+1|+2|+3|+4|+5|+6|+7|+8|+9|+10)
+        AntSW_LoadBackend
+		AntSW_Validate $1
+		AntSW_Initialize
+		antadd=${1//+} 
+		AntSW_SelectAntenna $antadd
+		;;
+	-1|-2|-3|-4|-5|-6|-7|-8|-9|-10)
+        AntSW_LoadBackend
+		AntSW_Validate $1
+		AntSW_Initialize
+		antremove=${1//-} 
+		AntSW_DeSelectAntenna $antremove
+		;;
+	t1|t2|t3|t4|t5|t6|t7|t8|t9|t10)
+        AntSW_LoadBackend
+		AntSW_Validate $1
+		AntSW_Initialize
+        anttoggle=${1//t}
+		AntSW_ToggleAntenna $anttoggle
+		;;
+	tg|g)
+        AntSW_LoadBackend
+		AntSW_Initialize
+		AntSW_GroundAll
+		;;
+	s|q)
+        AntSW_LoadBackend
+		AntSW_Initialize
+		AntSW_ShowSelected
+		;;
+	bi)
+	    AntSW_LoadBackend
+		AntSW_ShowBackend
+		;;
+    bs)
+        AntSW_SelectBackend $2
+        ;;
+    be)
+        AntSW_EnumerateBackends
+        ;;
+    ga)
+        AntSW_LoadBackend
+        AntSW_GetAddress
+        ;;
+    sa)
+        AntSW_LoadBackend
+        AntSW_SetAddress $2
+        ;;
+	h|"")
+		AntSW_ShowUsage
+		;;
+
+	*)
+		echo "Invalid command \"$1\""
+		echo ""
+		echo "See help"
+		echo "$0 h"
+		;;
+esac

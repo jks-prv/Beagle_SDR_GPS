@@ -1,0 +1,9 @@
+Backend to Snaptekk WIFI HAM Radio 8 antenna switch.
+
+http://www.snaptekk.com/
+
+If your antenna switch URL is something else than http://192.168.4.1:9999 then you have to create configuration file
+/etc/default/snaptekk
+
+# Url to Snaptekk WIFI HAM Radio 8 antenna switch
+SNAPTEKK_URL="http://192.168.1.96:9999"

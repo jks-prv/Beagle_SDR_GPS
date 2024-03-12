@@ -41,6 +41,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "security.h"
 #include "options.h"
+#include "ant_switch.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -141,6 +142,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET close_", CMD_FORCE_CLOSE_ADMIN },
     { "SET get_au", CMD_GET_AUTHKEY },
     { "SET clk_ad", CMD_CLK_ADJ },
+    { "SET antsw_", CMD_ANT_SWITCH },
     { "SERVER DE ", CMD_SERVER_DE_CLIENT },
     { "SET x-DEBU", CMD_X_DEBUG },
     { 0 }
@@ -754,6 +756,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                             } else {
 		                        freq_offset_kHz = conn->foff;
                                 cfg_set_float("freq_offset", freq_offset_kHz);
+                                printf("_cfg_save_json freq_offset\n");
 		                        cfg_save_json(cfg_cfg.json);    // we just checked that no admin connections exist
                                 update_freqs();
                                 update_masked_freqs();
@@ -1951,6 +1954,18 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	    break;
     }
 
+
+////////////////////////////////
+// antenna switch
+////////////////////////////////
+
+    case CMD_ANT_SWITCH: {
+        if (kiwi_str_begins_with(cmd, "SET antsw_")) {
+            if (ant_switch_msgs(cmd, conn->rx_channel))
+                return true;
+        }
+        break;
+    }
 
 ////////////////////////////////
 // preferences
