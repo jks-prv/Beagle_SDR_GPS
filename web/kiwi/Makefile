@@ -4,8 +4,6 @@ FILES_EMBED_JS += web/kiwi/waterfall.js web/kiwi/noise_blank.js web/kiwi/noise_f
 
 FILES_EMBED_JS_NOPKG += web/kiwi/admin.js web/kiwi/admin_sdr.js web/kiwi/mfg.js web/kiwi/kiwi_js_load.js
 
-FILES_EMBED_CSS += web/kiwi/kiwi.css web/kiwi/w3_ext.css
-
 FILES_EMBED_HTML += web/kiwi/admin.html web/kiwi/mfg.html
 
 FILES_EMBED_MISC += web/kiwi/ip_blacklist.default.cjson

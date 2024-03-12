@@ -20,9 +20,14 @@ FILES_EMBED_CSS_F1  = web/pkgs/text-security/text-security-disc.css
 FILES_EMBED_CSS_F1 += web/pkgs/w3.css
 #FILES_EMBED_CSS_KEEP_MIN2 = web/pkgs/w3-3.4-min.css
 
+# listed here instead of in subdirectory FILES_EMBED_CSS
+# because order is very important
+# add to web/web.cpp:gen_list_css[] if necessary
 FILES_EMBED_CSS_F2  = web/kiwi/w3_ext.css
 FILES_EMBED_CSS_F2 += web/openwebrx/openwebrx.css
+FILES_EMBED_CSS_F2 += web/pkgs/js/coloris/coloris.css
 FILES_EMBED_CSS_F2 += web/kiwi/kiwi.css
+
 FILES_EMBED_CSS_F2 +=  $(FILES_EMBED_CSS)
 FILES_EMBED_CSS_PKG = $(FILES_EMBED_CSS_F1) $(FILES_EMBED_CSS_F2) $(FILES_EMBED_CSS_KEEP_MIN) $(FILES_EMBED_CSS_KEEP_MIN2)
 

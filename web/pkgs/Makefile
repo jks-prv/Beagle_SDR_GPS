@@ -4,9 +4,6 @@ FILES_EMBED_JS += web/pkgs/w3color.js
 
 FILES_EMBED_JS_NOPKG += $(wildcard web/pkgs/js/*.js) $(wildcard web/pkgs/js/*/*.js)
 
-# add to web/web.cpp:gen_list_css[] if necessary
-FILES_EMBED_CSS += web/pkgs/js/coloris/coloris.css
-
 # NB: FILES_EMBED_MISC not FILES_EMBED_HTML because want to leave intact
 #FILES_EMBED_MISC += $(wildcard web/pkgs/xdLocalStorage/*.html)
 
