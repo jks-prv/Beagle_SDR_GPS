@@ -24,7 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "misc.h"
 #include "timer.h"
 #include "web.h"
-#include "coroutines.h"
+#include "non_block.h"
 #include "mongoose.h"
 #include "nbuf.h"
 #include "cfg.h"
