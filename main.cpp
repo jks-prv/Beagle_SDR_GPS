@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "spi_dev.h"
 #include "gps.h"
 #include "gps_fe.h"
+#include "rf_attn.h"
 #include "coroutines.h"
 #include "cfg.h"
 #include "net.h"
@@ -76,7 +77,7 @@ int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, 
 
 u4_t ov_mask, snd_intr_usec;
 
-bool need_hardware, kiwi_reg_debug, have_ant_switch_ext, gps_e1b_only,
+bool need_hardware, kiwi_reg_debug, gps_e1b_only,
     disable_led_task, is_multi_core, debug_printfs, cmd_debug;
 
 int main_argc;
@@ -484,6 +485,8 @@ int main(int argc, char *argv[])
         kiwi_msleep(100);
     }
     
+    rf_attn_init();
+	
 	if (do_gps) {
         #ifdef USE_GPS
 		    gps_main(argc, argv);

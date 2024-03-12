@@ -20,8 +20,9 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "config.h"
+#include "cfg.h"
 #include "fpga.h"
-#include "support/printf.h"
+#include "printf.h"
 
 //#define RF_ATTN_DBG
 #ifdef RF_ATTN_DBG
@@ -59,4 +60,13 @@ void rf_attn_set(float attn_dB)
             //debug = true;
         } while (debug);
     ctrl_clr_ser_dev();
+}
+
+void rf_attn_init()
+{
+    //printf_highlight(1, "rf_attn");
+    float attn = cfg_float("init.rf_attn", NULL, CFG_REQUIRED);
+    printf("rf_attn INIT %.1f\n", attn);
+    rf_attn_set(attn);
+    kiwi.rf_attn_dB = attn;
 }
