@@ -1,11 +1,9 @@
 // Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
 
 var noise_filter = {
-   ext_name: 'noise_filter',     // NB: must match noise_filter.cpp:noise_filter_ext.name
-   first_time: true,
-
    algo: 0,
    algo_s: [ '(none)', 'wdsp LMS', 'original LMS', 'spectral NR' ],
+   menu_s: [ 'off', 'wdsp', 'LMS', 'spec' ],
    width: 400,
    height: [ 100, 475, 400, 185 ],
    
@@ -41,54 +39,20 @@ var noise_filter = {
    active_snr: 30,
 };
 
-function noise_filter_main()
+function noise_filter_view()
 {
-	ext_switch_to_client(noise_filter.ext_name, noise_filter.first_time, noise_filter_recv);		// tell server to use us (again)
-	if (!noise_filter.first_time)
-		noise_filter_controls_setup();
-	noise_filter.first_time = false;
-}
-
-function noise_filter_recv(data)
-{
-	var firstChars = arrayBufferToStringLen(data, 3);
-	
-	// process data sent from server/C by ext_send_msg_data()
-	if (firstChars == "DAT") {
-		var ba = new Uint8Array(data, 4);
-		var cmd = ba[0];
-		var o = 1;
-		var len = ba.length-1;
-
-		console.log('noise_filter_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
-		return;
-	}
-	
-	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
-	var stringData = arrayBufferToString(data);
-	var params = stringData.substring(4).split(" ");
-
-	for (var i=0; i < params.length; i++) {
-		var param = params[i].split("=");
-
-		if (0 && param[0] != "keepalive") {
-			if (isDefined(param[1]))
-				console.log('noise_filter_recv: '+ param[0] +'='+ param[1]);
-			else
-				console.log('noise_filter_recv: '+ param[0]);
-		}
-
-		switch (param[0]) {
-
-			case "ready":
-				noise_filter_controls_setup();
-				break;
-
-			default:
-				console.log('noise_filter_recv: UNKNOWN CMD '+ param[0]);
-				break;
-		}
-	}
+   keyboard_shortcut_nav('audio');
+   var total = w3_el('id-optbar-audio').clientHeight;
+   var Hopt = kiwi.OPTBAR_CONTENT_HEIGHT;
+   var hr = 27;   // margins=12 border=3
+   var audio = w3_el('id-audio-content').clientHeight;
+   var nb = w3_el('id-nblank-more').clientHeight;
+   var nf = w3_el('id-nfilter-more').clientHeight;
+   var test = w3_el('id-ntest-more').clientHeight;
+   var Hnf = total - (audio + hr + nb + hr);
+   pct = w3_clamp(kiwi_round(1 - (Hnf - Hopt) / (total - Hopt), 2), 0, 1);
+   //console_nv('noise_blank view', {total}, {audio}, {nb}, {nf}, {test}, {Hnf}, {pct});
+   w3_scrollTo('id-optbar-content', pct);
 }
 
 function noise_filter_controls_html()
@@ -159,32 +123,24 @@ function noise_filter_controls_html()
    }
    
 	var controls_html =
-		w3_div('id-noise-filter-controls w3-text-white',
+		w3_div('id-noise-filter-controls w3-margin-right w3-text-white',
 			w3_divs('/w3-tspace-8',
-				w3_inline('w3-halign-space-between|width:75%/',
-				   w3_div('w3-medium w3-text-aqua', '<b>Noise filter: </b>'),
-				   w3_div('w3-text-white', noise_filter.algo_s[noise_filter.algo]),
-				   w3_button('w3-padding-tiny w3-aqua', 'Defaults', 'noise_filter_load_defaults')
+				w3_inline('w3-gap-16/',
+				   w3_div('w3-text-aqua', '<b>Noise filter</b>'),
+				   w3_select('w3-text-red||title="noise filter selection"', '', 'filter', 'nr_algo', noise_filter.algo, noise_filter.menu_s, 'nr_algo_cb', 'm'),
+				   w3_button('w3-padding-tiny w3-yellow', 'Defaults', 'noise_filter_load_defaults'),
+               w3_button('id-noise-filter-help-btn w3-right w3-green w3-small w3-padding-small||onclick="noise_filter_help()"', 'help')
 				),
-            w3_div('w3-section', s)
+            w3_div('w3-margin-LR-16', s)
          )
 		);
 	
 	return controls_html;
 }
 
-function noise_filter_controls_setup()
-{
-	ext_panel_show(noise_filter_controls_html(), null, null);
-	ext_set_controls_width_height(noise_filter.width, noise_filter.height[noise_filter.algo]);
-}
-
 function noise_filter_controls_refresh()
 {
-	if (ext_panel_displayed('noise_filter')) {
-	   ext_panel_redisplay(noise_filter_controls_html());
-	   ext_set_controls_width_height(noise_filter.width, noise_filter.height[noise_filter.algo]);
-	}
+   w3_innerHTML('id-nfilter-more', noise_filter_controls_html());
 }
 
 function noise_filter_environment_changed(changed)
@@ -347,10 +303,10 @@ function noise_filter_send(type)
 
 function nr_algo_cb(path, idx, first, from)
 {
-   //console.log('nr_algo_cb idx='+ idx +' first='+ first +' from='+ from);
+   //console.log('nr_algo_cb path='+ path +' idx='+ idx +' first='+ first +' from='+ from);
    if (first) return;      // because call via main ui has zero, not restored value
    idx = +idx;
-   w3_select_value(path, idx);
+   w3_select_value(path, idx, { all:1 });
    noise_filter.algo = idx;
    kiwi_storeSet('last_nr_algo', idx.toString());
 
@@ -559,4 +515,17 @@ function noise_filter_decay_cb(path, val, complete, first)
 	   var prefix = 'last_nr_orig'+ ['De','An'][type];
       kiwi_storeSet(prefix +'Decay', val.toString());
 	}
+}
+
+function noise_filter_help()
+{
+   var s = 
+      w3_text('w3-medium w3-bold w3-text-aqua', 'Noise blanker help') +
+      w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+         w3_div('w3-margin-R-8 w3-margin-bottom',
+            'To be supplied...'
+         )
+      );
+   confirmation_show_content(s, 600, 300);
+   w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
 }

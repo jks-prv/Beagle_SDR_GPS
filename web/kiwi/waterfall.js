@@ -1,9 +1,7 @@
-// Copyright (c) 2021 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2021-2024 John Seamons, ZL4VO/KF6VO
 
 
 var wfext = {    // "wf" is already used elsewhere
-   ext_name: 'waterfall',     // NB: must match waterfall.cpp:waterfall_ext.name
-   first_time: true,
    sfmt: 'w3-text-red w3-ext-retain-input-focus',
 
    aper_algo: 3,
@@ -16,6 +14,10 @@ var wfext = {    // "wf" is already used elsewhere
       MMA_min:1, MMA_max:16, MMA_step:1, MMA_def:2, MMA_val:undefined,
       EMA_min:1, EMA_max:16, EMA_step:1, EMA_def:2, EMA_val:undefined
    },
+   
+   spb_on: 1,
+   spb_color: '#00ff2268',
+   spb_color_seq: 0,
    
    tstamp: 0,
    tstamp_f: '',
@@ -34,102 +36,73 @@ var wfext = {    // "wf" is already used elsewhere
    cic_comp: true
 };
 
-function waterfall_main()
+function waterfall_view()
 {
-	ext_switch_to_client(wfext.ext_name, wfext.first_time, waterfall_recv);		// tell server to use us (again)
-	if (!wfext.first_time)
-		waterfall_controls_setup();
-	wfext.first_time = false;
-}
-
-function waterfall_recv(data)
-{
-	var firstChars = arrayBufferToStringLen(data, 3);
-	
-	// process data sent from server/C by ext_send_msg_data()
-	if (firstChars == "DAT") {
-		var ba = new Uint8Array(data, 4);
-		var cmd = ba[0];
-		var o = 1;
-		var len = ba.length-1;
-
-		console.log('waterfall_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
-		return;
-	}
-	
-	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
-	var stringData = arrayBufferToString(data);
-	var params = stringData.substring(4).split(" ");
-
-	for (var i=0; i < params.length; i++) {
-		var param = params[i].split("=");
-
-		if (0 && param[0] != "keepalive") {
-			if (isDefined(param[1]))
-				console.log('waterfall_recv: '+ param[0] +'='+ param[1]);
-			else
-				console.log('waterfall_recv: '+ param[0]);
-		}
-
-		switch (param[0]) {
-
-			case "ready":
-				waterfall_controls_setup();
-				break;
-
-			default:
-				console.log('waterfall_recv: UNKNOWN CMD '+ param[0]);
-				break;
-		}
-	}
+   keyboard_shortcut_nav('wf');
+   w3_scrollTo('id-optbar-content', 0.65);   // empirically measured
 }
 
 function waterfall_controls_setup()
 {
 	var controls_html =
 		w3_div('id-waterfall-controls w3-text-white',
-		   w3_divs('',
-            w3_div('w3-medium w3-text-aqua w3-margin-B-16', '<b>Waterfall control</b>'),
+		   w3_divs('w3-margin-T-8',
+            w3_text('w3-margin-B-2 w3-text-css-orange', '<b>Aperture auto mode</b>'),
 
-            w3_col_percent('w3-valign w3-margin-T-8/',
-               w3_text('w3-text-css-orange', '<b>Aperture<br>auto<br>mode</b>'), 17,
-               w3_select('id-wfext-aper-algo w3-text-red', 'Averaging', '', 'wfext.aper_algo', wfext.aper_algo, wfext.aper_algo_s, 'waterfall_aper_algo_cb'), 20,
+            w3_col_percent('w3-valign w3-margin-LR-16/',
+               w3_select('id-wfext-aper-algo w3-text-red', '', 'avg', 'wfext.aper_algo', wfext.aper_algo, wfext.aper_algo_s, 'waterfall_aper_algo_cb'), 25,
                w3_div('id-wfext-aper-param',
                   w3_slider('id-wfext-aper-param-slider', 'Parameter', 'wfext.aper_param', wfext.aper_param, 0, 10, 1, 'waterfall_aper_param_cb')
                ), 40,
                '&nbsp;', 3, w3_div('id-wfext-aper-param-field')
+            )
+         ),
+         
+         w3_div('w3-margin-LR-16 w3-margin-T-8',
+            w3_text('', 'Min,max: total = computed + floor,ceil'),
+            w3_inline('id-wfext-maxmin w3-background-fade w3-hide w3-text-white w3-small|background:#575757/',
+               w3_div('id-wfext-content', '&nbsp;')
             ),
-            
-            w3_inline('id-wfext-maxmin w3-background-fade w3-margin-T-8 w3-hide w3-text-white w3-small|background:#575757/',
-               'Min/max:&nbsp;', w3_div('id-wfext-min'), '/', w3_div('id-wfext-max'), '&nbsp;=&nbsp;',
-               w3_div('id-wfext-min-comp'), '/', w3_div('id-wfext-max-comp'), '&nbsp;(computed) +&nbsp;',
-               w3_div('id-wfext-min-floor'), '/', w3_div('id-wfext-max-ceil'), '&nbsp;(floor/ceil)'
-            ),
-            w3_div('id-wfext-maxmin-spacer w3-margin-T-8 w3-small', '&nbsp;'),
-            
-            //w3_hr('w3-margin-10'),
-            w3_inline('w3-margin-T-8/w3-hspace-16',
-               w3_text('w3-text-css-orange', '<b>Timestamps</b>'),
+            //w3_div('id-wfext-maxmin-spacer w3-small', '&nbsp;')
+            w3_div('id-wfext-maxmin-spacer w3-small', '(aperture manual mode selected)')
+         ),
+         
+         w3_div('w3-margin-T-8',
+            w3_text('w3-margin-B-8 w3-text-css-orange', '<b>Spec RF passband marker</b>'),
+            w3_inline('w3-margin-LR-16/w3-hspace-16',
+               w3_input('coloris-square//coloris coloris-instance1 coloris-input w3-input-evt||data-coloris',
+                  '', 'wfext.spb_color', wfext.spb_color, 'wfext_spb_color_cb'),
+               w3_checkbox('w3-label-inline w3-label-not-bold', 'Enable', 'wfext.spb_on', wfext.spb_on, 'wfext_spb_on_cb')
+            )
+         ),
+         
+         //w3_hr('w3-margin-10'),
+         w3_div('w3-margin-T-8',
+            w3_text('w3-margin-B-8 w3-text-css-orange', '<b>Timestamps</b>'),
+            w3_inline('w3-margin-LR-16/w3-hspace-16',
                w3_select('id-wfext-tstamp '+ wfext.sfmt, '', '', 'wfext.tstamp_i', wfext.tstamp_i, wfext.tstamp_s, 'wfext_tstamp_cb'),
-               w3_input('id-wfext-tstamp-custom w3-ext-retain-input-focus w3-hide|padding:0;width:auto|size=4',
+               w3_input('id-wfext-tstamp-custom w3-ext-retain-input-focus|padding:0;width:auto|size=4',
                   '', 'wfext.tstamp_f', wfext.tstamp_f, 'wfext_tstamp_custom_cb'),
                w3_select(wfext.sfmt, '', '', 'wf.ts_tz', wf.ts_tz, wfext.tstamp_tz_s, 'w3_num_cb')
-            ),
-            
-            //w3_hr('w3-margin-10'),
-            w3_inline('w3-margin-T-8/w3-hspace-16',
-               w3_text('w3-text-css-orange', '<b>FFT</b>'),
+            )
+         ),
+         
+         //w3_hr('w3-margin-10'),
+         w3_div('w3-margin-T-8 w3-margin-B-8',
+            w3_text('w3-text-css-orange', '<b>Waterfall FFT</b>'),
+            w3_inline('w3-margin-LR-16/w3-hspace-16',
                w3_select(wfext.sfmt, '', 'window function', 'wfext.winf_i', wfext.winf_i, wfext.winf_s, 'wfext_winf_cb'),
-               w3_select(wfext.sfmt, '', 'interpolation', 'wfext.interp_i', wfext.interp_i, wfext.interp_s, 'wfext_interp_cb'),
+               w3_select(wfext.sfmt, '', 'interp', 'wfext.interp_i', wfext.interp_i, wfext.interp_s, 'wfext_interp_cb'),
                w3_checkbox('w3-label-inline w3-label-not-bold', 'CIC<br>comp', 'wfext.cic_comp', wfext.cic_comp, 'wfext_cic_comp_cb')
             )
          )
 		);
 
-	ext_panel_show(controls_html, null);
-	ext_set_controls_width_height(440, 250);
+	w3_innerHTML('id-wf-more', controls_html);
+	coloris_init();      // NB: has to be after elements using coloris are instantiated
+   w3_show_hide('id-wfext-tstamp-custom', false, null, 2);
 	
-	if (wf.aper == kiwi.aper_e.auto) {
+	if (wf.aper == kiwi.APER_AUTO) {
       w3_show_inline('id-wfext-maxmin');
       waterfall_maxmin_cb();
       w3_hide('id-wfext-maxmin-spacer');
@@ -144,6 +117,9 @@ function waterfall_init()
    console.log('waterfall_init: last_aper='+ last_aper +' init_aper='+ init_aper +' wfa='+ wf_auto +' url_tstamp='+ wf.url_tstamp);
    wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
    w3_show('id-aper-data');
+   
+   wfext.spb_on = +kiwi_storeGet('last_spb_on', wfext.spb_on);
+   wfext.spb_color = kiwi_storeGet('last_spb_color', wfext.spb_color);
    
    // allow URL param to override
    if (wf_interp != -1) {
@@ -228,18 +204,32 @@ function waterfall_aper_param_cb(path, val, done, first)
 function waterfall_maxmin_cb()
 {
    w3_flash_fade('id-wfext-maxmin', 'cyan', 50, 300, '#575757');
-   w3_innerHTML('id-wfext-max', maxdb.toString().positiveWithSign());
-   w3_innerHTML('id-wfext-max-comp', wf.auto_maxdb.toString().positiveWithSign());
-   w3_innerHTML('id-wfext-max-ceil', wf.auto_ceil.val.toString().positiveWithSign());
-   w3_innerHTML('id-wfext-min', mindb.toString().positiveWithSign());
-   w3_innerHTML('id-wfext-min-comp', wf.auto_mindb.toString().positiveWithSign());
-   w3_innerHTML('id-wfext-min-floor', wf.auto_floor.val.toString().positiveWithSign());
+   w3_innerHTML('id-wfext-content', 
+      mindb.toString().positiveWithSign() +','+ maxdb.toString().positiveWithSign() +'&nbsp;=&nbsp;'+
+      wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign() +'&nbsp;+&nbsp;'+
+      wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign());
+}
+
+function wfext_spb_color_cb(path, val, first, cbp)
+{
+   //console.log('wfext_spb_color_cb val='+ val +' cpb='+ cbp);
+   w3_string_cb(path, val);
+   kiwi_storeSet('last_spb_color', val);
+   wfext.spb_color_seq++;
+}
+
+function wfext_spb_on_cb(path, checked, first)
+{
+   if (first) return;
+   w3_bool_cb(path, checked, first);
+   kiwi_storeSet('last_spb_on', checked? 1:0);
+   wfext.spb_color_seq++;
 }
 
 function wfext_tstamp_cb(path, idx, first)
 {
    //if (first) return;
-   console.log('wfext_tstamp_cb TOP first='+ first);
+   //console.log('wfext_tstamp_cb TOP first='+ first);
    wfext.tstamp_i = idx = +idx;
    w3_set_value(path, idx);      // for benefit of direct callers
    var tstamp_s = wfext.tstamp_s[idx];
@@ -251,11 +241,11 @@ function wfext_tstamp_cb(path, idx, first)
          if (isCustom) wfext_tstamp_custom_cb(el_custom, wfext.tstamp);
          return;
       }
-      console.log('wfext_tstamp_cb HAVE url_tstamp='+ wf.url_tstamp);
+      //console.log('wfext_tstamp_cb HAVE url_tstamp='+ wf.url_tstamp);
       var stop = false;
       w3_select_enum(path, function(el, idx) {
          if (stop || el.innerHTML != 'custom') return;
-         console.log('wfext_tstamp_cb MATCH url_tstamp='+ wf.url_tstamp);
+         //console.log('wfext_tstamp_cb MATCH url_tstamp='+ wf.url_tstamp);
          wfext_tstamp_custom_cb('id-wfext-tstamp-custom', wf.url_tstamp);
          wfext_tstamp_cb(path, el.value);
          stop = true;
@@ -264,8 +254,8 @@ function wfext_tstamp_cb(path, idx, first)
       return;
    }
 
-   console.log('wfext_tstamp_cb idx='+ idx +' tstamp_s='+ tstamp_s +' isCustom='+ isCustom);
-   w3_show_hide(el_custom, isCustom);
+   //console.log('wfext_tstamp_cb idx='+ idx +' tstamp_s='+ tstamp_s +' isCustom='+ isCustom);
+   w3_show_hide(el_custom, isCustom, null, 2);
 
    if (isCustom) {
 	   wfext_tstamp_custom_cb(el_custom, w3_get_value(el_custom));
@@ -276,7 +266,7 @@ function wfext_tstamp_cb(path, idx, first)
 
 function wfext_tstamp_custom_cb(path, val)
 {
-   console.log('wfext_tstamp_custom_cb val='+ val);
+   //console.log('wfext_tstamp_custom_cb val='+ val);
    wfext.tstamp = w3_clamp(+val, 2, 60*60, 2);
    w3_set_value(path, wfext.tstamp);
    w3_show_block(path);
@@ -295,7 +285,7 @@ function wfext_interp_cb(path, idx, first)
    w3_num_cb(path, idx, first);
    idx = +idx + (wfext.cic_comp? 10:0);
 	wf_send('SET interp='+ idx);
-	console.log('wfext_interp_cb idx='+ idx);
+	//console.log('wfext_interp_cb idx='+ idx);
 }
 
 function wfext_cic_comp_cb(path, checked, first)

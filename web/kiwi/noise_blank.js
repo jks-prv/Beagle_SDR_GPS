@@ -1,11 +1,9 @@
 // Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
 
 var noise_blank = {
-   ext_name: 'noise_blank',     // NB: must match noise_blank.cpp:noise_blank_ext.name
-   first_time: true,
-   
    algo: 0,
    algo_s: [ '(none)', 'standard', 'Wild algo' ],
+   menu_s: [ 'off', 'std', 'Wild' ],
    width: 400,
    height: [ 185, 310, 350 ],
    
@@ -22,6 +20,8 @@ var noise_blank = {
    NB_WF: 1,
    NB_CLICK: 2,
 
+   NB_NONE: 0,
+
    NB_STD: 1,
    gate: 100,
    threshold: 50,
@@ -32,73 +32,42 @@ var noise_blank = {
    impulse_samples: 7,     // must be odd
 };
 
-function noise_blank_main()
+function noise_blank_view()
 {
-	ext_switch_to_client(noise_blank.ext_name, noise_blank.first_time, noise_blank_recv);		// tell server to use us (again)
-	if (!noise_blank.first_time)
-		noise_blank_controls_setup();
-	noise_blank.first_time = false;
+   keyboard_shortcut_nav('audio');
+   var total = w3_el('id-optbar-audio').clientHeight;
+   var Hopt = kiwi.OPTBAR_CONTENT_HEIGHT;
+   var hr = 27;   // margins=12 border=3
+   var audio = w3_el('id-audio-content').clientHeight;
+   var nb = w3_el('id-nblank-more').clientHeight;
+   var nf = w3_el('id-nfilter-more').clientHeight;
+   var test = w3_el('id-ntest-more').clientHeight;
+   var Hnb = total - (audio + hr);
+   pct = w3_clamp(kiwi_round(1 - (Hnb - Hopt) / (total - Hopt), 2), 0, 1);
+   //console_nv('noise_blank view', {total}, {audio}, {nb}, {nf}, {test}, {Hnb}, {pct});
+   w3_scrollTo('id-optbar-content', pct);
 }
 
-function noise_blank_recv(data)
-{
-	var firstChars = arrayBufferToStringLen(data, 3);
-	
-	// process data sent from server/C by ext_send_msg_data()
-	if (firstChars == "DAT") {
-		var ba = new Uint8Array(data, 4);
-		var cmd = ba[0];
-		var o = 1;
-		var len = ba.length-1;
-
-		console.log('noise_blank_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
-		return;
-	}
-	
-	// process command sent from server/C by ext_send_msg() or ext_send_msg_encoded()
-	var stringData = arrayBufferToString(data);
-	var params = stringData.substring(4).split(" ");
-
-	for (var i=0; i < params.length; i++) {
-		var param = params[i].split("=");
-
-		if (0 && param[0] != "keepalive") {
-			if (isDefined(param[1]))
-				console.log('noise_blank_recv: '+ param[0] +'='+ param[1]);
-			else
-				console.log('noise_blank_recv: '+ param[0]);
-		}
-
-		switch (param[0]) {
-
-			case "ready":
-				noise_blank_controls_setup();
-				break;
-
-			default:
-				console.log('noise_blank_recv: UNKNOWN CMD '+ param[0]);
-				break;
-		}
-	}
-}
-
-function noise_blank_controls_html()
+function noise_blank_controls_refresh()
 {
    var s = '';
+   
+   if (noise_blank.algo != noise_blank.NB_NONE)
+      s = w3_checkbox('w3-margin-B-8/w3-label-inline w3-label-not-bold w3-text-css-orange/', 'Waterfall std blanker', 'noise_blank.wf', noise_blank.wf, 'noise_blank_wf_cb');
    
    switch (noise_blank.algo) {
    
    case noise_blank.NB_STD:
-      s =
+      s +=
          w3_slider('', 'Gate', 'noise_blank.gate', noise_blank.gate, 100, 5000, 100, 'noise_blank_gate_cb') +
          w3_slider('', 'Threshold', 'noise_blank.threshold', noise_blank.threshold, 0, 100, 1, 'noise_blank_threshold_cb');
       break;
    
    case noise_blank.NB_WILD:
       if (ext_is_IQ_or_stereo_curmode())
-         s = 'No Wild algorithm blanking in IQ or stereo modes';
+         s += 'No Wild algorithm blanking in IQ or stereo modes';
       else
-         s =
+         s +=
             w3_slider('', 'Threshold', 'noise_blank.thresh', noise_blank.thresh, 0.05, 3, 0.05, 'noise_blank_thresh_cb') +
             w3_slider('', 'Taps', 'noise_blank.taps', noise_blank.taps, 6, 40, 1, 'noise_blank_taps_cb') +
             w3_slider('', 'Samples', 'noise_blank.impulse_samples', noise_blank.impulse_samples, 3, 41, 2, 'noise_blank_impulse_samples_cb');
@@ -106,39 +75,35 @@ function noise_blank_controls_html()
    }
    
 	var controls_html =
-		w3_div('id-noise-blanker-controls w3-text-white',
+		w3_div('id-noise-blanker-controls w3-margin-right w3-text-white',
 			w3_divs('/w3-tspace-8',
-				w3_inline('w3-halign-space-between|width:75%/',
-				   w3_div('w3-medium w3-text-aqua', '<b>Noise blanker: </b>'),
-				   w3_div('w3-text-white', noise_blank.algo_s[noise_blank.algo]),
-				   w3_button('w3-padding-tiny w3-aqua', 'Defaults', 'noise_blank_load_defaults')
+				w3_inline('w3-gap-16/',
+				   w3_div('w3-text-aqua', '<b>Noise blanker</b>'),
+               w3_select('w3-text-red||title="noise blanker selection"', '', 'blanker', 'nb_algo', noise_blank.algo, noise_blank.menu_s, 'nb_algo_cb', 'm'),
+				   w3_button('w3-padding-tiny w3-yellow', 'Defaults', 'noise_blank_load_defaults'),
+               w3_button('id-noise-blanker-help-btn w3-right w3-green w3-small w3-padding-small||onclick="noise_blank_help()"', 'help')
 				),
-				w3_inline('w3-margin-between-32',
-               w3_select('w3-text-red', '', 'test mode', 'noise_blank.test', noise_blank.test, noise_blank.test_s, 'noise_blank_test_cb'),
-               w3_checkbox('w3-label-inline w3-text-css-orange/', 'Also blank WF', 'noise_blank.wf', noise_blank.wf, 'noise_blank_wf_cb')
-            ),
-            w3_slider('', 'Test pulse gain', 'noise_blank.test_gain', noise_blank.test_gain, -90, 0, 1, 'noise_blank_test_gain_cb'),
-            w3_slider('', 'Test pulse width', 'noise_blank.test_width', noise_blank.test_width, 1, 30, 1, 'noise_blank_test_width_cb'),
-            ((noise_blank.algo != noise_blank.NB_OFF)? '<hr>' : ''),
-            w3_div('w3-section', s)
+            w3_div('w3-margin-LR-16', s)
 			)
 		);
 	
-	return controls_html;
-}
+   w3_innerHTML('id-nblank-more', controls_html);
 
-function noise_blank_controls_refresh()
-{
-	if (ext_panel_displayed('noise_blank')) {
-	   ext_panel_redisplay(noise_blank_controls_html());
-	   ext_set_controls_width_height(noise_blank.width, noise_blank.height[noise_blank.algo]);
-	}
-}
+	var test_html =
+		w3_div('id-noise-blanker-controls w3-text-white',
+			w3_divs('w3-margin-B-8/w3-tspace-8 w3-margin-right',
+				w3_inline('',
+				   w3_div('w3-text-aqua', '<b>Noise blanker test</b>')
+				),
+				w3_div('w3-margin-LR-16',
+               w3_select('w3-margin-B-8 w3-text-red', '', 'test mode', 'noise_blank.test', noise_blank.test, noise_blank.test_s, 'noise_blank_test_cb'),
+               w3_slider('', 'Test pulse gain', 'noise_blank.test_gain', noise_blank.test_gain, -90, 0, 1, 'noise_blank_test_gain_cb'),
+               w3_slider('', 'Test pulse width', 'noise_blank.test_width', noise_blank.test_width, 1, 30, 1, 'noise_blank_test_width_cb')
+            )
+         )
+      );
 
-function noise_blank_controls_setup()
-{
-	ext_panel_show(noise_blank_controls_html(), null, null);
-	ext_set_controls_width_height(noise_blank.width, noise_blank.height[noise_blank.algo]);
+   w3_innerHTML('id-ntest-more', test_html);
 }
 
 function noise_blank_environment_changed(changed)
@@ -229,10 +194,10 @@ function noise_blank_send()
 
 function nb_algo_cb(path, idx, first, from)
 {
-   //console.log('nb_algo_cb idx='+ idx +' first='+ first +' from='+ from);
+   //console.log('nb_algo_cb path='+ path +' idx='+ idx +' first='+ first +' from='+ from);
    if (first) return;      // because call via main ui has zero, not restored value
    idx = +idx;
-   w3_select_value(path, idx);
+   w3_select_value(path, idx, { all:1 });
    noise_blank.algo = idx;
    kiwi_storeSet('last_nb_algo', idx.toString());
    noise_blank_send();
@@ -331,4 +296,17 @@ function noise_blank_impulse_samples_cb(path, val, complete, first)
 	   kiwi_storeSet('last_noiseSamps', val.toString());
 	   if (!first) noise_blank_send();
 	}
+}
+
+function noise_blank_help()
+{
+   var s = 
+      w3_text('w3-medium w3-bold w3-text-aqua', 'Noise blanker help') +
+      w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+         w3_div('w3-margin-R-8 w3-margin-bottom',
+            'To be supplied...'
+         )
+      );
+   confirmation_show_content(s, 600, 300);
+   w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
 }

@@ -223,14 +223,14 @@ function colormap_init()
    if (wf.cmap_override != -1) last_cmap = wf.cmap_override;
    wf_cmap_cb('wf.cmap', last_cmap, false);     // writes 'last_cmap' cookie
 
-   wf.aper_w = parseFloat(w3_el('id-control').style.width);
+   wf.aper_w = w3_el('id-control-inner').clientWidth - kiwi_scrollbar_width() - 10;
    wf.aper_h = 16;
    w3_el('id-aper-data').style.width = px(wf.aper_w);
    var aper_canvas = w3_el('id-aper-canvas');
    aper_canvas.width = wf.aper_w;
    wf.aper_ctx = aper_canvas.getContext("2d");
    
-	if (wf.aper == kiwi.aper_e.man)
+	if (wf.aper == kiwi.APER_MAN)
       colormap_aper();
 }
 
