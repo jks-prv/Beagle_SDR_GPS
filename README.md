@@ -1,6 +1,6 @@
 [updated 27 October 2023]
 
-[![KiwiSDR](http://www.kiwisdr.com/ks/kiwi2.350px.png)](http://www.kiwisdr.com/ks/kiwi2.1024px.png)
+[![KiwiSDR](http://www.kiwisdr.com/ks/kiwi2.780px.jpg)](http://www.kiwisdr.com/ks/kiwi2.1024px.jpg)
 
 Click image for full size.
 
