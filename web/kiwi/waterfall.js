@@ -16,7 +16,7 @@ var wfext = {    // "wf" is already used elsewhere
    },
    
    spb_on: 1,
-   spb_color: '#00ff2268',
+   spb_color: '#ffffff44',
    spb_color_seq: 0,
    
    tstamp: 0,

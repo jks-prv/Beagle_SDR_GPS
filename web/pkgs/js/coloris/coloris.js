@@ -16,12 +16,12 @@ function coloris_init()
    Coloris({
       el: '.coloris',
       swatches: [
-         '#ff000068',
-         '#eeff0068',
-         '#00ff2268',
-         '#00f7ff68',
-         '#f200ff68',
-         '#ffffff68'
+         '#ff000044',
+         '#eeff0044',
+         '#00ff2244',
+         '#00f7ff44',
+         '#f200ff44',
+         '#ffffff44'
       ]
    });
 
