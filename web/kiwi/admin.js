@@ -3789,7 +3789,7 @@ function admin_draw(sdr_mode)
 	admin.init = true;
 	   var tab = kiwi_url_param(0, null);
 	   if (tab) tab = tab.split(',')[0]
-	   if (isNonEmptyString(tab)) {
+	   if (isNonEmptyString(tab) && tab != 'nolocal') {
 	      writeCookie('last_admin_navbar', tab);
 	   }
 	   
