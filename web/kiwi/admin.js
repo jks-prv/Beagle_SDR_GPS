@@ -3539,6 +3539,8 @@ function security_html()
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
+			   // Don't erase password here if set to "No" in case it is immediately switched back to "Yes".
+			   // Password will be erased at next admin login if set "No".
             w3_switch_label('', 'Save admin password in<br> browser local storage?',
                'Yes', 'No', 'adm.admin_save_pwd', adm.admin_save_pwd, 'admin_radio_YN_cb')
 			), 25,

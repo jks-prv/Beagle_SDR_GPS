@@ -519,6 +519,7 @@ function ext_hasCredential(conn_type, cb, cb_param, ws)
          pwd = kiwi_storeGet(conn_type, '');
 	   } else {
 	      pwd = '';
+         kiwi_storeSet('admin', pwd);     // erase it if previously set
 	   }
 	   deleteCookie('admin');
 	   deleteCookie('admin-pwd');
