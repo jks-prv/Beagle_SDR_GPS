@@ -1327,7 +1327,7 @@ function network_html()
 		w3_div('id-net-auto-nat-msg w3-valign w3-hide') +
 
 		w3_div('id-net-need-update w3-valign w3-margin-T-8 w3-hide',
-			w3_button('w3-yellow', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
+			w3_button('w3-red', 'Are you sure? Click to update interface DHCP/static IP configuration', 'network_dhcp_static_update_cb')
 		) +
 
 		'<hr>' +
@@ -1903,6 +1903,7 @@ function network_dhcp_static_update_cb(path, idx)
 {
    var use_static = adm.ip_address.use_static;
 	if (use_static) {
+	   // NB: for D11+ must always use these two together and in this order because of how server-side works
       ext_send('SET dns dns1=x'+ encodeURIComponent(adm.ip_address.dns1) +' dns2=x'+ encodeURIComponent(adm.ip_address.dns2));
       ext_send('SET static_ip='+ kiwi_ip_str(network_ip) +' static_nb='+ network_nm.nm +' static_nm='+ kiwi_ip_str(network_nm) +' static_gw='+ kiwi_ip_str(network_gw));
 	} else {

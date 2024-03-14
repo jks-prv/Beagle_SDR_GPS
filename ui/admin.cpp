@@ -798,31 +798,32 @@ void c2s_admin(void *param)
                     inet4_d2h(dns1, &dns1_err);
                     inet4_d2h(dns2, &dns2_err);
     
-                    if (!dns1_err || !dns2_err) {
-                        if (debian_ver >= 11) {
-                            // careful: "DNS=(empty)" means reset DNS list
-                            asprintf(&cmd_p, "sed -e s/DNS1/%s%s/ -e s/DNS2/%s%s/ %s >%s",
-                                dns1_err? "" : "DNS=", dns1_err? "" : dns1,
-                                dns2_err? "" : "DNS=", dns2_err? "" : dns2,
-                                UNIX_ENV "eth0.network.STATIC", "/tmp/eth0.network");
-                            system(cmd_p);
-                            kiwi_asfree(cmd_p);
-                        } else
-                        if (debian_ver == 9 || debian_ver == 10) {
-                            asprintf(&sb, "connmanctl config ethernet_%s_cable --nameservers %s %s",
-                                net.mac_no_delim, dns1_err? "" : dns1, dns2_err? "" : dns2);
-                            system(sb); kiwi_asfree(sb);
-                        } else {
-                            system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
+                    if (debian_ver >= 11) {
+                        // careful: "DNS=(empty)" means reset DNS list
+                        asprintf(&cmd_p, "sed -e s/DNS1/%s%s/ -e s/DNS2/%s%s/ %s >%s",
+                            dns1_err? "" : "DNS=", dns1_err? "" : dns1,
+                            dns2_err? "" : "DNS=", dns2_err? "" : dns2,
+                            UNIX_ENV "eth0.network.STATIC", "/tmp/eth0.network");
+                        system(cmd_p);
+                        kiwi_asfree(cmd_p);
+                    } else {
+                        if (!dns1_err || !dns2_err) {
+                            if (debian_ver == 9 || debian_ver == 10) {
+                                asprintf(&sb, "connmanctl config ethernet_%s_cable --nameservers %s %s",
+                                    net.mac_no_delim, dns1_err? "" : dns1, dns2_err? "" : dns2);
+                                system(sb); kiwi_asfree(sb);
+                            } else {
+                                system("rm -f /etc/resolv.conf; touch /etc/resolv.conf");
         
-                            if (!dns1_err) {
-                                asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns1);
-                                system(sb); kiwi_asfree(sb);
-                            }
+                                if (!dns1_err) {
+                                    asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns1);
+                                    system(sb); kiwi_asfree(sb);
+                                }
                         
-                            if (!dns2_err) {
-                                asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns2);
-                                system(sb); kiwi_asfree(sb);
+                                if (!dns2_err) {
+                                    asprintf(&sb, "echo nameserver %s >> /etc/resolv.conf", dns2);
+                                    system(sb); kiwi_asfree(sb);
+                                }
                             }
                         }
                     }
