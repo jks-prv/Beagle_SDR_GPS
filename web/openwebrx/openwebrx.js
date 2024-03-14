@@ -33,6 +33,7 @@ var owrx = {
    PB_NO_EDGE: 0,
    PB_RIGHT_EDGE: 1,
    PB_LEFT_EDGE: 2,
+   allow_pb_adj: false,
    
    cfg_loaded: false,
    mobile: null,
@@ -905,6 +906,7 @@ function demod_envelope_draw(range, from, to, color, line)
 	scale_ctx.strokeStyle = color;
 	scale_ctx.fillStyle = color;
 	var drag_ranges = { envelope_on_screen: false, line_on_screen: false, allow_pb_adj: false };
+	owrx.allow_pb_adj = false;
 	
 	if (!(to_px < 0 || from_px > window.innerWidth)) {
 	   // at least one on screen
@@ -915,7 +917,7 @@ function demod_envelope_draw(range, from, to, color, line)
 		owrx.pbx2 = to_px;
 		drag_ranges.envelope_on_screen = true;
 		//drag_ranges.allow_pb_adj = ((to_px - from_px) >= (dbgUs? 100:30));
-		drag_ranges.allow_pb_adj = ((to_px - from_px) >= 50);
+		drag_ranges.allow_pb_adj = owrx.allow_pb_adj = ((to_px - from_px) >= 50);
 		
 		if (!drag_ranges.allow_pb_adj)
 		   scale_ctx.strokeStyle = scale_ctx.fillStyle = 'yellow';
@@ -931,6 +933,8 @@ function demod_envelope_draw(range, from, to, color, line)
       scale_ctx.fill();
       scale_ctx.globalAlpha = 1;
       scale_ctx.stroke();
+	} else {
+	   owrx.pbx1 = owrx.pbx2 = 0;
 	}
 	
 	if (isDefined(line)) {     // out of screen? 
@@ -3959,7 +3963,7 @@ function spectrum_update(data)
          }
          
          // don't show if it takes up the whole space (e.g. z14)
-         if ((x1 > 0 || x2 < sw1) && wfext.spb_on && zoom_level >= 5) {
+         if ((x1 > 0 || x2 < sw1) && wfext.spb_on && owrx.allow_pb_adj) {
             pbctx.fillStyle = wfext.spb_color;
             pbctx.fillRect(x1,0, x2-x1,sh);
             //console.log('fill '+ wfext.spb_color);
