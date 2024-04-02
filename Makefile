@@ -768,10 +768,10 @@ foptim_list: loptim_embed loptim_ext loptim_maps
 
 CLEAN_MIN_GZ_2 = $(wildcard $(CLEAN_MIN_GZ))
 ifeq ($(CLEAN_MIN_GZ_2),)
-foptim_clean clean_min clean_gz: roptim_embed roptim_ext roptim_maps
+foptim_clean clean_min clean_gz: $(TOOLS_DIR) roptim_embed roptim_ext roptim_maps
 	@echo "nothing to clean"
 else
-foptim_clean clean_min clean_gz: roptim_embed roptim_ext roptim_maps
+foptim_clean clean_min clean_gz: $(TOOLS_DIR) roptim_embed roptim_ext roptim_maps
 	@echo "removing:"
 	@-ls -la $(CLEAN_MIN_GZ_2)
 	@-rm $(CLEAN_MIN_GZ_2)
