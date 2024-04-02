@@ -305,12 +305,8 @@ static void misc_NET(void *param)
 
         status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root::' /etc/shadow", POLL_MSEC(250));
         root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
-        if (!root_pwd_unset && debian_ver == 11) {
+        if (!root_pwd_unset && debian_ver >= 11) {
             status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root:$y$j9T$lTPmWl28QqgcbJAEAXpLG.$uZrtdkucDJ.DhOP32b2/9taPXDYIgNCNzYIcxZmCV18:' /etc/shadow", POLL_MSEC(250));
-            root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
-        }
-        if (!root_pwd_unset && debian_ver >= 12) {
-            status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root:$y$j9T$WXtmpucuvbSoscS4pSSZ71$5JyHHvnvrDY5BSdBGJaG0G.ipdawbNH8ly4fZv2eFo2:' /etc/shadow", POLL_MSEC(250));
             root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
         }
         
@@ -698,7 +694,12 @@ static void pub_NET(void *param)
 
         retry++;
     } while (!okay && retry <= N_IPINFO_RETRY);   // make multiple attempts
-    if (!okay) lprintf("IPINFO: ### FAILED for all ipinfo servers ###\n");
+    if (!okay) {
+        lprintf("IPINFO: ### FAILED for all ipinfo servers ###\n");
+    } else {
+        // updates places waiting to receive a valid public IP e.g. admin network tab
+        rx_send_config(SM_SND_ADM_ALL);
+    }
 }
 
 /*
@@ -902,6 +903,12 @@ static void reg_public(void *param)
 
 void file_GET(void *param)
 {
+    if (kiwi_file_exists("/root/" REPO_NAME "/unix_env/reflash_delay_update")) {
+        lprintf("file_GET: due to recent re-flash, file update on restart delayed until update window\n");
+        kiwi.allow_admin_conns = true;
+        return;
+    }
+
     // called from _update_task() or check_for_update()
 	bool download_diff_restart = ((int) FROM_VOID_PARAM(param) == FILE_DOWNLOAD_DIFF_RESTART);
 	
