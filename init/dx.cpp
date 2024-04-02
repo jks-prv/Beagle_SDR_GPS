@@ -533,8 +533,6 @@ static void _dx_reload_file(cfg_t *cfg, int db)
 
     lprintf("reading configuration from file %s\n", cfg->filename);
     scallz("_dx_reload_file fopen", (fp = fopen(cfg->filename, "r")));
-    char *dx_list_fn;
-    asprintf(&dx_list_fn, "dx_list:%s", cfg->filename);
 
     #define LBUF 512
     char lbuf[LBUF], *s;
@@ -563,7 +561,7 @@ static void _dx_reload_file(cfg_t *cfg, int db)
     do {
         for (i = 0; !done; i++) {
             if (i >= size_i) {
-                _dx_list = (dx_t *) kiwi_table_realloc(dx_list_fn, _dx_list, size_i, DX_LIST_ALLOC_CHUNK, sizeof(dx_t));
+                _dx_list = (dx_t *) kiwi_table_realloc(cfg->filename, _dx_list, size_i, DX_LIST_ALLOC_CHUNK, sizeof(dx_t));
                 size_i = size_i + DX_LIST_ALLOC_CHUNK;
             }
 

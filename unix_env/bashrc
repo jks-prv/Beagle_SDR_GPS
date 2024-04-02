@@ -73,7 +73,7 @@ alias pe="printenv"
 alias se="export"
 alias un="unset"
 alias h="history"
-alias hclr="history -c; history -w"
+alias hc="history -c; history -w"
 alias z="suspend"
 alias x="exit"
 alias j="jobs -l"
@@ -168,6 +168,8 @@ alias masan1="make ASAN=1 OPT=1"
 alias miasan="make install ASAN=1"
 alias miasan1="make install ASAN=1 OPT=1"
 alias leaks="export ASAN_OPTIONS='detect_leaks=1'; export LSAN_OPTIONS='verbosity=1:log_threads=1'"
+# show individual leaks from a common source to see alloc'd address and possibly different sizes
+alias indiv_leaks="export ASAN_OPTIONS='detect_leaks=1'; export LSAN_OPTIONS='verbosity=1:log_threads=1:report_objects=1'"
 # "noleaks" needed in some runs with gdb otherwise crash in leak detector at exit
 alias noleaks="export ASAN_OPTIONS='detect_leaks=0'"
 alias qleaks="printenv | grep -e SAN_OPTIONS"
@@ -512,6 +514,7 @@ alias ift="iftop -nNBP -m 1G -f 'not port 22 and not port 80 and not port 5353 a
 # for linear display (without "L")
 alias iftl="iftop -nNBP -m 4M -f 'not port 22 and not port 80 and not port 5353 and not port 53 and not port 137'"
 alias ipt="function _ipt () { iptables -n -v -L \$* ; } ; _ipt"
+alias ips="ipset list"
 alias ipti="ipt INPUT"
 alias iptio="ipt INPUT; ipt OUTPUT"
 alias iptz="iptables -L -n -v -Z"
@@ -565,10 +568,13 @@ alias nfsdn="cd ~; umount -a -f -t nfs"
 # KiwiSDR with gdb
 alias gk="gdb ../build/kiwi.bin"
 # aliases added to ~/.gdbinit
-# to detect leaks type "leaks" before gk and use asan
 # gdb> asan // sets ASAN breakpoint
 # gdb> {ng,ng7} // no gps, leds
 # gdb> {k,k7}   // normal run
+#
+# to detect leaks type "leaks" or "indiv_leaks"
+# can't use gdb
+# use admin > control > restart to trigger leak report
 
 # KiwiSDR valgrind with gdb (deprecated, use clang ASAN)
 #   'vgh' alias below is a reminder of the sequence of commands
