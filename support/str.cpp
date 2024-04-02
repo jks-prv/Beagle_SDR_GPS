@@ -445,6 +445,74 @@ void kiwi_str_unescape_quotes(char *str)
 	*o = '\0';
 }
 
+char *kiwi_json_to_html(char *str)
+{
+	char *ostr, *s, *o;
+	int sl = strlen(str);
+	int n = sl;
+	bool doFree;
+	
+	for (s = str; *s != '\0';) {
+		if (*s == '\\' && *(s+1) == '"') {
+			n--;        // \" => "
+			s++;
+		} else
+		if (*s == '\\' && *(s+1) == 'n') {
+		    n += 2;     // \n => <br>
+			s++;
+		}
+		s++;
+	}
+	
+	if (n > sl) {
+        o = ostr = (char *) kiwi_imalloc("kiwi_json_to_html", n + SPACE_FOR_NULL);
+        doFree = true;
+	} else {
+	    o = ostr = str;
+	    doFree = false;
+	}
+
+	for (s = str; *s != '\0';) {
+		if (*s == '\\' && *(s+1) == '"') {
+			*o++ = '"';     // \" => "
+			s += 2;
+		} else
+		if (*s == '\\' && *(s+1) == 'n') {
+		    strncpy(o, "<br>", 4);
+		    o += 4;         // \n => <br>
+			s += 2;
+		} else {
+			*o++ = *s++;
+		}
+	}
+
+	*o = '\0';
+	//printf("kiwi_json_to_html1 %p %d<%s>\n", str, sl, str);
+	if (doFree) {
+	    //printf("kiwi_json_to_html doFree\n");
+	    kiwi_ifree(str, "kiwi_json_to_html");
+	}
+	//printf("kiwi_json_to_html2 %p %d<%s>\n", ostr, n, ostr);
+	return ostr;    // caller must kiwi_ifree()
+}
+
+char *kiwi_json_to_string(char *str)
+{
+	char *s, *o = str;
+
+	for (s = str; *s != '\0';) {
+		if (*s == '\\' && *(s+1) == '"') {
+			*o++ = '"';     // \" => "
+			s += 2;
+		} else {
+			*o++ = *s++;
+		}
+	}
+
+	*o = '\0';
+	return str;
+}
+
 // inplace is okay because we are only ever shortening the string
 void kiwi_remove_unprintable_chars_inplace(char *str, int *printable, int *UTF)
 {
