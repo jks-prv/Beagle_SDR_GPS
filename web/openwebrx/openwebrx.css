@@ -932,7 +932,7 @@ html, body
     opacity: 0.3;
 }
 
-#id-button-hang
+.id-button-hang
 {
 	border-width: 2px;
 	border-style: solid;
