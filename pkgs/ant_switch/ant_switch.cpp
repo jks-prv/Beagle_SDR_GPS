@@ -57,6 +57,7 @@ int ant_switch_setantenna(char *antenna) {      // "1" .. "10", "g"
 	//printf("ant_switch frontend: %s\n", antenna);
     asprintf(&cmd, FRONTEND " %s", antenna);
 	non_blocking_cmd_system_child("ant_switch", cmd);
+	//printf("ant_switch frontend DONE: %s\n", antenna);
 	kiwi_asfree(cmd);
 	return 0;
 }
@@ -66,6 +67,7 @@ int ant_switch_toggleantenna(char *antenna) {   // "t1" .. "t10", "tg"
 	//printf("ant_switch frontend: t%s\n", antenna);
     asprintf(&cmd, FRONTEND " t%s", antenna);
 	non_blocking_cmd_system_child("ant_switch", cmd);
+	//printf("ant_switch frontend DONE: t%s\n", antenna);
 	kiwi_asfree(cmd);
 	return 0;
 }
@@ -78,18 +80,18 @@ int ant_switch_validate_cmd(char *cmd) {
 bool ant_switch_read_denyswitching(int rx_chan) {
     bool deny = false;
     bool error;
-    int deny_val = cfg_int("ant_switch.denyswitching", &error, CFG_OPTIONAL);
+    int allow = cfg_int("ant_switch.denyswitching", &error, CFG_OPTIONAL);
     
     // values used by admin menu
     #define ALLOW_EVERYONE 0
     #define ALLOW_LOCAL_ONLY 1
     #define ALLOW_LOCAL_OR_PASSWORD_ONLY 2
     
-    if (error) deny_val = ALLOW_EVERYONE;
-    ext_auth_e auth = ext_auth(rx_chan);
-    if (deny_val == ALLOW_LOCAL_ONLY && auth != AUTH_LOCAL) deny = true;
-    if (deny_val == ALLOW_LOCAL_OR_PASSWORD_ONLY && auth == AUTH_USER) deny = true;
-    //rcprintf(rx_chan, "ant_switch: deny_val=%d auth=%d => deny=%d\n", deny_val, auth, deny);
+    if (error) allow = ALLOW_EVERYONE;
+    ext_auth_e auth = ext_auth(rx_chan);    // AUTH_USER, AUTH_LOCAL, AUTH_PASSWORD
+    if (allow == ALLOW_LOCAL_ONLY && auth != AUTH_LOCAL) deny = true;
+    if (allow == ALLOW_LOCAL_OR_PASSWORD_ONLY && auth == AUTH_USER) deny = true;
+    //rcprintf(rx_chan, "ant_switch: allow=%d auth=%d => deny=%d\n", allow, auth, deny);
     
     return (deny)? true : false;
 }
@@ -99,42 +101,44 @@ bool ant_switch_read_denymixing() {
 }
 
 bool ant_switch_read_denymultiuser(int rx_chan) {
-    bool deny = cfg_true("ant_switch.denymultiuser");
-    if (ext_auth(rx_chan) == AUTH_LOCAL) deny = false;      // don't apply to local connections
-    bool result = (deny && kiwi.current_nusers > 1);
-    //rcprintf(rx_chan, "ant_switch_read_denymultiuser deny=%d current_nusers=%d result=%d\n",
-    //    deny, kiwi.current_nusers, result);
+    bool deny_multi = cfg_true("ant_switch.denymultiuser");
+    if (ext_auth(rx_chan) == AUTH_LOCAL) deny_multi = false;    // don't apply to local connections
+    bool result = (deny_multi && kiwi.current_nusers > 1);
+    //rcprintf(rx_chan, "ant_switch_read_denymultiuser deny_multi=%d current_nusers=%d result=%d\n",
+    //    deny_multi, kiwi.current_nusers, result);
     return result? true : false;
-}
-
-bool ant_switch_read_thunderstorm() {
-    return cfg_true("ant_switch.thunderstorm");
 }
 
 void ant_switch_check_isConfigured()
 {
 	int i;
-	for (i = 1; i <= antsw.n_ch && !antsw.isConfigured; i++) {
-	    char *ant;
-	    asprintf(&ant, "%d", i);
-        const char *desc = cfg_string(stprintf("ant_switch.ant%sdesc", ant), NULL, CFG_OPTIONAL);
-        if (desc != NULL && *desc != '\0') {
-            printf("ant_switch is configured\n");
-            antsw.isConfigured = true;
+	if (antsw.backend_s && antsw.backend_s[0] != '\0' && strcmp(antsw.backend_s, "No") != 0) {
+        for (i = 1; i <= antsw.n_ch && !antsw.isConfigured; i++) {
+            char *ant;
+            asprintf(&ant, "%d", i);
+            const char *desc = cfg_string(stprintf("ant_switch.ant%sdesc", ant), NULL, CFG_OPTIONAL);
+            if (desc != NULL && *desc != '\0') {
+                printf("ant_switch is configured\n");
+                antsw.isConfigured = true;
+            }
+            cfg_string_free(desc);
+            kiwi_asfree(ant);
         }
-        cfg_string_free(desc);
-	    kiwi_asfree(ant);
     }
 }
 
 bool ant_switch_check_deny(int rx_chan)
 {
-    int deny_reason = 0;
-    if (ant_switch_read_denyswitching(rx_chan) == true) deny_reason = 1;
+    #define DENY_NONE 0
+    #define DENY_SWITCHING 1
+    #define DENY_MULTIUSER 2
+    
+    int deny_reason = DENY_NONE;
+    if (ant_switch_read_denyswitching(rx_chan) == true) deny_reason = DENY_SWITCHING;
     else
-    if (ant_switch_read_denymultiuser(rx_chan) == true) deny_reason = 2;
+    if (ant_switch_read_denymultiuser(rx_chan) == true) deny_reason = DENY_MULTIUSER;
     snd_send_msg(rx_chan, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennaDenySwitching=%d", deny_reason);
-    return (deny_reason != 0);
+    return (deny_reason != DENY_NONE);
 }
 
 void ant_switch_select_default_antennas()
@@ -163,11 +167,33 @@ void ant_switch_ReportAntenna(conn_t *conn)
 {
     int rx_chan = conn->rx_channel;
     char *selected_antennas = ANTSW_SHMEM_ANTS;
-    //rcprintf(rx_chan, "ant_switch rx%d antsw_AntennasAre=%s\n", rx_chan, selected_antennas);
-    send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennasAre=%s", selected_antennas);
+
+    if (cfg_true("ant_switch.thunderstorm")) {
+        // admin has switched on thunderstorm mode
+        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=1");
+
+        // also ground antenna if not grounded (do only once per transition)
+        if (!antsw.thunderstorm_mode) {
+            antsw.thunderstorm_mode = true;
+            rcprintf(rx_chan, "ant_switch rx%d PRE TSTORM-ON prev_selected_antennas=%s\n", rx_chan, selected_antennas);
+            kiwi_strncpy(antsw.last_ant, selected_antennas, N_ANT);
+            ant_switch_setantenna((char *) "g");
+            rcprintf(rx_chan, "ant_switch rx%d POST TSTORM-ON cur_selected_antennas=%s\n", rx_chan, selected_antennas);
+            NextTask("ant_switch_ReportAntenna tstorm");
+        }
+    } else {
+        if (antsw.thunderstorm_mode) {
+            antsw.thunderstorm_mode = false;
+            kiwi_strncpy(selected_antennas, antsw.last_ant, N_ANT);
+            ant_switch_setantenna(selected_antennas);
+        }
+        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=0");
+        rcprintf(rx_chan, "ant_switch rx%d antsw_AntennasAre=%s\n", rx_chan, selected_antennas);
+        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennasAre=%s", selected_antennas);
+    }
 
     // setup user notification of antenna change
-    static char last_selected_antennas[64];
+    static char last_selected_antennas[N_ANT];
     if (strcmp(selected_antennas, last_selected_antennas) != 0) {
         char *s;
         if (strcmp(selected_antennas, "g") == 0)
@@ -175,26 +201,15 @@ void ant_switch_ReportAntenna(conn_t *conn)
         else
             s = stprintf("Selected antennas are now: %s", selected_antennas);
         static u4_t seq;
-        //printf("ant_switch ext_notify_connected seq=%d %s\n", seq, s);
-        ext_notify_connected(rx_chan, seq++, s);
-        kiwi_strncpy(last_selected_antennas, selected_antennas, 64);
+        printf("ant_switch ext_notify_connected notify_rx_chan=%d seq=%d %s\n", antsw.notify_rx_chan, seq, s);
+        ext_notify_connected(antsw.notify_rx_chan, seq++, s);
+        kiwi_strncpy(last_selected_antennas, selected_antennas, N_ANT);
+        NextTask("ant_switch_ReportAntenna ant chg");
     }
 
     ant_switch_check_deny(rx_chan);
-
     int deny_mixing = ant_switch_read_denymixing()? 1:0;
     send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennaDenyMixing=%d", deny_mixing);
-
-    if (ant_switch_read_thunderstorm() == true) {
-        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=1");
-        // also ground antenna if not grounded
-        if (strcmp(selected_antennas, "g") != 0)  {
-            ant_switch_setantenna((char *) "g");
-            send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennasAre=g");
-        }
-    } else {
-        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=0");
-    }
 }
 
 // called every 10 second
@@ -219,15 +234,15 @@ static int _GetAntenna_task(void *param)
     if (reply == NULL) return 0;
 	char *sp = kstr_sp(reply);
     char *s;
-    int n = sscanf(sp, "Selected antennas: %ms", &s);
+    int n = sscanf(sp, "Selected antennas: %15ms", &s);
     if (n == 1) {
-        kiwi_strncpy(ANTSW_SHMEM_ANTS, s, N_SHMEM_STATUS_STR_SMALL);
+        kiwi_strncpy(ANTSW_SHMEM_ANTS, s, N_ANT);
         ANTSW_SHMEM_STATUS = SHMEM_STATUS_DONE;
     } else {
         ANTSW_SHMEM_STATUS = SHMEM_STATUS_ERROR;
     }
     kiwi_asfree(s);
-    printf("ant_switch CHILD status=%d reply=%s", ANTSW_SHMEM_STATUS, sp);
+    //printf("ant_switch CHILD status=%d reply=%s", ANTSW_SHMEM_STATUS, sp);
     // kstr_free(args->kstr) done by caller after return
     return 0;
 }
@@ -267,9 +282,8 @@ void ant_sw(void *param)    // task
 bool ant_switch_msgs(char *msg, int rx_chan)
 {
 	int n = 0;
-	char antenna[256];
 
-	rcprintf(rx_chan, "######## ant_switch_msgs rx=%d <%s>\n", rx_chan, msg);
+	rcprintf(rx_chan, "ant_switch_msgs rx=%d <%s>\n", rx_chan, msg);
 	
     if (strcmp(msg, "SET antsw_GetAntenna") == 0) {
         if (ANTSW_SHMEM_STATUS == SHMEM_STATUS_IDLE) {
@@ -279,22 +293,24 @@ bool ant_switch_msgs(char *msg, int rx_chan)
         return true;
     }
 
-    n = sscanf(msg, "SET antsw_SetAntenna=%s", antenna);
+	char *antenna;
+    n = sscanf(msg, "SET antsw_SetAntenna=%15ms", &antenna);
     if (n == 1) {
         //rcprintf(rx_chan, "ant_switch: %s\n", msg);
-        if (ant_switch_check_deny(rx_chan)) return true;
-
-        if (ant_switch_validate_cmd(antenna)) {
-            if (ant_switch_read_denymixing()) {
-                ant_switch_setantenna(antenna);
+        antsw.notify_rx_chan = rx_chan;     // notifier is current rx_chan
+        if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
+            if (ant_switch_validate_cmd(antenna)) {
+                if (ant_switch_read_denymixing()) {
+                    ant_switch_setantenna(antenna);
+                } else {
+                    ant_switch_toggleantenna(antenna);
+                }
+                using_defaults = false;
             } else {
-                ant_switch_toggleantenna(antenna);
+                rcprintf(rx_chan, "ant_switch: Command not valid SET Antenna=%s\n", antenna);   
             }
-            using_defaults = false;
-        } else {
-            rcprintf(rx_chan, "ant_switch: Command not valid SET Antenna=%s\n", antenna);   
         }
-
+        kiwi_asfree(antenna);
         return true;
     }
 
@@ -302,8 +318,10 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     n = sscanf(msg, "SET antsw_freq_offset=%d", &freq_offset_ant);
     if (n == 1) {
         //rcprintf(rx_chan, "ant_switch: freq_offset %d\n", freq_offset_ant);
-        cfg_set_float_save("freq_offset", (double) freq_offset_ant);
-        freq_offset = freq_offset_ant;
+        if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
+            cfg_set_float_save("freq_offset", (double) freq_offset_ant);
+            freq_offset = freq_offset_ant;
+        }
         return true;
     }
     
@@ -311,10 +329,12 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     n = sscanf(msg, "SET antsw_high_side=%d", &high_side_ant);
     if (n == 1) {
         //rcprintf(rx_chan, "ant_switch: high_side %d\n", high_side_ant);
-        // if antenna switch extension is active override current inversion setting
-        // and lockout the admin config page setting until a restart
-        kiwi.spectral_inversion_lockout = true;
-        kiwi.spectral_inversion = high_side_ant? true:false;
+        if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
+            // if antenna switch extension is active override current inversion setting
+            // and lockout the admin config page setting until a restart
+            kiwi.spectral_inversion_lockout = true;
+            kiwi.spectral_inversion = high_side_ant? true:false;
+        }
         return true;
     }
 
@@ -335,7 +355,7 @@ void ant_switch_get_backend_info()
         kiwi_asfree(antsw.backend_s);
         kiwi_asfree(antsw.ip_or_url);
         char *sp = kstr_sp(reply);
-        int n = sscanf(sp, "%64ms v%d.%d %dch %ms",
+        int n = sscanf(sp, "%63ms v%d.%d %dch %63ms",
             &antsw.backend_s, &antsw.ver_maj, &antsw.ver_min, &antsw.n_ch, &antsw.ip_or_url);
         printf("ant_switch GET backend info: n=%d %s version=%d.%d channels=%d ip_url=%s\n",
             n, antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.ip_or_url);
@@ -392,10 +412,17 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
     printf("ant_switch_admin_msgs: <%s>\n", cmd);
 
     if (strcmp(cmd, "ADM antsw_GetBackends") == 0) {
+        char *reply = non_blocking_cmd(FRONTEND " be", NULL, poll_msec);
+        char *sp = kstr_sp(reply);
+        char *nl = strchr(sp, '\n');
+        if (nl) *nl = '\0';
+        send_msg_encoded(conn, "ADM", "antsw_backends", "%s", sp);
+        kstr_free(reply);
         return true;
     }
 
     if (strcmp(cmd, "ADM antsw_notify_users") == 0) {
+        printf("ant_switch ADM antsw_notify_users\n");
         cfg_cfg.update_seq++;   // cause cfg to be reloaded by all active user connections
         ant_switch_notify_users();
         return true;
@@ -408,11 +435,12 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
         return true;
     }
 
-	char antenna[64];
-    n = sscanf(cmd, "ADM antsw_SetBackend=%63s", antenna);
+	char *antenna;
+    n = sscanf(cmd, "ADM antsw_SetBackend=%63ms", &antenna);
     if (n == 1) {
         char *cmd, *reply;
         asprintf(&cmd, FRONTEND " bs %s", antenna);
+        kiwi_asfree(antenna);
         reply = non_blocking_cmd(cmd, NULL, poll_msec);
         printf("ant_switch ADM antsw_SetBackend: <%s>\n", kstr_sp(reply));
         kstr_free(reply);
@@ -421,11 +449,12 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
         return true;
     }
     
-	char ip_or_url[64];
-    n = sscanf(cmd, "ADM antsw_SetIP_or_URL=%63s", ip_or_url);
+	char *ip_or_url;
+    n = sscanf(cmd, "ADM antsw_SetIP_or_URL=%63ms", &ip_or_url);
     if (n == 1) {
         char *cmd, *reply;
         asprintf(&cmd, FRONTEND " sa %s", ip_or_url);
+        kiwi_asfree(ip_or_url);
         reply = non_blocking_cmd(cmd, NULL, poll_msec);
         printf("ant_switch ADM antsw_SetIP_or_URL: <%s>\n", kstr_sp(reply));
         kstr_free(reply);

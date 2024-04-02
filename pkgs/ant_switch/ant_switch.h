@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "shmem.h"
+
 /*
     Interfacing since extension mechanism is not used:
     
@@ -70,6 +72,11 @@ typedef struct {
 	char *ip_or_url;
 	bool isConfigured;
 	tid_t task_tid;
+	int notify_rx_chan;
+
+	bool thunderstorm_mode;
+	#define N_ANT N_SHMEM_STATUS_STR_SMALL
+	char last_ant[N_ANT];
 } antsw_t;
 
 extern antsw_t antsw;

@@ -23,25 +23,32 @@
 */
 
 var ant_sw = {
-   isConfigured: false,
-   update_seq: 0,
-   denymixing: 0,
-   thunderstorm: 0,
    
-   ver: 0,
+   // set on both sides
+   ver: '',
+   n_ant: 8,
+
+   // only set on admin side
    backend: -1,
    backend_s: null,
    backends_s: null,
-   n_ant: 8,
    ip_or_url: null,
    exantennas: 0,    // to avoid console.log spam on timer updates
    
+   // only set on user side
+   focus: false,
+   isConfigured: false,
+   running: false,
+   buttons_locked: false,
+   buttons_selected: [],
+
+   denymixing: 0,
+   thunderstorm: 0,
    notify_timeout: null,
    url_ant: null,
    url_deselected: false,
    url_idx: 0,
    desc_lc: [],
-
    last_offset: -1,
    last_high_side: -1,
    
@@ -51,11 +58,20 @@ var ant_sw = {
    LOCAL_OR_PWD: 2,
    denyswitching: 0,
    deny_s: [ 'everyone', 'local connections only', 'local connections or user password only' ],
+
+   // deny reason
+   DENY_NONE: 0,
+   DENY_SWITCHING: 1,
+   DENY_MULTIUSER: 2,
+   denied_permission: false,
    denied_because_multiuser: false
 };
 
 function ant_switch_view()
 {
+   console.log('ant_switch_view ant_sw.focus='+ ant_sw.focus);
+   if (!ant_sw.focus) return;    // don't bring into view unless focused
+
    // wait for RF tab render
    keyboard_shortcut_nav('rf');
    var Hrf;
@@ -69,7 +85,7 @@ function ant_switch_view()
          var Hopt = kiwi.OPTBAR_CONTENT_HEIGHT;
          var Hant = w3_el('id-optbar-rf-antsw').clientHeight + /* w3-margin-B-8 */ 8;
          pct = w3_clamp(kiwi_round(1 - (Hant - Hopt) / (Hrf - Hopt), 2), 0, 1);
-         //console_nv('$ant_switch view', {Hant}, {Hrf}, {pct});
+         //console_nv('$ant_switch view', {Hant}, {Hrf}, {pct});    // 160 233
          w3_scrollTo('id-optbar-content', pct);
       }, null,
       200
@@ -113,8 +129,10 @@ function ant_switch_msg(param)
          break;
 
       case "antsw_AntennaDenySwitching":
-         ant_sw.denyswitching = (param[1] == 0)? ant_sw.EVERYONE : ant_sw.LOCAL_CONN;
-         ant_sw.denied_because_multiuser = (param[1] == 2);
+         var deny_reason = +param[1];
+         // breakdown deny_reason into denied_permission and denied_because_multiuser
+         ant_sw.denied_permission = (deny_reason != ant_sw.DENY_NONE)? true : false;
+         ant_sw.denied_because_multiuser = (deny_reason == ant_sw.DENY_MULTIUSER);
          ant_switch_showpermissions();
          break;
 
@@ -126,7 +144,7 @@ function ant_switch_msg(param)
       case "antsw_Thunderstorm":
          if (param[1] == 1) {
             ant_sw.thunderstorm = 1;
-            ant_sw.denyswitching = ant_sw.LOCAL_CONN;
+            ant_sw.denied_permission = true;
          } else {
              ant_sw.thunderstorm = 0;
          }
@@ -143,42 +161,55 @@ function ant_switch_msg(param)
 
 function ant_switch_buttons_setup()
 {
-   var antdesc = [ ];
-   var tmp;
-   for (tmp = 1; tmp <= ant_sw.n_ant; tmp++) {
-      console.log('### ant_switch_buttons_setup '+ tmp);
-      antdesc[tmp] = ext_get_cfg_param_string('ant_switch.ant'+ tmp +'desc', '', EXT_NO_SAVE);
+   var antdesc = [];
+   var i;
+   for (i = 1; i <= ant_sw.n_ant; i++) {
+      antdesc[i] = ext_get_cfg_param_string('ant_switch.ant'+ i +'desc', '', EXT_NO_SAVE);
    }
    
    console.log('ant_switch: Antenna configuration ant_sw.n_ant='+ ant_sw.n_ant);
    var buttons_html = '';
    var n_ant = 0;
-   for (tmp = 1; tmp <= ant_sw.n_ant; tmp++) {
-      if (antdesc[tmp] == undefined || antdesc[tmp] == null || antdesc[tmp] == '') {
-         antdesc[tmp] = ''; 
-      }  else {
-         buttons_html += w3_div('w3-valign w3-margin-T-8',
-            w3_button('id-antsw-btn w3-padding-smaller w3-round-6px', 'Antenna '+tmp, 'ant_switch_select_antenna_cb', tmp),
-            w3_div('w3-margin-L-8', antdesc[tmp])
-         );
-         n_ant++;
-      }
-      ant_sw.desc_lc[tmp] = antdesc[tmp].toLowerCase();
-      console.log('ant_switch: Antenna '+ tmp +': '+ antdesc[tmp]);
+   var backend = (cfg.ant_switch && isNonEmptyString(cfg.ant_switch.backend))? cfg.ant_switch.backend : '';
+   if (backend != '') {
+      for (i = 1; i <= ant_sw.n_ant; i++) {
+         // don't show antenna buttons without descriptions (i.e. configured)
+         var s = antdesc[i]? antdesc[i] : '';
+         if (isNonEmptyString(s)) {
+            var locked = ant_sw.buttons_locked? ' w3-disabled' : '';
+            var highlight = ant_sw.buttons_selected[i]? ' w3-selection-green' : '';
+            buttons_html += w3_div('w3-valign w3-margin-T-8',
+               w3_button('id-antsw-btn w3-padding-smaller w3-round-6px'+ locked + highlight,
+                  'Antenna '+ i, 'ant_switch_select_antenna_cb', i),
+               w3_div('w3-margin-L-8', s)
+            );
+            n_ant++;
+         }
+         ant_sw.desc_lc[i] = s.toLowerCase();
+         //console.log('ant_switch: Antenna '+ i +': '+ s);
 
-      if (!ant_sw.isConfigured) {
-         if (isNonEmptyString(antdesc[tmp]))
-         ant_sw.isConfigured = true;
+         if (!ant_sw.isConfigured) {
+            if (isNonEmptyString(s))
+            ant_sw.isConfigured = true;
+         }
       }
    }
    w3_innerHTML('id-antsw-user', buttons_html);
-   //ext_set_controls_width_height(400, 90 + Math.round(n_ant * 40));
+   ant_switch_view();
    console.log('ant_switch_buttons_setup DONE');
+}
+
+function ant_switch_user_refresh()
+{
+   if (!ant_sw.running) return;
+   console.log('ant_switch_user_refresh');
+   //ant_switch_buttons_setup();
+   ant_switch_prompt_query();
+   //ext_send('ADM antsw_notify_users');
 }
 
 function ant_switch_user_init()
 {
-   ant_sw.update_seq = ext_get_cfg_param('ant_switch.update_seq', 0, EXT_NO_SAVE);
    ant_sw.denyswitching = ext_get_cfg_param('ant_switch.denyswitching', ant_sw.EVERYONE, EXT_NO_SAVE);
    ant_sw.denymixing = ext_get_cfg_param('ant_switch.denymixing', '', EXT_NO_SAVE)? 1:0;
    ant_sw.thunderstorm = ext_get_cfg_param('ant_switch.thunderstorm', '', EXT_NO_SAVE)? 1:0;
@@ -200,25 +231,34 @@ function ant_switch_user_init()
 
    w3_innerHTML('id-optbar-rf-antsw', controls_html);
    
+   ant_sw.running = true;
    console.log('SET antsw_init');
    ext_send('SET antsw_init');
    ant_switch_buttons_setup();
    ant_switch_prompt_query();
 
 	var p = kiwi_url_param('ant');
-   console.log('$p='+ p);
+   console.log('ant_switch_user_init p='+ p);
    if (isArg(p)) {
       if (isNonEmptyString(p)) {
          console.log('ant_switch_user_init: URL param = <'+ p +'>');
          ant_sw.url_ant = p.split(',');
       }
+      ant_switch_focus();
       ant_switch_view();
    }
+}
+
+function ant_switch_focus()
+{
+   //console.log('### ant_switch_focus');
+   ant_sw.focus = true;
 }
 
 function ant_switch_blur()
 {
    //console.log('### ant_switch_blur');
+   ant_sw.focus = false;
 }
 
 function ant_switch_display_update(ant) {
@@ -228,7 +268,9 @@ function ant_switch_display_update(ant) {
 function ant_switch_select_antenna(ant) {
    console.log('ant_switch: switching to antenna '+ ant);
    ext_send('SET antsw_SetAntenna='+ ant);
-   ant_switch_prompt_query();
+   
+   // race between toggling antennas and getting correct antenna selection status, so delay
+   setTimeout(function() { ant_switch_prompt_query(); }, 1000);
 }
 
 function ant_switch_select_antenna_cb(path, val) { ant_switch_select_antenna(val); }
@@ -243,11 +285,7 @@ function ant_switch_process_reply(ant_selected_antenna) {
    var need_to_inform = false;
    //console.log('ant_switch_process_reply ant_selected_antenna='+ ant_selected_antenna);
    
-   if (cfg.ant_switch.update_seq != ant_sw.update_seq) {
-      console.log('ant_switch_process_reply: update_seq='+ cfg.ant_switch.update_seq +'|'+ ant_sw.update_seq);
-      ant_switch_buttons_setup();
-      ant_sw.update_seq = cfg.ant_switch.update_seq;
-   }
+   ant_switch_buttons_setup();
    
    ant_sw.denyswitching = ext_get_cfg_param('ant_switch.denyswitching', ant_sw.EVERYONE, EXT_NO_SAVE);
 
@@ -279,8 +317,12 @@ function ant_switch_process_reply(ant_selected_antenna) {
          if (!el.textContent.match(re)) return;
          w3_unhighlight(el);
          var antN = el.textContent.parseIntEnd();
+         ant_sw.buttons_selected[antN] = false;
+         //console.log('A'+ antN);
          if (!isArray(selected_antennas_list)) return;
          if (selected_antennas_list.indexOf(antN.toString()) < 0) return;  // not currently selected
+         //console.log('T');
+         ant_sw.buttons_selected[antN] = true;
          w3_highlight(el);
       
          // check for frequency offset and high-side injection change
@@ -355,6 +397,7 @@ function ant_switch_process_reply(ant_selected_antenna) {
 }
 
 function ant_switch_lock_buttons(lock) {
+   ant_sw.buttons_locked = lock;
    w3_els('id-antsw-btn',
       function(el, i) {
          // Antenna
@@ -373,26 +416,29 @@ function ant_switch_lock_buttons(lock) {
 }
 
 function ant_switch_showpermissions() {
+   var s, lock = true;
    if (!ant_sw.isConfigured) {
-      w3_innerHTML('id-antsw-display-permissions', '');
-      return;
-   }
-   if (ant_sw.denyswitching == ant_sw.LOCAL_CONN) {
-      ant_switch_lock_buttons(true);
-      var reason = ant_sw.denied_because_multiuser? 'Multiple users online.' : '';
-      w3_innerHTML('id-antsw-display-permissions', 'Switching denied: '+ reason);
+      s = '';
+   } else
+   if (ant_sw.thunderstorm == 1) {
+      s = w3_text('w3-text-css-yellow', 'Thunderstorm. Switching is denied.');
+   } else
+   if (ant_sw.denied_because_multiuser) {
+      s = 'Switching denied: Multiple users online.';
+   } else
+   if (ant_sw.denied_permission) {
+      s = 'Switching denied: No permission.';
    } else {
-      ant_switch_lock_buttons(false);
+      lock = false;
       if (ant_sw.denymixing) {
-         w3_innerHTML('id-antsw-display-permissions', 'Switching is allowed. Mixing not allowed.');
+         s = 'Switching is allowed. Mixing not allowed.';
       } else {
-         w3_innerHTML('id-antsw-display-permissions', 'Switching and mixing are allowed.');
+         s = 'Switching and mixing are allowed.';
       }
    }
-   if (ant_sw.thunderstorm == 1) {
-      ant_switch_lock_buttons(true);
-      w3_innerHTML('id-antsw-display-permissions', w3_text('w3-text-css-yellow', 'Thunderstorm. Switching is denied.'));
-   }
+   ant_switch_lock_buttons(lock);
+   w3_innerHTML('id-antsw-display-permissions', s);
+   ant_switch_view();
 }
 
 function ant_switch_help()
@@ -454,16 +500,21 @@ function ant_switch_admin_msg(param)
          
       case "antsw_backend":
          console.log('antsw_backend='+ param[1]);
-	      //ant_sw.backend = w3_array_el_seq(ant_sw.backends_s, param[1]);
          ant_sw.backend_s = param[1];
+         
+         // if value is 'No' from backend not being setup then there will be no match
+         // and menu will show read-only 'select' value
          if (isNonEmptyString(ant_sw.backend_s))
             w3_select_set_if_includes('ant_sw.backend', ant_sw.backend_s);
+         ant_switch_users_notify_change();
          return true;
       
       case "antsw_ver":
          console.log('antsw_ver='+ param[1]);
          ant_sw.ver = param[1];
-         w3_innerHTML('id-antsw-ver', 'backend script v'+ ant_sw.ver);
+         var s = 'backend script v'+ ant_sw.ver;
+         if (ant_sw.ver == '0.0') s = '';
+         w3_innerHTML('id-antsw-ver', s);
          return true;
          
       case "antsw_nch":
@@ -473,8 +524,10 @@ function ant_switch_admin_msg(param)
 
       case "antsw_ip_or_url":
          console.log('antsw_ip_or_url='+ param[1]);
-         ant_sw.ip_or_url = param[1];
-         w3_set_value('id-ant_sw.ip_or_url', ant_sw.ip_or_url);
+         var ip_url = param[1];
+         if (ip_url == '(null)') ip_url = '';
+         w3_set_value('id-ant_sw.ip_or_url', ip_url);
+         ant_sw.ip_or_url = ip_url;
          return true;
       
 	}
@@ -495,14 +548,12 @@ function ant_switch_backend_cb(path, val, first)
 
 function ant_switch_users_notify_change()
 {
-   console.log('ant_switch_users_notify_change');
+   console.log('$ant_switch_users_notify_change');
    kiwi_clearTimeout(ant_sw.notify_timeout);
    ant_sw.notify_timeout = setTimeout(
       function() {
-         ant_sw.update_seq++;
-         ext_set_cfg_param('ant_switch.update_seq', ant_sw.update_seq, EXT_SAVE);
-         setTimeout(function() { ext_send('ADM antsw_notify_users'); }, 1);
-         console.log('ant_sw reload_cfg');
+         console.log('$antsw_notify_users');
+         ext_send('ADM antsw_notify_users');
       }, 1000
    );
 }
@@ -525,7 +576,7 @@ function ant_switch_set_ip_or_url_cb(path, val, first)
 
 function ant_denyswitch_cb(path, val, first) {
 	console.log('ant_denyswitch_cb path='+ path +' val='+ val +'('+ w3_switch_s(val) +') first='+ first);
-	w3_int_set_cfg_cb(path, val);
+	w3_int_set_cfg_cb(path, val, first);
    ant_switch_users_notify_change();
 }
 
@@ -544,13 +595,13 @@ function ant_switch_config_html2(n_ch)
    for (var i = 1; i <= ant_sw.n_ant; i++) {
       s +=
          w3_inline_percent('w3-margin-T-16 w3-valign-center/',
-            w3_input_get('', 'Antenna '+ i +' description', 'ant_switch.ant'+ i +'desc', 'ant_switch_desc_cb', ''), 50,
+            w3_input_get('w3-defer', 'Antenna '+ i +' description', 'ant_switch.ant'+ i +'desc', 'ant_switch_desc_cb', ''), 50,
             '&nbsp;', 3,
-            w3_checkbox_get_param('//w3-label-inline', 'Default<br>antenna', 'ant_switch.ant'+ i +'default', 'admin_bool_cb', false), 7,
+            w3_checkbox_get_param('w3-defer//w3-label-inline', 'Default<br>antenna', 'ant_switch.ant'+ i +'default', 'admin_bool_cb', false), 7,
             '&nbsp;', 3,
-            w3_checkbox_get_param('w3-restart//w3-label-inline', 'High-side<br>injection', 'ant_switch.ant'+ i +'high_side', 'admin_bool_cb', false), 10,
+            w3_checkbox_get_param('w3-defer w3-restart//w3-label-inline', 'High-side<br>injection', 'ant_switch.ant'+ i +'high_side', 'admin_bool_cb', false), 10,
             '&nbsp;', 1,
-            w3_input_get('w3-restart//', 'Frequency scale offset (kHz)', 'ant_switch.ant'+ i +'offset', 'w3_int_set_cfg_cb', 0)
+            w3_input_get('w3-defer w3-restart//', 'Frequency scale offset (kHz)', 'ant_switch.ant'+ i +'offset', 'w3_int_set_cfg_cb', 0)
          );
    }
    w3_innerHTML('id-antsw-list', s);
@@ -558,10 +609,11 @@ function ant_switch_config_html2(n_ch)
 
 function ant_switch_config_html()
 {
-   ext_send('ADM antsw_GetBackends');
-   ext_send('ADM antsw_GetInfo');
-
-   ant_sw.update_seq = ext_get_cfg_param('ant_switch.update_seq', 0, EXT_NO_SAVE);
+   // All of the w3-defer cfg saves here, and in ant_switch_config_html2(),
+   // get resolved when the first ant_switch_users_notify_change() occurs.
+   // That routine does a time deferred (1 second) call to ext_set_cfg_param(EXT_SAVE)
+   // which will save all the accumulated changes.
+   
    ant_sw.denyswitching = ext_get_cfg_param('ant_switch.denyswitching', ant_sw.EVERYONE, EXT_NO_SAVE);
    if (ant_sw.denyswitching == '') ant_sw.denyswitching = ant_sw.EVERYONE;
 
@@ -587,15 +639,15 @@ function ant_switch_config_html()
                'ant_switch.denyswitching', ant_sw.denyswitching, ant_sw.deny_s, 'ant_denyswitch_cb'),
 
             w3_div('w3-margin-T-16','If antenna mixing is denied then users can select only one antenna at time.'),
-            w3_switch_label_get_param('w3-label-inline w3-label-left w3-margin-T-8', 'Deny antenna mixing?',
+            w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8', 'Deny antenna mixing?',
                'Yes', 'No', 'ant_switch.denymixing', true, false, 'ant_switch_cb'),
 
             w3_div('w3-margin-T-16','If multiuser is denied then antenna switching is disabled when more than one user is online.'),
-            w3_switch_label_get_param('w3-label-inline w3-label-left w3-margin-T-8', 'Deny multiuser switching?',
+            w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8', 'Deny multiuser switching?',
                'Yes', 'No', 'ant_switch.denymultiuser', true, false, 'ant_switch_cb'),
 
             w3_div('w3-margin-T-16','If thunderstorm mode is activated, all antennas and forced to ground and switching is disabled.'),
-            w3_switch_label_get_param('w3-label-inline w3-label-left w3-margin-T-8', 'Enable thunderstorm mode?',
+            w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8', 'Enable thunderstorm mode?',
                'Yes', 'No', 'ant_switch.thunderstorm', true, false, 'ant_switch_cb'),
 
             w3_div('w3-margin-T-16',
@@ -603,7 +655,7 @@ function ant_switch_config_html()
                'And also when no users are connected if the switch below is set to <x1>Yes</x1>. <br>' +
                '"Users" includes all connections including FT8/WSPR autorun and kiwirecorder (e.g. wsprdaemon).'
             ),
-            w3_switch_label_get_param('w3-label-inline w3-label-left w3-margin-T-8',
+            w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8',
                'Switch to default antenna(s) when no users connected?',
                'Yes', 'No', 'ant_switch.default_when_no_users', true, true, 'admin_radio_YN_cb'),
 
@@ -620,10 +672,13 @@ function ant_switch_config_html()
             w3_div('',
                w3_div('id-antsw-list'),
                w3_col_percent('w3-margin-T-16/',
-                  w3_input_get('', 'Antenna switch failure or unknown status decription', 'ant_switch.ant0desc', 'w3_string_set_cfg_cb', ''), 70
+                  w3_input_get('w3-defer', 'Antenna switch failure or unknown status decription', 'ant_switch.ant0desc', 'w3_string_set_cfg_cb', ''), 70
                )
             )
          )
       )
    );
+
+   ext_send('ADM antsw_GetBackends');
+   ext_send('ADM antsw_GetInfo');
 }
