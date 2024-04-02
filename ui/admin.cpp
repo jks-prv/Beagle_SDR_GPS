@@ -42,6 +42,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "FT8.h"
 #include "kiwi_ui.h"
+#include "ip_blacklist.h"
 #include "ant_switch.h"
 
 #ifdef USE_SDR
@@ -448,6 +449,18 @@ void c2s_admin(void *param)
 // connect
 ////////////////////////////////
 
+            // domain
+			char *dom_m = NULL;
+			ip_lookup_t ips_dom_m;
+			n = sscanf(cmd, "SET domain_check=%256ms", &dom_m);
+			if (n == 1) {
+                char *dom_s = DNS_lookup_result("domain_check", dom_m, &ips_dom_m);
+                n = DNS_lookup(dom_m, &ips_dom_m, N_IPS);
+                printf("domain_check %s=%d\n", dom_m, n);
+                send_msg(conn, SM_NO_DEBUG, "ADM domain_check_result=%d", n? 1:0);
+				kiwi_asfree(dom_m);
+				continue;
+            }
 
 		    // DUC
 
@@ -856,9 +869,11 @@ void c2s_admin(void *param)
 
 			i = strcmp(cmd, "SET network_ip_blacklist_clear");
 			if (i == 0) {
-			    cprintf(conn, "\"iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI\"\n");
-				system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
-
+			    cprintf(conn, "ip_blacklist SET network_ip_blacklist_clear\n");
+			    #ifdef USE_IPSET
+				    ip_blacklist_system("ipset flush ipset-kiwi");
+				#endif
+				ip_blacklist_system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
                 net.ip_blacklist_len = 0;
 				continue;
 			}
@@ -866,18 +881,25 @@ void c2s_admin(void *param)
             char *ip_m = NULL;
 			i = sscanf(cmd, "SET network_ip_blacklist=%64ms", &ip_m);
 			if (i == 1) {
-				kiwi_str_decode_inplace(ip_m);
-				//printf("network_ip_blacklist %s\n", ip_m);
-				rv = ip_blacklist_add_iptables(ip_m);
+                kiwi_str_decode_inplace(ip_m);
+                //ipbl_prf("ip_blacklist %s\n", ip_m);
+                rv = ip_blacklist_add_iptables(ip_m);
                 send_msg_encoded(conn, "ADM", "network_ip_blacklist_status", "%d,%s", rv, ip_m);
-				kiwi_asfree(ip_m);
+                kiwi_asfree(ip_m);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET network_ip_blacklist_disable");
+			if (i == 0) {
+                ipbl_prf("ip_blacklist SET network_ip_blacklist_disable\n");
+                ip_blacklist_disable();
 				continue;
 			}
 
 			i = strcmp(cmd, "SET network_ip_blacklist_enable");
 			if (i == 0) {
-                cprintf(conn, "\"iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI\"\n");
-				system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+                ipbl_prf("ip_blacklist SET network_ip_blacklist_enable\n");
+                ip_blacklist_enable();
 				send_msg(conn, SM_NO_DEBUG, "ADM network_ip_blacklist_enabled");
 				continue;
 			}
@@ -1357,9 +1379,14 @@ void c2s_admin(void *param)
 						grid6[0] = '\0';
 					else
 						grid6[6] = '\0';
-					sb = kstr_asprintf(sb, ",\"lat\":\"%4.2f\",\"lon\":\"%4.2f\",\"grid\":\"%s\"",
+					sb = kstr_asprintf(sb, ",\"lat\":\"%.6f\",\"lon\":\"%.6f\",\"grid\":\"%s\"",
 						gps.sgnLat, gps.sgnLon, grid6);
 				}
+				
+				#ifdef USE_IPSET
+				    sb = kstr_cat(sb, ",\"ip_set\":1");
+				#endif
+				
 				sb = kstr_cat(sb, "}");
 				send_msg_encoded(conn, "ADM", "admin_update", "%s", kstr_sp(sb));
 				kstr_free(sb);

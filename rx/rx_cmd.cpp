@@ -188,8 +188,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	    strcmp(cmd, "SET keepalive") != 0 &&
 	    kiwi_str_begins_with(cmd, "SET options") == false &&    // options needed before CMD_AUTH
 	    kiwi_str_begins_with(cmd, "SET auth") == false) {
-		    clprintf(conn, "### SECURITY: NO AUTH YET: %s %s %s %d <%.64s>\n",
-		        stream_name, rx_conn_type(conn), conn->remote_ip, strlen(cmd), cmd);
+		    clprintf(conn, "### SECURITY: NO AUTH YET: %s %s %s\n", stream_name, rx_conn_type(conn), conn->remote_ip);
+		    clprintf(conn, "%d <%.128s>\n", strlen(cmd), cmd);
             conn->kick = true;
 		    return true;	// fake that we accepted command so it won't be further processed
 	}
@@ -404,8 +404,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     pwd_printf("TLIMIT exempt local connection from %s\n", conn->remote_ip);
                 }
             #endif
-            pdb_printf("PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
-                ipl_m, tlimit_exempt_pwd);
+            pdb_printf("PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n", ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
                 conn->tlimit_exempt_by_pwd = true;
@@ -455,7 +454,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     json_set_int(&cfg_ipl, stprintf("%s_last", conn->remote_ip), last);
                     if (retries >= TOO_MANY_ATTEMPTS) {
                         pwd_printf("TLIMIT-IP RETRIES EXCEEDED, adding to blacklist: %s\n", conn->remote_ip);
-                        ip_blacklist_add_iptables(conn->remote_ip);
+                        ip_blacklist_add_iptables(conn->remote_ip, USE_IPTABLES);
                     }
                     
                     return true;
