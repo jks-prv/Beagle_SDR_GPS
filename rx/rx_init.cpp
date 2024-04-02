@@ -273,6 +273,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_string("index_html_params.RX_TITLE", "", &up_cfg);
     cfg_default_string("index_html_params.RX_LOC", "", &up_cfg);
     cfg_default_bool("index_html_params.RX_PHOTO_LEFT_MARGIN", true, &up_cfg);
+    cfg_default_bool("index_html_params.RX_PHOTO_CENTERED", false, &up_cfg);
 
     cfg_default_string("status_msg", "", &up_cfg);
     cfg_default_string("rx_name", "", &up_cfg);
@@ -286,7 +287,7 @@ void update_vars_from_config(bool called_at_init)
     // pcb.jpg => pcb.png since new pcb photo has alpha channel that only .png supports.
     // Won't disturb an RX_PHOTO_FILE set to kiwi.config/photo.upload by admin photo upload process.
 	if ((s = cfg_string("index_html_params.RX_PHOTO_FILE", NULL, CFG_OPTIONAL)) != NULL) {
-	    if (strcmp(s, "kiwi/pcb.jpg") == 0) {
+	    if (strcmp(s, "kiwi/pcb.png") == 0) {
 		    cfg_set_string("index_html_params.RX_PHOTO_FILE", "kiwi/pcb.png");
 	        update_cfg = cfg_gdb_break(true);
 	    }
@@ -340,6 +341,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_bool("show_geo", true, &up_cfg);
     cfg_default_bool("show_1Hz", false, &up_cfg);
     cfg_default_int("dx_default_db", 0, &up_cfg);
+    cfg_default_bool("require_id", true, &up_cfg);
 
     cfg_default_object("init", "{}", &up_cfg);
     cfg_default_int("init.cw_offset", 500, &up_cfg);
