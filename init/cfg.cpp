@@ -185,7 +185,7 @@ int serial_number;
 // only called once from main()
 void cfg_reload()
 {
-    printf_highlight(1, "_cfg_");
+    //printf_highlight(1, "_cfg_");
 	cfg_init();
 	admcfg_init();
 
@@ -992,7 +992,7 @@ const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 	return str;
 }
 
-int _cfg_set_string(cfg_t *cfg, const char *name, const char *_val, u4_t flags, int pos)
+int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, int pos)
 {
 	int slen;
 	char *s;
@@ -1028,8 +1028,6 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *_val, u4_t flags, 
         }
 	} else
 	if (flags & (CFG_SET | CFG_CHANGE)) {
-	    //char *val = _cfg_string_check_utf8(cfg, name, _val);
-	    char *val = strdup(_val);   //jksx
 		if (!jt || jt == CFG_LOOKUP_LVL1) {
 			if (val == NULL) val = (char *) "null";
 			char *str_sval;
@@ -1057,17 +1055,17 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *_val, u4_t flags, 
 			pos = _cfg_set_string(cfg, name, NULL, CFG_REMOVE, 0);
 			_cfg_set_string(cfg, name, val, CFG_CHANGE, pos);
 		}
-		kiwi_asfree(val);
 	} else {
 	    panic("_cfg_set_string");
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
     if (flags & CFG_SAVE) {
-        cfg_printf("_cfg_set_string %s=%s SAVE\n", name, _val);
+        cfg_printf("_cfg_set_string %s=%s SAVE\n", name, val);
         _cfg_save_json(cfg, cfg->json);
-    } else
+    } else {
 	    _cfg_parse_json(cfg, FL_PANIC);	// must re-parse
+	}
 	return pos;
 }
 
@@ -1078,11 +1076,13 @@ void _cfg_default_string(cfg_t *cfg, const char *name, const char *def, bool *er
     // even when default is not going to be stored.
     bool error;
 	const char *str = _cfg_string(cfg, name, &error, CFG_OPTIONAL);
-    //char *val = _cfg_string_check_utf8(cfg, name, error? def : str);
-    const char *val = error? def : str;   //jksx
-    _cfg_set_string(cfg, name, val, CFG_SET, 0);
-    if (error)
-        printf("_cfg_default_string: %s = %s\n", name, val);
+
+    char *val = _cfg_string_check_utf8(cfg, name, error? def : str);
+    if (error) {
+        printf("_cfg_default_string: %s = <%s>\n", name, def);
+        _cfg_set_string(cfg, name, def, CFG_SET, 0);
+    }
+    kiwi_asfree(val);
     _cfg_free(cfg, str);
 	if (error_p) *error_p = *error_p | cfg_gdb_break(error);
 }
@@ -1375,6 +1375,9 @@ static bool _cfg_parse_json(cfg_t *cfg, u4_t flags)
 		cfg->tokens = (jsmntok_t *) kiwi_malloc(cfg->id_tokens, sizeof(jsmntok_t) * cfg->tok_size);
 
 		jsmn_init(&parser);
+		if (cfg == &cfg_cfg) {
+		    printf("_cfg_parse_json cfg_cfg\n");
+		}
 		if ((rc = jsmn_parse(&parser, cfg->json, slen, cfg->tokens, cfg->tok_size, yield)) >= 0)
 			break;
 		
