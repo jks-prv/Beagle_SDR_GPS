@@ -285,12 +285,17 @@ else
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff /usr/bin/file
-	CMD_DEPS += /usr/sbin/ipset
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
 	ifeq ($(DEBIAN_VERSION),10)
 	    CMD_DEPS += /usr/bin/connmanctl
+	endif
+
+	ifeq ($(DEBIAN_11_AND_LATER),true)
+	    CMD_DEPS += /usr/sbin/ipset
+	else
+	    CMD_DEPS += /sbin/ipset
 	endif
 
 # currently a bug where -lcrypt and -lssl can't be used together for some reason (crash at startup)
@@ -439,9 +444,6 @@ skip_cert_check:
 /usr/bin/file:
 	-apt-get -y $(APT_GET_FORCE) install file
 
-/usr/sbin/ipset:
-	-apt-get -y $(APT_GET_FORCE) install ipset
-
 ifeq ($(DEBIAN_VERSION),10)
     /usr/bin/connmanctl:
 	    -apt-get -y $(APT_GET_FORCE) install connman
@@ -450,6 +452,14 @@ endif
 ifeq ($(DEBIAN_10_AND_LATER),true)
     /usr/include/openssl/ssl.h:
 	    -apt-get -y install openssl libssl1.1 libssl-dev
+endif
+
+ifeq ($(DEBIAN_11_AND_LATER),true)
+    /usr/sbin/ipset:
+	    -apt-get -y install ipset
+else
+    /sbin/ipset:
+	    -apt-get -y $(APT_GET_FORCE) install ipset
 endif
 
 ifeq ($(BBAI_64),true)
