@@ -1,6 +1,6 @@
 // KiwiSDR
 //
-// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 var kiwi = {
    d: {},      // debug
@@ -189,7 +189,7 @@ function kiwi_bodyonload(error)
 	} else
 	
 	{
-	   if (initCookie('ident', "").endsWith('KF6VO')) dbgUs = true;
+	   if (kiwi_storeInit('ident', "").endsWith('KF6VO')) dbgUs = true;
 	   
 	   // for testing a clean webpage, e.g. kiwi:8073/test
 	   /*
@@ -219,8 +219,6 @@ function kiwi_bodyonload(error)
          // BUT NB: if you put an alert before the assignment to extint.ws there will be a race with
          // extint.ws needing to be used by ext_send() called by descendents of kiwi_open_ws_cb().
 
-	      //deleteCookie('kiwi');    // for testing only
-         
 			extint.ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
@@ -523,13 +521,15 @@ function kiwi_get_init_settings()
 		+' min='+ init_min_dB +' max='+ init_max_dB);
 
 	w3_call('init_scale_dB');
+	
+	//console.log('$ override_1Hz='+ override_1Hz +' cfg.show_1Hz='+ cfg.show_1Hz);
+	if (override_1Hz)
+	   kiwi_storeWrite('freq_dsp_1Hz', 1);
+	else
+	   kiwi_storeInit('freq_dsp_1Hz', cfg.show_1Hz? 1:0);  // set init value from cfg if unset
+	//console.log('$ freq_dsp_1Hz='+ kiwi_storeInit('freq_dsp_1Hz'));
 
-	var ant = ext_get_cfg_param('rx_antenna');
-	var el = w3_el('rx-antenna');
-	if (el != undefined && ant) {
-		el.innerHTML = 'Antenna: '+ kiwi_decodeURIComponent('rx_antenna', ant);
-	}
-
+	w3_innerHTML('rx-antenna', 'Antenna: '+ ext_get_cfg_param_string('rx_antenna'));
    kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '', EXT_NO_SAVE);
 }
 
@@ -557,7 +557,8 @@ function config_save(cfg_s, cfg)
    }
    
    // Can't do this because it defeats the kiwi.cfg.lock mechanism!
-   // Better to just fix the places where back-to-back requests are occurring.
+   // Better to just fix the places where back-to-back requests are occurring
+   // e.g. use w3-defer, EXT_SAVE_DEFER etc.
    /*
    // coalesce back-to-back save requests
    if (kiwi.test_cfg_save_seq == false) {
@@ -598,7 +599,7 @@ function cfg_save_json(id, path, val)
 	} else {    // cfg.*
       config_save('cfg', cfg);
 	}
-	console.log('cfg_save_json: from='+ id +' path='+ path +' val='+ val +' DONE');
+	console.log('cfg_save_json: from='+ id +' path='+ path +' val=<'+ val +'> DONE');
 }
 
 ////////////////////////////////
@@ -2310,7 +2311,7 @@ function kiwi_exclusive_use()
 function kiwi_ip_limit_pwd_cb(pwd)
 {
    console.log('kiwi_ip_limit_pwd_cb pwd='+ pwd);
-	writeCookie('iplimit', encodeURIComponent(pwd));
+	kiwi_storeWrite('iplimit', encodeURIComponent(pwd));
    window.location.reload(true);
 }
 
@@ -2538,6 +2539,8 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 		config_net.pvt_port = port_int;
 		config_net.mac = mac;
 		config_net.serno = serno;
+		
+		w3_call('connect_update_url');
 	}
 }
 
@@ -2763,10 +2766,14 @@ function user_cb(obj)
          confirmation_show_content(s, 425, 100);
       }
 
-      if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
-         console.log('$ NOTIFY sn='+ obj.ns);
+      //if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
+      if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan) {
+         //console.log('NOTIFY nc|rx_chan='+ obj.nc +'|'+ rx_chan +' seq='+ obj.ns +'|'+ kiwi.notify_seq);
+         if (isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
+         //console.log('NOTIFY sn='+ obj.ns);
 		   msg_send('SET notify_msg');
          kiwi.notify_seq = obj.ns;
+         }
       }
 	});
 	
@@ -2800,7 +2807,7 @@ function kiwi_toggle(flags, val_set, val_default, cookie_id)
 	} else
 	
 	if (flags & toggle_e.FROM_COOKIE) {
-		rv = readCookie(cookie_id);
+		rv = kiwi_storeRead(cookie_id);
 		if (rv != null) {
 		   // backward compatibility: interpret as number
 		   // FIXME: fails if string value looks like a number
@@ -2889,14 +2896,15 @@ function kiwi_init_cfg(stream_name)
 {
    kiwi_set_freq_offset(cfg.freq_offset);
    
-   var page_title = kiwi_decodeURIComponent('PAGE_TITLE', cfg.index_html_params.PAGE_TITLE);
+   // in user and admin html both
+   var page_title = ext_get_cfg_param_string('cfg.index_html_params.PAGE_TITLE');
    if (page_title == '') page_title = 'KiwiSDR';
-   var el = w3_el('id-page-title');    // in user and admin html
-   if (el) el.innerHTML = ((stream_name == 'admin')? 'Admin ':'') + page_title;
-   w3_innerHTML('id-rx-photo-title', kiwi_decodeURIComponent('RX_PHOTO_TITLE', cfg.index_html_params.RX_PHOTO_TITLE));
-   w3_innerHTML('id-rx-photo-desc', kiwi_decodeURIComponent('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC));
-   w3_innerHTML('id-rx-title', kiwi_decodeURIComponent('RX_TITLE', cfg.index_html_params.RX_TITLE));
-   w3_innerHTML('id-owner-info', kiwi_decodeURIComponent('owner_info', cfg.owner_info));
+   w3_innerHTML('id-page-title', ((stream_name == 'admin')? 'Admin ':'') + page_title);
+
+   w3_innerHTML('id-rx-photo-title', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_TITLE'));
+   w3_innerHTML('id-rx-photo-desc', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_DESC'));
+   w3_innerHTML('id-rx-title', ext_get_cfg_param_string('cfg.index_html_params.RX_TITLE'));
+   w3_innerHTML('id-owner-info', ext_get_cfg_param_string('cfg.owner_info'));
 }
 
 function kiwi_snr_stats(all, hf)
@@ -3066,6 +3074,7 @@ function kiwi_msg(param, ws)
 		case "cfg_loaded":
 			console.log('### cfg_loaded');
          owrx_init_cfg();
+         w3_call('ant_switch_user_refresh');
 			break;
 		
 		case "no_admin_conns":
@@ -3177,15 +3186,15 @@ function kiwi_msg(param, ws)
 			}
 			break;
 
-		case "status_msg_text":
+		case "output_msg":
 		   // kiwi_output_msg() does decodeURIComponent()
-		   //console.log('status_msg_text: '+ param[1]);
+		   //console.log('output_msg: '+ param[1]);
 		   kiwi_output_msg_p.s = param[1];
 			kiwi_output_msg('id-output-msg', 'id-output-msg', kiwi_output_msg_p);
 			break;
 
 		case "status_msg_html":
-		   var s = kiwi_decodeURIComponent('status_msg_html', param[1]);
+		   var s = w3_json_to_html('status_msg_html', param[1]);
 		   //console.log('status_msg_html: <'+ s +'>');
 			w3_innerHTML('id-status-msg', s);		// overwrites last status msg
 			w3_innerHTML('id-msg-status', s);		// overwrites last status msg
@@ -3254,7 +3263,7 @@ function kiwi_msg(param, ws)
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
 			reason_disabled = 'User connections disabled.'+
-			   ((param[1] != '')? (' Reason: '+ kiwi_decodeURIComponent('reason_disabled', param[1])) : '');
+			   ((param[1] != '')? (' Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
 			break;
 		
 		case "sample_rate":
@@ -3276,7 +3285,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'notify_msg':
-		   var s = kiwi_decodeURIComponent('notify_msg', param[1]);
+		   var s = w3_json_to_html('notify_msg', param[1]);
 			console.log('notify_msg: '+ s);
 			if (confirmation.displayed) break;
          s = w3_div('', s);
@@ -3285,8 +3294,8 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'kiwi_kick':
-		   var s = param[1] + ((cfg.reason_kicked != '')? ('<br>Reason: '+ cfg.reason_kicked) : '');
-		   s = kiwi_decodeURIComponent('kiwi_kick', s);
+		   var s = ext_get_cfg_param_string('cfg.reason_kicked');
+		   var s = w3_json_to_html('kiwi_kick', param[1]) + ((s != '')? ('<br>Reason: '+ s) : '');
          //kiwi_show_msg(s);
 			if (confirmation.displayed) break;
          s = w3_div('', s);

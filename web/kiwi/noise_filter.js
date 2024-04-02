@@ -129,7 +129,7 @@ function noise_filter_controls_html()
 				   w3_div('w3-text-aqua', '<b>Noise filter</b>'),
 				   w3_select('w3-text-red||title="noise filter selection"', '', 'filter', 'nr_algo', noise_filter.algo, noise_filter.menu_s, 'nr_algo_cb', 'm'),
 				   w3_button('w3-padding-tiny w3-yellow', 'Defaults', 'noise_filter_load_defaults'),
-               w3_button('id-noise-filter-help-btn w3-right w3-green w3-small w3-padding-small||onclick="noise_filter_help()"', 'help')
+               w3_button('id-noise-filter-help-btn w3-right w3-green w3-small w3-padding-small', 'help', 'noise_filter_help')
 				),
             w3_div('w3-margin-LR-16', s)
          )
@@ -158,31 +158,31 @@ function noise_filter_environment_changed(changed)
 function noise_filter_init()
 {
    // NR_WDSP
-	noise_filter.wdsp_de_taps = +kiwi_storeGet('last_nr_wdspDeTaps', cfg.nr_wdspDeTaps);
-	noise_filter.wdsp_de_delay = +kiwi_storeGet('last_nr_wdspDeDelay', cfg.nr_wdspDeDelay);
-	noise_filter.wdsp_de_gain = +kiwi_storeGet('last_nr_wdspDeGain', cfg.nr_wdspDeGain);
-	noise_filter.wdsp_de_leakage = +kiwi_storeGet('last_nr_wdspDeLeak', cfg.nr_wdspDeLeak);
-	noise_filter.wdsp_an_taps = +kiwi_storeGet('last_nr_wdspAnTaps', cfg.nr_wdspAnTaps);
-	noise_filter.wdsp_an_delay = +kiwi_storeGet('last_nr_wdspAnDelay', cfg.nr_wdspAnDelay);
-	noise_filter.wdsp_an_gain = +kiwi_storeGet('last_nr_wdspAnGain', cfg.nr_wdspAnGain);
-	noise_filter.wdsp_an_leakage = +kiwi_storeGet('last_nr_wdspAnLeak', cfg.nr_wdspAnLeak);
+	noise_filter.wdsp_de_taps = +kiwi_storeInit('last_nr_wdspDeTaps', cfg.nr_wdspDeTaps);
+	noise_filter.wdsp_de_delay = +kiwi_storeInit('last_nr_wdspDeDelay', cfg.nr_wdspDeDelay);
+	noise_filter.wdsp_de_gain = +kiwi_storeInit('last_nr_wdspDeGain', cfg.nr_wdspDeGain);
+	noise_filter.wdsp_de_leakage = +kiwi_storeInit('last_nr_wdspDeLeak', cfg.nr_wdspDeLeak);
+	noise_filter.wdsp_an_taps = +kiwi_storeInit('last_nr_wdspAnTaps', cfg.nr_wdspAnTaps);
+	noise_filter.wdsp_an_delay = +kiwi_storeInit('last_nr_wdspAnDelay', cfg.nr_wdspAnDelay);
+	noise_filter.wdsp_an_gain = +kiwi_storeInit('last_nr_wdspAnGain', cfg.nr_wdspAnGain);
+	noise_filter.wdsp_an_leakage = +kiwi_storeInit('last_nr_wdspAnLeak', cfg.nr_wdspAnLeak);
 
    // NR_ORIG
-	noise_filter.orig_de_delay = +kiwi_storeGet('last_nr_origDeDelay', cfg.nr_origDeDelay);
-	noise_filter.orig_de_beta = +kiwi_storeGet('last_nr_origDeBeta', cfg.nr_origDeBeta);
-	noise_filter.orig_de_decay = +kiwi_storeGet('last_nr_origDeDecay', cfg.nr_origDeDecay);
-	noise_filter.orig_an_delay = +kiwi_storeGet('last_nr_origAnDelay', cfg.nr_origAnDelay);
-	noise_filter.orig_an_beta = +kiwi_storeGet('last_nr_origAnBeta', cfg.nr_origAnBeta);
-	noise_filter.orig_an_decay = +kiwi_storeGet('last_nr_origAnDecay', cfg.nr_origAnDecay);
+	noise_filter.orig_de_delay = +kiwi_storeInit('last_nr_origDeDelay', cfg.nr_origDeDelay);
+	noise_filter.orig_de_beta = +kiwi_storeInit('last_nr_origDeBeta', cfg.nr_origDeBeta);
+	noise_filter.orig_de_decay = +kiwi_storeInit('last_nr_origDeDecay', cfg.nr_origDeDecay);
+	noise_filter.orig_an_delay = +kiwi_storeInit('last_nr_origAnDelay', cfg.nr_origAnDelay);
+	noise_filter.orig_an_beta = +kiwi_storeInit('last_nr_origAnBeta', cfg.nr_origAnBeta);
+	noise_filter.orig_an_decay = +kiwi_storeInit('last_nr_origAnDecay', cfg.nr_origAnDecay);
 
    // NR_SPECTRAL
-	noise_filter.spec_gain = +kiwi_storeGet('last_nr_SpecGain', cfg.nr_specGain);
-	noise_filter.spec_alpha = +kiwi_storeGet('last_nr_SpecAlpha', cfg.nr_specAlpha);
-	noise_filter.active_snr = +kiwi_storeGet('last_nr_SpecSNR', cfg.nr_specSNR);
+	noise_filter.spec_gain = +kiwi_storeInit('last_nr_SpecGain', cfg.nr_specGain);
+	noise_filter.spec_alpha = +kiwi_storeInit('last_nr_SpecAlpha', cfg.nr_specAlpha);
+	noise_filter.active_snr = +kiwi_storeInit('last_nr_SpecSNR', cfg.nr_specSNR);
 
-	noise_filter.denoise = +kiwi_storeGet('last_nr_de', cfg.nr_de);
-	noise_filter.autonotch = +kiwi_storeGet('last_nr_an', cfg.nr_an);
-	noise_filter.algo = +kiwi_storeGet('last_nr_algo', cfg.nr_algo);
+	noise_filter.denoise = +kiwi_storeInit('last_nr_de', cfg.nr_de);
+	noise_filter.autonotch = +kiwi_storeInit('last_nr_an', cfg.nr_an);
+	noise_filter.algo = +kiwi_storeInit('last_nr_algo', cfg.nr_algo);
 	nr_algo_cb('nr_algo', noise_filter.algo, false, 'i');
 }
 
@@ -308,7 +308,7 @@ function nr_algo_cb(path, idx, first, from)
    idx = +idx;
    w3_select_value(path, idx, { all:1 });
    noise_filter.algo = idx;
-   kiwi_storeSet('last_nr_algo', idx.toString());
+   kiwi_storeWrite('last_nr_algo', idx.toString());
 
    // selecting wdsp or orig with no denoiser or autonotch active doesn't make sense,
    // so force denoiser to be selected
@@ -321,23 +321,27 @@ function nr_algo_cb(path, idx, first, from)
    noise_filter_send(noise_filter.NR_DENOISE);
    noise_filter_send(noise_filter.NR_AUTONOTCH);
    noise_filter_controls_refresh();
+   
+   // bring filter controls into view if menu is anything except "off"
+   if (idx > 0 && from == 'm')
+      noise_filter_view();
 }
 
 function noise_filter_cb(path, checked, first)
 {
    checked = checked? 1:0;
    console.log('noise_filter_cb '+ checked +' path='+ path);
-   setVarFromString(path, checked);
+   w3_num_cb(path, checked);
    w3_checkbox_set(path, checked);
 
    if (path.includes('denoise')) {
       noise_filter.denoise = checked;
       noise_filter_send(noise_filter.NR_DENOISE);
-      kiwi_storeSet('last_nr_de', noise_filter.denoise.toString());
+      kiwi_storeWrite('last_nr_de', noise_filter.denoise.toString());
    } else {
       noise_filter.autonotch = checked;
       noise_filter_send(noise_filter.NR_AUTONOTCH);
-      kiwi_storeSet('last_nr_an', noise_filter.autonotch.toString());
+      kiwi_storeWrite('last_nr_an', noise_filter.autonotch.toString());
    }
 }
 
@@ -356,7 +360,7 @@ function nf_wdsp_taps_cb(path, val, complete, first)
 	   //console.log(path +' val='+ val);
       snd_send('SET nr type='+ type +' param=0 pval='+ val);
 	   var prefix = 'last_nr_wdsp'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Taps', val.toString());
+      kiwi_storeWrite(prefix +'Taps', val.toString());
 	}
 }
 
@@ -372,7 +376,7 @@ function nf_wdsp_delay_cb(path, val, complete, first)
 	   //console.log(path +' val='+ val);
       snd_send('SET nr type='+ type +' param=1 pval='+ val);
 	   var prefix = 'last_nr_wdsp'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Delay', val.toString());
+      kiwi_storeWrite(prefix +'Delay', val.toString());
 	}
 }
 
@@ -387,7 +391,7 @@ function nf_wdsp_gain_cb(path, val, complete, first)
 	   console.log(path +' gain='+ gain);
       snd_send('SET nr type='+ type +' param=2 pval='+ gain);
 	   var prefix = 'last_nr_wdsp'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Gain', val.toString());
+      kiwi_storeWrite(prefix +'Gain', val.toString());
 	}
 }
 
@@ -402,7 +406,7 @@ function nf_wdsp_leakage_cb(path, val, complete, first)
 	   console.log(path +' leakage='+ leakage);
       snd_send('SET nr type='+ type +' param=3 pval='+ leakage);
 	   var prefix = 'last_nr_wdsp'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Leak', val.toString());
+      kiwi_storeWrite(prefix +'Leak', val.toString());
 	}
 }
 
@@ -417,7 +421,7 @@ function nf_spectral_gain_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +' dB='+ val);
       snd_send('SET nr type=0 param=0 pval='+ Math.pow(10, val/20));
-      kiwi_storeSet('last_nr_SpecGain', val.toString());
+      kiwi_storeWrite('last_nr_SpecGain', val.toString());
 	}
 }
 
@@ -429,7 +433,7 @@ function nf_spectral_alpha_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +'='+ val.toFixed(2));
       snd_send('SET nr type=0 param=1 pval='+ val.toFixed(2));
-      kiwi_storeSet('last_nr_SpecAlpha', val.toString());
+      kiwi_storeWrite('last_nr_SpecAlpha', val.toString());
 	}
 }
 
@@ -441,7 +445,7 @@ function nf_spectral_asnr_cb(path, val, complete, first)
 	if (complete) {
 	   console.log(path +' dB='+ val);
       snd_send('SET nr type=0 param=2 pval='+ Math.pow(10, val/10));
-      kiwi_storeSet('last_nr_SpecSNR', val.toString());
+      kiwi_storeWrite('last_nr_SpecSNR', val.toString());
 	}
 }
 
@@ -485,7 +489,7 @@ function noise_filter_delay_cb(path, val, complete, first)
 	   //console.log(path +' val='+ val);
       snd_send('SET nr type='+ type +' param=0 pval='+ val);
 	   var prefix = 'last_nr_orig'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Delay', val.toString());
+      kiwi_storeWrite(prefix +'Delay', val.toString());
 	}
 }
 
@@ -499,7 +503,7 @@ function noise_filter_beta_cb(path, val, complete, first)
 	   //console.log(path +' val='+ val);
       snd_send('SET nr type='+ type +' param=1 pval='+ val);
 	   var prefix = 'last_nr_orig'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Beta', val.toString());
+      kiwi_storeWrite(prefix +'Beta', val.toString());
 	}
 }
 
@@ -513,7 +517,7 @@ function noise_filter_decay_cb(path, val, complete, first)
 	   //console.log(path +' val='+ val);
       snd_send('SET nr type='+ type +' param=2 pval='+ val);
 	   var prefix = 'last_nr_orig'+ ['De','An'][type];
-      kiwi_storeSet(prefix +'Decay', val.toString());
+      kiwi_storeWrite(prefix +'Decay', val.toString());
 	}
 }
 

@@ -1707,9 +1707,9 @@ function drm_lpf_cbox_cb(path, checked, first)
 function drm_database_cb(path, idx, first)
 {
    if (first)
-      idx = readCookie('last_drm', 0);
+      idx = kiwi_storeRead('last_drm', 0);
    idx = +idx;
-   writeCookie('last_drm', idx);
+   kiwi_storeWrite('last_drm', idx);
    w3_select_value(path, idx);
    drm.database = idx;
    console.log('drm_database_cb database='+ drm.database +' '+ drm.database_url[drm.database]);

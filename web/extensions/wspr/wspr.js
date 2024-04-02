@@ -843,7 +843,7 @@ function wspr_draw_scale(cf)
 function wspr_set_upload_cb(path, checked)
 {
 	// remove old cookie use
-	deleteCookie('wspr_upload');
+	kiwi_storeDelete('wspr_upload');
 	
 	if (!wspr_config_okay || wspr.upload_lockout) checked = false;
 	wspr.upload = checked;

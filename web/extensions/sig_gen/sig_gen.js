@@ -144,7 +144,7 @@ function gen_controls_setup()
       });
    }
    
-   gen.attn_offset_val = +kiwi_storeGet('sig_gen_offset', 11.6);
+   gen.attn_offset_val = +kiwi_storeInit('sig_gen_offset', 11.6);
    
 	var controls_html =
 		w3_div('id-test-controls w3-text-white',
@@ -323,7 +323,7 @@ function gen_attn_val_cb(path, val, first)
 {
    gen.attn_offset_val = +val;
    gen_attn_cb('gen.attn_dB', gen.attn_dB, true);
-   kiwi_storeSet('sig_gen_offset', gen.attn_offset_val);
+   kiwi_storeWrite('sig_gen_offset', gen.attn_offset_val);
 }
 
 // hook that is called when controls panel is closed

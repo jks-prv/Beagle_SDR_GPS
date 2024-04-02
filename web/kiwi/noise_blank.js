@@ -1,4 +1,4 @@
-// Copyright (c) 2017 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 var noise_blank = {
    algo: 0,
@@ -81,7 +81,7 @@ function noise_blank_controls_refresh()
 				   w3_div('w3-text-aqua', '<b>Noise blanker</b>'),
                w3_select('w3-text-red||title="noise blanker selection"', '', 'blanker', 'nb_algo', noise_blank.algo, noise_blank.menu_s, 'nb_algo_cb', 'm'),
 				   w3_button('w3-padding-tiny w3-yellow', 'Defaults', 'noise_blank_load_defaults'),
-               w3_button('id-noise-blanker-help-btn w3-right w3-green w3-small w3-padding-small||onclick="noise_blank_help()"', 'help')
+               w3_button('id-noise-blanker-help-btn w3-right w3-green w3-small w3-padding-small', 'help', 'noise_blank_help')
 				),
             w3_div('w3-margin-LR-16', s)
 			)
@@ -121,16 +121,16 @@ function noise_blank_environment_changed(changed)
 function noise_blank_init()
 {
 	// NB_STD
-	noise_blank.gate = +kiwi_storeGet('last_noiseGate', cfg.nb_gate);
-	noise_blank.threshold = +kiwi_storeGet('last_noiseThresh', cfg.nb_thresh);
+	noise_blank.gate = +kiwi_storeInit('last_noiseGate', cfg.nb_gate);
+	noise_blank.threshold = +kiwi_storeInit('last_noiseThresh', cfg.nb_thresh);
 	
 	// NB_WILD
-	noise_blank.thresh = +kiwi_storeGet('last_noiseThresh2', cfg.nb_thresh2);
-	noise_blank.taps = +kiwi_storeGet('last_noiseTaps', cfg.nb_taps);
-	noise_blank.impulse_samples = +kiwi_storeGet('last_noiseSamps', cfg.nb_samps);
+	noise_blank.thresh = +kiwi_storeInit('last_noiseThresh2', cfg.nb_thresh2);
+	noise_blank.taps = +kiwi_storeInit('last_noiseTaps', cfg.nb_taps);
+	noise_blank.impulse_samples = +kiwi_storeInit('last_noiseSamps', cfg.nb_samps);
 	
-	noise_blank.wf = +kiwi_storeGet('last_nb_wf', cfg.nb_wf);
-	noise_blank.algo = +kiwi_storeGet('last_nb_algo', cfg.nb_algo);
+	noise_blank.wf = +kiwi_storeInit('last_nb_wf', cfg.nb_wf);
+	noise_blank.algo = +kiwi_storeInit('last_nb_algo', cfg.nb_algo);
 	nb_algo_cb('nb_algo', noise_blank.algo, false, 'i');
 }
 
@@ -199,9 +199,13 @@ function nb_algo_cb(path, idx, first, from)
    idx = +idx;
    w3_select_value(path, idx, { all:1 });
    noise_blank.algo = idx;
-   kiwi_storeSet('last_nb_algo', idx.toString());
+   kiwi_storeWrite('last_nb_algo', idx.toString());
    noise_blank_send();
    noise_blank_controls_refresh();
+   
+   // bring blanker controls into view if menu is anything except "off"
+   if (idx > 0 && from == 'm')
+      noise_blank_view();
 }
 
 function noise_blank_test_cb(path, idx, first)
@@ -231,7 +235,7 @@ function noise_blank_wf_cb(path, checked, first)
 {
    if (first) return;
    noise_blank.wf = checked? 1:0;
-   kiwi_storeSet('last_nb_wf', noise_blank.wf.toString());
+   kiwi_storeWrite('last_nb_wf', noise_blank.wf.toString());
    noise_blank_send();
 }
 
@@ -245,7 +249,7 @@ function noise_blank_gate_cb(path, val, complete, first)
 	w3_set_label('Gate: '+ val.toFixed(0) +' usec', path);
 
 	if (complete) {
-	   kiwi_storeSet('last_noiseGate', val.toString());
+	   kiwi_storeWrite('last_noiseGate', val.toString());
       if (!first) noise_blank_send();
 	}
 }
@@ -257,7 +261,7 @@ function noise_blank_threshold_cb(path, val, complete, first)
 	w3_set_label('Threshold: '+ val.toFixed(0) +'%', path);
 	
 	if (complete) {
-	   kiwi_storeSet('last_noiseThresh', val.toString());
+	   kiwi_storeWrite('last_noiseThresh', val.toString());
       if (!first) noise_blank_send();
 	}
 }
@@ -271,7 +275,7 @@ function noise_blank_thresh_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	w3_set_label('Threshold: '+ val.toFixed(2), path);
 	if (complete) {
-	   kiwi_storeSet('last_noiseThresh2', val.toString());
+	   kiwi_storeWrite('last_noiseThresh2', val.toString());
 	   if (!first) noise_blank_send();
 	}
 }
@@ -282,7 +286,7 @@ function noise_blank_taps_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	w3_set_label('Taps: '+ val.toFixed(0), path);
 	if (complete) {
-	   kiwi_storeSet('last_noiseTaps', val.toString());
+	   kiwi_storeWrite('last_noiseTaps', val.toString());
 	   if (!first) noise_blank_send();
 	}
 }
@@ -293,7 +297,7 @@ function noise_blank_impulse_samples_cb(path, val, complete, first)
 	w3_num_cb(path, val);
 	w3_set_label('Impulse samples: '+ val.toFixed(0), path);
 	if (complete) {
-	   kiwi_storeSet('last_noiseSamps', val.toString());
+	   kiwi_storeWrite('last_noiseSamps', val.toString());
 	   if (!first) noise_blank_send();
 	}
 }

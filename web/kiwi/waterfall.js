@@ -83,7 +83,8 @@ function waterfall_controls_setup()
                w3_select('id-wfext-tstamp '+ wfext.sfmt, '', '', 'wfext.tstamp_i', wfext.tstamp_i, wfext.tstamp_s, 'wfext_tstamp_cb'),
                w3_input('id-wfext-tstamp-custom w3-ext-retain-input-focus|padding:0;width:auto|size=4',
                   '', 'wfext.tstamp_f', wfext.tstamp_f, 'wfext_tstamp_custom_cb'),
-               w3_select(wfext.sfmt, '', '', 'wf.ts_tz', wf.ts_tz, wfext.tstamp_tz_s, 'w3_num_cb')
+               w3_select(wfext.sfmt, '', '', 'wf.ts_tz', wf.ts_tz, wfext.tstamp_tz_s, 'w3_num_cb'),
+				   w3_button('w3-padding-smaller w3-aqua', 'Save WF as JPG', 'export_waterfall'),
             )
          ),
          
@@ -111,15 +112,21 @@ function waterfall_controls_setup()
 
 function waterfall_init()
 {
-   var init_aper = +ext_get_cfg_param('init.aperture', -1, EXT_NO_SAVE);
-   var last_aper = readCookie('last_aper', (init_aper == -1)? 0 : init_aper);
-   if (isArg(wf_auto)) last_aper = wf_auto? 1:0;
-   console.log('waterfall_init: last_aper='+ last_aper +' init_aper='+ init_aper +' wfa='+ wf_auto +' url_tstamp='+ wf.url_tstamp);
-   wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
-   w3_show('id-aper-data');
+   //console.log('waterfall_init audioFFT_active='+ wf.audioFFT_active);
+   if (!wf.audioFFT_active) {
+      var init_aper = +ext_get_cfg_param('init.aperture', -1, EXT_NO_SAVE);
+      var last_aper = kiwi_storeRead('last_aper', (init_aper == -1)? 0 : init_aper);
+      if (isArg(wf_auto)) last_aper = wf_auto? 1:0;
+      //console.log('waterfall_init: last_aper='+ last_aper +' init_aper='+ init_aper +' wfa='+ wf_auto +' url_tstamp='+ wf.url_tstamp);
+      wf_aper_cb('wf.aper', last_aper, false);     // writes 'last_aper' cookie
+      w3_show('id-aper-data');
+   } else {
+      // force aperture manual for audio FFT mode
+      wf_aper_cb('wf.aper', false, false);
+   }
    
-   wfext.spb_on = +kiwi_storeGet('last_spb_on', wfext.spb_on);
-   wfext.spb_color = kiwi_storeGet('last_spb_color', wfext.spb_color);
+   wfext.spb_on = +kiwi_storeInit('last_spb_on', wfext.spb_on);
+   wfext.spb_color = kiwi_storeInit('last_spb_color', wfext.spb_color);
    
    // allow URL param to override
    if (wf_interp != -1) {
@@ -133,7 +140,7 @@ function waterfall_init()
 function waterfall_aper_algo_cb(path, idx, first)
 {
    if (first) {
-      idx = +readCookie('last_aper_algo', wfext.aper_algo_e.OFF);
+      idx = +kiwi_storeRead('last_aper_algo', wfext.aper_algo_e.OFF);
       w3_set_value(path, idx);
    } else {
       idx = +idx;
@@ -159,7 +166,7 @@ function waterfall_aper_algo_cb(path, idx, first)
       //console.log('waterfall_aper_algo_cb EXIT path='+ path +' menu='+ f_a +'('+ f_s +') param='+ wfext.aper_param);
    }
    
-	writeCookie('last_aper_algo', wfext.aper_algo.toString());
+	kiwi_storeWrite('last_aper_algo', wfext.aper_algo.toString());
    freqset_select();
 }
 
@@ -176,8 +183,8 @@ function waterfall_aper_param_cb(path, val, done, first)
    if (isUndefined(val) || isNaN(val)) {
       val = f_p[f_s +'_def'];
       //console.log('waterfall_aper_param_cb using default='+ val +'('+ typeof(val) +')');
-      var lsf = parseFloat(readCookie('last_aper_algo'));
-      var lsfp = parseFloat(readCookie('last_aper_param'));
+      var lsf = parseFloat(kiwi_storeRead('last_aper_algo'));
+      var lsfp = parseFloat(kiwi_storeRead('last_aper_param'));
       if (lsf == f_a && !isNaN(lsfp)) {
          //console.log('waterfall_aper_param_cb USING READ_COOKIE last_aper_param='+ lsfp);
          val = lsfp;
@@ -193,7 +200,7 @@ function waterfall_aper_param_cb(path, val, done, first)
 
    if (done) {
 	   //console.log('waterfall_aper_param_cb DONE WRITE_COOKIE last_aper_param='+ val.toFixed(2));
-	   writeCookie('last_aper_param', val.toFixed(2));
+	   kiwi_storeWrite('last_aper_param', val.toFixed(2));
       colormap_update();
       freqset_select();
    }
@@ -214,7 +221,7 @@ function wfext_spb_color_cb(path, val, first, cbp)
 {
    //console.log('wfext_spb_color_cb val='+ val +' cpb='+ cbp);
    w3_string_cb(path, val);
-   kiwi_storeSet('last_spb_color', val);
+   kiwi_storeWrite('last_spb_color', val);
    wfext.spb_color_seq++;
 }
 
@@ -222,7 +229,7 @@ function wfext_spb_on_cb(path, checked, first)
 {
    if (first) return;
    w3_bool_cb(path, checked, first);
-   kiwi_storeSet('last_spb_on', checked? 1:0);
+   kiwi_storeWrite('last_spb_on', checked? 1:0);
    wfext.spb_color_seq++;
 }
 

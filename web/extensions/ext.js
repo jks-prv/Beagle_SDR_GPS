@@ -76,9 +76,14 @@ function ext_send(msg, ws)
 	   ws.send(msg);
 		return 0;
 	} catch(ex) {
-		console.log("CATCH ext_send('"+s+"') ex="+ex);
+		console.log("CATCH ext_send('"+ msg +"') ex="+ex);
 		kiwi_trace();
 	}
+}
+
+function ext_send_new(msg, ws)
+{
+   ext_send(kiwi_stringify(msg), ws);
 }
 
 // Handle web socket fragmentation by sending in parts which can be reassembled on server side.
@@ -167,7 +172,8 @@ function ext_set_controls_width_height(width, height)
 }
 
 var EXT_SAVE = true;
-var EXT_NO_SAVE = false;   // set the local JSON cfg, but don't set on server which would require admin privileges.
+var EXT_NO_SAVE = false;      // set the local JSON cfg, but don't set on server which would require admin privileges.
+var EXT_SAVE_DEFER = false;   // defer one of multiple sequential saves
 
 // init_val => (cfg|adm).path if was null|undef AND init_val not undef
 //    if isAdmin: save cfg if save = undef|EXT_SAVE
@@ -197,7 +203,7 @@ function ext_get_cfg_param(path, init_val, save, update_path_var)
 		// save newly initialized value in configuration (if admin) unless EXT_NO_SAVE specified
 		//console.log('ext_get_cfg_param: SAVE cfg_path='+ cfg_path +' init_val='+ init_val +' save='+ save);
 		if ((save == undefined && isAdmin()) || save == EXT_SAVE)
-			cfg_save_json('ext_get_cfg_param', cfg_path);
+			cfg_save_json('ext_get_cfg_param', cfg_path, cur_val);
 	}
 	
 	if (update_path_var) {
@@ -216,7 +222,7 @@ function ext_get_cfg_param_string(path, init_val, save)
 {
    var s = ext_get_cfg_param(path, init_val, save);
    if (isNoArg(s)) s = '';
-	return kiwi_decodeURIComponent(ext_get_cfg_param_string +':'+ path, s);
+	return kiwi_decodeURIComponent('ext_get_cfg_param_string' +':'+ path, s);
 }
 
 function ext_set_cfg_param(path, val, save)
@@ -492,14 +498,14 @@ function ext_agc_delay(set_val)
 
 function ext_get_optbar()
 {
-   var optbar = readCookie('last_optbar');      // optbar-xxx
+   var optbar = kiwi_storeRead('last_optbar');      // optbar-xxx
    return optbar;
 }
 
 function ext_set_optbar(optbar, cb_param)
 {
    if (extint.optbars[optbar]) {
-      writeCookie('last_optbar', optbar);
+      kiwi_storeWrite('last_optbar', optbar);
       w3_click_nav('id-navbar-optbar', optbar, 'optbar', cb_param);
    }
 }
@@ -516,15 +522,15 @@ function ext_hasCredential(conn_type, cb, cb_param, ws)
 	var pwd;
 	if (conn_type == 'admin') {
 	   if (kiwi.admin_save_pwd) {
-         pwd = kiwi_storeGet(conn_type, '');
+         pwd = kiwi_storeInit('admin', '');
 	   } else {
 	      pwd = '';
-         kiwi_storeSet('admin', pwd);     // erase it if previously set
+         kiwi_storeDelete('admin');    // erase it if previously set
 	   }
-	   deleteCookie('admin');
-	   deleteCookie('admin-pwd');
+	   kiwi_storeDelete('admin');
+	   kiwi_storeDelete('admin-pwd');
 	} else {
-      pwd = readCookie(conn_type);
+      pwd = kiwi_storeRead(conn_type);
    }
    pwd = pwd? decodeURIComponent(pwd) : '';     // make non-null
 	//console.log('ext_hasCredential: LOAD PWD '+ conn_type +'="'+ pwd +'" admin_save_pwd='+ kiwi.admin_save_pwd);
@@ -548,10 +554,10 @@ function ext_valpwd(conn_type, pwd, ws)
 	// SND negotiation, but then needs to be available for the subsequent W/F connection
 	if (conn_type == 'admin') {
 	   if (kiwi.admin_save_pwd) {
-	      kiwi_storeSet('admin', pwd);
+	      kiwi_storeWrite('admin', pwd);
 	   }
 	} else {
-	   writeCookie(conn_type, pwd);
+	   kiwi_storeWrite(conn_type, pwd);
 	}
 	
 	//console.log('ext_valpwd: SAVE PWD '+ conn_type +'="'+ pwd +'" admin_save_pwd='+ kiwi.admin_save_pwd);
@@ -561,11 +567,13 @@ function ext_valpwd(conn_type, pwd, ws)
 	pwd = (pwd != '')? pwd : '#';
 	
 	var ipl = null;
-	var iplimit_cookie = readCookie('iplimit');
+	var iplimit_cookie = kiwi_storeRead('iplimit');
    var iplimit_pwd = kiwi_url_param(['pwd', 'password'], '', '');
 
 	if (iplimit_pwd != '') {   // URL param overrides cookie
 	   ipl = iplimit_pwd;
+      // also saved when successfully entered in response to timeout password panel, see kiwi_ip_limit_pwd_cb()
+	   kiwi_storeWrite('iplimit', encodeURIComponent(ipl));
 	} else
 	if (iplimit_cookie && iplimit_cookie != '') {
 	   ipl = iplimit_cookie;
@@ -1140,27 +1148,24 @@ function extint_select(value)
    
    // handle former extensions now contained in main control panel
    if (name == 'ant_switch') {
+      ant_switch_focus();
       ant_switch_view();
-   } else
-   if (name == 'waterfall') {
-      waterfall_view();
-   } else
-   if (name == 'noise_blank') {
-      noise_blank_view();
-   } else
-   if (name == 'noise_filter') {
-      noise_filter_view();
    } else {
-      extint_blur_prev(0);
-      w3_call(extint.hide_func);
-      extint.current_ext_name = extint.ext_names[idx];
-
-      if (extint.first_ext_load) {
-         extint_connect_server();
-         extint.first_ext_load = false;
+      ant_switch_blur();
+      if (['waterfall', 'noise_blank', 'noise_filter'].includes(name)) {
+         w3_call(name +'_view');
       } else {
-         //extint_focus();
-         ext_send('SET ext_is_locked_status');     // request is_locked status
+         extint_blur_prev(0);
+         w3_call(extint.hide_func);
+         extint.current_ext_name = extint.ext_names[idx];
+
+         if (extint.first_ext_load) {
+            extint_connect_server();
+            extint.first_ext_load = false;
+         } else {
+            //extint_focus();
+            ext_send('SET ext_is_locked_status');     // request is_locked status
+         }
       }
    }
 }

@@ -1,6 +1,6 @@
 // KiwiSDR utilities
 //
-// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 
 // isUndeclared(v) => use inline "typeof(v) === 'undefined'" (i.e. can't pass undeclared v as func arg)
@@ -124,6 +124,8 @@ document.onreadystatechange = function() {
 
       // packages to load early on
       if (!website) {
+         migrateCookies();
+         
          kiwi_load_js_dir('pkgs/js/', ['sprintf/sprintf.js', 'SHA256.js', 'coloris/coloris.js'],
             function() {
                //console.log(sprintf('%s', 'sprintf loaded'));
@@ -301,6 +303,27 @@ function kiwi_dedup_array(a, func)
    return ra;
 }
 
+function kiwi_array_iter(s, func)
+{
+   var ra = [];
+   s.split('').forEach(
+      function(c,i) {
+         ra[i] = func(c,i);
+      }
+   );
+   return ra;
+}
+
+function kiwi_string_to_hex(s, sep)
+{
+   var sa = kiwi_array_iter(s,
+      function (c,i) {
+         return c.charCodeAt(0).toHex(-2);
+      }
+   );
+   return sa.join(sep || '');
+}
+
 function kiwi_shallow_copy(obj)
 {
    return Object.assign({}, obj);
@@ -355,7 +378,7 @@ function removeEnding(str, ending)
       return str;
 }
 
-function kiwi_inet4_d2h(inet4_str, exclude_local)
+function kiwi_inet4_d2h(inet4_str, opt)
 {
 	var s = inet4_str.split('.');
 	//console.log(s);
@@ -372,7 +395,7 @@ function kiwi_inet4_d2h(inet4_str, exclude_local)
 	if ((d = check(s[3])) == null) return null;
 	var ip = (a<<24) | (b<<16) | (c<<8) | d;
 	
-	if (exclude_local) {
+	if (opt && opt['no_local_ip']) {
 	   //console.log('CHECK '+ kiwi_ip_str(ip));
 	   if (
          (ip >= kiwi_ip_10_lo && ip <= kiwi_ip_10_hi) ||
@@ -1112,6 +1135,11 @@ function kiwi_str_decode_selective_inplace(src, fewer_encoded)
    return dst;
 }
 
+function kiwi_stringify(o)
+{
+   return JSON.stringify(o);
+}
+
 function kiwi_JSON(json, pretty)
 {
    return JSON.stringify(json, null, pretty? 3:undefined);
@@ -1399,18 +1427,136 @@ function hsl(h, s, l)
 	return 'hsl('+ Math.round(h) +','+ s +'%,'+ l +'%)';
 }
 
+
+////////////////////////////////
+// storage (browser)
+////////////////////////////////
+
+// NB: appinventor.mit.edu used by KiwiSDR Android app doesn't have localStorage
+
+function kiwi_storeRead(k, def)
+{
+   var rv;
+   if (isNoArg(k)) return null;
+
+   if (localStorage == null) {
+      return readCookie(v, def);
+   }
+
+	try {
+      // requires that rv == null means item not in storage
+      // not that the value stored is null
+	   rv = localStorage.getItem(k);
+	   if (rv == null && isArg(def))
+	      rv = def;
+	} catch(ex) {
+      console.log('$>kiwi_storeRead CATCH: '+ k);
+      console.log('$>kiwi_storeRead CATCH: '+ ex);
+	   rv = null;
+	}
+
+	return rv;
+}
+
+function kiwi_storeInit(k, init)
+{
+   var rv;
+   if (isNoArg(k)) return null;
+
+   if (localStorage == null) {
+      return initCookie(v, init);
+   }
+
+	try {
+	   rv = localStorage.getItem(k);
+	   if (rv == null) {
+	      if (!isArg(init)) init = '';  // don't allow stored values of null or undefined
+	      kiwi_storeWrite(k, init);     // how it differs from kiwi_storeRead()
+	      rv = init;
+	   }
+	} catch(ex) {
+      console.log('$>kiwi_storeInit CATCH: '+ k);
+      console.log('$>kiwi_storeInit CATCH: '+ ex);
+	   rv = null;
+	}
+	
+	return rv;
+}
+
+function kiwi_storeWrite(k, v)
+{
+   if (isNoArg(k)) return null;
+
+   if (localStorage == null) {
+      return writeCookie(k, v);
+   }
+	   
+	try {
+      if (!isArg(v)) v = '';     // don't allow stored values of null or undefined
+	   localStorage.setItem(k, v);
+	} catch(ex) {
+      console.log('$>kiwi_storeWrite CATCH: '+ k);
+      console.log('$>kiwi_storeWrite CATCH: '+ ex);
+	   return null;
+	}
+	
+	return true;
+}
+
+function kiwi_storeDelete(k)
+{
+   if (isNoArg(k)) return null;
+   
+   if (localStorage == null) {
+      return deleteCookie(k);
+   }
+	   
+	try {
+	   localStorage.removeItem(k);
+	} catch(ex) {
+	   return null;
+	}
+	
+	return true;
+}
+
+function migrateCookies() {
+   if (!isArg(document.cookie)) return;
+	var ca = document.cookie.split(';');
+	var len = ca.length;
+	if (len == 0 || (len == 1 && ca[0] == '')) return;
+	for (var i = 0; i < len; i++) {
+		var c = ca[i].trim();
+		var a = c.split('=');
+		var k = a[0];
+		var v = a[1];
+		console.log('$>migrateCookies k='+ k +' v='+ sq(v) +' '+ typeof(v));
+		var rv = kiwi_storeRead(k);
+		if (isArg(rv)) {
+		   console.log('$>migrateCookies WARNING key already exists in new storage? k='+ k +' v='+ sq(rv));
+		} else {
+		   kiwi_storeWrite(k, v);
+		}
+		deleteCookie(k);
+	}
+   console.log('$>migrateCookies #'+ len);
+}
+
 // from http://www.quirksmode.org/js/cookies.html
-function createCookie(name, value, days) {
+function _createCookie(name, value, days) {
 	var expires = "";
 	if (days) {
 		var date = new Date();
 		date.setTime(date.getTime() + (days*24*60*60*1000));
 		expires = "; expires="+ date.toGMTString();
 	}
-	//console.log('createCookie <'+ name +"="+ value + expires +"; path=/" +'>');
+	//console.log('_createCookie <'+ name +"="+ value + expires +"; path=/" +'>');
 	document.cookie = name +"="+ value + expires +"; path=/; SameSite=Lax;";
 }
 
+// returns:
+// cookie exists: cookie value
+// cookie doesn't exist: default value else null (if no default specified)
 function readCookie(name, defaultValue) {
 	var nameEQ = name + "=";
 	var ca = document.cookie.split(';');
@@ -1420,7 +1566,7 @@ function readCookie(name, defaultValue) {
 		//console.log('readCookie '+ name +' consider <'+ c +'>');
 		if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
 	}
-	if (isDefined(defaultValue)) {
+	if (isArg(defaultValue)) {
 	   return defaultValue;
 	} else {
 	   return null;
@@ -1429,9 +1575,13 @@ function readCookie(name, defaultValue) {
 
 function writeCookie(cookie, value)
 {
-	createCookie(cookie, value, 42*365);
+	_createCookie(cookie, value, 42*365);
 }
 
+// returns:
+// 
+// cookie doesn't exist: write initValue; return initValue
+// else return cookie value
 function initCookie(cookie, initValue)
 {
 	var v = readCookie(cookie);
@@ -1443,6 +1593,10 @@ function initCookie(cookie, initValue)
 	}
 }
 
+// returns:
+// cookie doesn't exist OR != initValue: write cookie with initValue; return true
+// else return false
+/*
 function updateCookie(cookie, initValue)
 {
 	var v = readCookie(cookie);
@@ -1453,58 +1607,19 @@ function updateCookie(cookie, initValue)
 		return false;
 	}
 }
+*/
 
 function deleteCookie(cookie)
 {
 	var v = readCookie(cookie);
 	if (v == null) return;
-	createCookie(cookie, 0, -1);
+	_createCookie(cookie, 0, -1);
 }
 
-// appinventor.mit.edu used by KiwiSDR Android app doesn't have localStorage
-function kiwi_storeGet(s, init)
-{
-   var rv;
-   if (isNoArg(s)) return null;
-	try {
-	   if (localStorage == null) return null;
-	   rv = localStorage.getItem(s);
-	   if (rv == null) {
-	      rv = readCookie(s);
-	      // move cookie to storage api
-	      if (rv != null) {
-	         console.log('$moving to storage api: '+ s +'='+ rv);
-	         kiwi_storeSet(s, rv);
-	         deleteCookie(s);
-	      } else {
-	         if (isDefined(init)) {
-	            kiwi_storeSet(s, init);
-               rv = init;
-	         } else {
-	            rv = null;
-	         }
-	      }
-	   }
-	} catch(ex) {
-      console.log('$kiwi_storeGet CATCH: '+ s);
-      console.log('$kiwi_storeGet CATCH: '+ ex);
-	   rv = null;
-	}
-	if (rv == null) console.log('$ kiwi_storeGet warning: '+ s +'=null');
-	return rv;
-}
 
-function kiwi_storeSet(s, v)
-{
-   if (isNoArg(v)) return null;
-	try {
-	   if (localStorage == null) return null;
-	   localStorage.setItem(s, v);
-	} catch(ex) {
-	   return null;
-	}
-	return true;
-}
+////////////////////////////////
+// var get/set from string
+////////////////////////////////
 
 // Get function from string, with or without scopes (by Nicolas Gauthier)
 // stackoverflow.com/questions/912596/how-to-turn-a-string-into-a-javascript-function-call
