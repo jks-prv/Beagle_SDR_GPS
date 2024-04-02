@@ -223,6 +223,7 @@ x2
 .cl-admin-check
 {
 	padding: 0px 10px;
+	text-decoration: none;
 }
 
 /* override the w3-sidenav select/hover styles */

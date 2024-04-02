@@ -356,10 +356,10 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
                 if (i == 0 && buf[0] == '\r') leading_nl = "\r";
                 //real_printf("%d leading_nl='%s' <%s%s> delim='%s'\n", i, ASCII[buf[0]], leading_nl, lines[i].str, ASCII[lines[i].delim]);
                 if (i == n-1 && lines[i].str[0] != '\0' && lines[i].delim == '\0') {
-                    asprintf(&holdover, "%s", lines[i].str);
+                    holdover = strdup(lines[i].str);
                     //real_printf("(holdover)\n");
                 } else {
-                    send_msg_encoded(c, "MSG", "status_msg_text", "%s%s%s%c",
+                    send_msg_encoded(c, "MSG", "output_msg", "%s%s%s%c",
                         (i == 0 && (type & PRINTF_FF))? "\f" : holdover, leading_nl, lines[i].str, lines[i].delim);
                     if (holdover[0] != '\0') {
                         free(holdover);

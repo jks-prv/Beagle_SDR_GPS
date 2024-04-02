@@ -93,6 +93,7 @@ function digi_recv(data)
 function digi_output_chars(c)
 {
    c = kiwi_decodeURIComponent('digi', c);    // NB: already encoded on C-side
+   //console.log('digi_output_chars <'+ c +'>');
    //digi.log_txt += kiwi_remove_escape_sequences(c);
 
    var a = c.split('');

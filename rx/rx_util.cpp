@@ -536,7 +536,11 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         }
         cfg->seq = seq;     // lock to new seq
         cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
-        
+         
+        // The following comment is no longer true for cfg string params since they are now JSON.stringify() based.
+        // This is because the first encoding mentioned is not performed since the JSON.stringify() handles all escaping properly.
+        // Doing the double decodeURI below causes no harm in that case.
+
         // For cfg strings double URI encoding is effectively used since they are stored encoded and
         // another encoding is done for transmission.
         // So decode the transmission encoding with kiwi_str_decode_inplace()
@@ -572,7 +576,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         // NB: cfg->json = NULL here is extremely important
         kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
         update_vars_from_config();      // update C copies of vars
-        if (dbug) clprintf(conn, "save_config: %s COMMIT conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
+        if (dbug) clprintf(conn, "save_config: %s " RED "COMMIT" NORM " conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
         return true;
     }
 
@@ -612,10 +616,16 @@ void dump()
 	
 	lprintf("\n");
 	lprintf("dump --------\n");
+	lprintf("rf_attn_dB=%.1f\n", kiwi.rf_attn_dB);
+	lprintf("\n");
+	
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn-%2s %p\n", i, rx->chan_enabled, rx->busy,
-			rx->conn? stprintf("%02d", rx->conn->self_idx) : "", rx->conn? rx->conn : 0);
+		lprintf("RX%d en%d busy%d conn-%2s %2.0f %2.0f %p\n", i, rx->chan_enabled, rx->busy,
+			rx->conn? stprintf("%02d", rx->conn->self_idx) : "",
+			//toUnits(audio_bytes[i], 0), toUnits(waterfall_bytes[i], 1),   // %6s
+			audio_kbps[i], waterfall_kbps[i],
+			rx->conn? rx->conn : 0);
 	}
 
 	conn_t *cd;

@@ -665,7 +665,7 @@ fail:
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
 			"name=%s\n"
-			"sdr_hw=KiwiSDR %d, v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
+			"sdr_hw=KiwiSDR %d v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\n"
 			"bands=%.0f-%.0f\nfreq_offset=%.3f\n"
 			"users=%d\nusers_max=%d\npreempt=%d\n"

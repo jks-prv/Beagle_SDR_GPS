@@ -555,6 +555,11 @@ input[type=range]::-moz-range-thumb {
     margin-right: 16px
 }
 
+.w3-margin-R-24
+{
+    margin-right: 24px
+}
+
 .w3-margin-T-2
 {
     margin-top: 2px
@@ -709,6 +714,7 @@ input[type=range]::-moz-range-thumb {
         w3-padding-large    12px 24px
         w3-padding-medium   8px 16px    (w3-padding)
         w3-padding-small    4px 8px
+        w3-padding-smaller  3px 6px
         w3-padding-tiny     2px 4px
         w3-padding-{4,8,12,16,24,32,48,64,128, top,bottom,left,right}
 */
@@ -1174,6 +1180,11 @@ input[type=range]::-moz-range-thumb {
 	white-space: nowrap;
 }
 
+.w3-normal
+{
+	font-weight: normal;
+}
+
 .w3-bold
 {
 	font-weight: bold;
@@ -1421,4 +1432,8 @@ input[type=range]::-moz-range-thumb {
 
 .w3-underline {
     text-decoration-line: underline;
+}
+
+.w3-text-decor-none {
+    text-decoration: none;
 }
