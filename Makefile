@@ -742,7 +742,7 @@ $(FILE_OPTIM): $(FILE_OPTIM_SRC)
 #EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(wildcard extensions/*/Makefile) $(FILE_OPTIM)
 EDATA_DEP = web/kiwi/Makefile web/openwebrx/Makefile web/pkgs/Makefile web/extensions/Makefile $(FILE_OPTIM)
 
-.PHONY: foptim_gen foptim_list foptim_clean clean_min clean_gz
+.PHONY: foptim_gen foptim_list
 
 # NEVER let target Kiwis contact external optimization site via foptim_gen.
 # If customers are developing they need to do a "make install" on a development machine
@@ -766,15 +766,19 @@ endif
 
 foptim_list: loptim_embed loptim_ext loptim_maps
 
-CLEAN_MIN_GZ_2 = $(wildcard $(CLEAN_MIN_GZ))
-ifeq ($(CLEAN_MIN_GZ_2),)
-foptim_clean clean_min clean_gz: $(TOOLS_DIR) roptim_embed roptim_ext roptim_maps
-	@echo "nothing to clean"
-else
-foptim_clean clean_min clean_gz: $(TOOLS_DIR) roptim_embed roptim_ext roptim_maps
-	@echo "removing:"
-	@-ls -la $(CLEAN_MIN_GZ_2)
-	@-rm $(CLEAN_MIN_GZ_2)
+ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
+    CLEAN_MIN_GZ_2 = $(wildcard $(CLEAN_MIN_GZ))
+.PHONY: foptim_clean clean_min clean_gz
+    
+    ifeq ($(CLEAN_MIN_GZ_2),)
+        foptim_clean clean_min clean_gz: $(TOOLS_DIR) roptim_embed roptim_ext roptim_maps
+	        @echo "nothing to clean"
+    else
+        foptim_clean clean_min clean_gz: $(TOOLS_DIR) roptim_embed roptim_ext roptim_maps
+	        @echo "removing:"
+	        @-ls -la $(CLEAN_MIN_GZ_2)
+	        @-rm $(CLEAN_MIN_GZ_2)
+    endif
 endif
 
 FILES_EMBED_SORTED_NW = $(sort $(EMBED_NW) $(EXT_EMBED_NW) $(PKGS_MAPS_EMBED_NW))
