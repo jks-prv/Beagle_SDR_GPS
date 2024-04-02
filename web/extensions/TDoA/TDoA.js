@@ -1440,7 +1440,7 @@ function tdoa_get_hosts_cb(hosts)
 
    // now that we have all Kiwi host and ref markers we can process extension parameters
 	var lat, lon, zoom, maptype, init_submit;
-   console.log(tdoa.params);
+   if (isArg(tdoa.params)) console.log(tdoa.params);
    if (tdoa.params) {
       var p = tdoa.params.split(',');
       tdoa.params = null;  // if extension is reloaded don't reprocess params
@@ -3155,9 +3155,9 @@ function tdoa_waterfall_close()
       //console.log('TDoA aper RESTORE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
       
       // restore for both cases: returning to auto or man aperture mode
-      wf.save_maxdb = maxdb = tdoa.maxdb_save;
-      wf.save_mindb_un = mindb_un = tdoa.mindb_un_save;
-      wf_aper_cb('wf.aper', tdoa.aper_save);
+      if (isArg(tdoa.maxdb_save)) wf.save_maxdb = maxdb = tdoa.maxdb_save;
+      if (isArg(tdoa.mindb_un_save)) wf.save_mindb_un = mindb_un = tdoa.mindb_un_save;
+      if (isArg(tdoa.aper_save)) wf_aper_cb('wf.aper', tdoa.aper_save);
 
       if (!tdoa.wf_conn_bad) {
          w3_clearInnerHTML('id-tdoa-submit-status');
