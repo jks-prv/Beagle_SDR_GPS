@@ -1376,7 +1376,7 @@ static bool _cfg_parse_json(cfg_t *cfg, u4_t flags)
 
 		jsmn_init(&parser);
 		if (cfg == &cfg_cfg) {
-		    printf("_cfg_parse_json cfg_cfg\n");
+		    cfg_printf("_cfg_parse_json cfg_cfg\n");
 		}
 		if ((rc = jsmn_parse(&parser, cfg->json, slen, cfg->tokens, cfg->tok_size, yield)) >= 0)
 			break;

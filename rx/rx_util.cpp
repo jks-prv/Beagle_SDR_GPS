@@ -429,6 +429,14 @@ typedef struct {
 
 static save_cfg_t save_cfg = { "cfg" }, save_dxcfg = { "dxcfg" }, save_adm = { "adm" };
 
+//#define SAVE_DBG
+#ifdef SAVE_DBG
+	#define save_prf(conn, fmt, ...) \
+	    clprintf(conn, fmt,  ## __VA_ARGS__);
+#else
+	#define save_prf(conn, fmt, ...)
+#endif
+
 bool save_config(u2_t key, conn_t *conn, char *cmd)
 {
     int n, seq;
@@ -464,7 +472,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         cfg->remote_port != conn->remote_port || cfg->tstamp != conn->tstamp) {
         // persists: init, frag_prefix_s, end_prefix_s
         cfg->seq = 0;
-        if (dbug) clprintf(conn, "save_config: %s RESET cfg|conn %d|%d %p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx json %d|%d<%s>\n",
+        save_prf(conn, "save_config: %s RESET cfg|conn %d|%d %p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx json %d|%d<%s>\n",
             cfg->name, cfg->conn? cfg->conn->self_idx : -1, conn? conn->self_idx : -1, cfg->conn, conn,
             cfg->remote_ip, conn->remote_ip, cfg->remote_port, conn->remote_port, cfg->tstamp, conn->tstamp,
             cfg->json_slen, kstr_len(cfg->json), kstr_sp(cfg->json));
@@ -496,15 +504,15 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             printf("save_config: BAD DECODE n=%d \"%.32s\"\n", n, cmd);
             return true;
         }
-        if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
+        save_prf(conn, "save_config: %s FRAG conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
         if (seq < cfg->seq) {
             kiwi_asfree(sb);
-            if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s FRAG conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
             return true;
         }
         if (cfg->json != NULL && seq > cfg->seq) {
             kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
-            if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s FRAG conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
         }
         cfg->seq = seq;     // lock to new seq
         cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
@@ -522,17 +530,17 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             printf("save_config: BAD DECODE n=%d \"%.32s\"\n", n, cmd);
             return true;
         }
-        if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
+        save_prf(conn, "save_config: %s END conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
         if (seq < cfg->seq) {
             kiwi_asfree(sb);
-            if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s END conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
             return true;
         }
         
         // this should only happen in the case of seq N being fragmented, but seq N+1 having no fragments (due to reduced size presumably)
         if (cfg->json != NULL && seq > cfg->seq) {
             kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
-            if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s END conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
         }
         cfg->seq = seq;     // lock to new seq
         cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
@@ -576,7 +584,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         // NB: cfg->json = NULL here is extremely important
         kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
         update_vars_from_config();      // update C copies of vars
-        if (dbug) clprintf(conn, "save_config: %s " RED "COMMIT" NORM " conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
+        save_prf(conn, "save_config: %s " RED "COMMIT" NORM " conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
         return true;
     }
 
