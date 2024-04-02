@@ -3,6 +3,9 @@ VERSION_MIN = 665
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
+# use new binary distro mechanism
+#BINARY_DISTRO := true
+
 #
 # Makefile for KiwiSDR project
 #
@@ -82,15 +85,17 @@ KIWI_XC_REMOTE_FS ?= $(HOME)/mnt
 KIWI_XC_HOST ?= kiwisdr
 KIWI_XC_HOST_PORT ?= 22
 
-
 ################################
 # "all" target must be first
 ################################
 .PHONY: all
 all: check_detect make_prereq
 	@make $(MAKE_ARGS) build_makefile_inc
-#	@make $(MAKE_ARGS) make_binary
-	@make $(MAKE_ARGS) make_all
+    ifeq ($(BINARY_DISTRO),true)
+	    @make $(MAKE_ARGS) make_binary
+    else
+	    @make $(MAKE_ARGS) make_all
+    endif
 
 .PHONY: skip
 skip: skip_cert_check check_detect make_prereq
@@ -280,6 +285,7 @@ else
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
 	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff /usr/bin/file
+	CMD_DEPS += /usr/sbin/ipset
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -433,6 +439,9 @@ skip_cert_check:
 /usr/bin/file:
 	-apt-get -y $(APT_GET_FORCE) install file
 
+/usr/sbin/ipset:
+	-apt-get -y $(APT_GET_FORCE) install ipset
+
 ifeq ($(DEBIAN_VERSION),10)
     /usr/bin/connmanctl:
 	    -apt-get -y $(APT_GET_FORCE) install connman
@@ -504,8 +513,8 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
-PLAT_KIWI_BIN := kiwi_$(VER)_$(PLAT).bin
-HAS_KIWI_BIN := $(shell test -x bin/$(PLAT_KIWI_BIN) && echo true)
+PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(PLAT).bin
+HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
 .PHONY: make_binary
 make_binary:
@@ -513,19 +522,21 @@ make_binary:
 	    @make make_all
     else
         ifeq ($(BINARY_INSTALL),true)
-	        @echo "----------------"
+	        @echo "================"
 	        @echo "make_binary: $(PLAT_KIWI_BIN)"
             ifeq ($(HAS_KIWI_BIN),true)
 	            @echo "   => exists: not compiling from sources"
-	            @echo "   => cp bin/$(PLAT_KIWI_BIN) $(BUILD_DIR)/kiwi.bin"
-	            @cp bin/$(PLAT_KIWI_BIN) $(BUILD_DIR)/kiwi.bin
-	            @echo "----------------"
+	            @echo "   => cp $(PLAT_KIWI_BIN) $(BUILD_DIR)/kiwi.bin"
+	            @cp $(PLAT_KIWI_BIN) $(BUILD_DIR)/kiwi.bin
+	            @echo "================"
             else
 	            @echo "   => doesn't exist: compiling from sources"
-	            @echo "----------------"
+	            @echo "================"
 	            @make $(MAKE_ARGS) make_all
-	            @echo "   => cp $(BUILD_DIR)/kiwi.bin bin/$(PLAT_KIWI_BIN)"
-	            @cp $(BUILD_DIR)/kiwi.bin bin/$(PLAT_KIWI_BIN)
+	            @echo "================"
+	            @echo "   => cp $(BUILD_DIR)/kiwi.bin $(PLAT_KIWI_BIN)"
+	            @echo "================"
+	            @cp $(BUILD_DIR)/kiwi.bin $(PLAT_KIWI_BIN)
             endif
         else
 	        @make $(MAKE_ARGS) make_all
@@ -535,8 +546,10 @@ make_binary:
 
 .PHONY: force
 force: make_prereq
-	rm -f bin/$(PLAT_KIWI_BIN) bin/$(PLAT_KIWID_BIN)
+	rm -f $(PLAT_KIWI_BIN) $(PLAT_KIWID_BIN)
 	@make $(MAKE_ARGS) build_makefile_inc
+	@echo "================"
+	@echo "make force"
 	@make $(MAKE_ARGS) make_binary
 
 
@@ -798,7 +811,10 @@ make_vars: check_detect
 	@echo PROJECT = $(PROJECT)
 	@echo ARCH = $(ARCH)
 	@echo CPU = $(CPU)
+	@echo PLAT = $(PLAT)
 	@echo PLATFORMS = $(PLATFORMS)
+	@echo PLATS_BIN_RELEASE = $(PLATS_BIN_RELEASE)
+	@echo PLAT_BACKUP = $(PLAT_BACKUP)
 	@echo
 	@echo REPO_USER = $(REPO_USER)
 	@echo REPO_GIT = $(REPO_GIT)
@@ -1208,9 +1224,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 #	            @cp -v $(DTS_DEP_SRC2) $(DIR_DTB2)
 	            (cd $(DIR_DTB_BASE); make)
 	            (cd $(DIR_DTB_BASE); make install_arm64)
-                ifeq ($(EXISTS_EXTLINUX),true)
-	                -sed -i -e 's:#fdtoverlays /overlays/<file>.dtbo:fdtoverlays /overlays/BONE-SPI0_0.dtbo:' $(EXTLINUX)
-                endif
+	            # including this breaks /dev/spidev9 since D11.9 / r113?
+                #ifeq ($(EXISTS_EXTLINUX),true)
+	            #   -sed -i -e 's:#fdtoverlays /overlays/<file>.dtbo:fdtoverlays /overlays/BONE-SPI0_0.dtbo:' $(EXTLINUX)
+                #endif
             else
 	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
 	            (cd $(DIR_DTB_BASE); make all)
@@ -1348,8 +1365,11 @@ endif
 .PHONY: install
 install: make_prereq
 	@# don't use MAKE_ARGS here!
-#	make make_install_binary
-	make make_install
+    ifeq ($(BINARY_DISTRO),true)
+	    make make_install_binary
+    else
+	    make make_install
+    endif
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
@@ -1379,8 +1399,8 @@ else
 endif
 endif
 
-PLAT_KIWID_BIN := kiwid_$(VER)_$(PLAT).bin
-HAS_KIWID_BIN := $(shell test -x bin/$(PLAT_KIWID_BIN) && echo true)
+PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(PLAT).bin
+HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 
 .PHONY: make_install_binary
 make_install_binary:
@@ -1388,22 +1408,24 @@ make_install_binary:
 	    @make make_install
     else
         ifeq ($(BINARY_INSTALL),true)
-	        @echo "----------------"
+	        @echo "================"
 	        @echo "make_install_binary: $(PLAT_KIWID_BIN)"
             ifeq ($(HAS_KIWID_BIN),true)
 	            @echo "   => exists: not installing from sources"
-	            @echo "   => cp bin/$(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin"
-	            @cp bin/$(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin
+	            @echo "   => cp $(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin"
+	            @cp $(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin
 	            touch $(BUILD_DIR)/kiwid.bin
-	            @echo "----------------"
+	            @echo "================"
 	            @make make_install
             else
 	            @echo "   => doesn't exist: installing from sources"
-	            @echo "----------------"
+	            @echo "================"
 	            @# don't use MAKE_ARGS here!
 	            @make make_install
-	            @echo "   => cp $(BUILD_DIR)/kiwid.bin bin/$(PLAT_KIWID_BIN)"
-	            @cp $(BUILD_DIR)/kiwid.bin bin/$(PLAT_KIWID_BIN)
+	            @echo "================"
+	            @echo "   => cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)"
+	            @echo "================"
+	            @cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)
             endif
         else
 	        @make make_install
@@ -1416,7 +1438,7 @@ make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
     ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	    @echo
 	    @echo "############################################"
-	    @echo "# DANGER: CHECK FOR MINIMIZATION FAILURE"
+	    @echo "# CHECK FOR MINIMIZATION FAILURE"
 	    @echo "# kiwi_js_load.min.js and xd-utils.min.js are okay to be in this list"
 	    find . -name "*.min.js" -size -1k -ls
 #	    @echo "# DANGER: REMOVING FILES ###############################################################"
@@ -1867,16 +1889,25 @@ clone:
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
+BIN_PLATS := BBAI_64 BBAI BBG_BBB
+BIN_EXISTS := $(foreach plat,$(BIN_PLATS),$(shell test -f bin/kiwi_$(VER)_$(plat).bin && echo true || echo false))
+
     # used by scgit alias
     copy_to_git:
 	    @(echo 'current dir is:'; pwd)
-	    @echo
 	    @(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
+        ifeq ($(BINARY_DISTRO),true)
+	        @echo "checking for release bin files: $(BIN_PLATS)"
+            ifeq ($(findstring false,$(BIN_EXISTS)),false)
+	            @echo "ERROR release file missing:"
+	            @ls -la bin
+	            @exit -1;
+            endif
+        endif
 	    @echo '################################'
-#	    @echo 'DANGER: #define MINIFY_WEBSITE_DOWN'
-#	    @echo '################################'
 	    @echo -n 'did you make install to rebuild the optimized files? '
 	    @read not_used
+	    @echo '################################'
 	    make clean_dist
 	    rsync -av --delete --exclude .git --exclude .DS_Store . $(GITAPP)/$(REPO_NAME)
 
@@ -1885,6 +1916,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	    @echo
 	    @(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
 	    @echo -n 'are you sure? '
+	    @read not_used
+	    @echo -n 'are you REALLY sure? '
 	    @read not_used
 	    make clean_dist
 	    rsync -av --delete --exclude .git --exclude .DS_Store $(GITAPP)/$(REPO_NAME)/. .
@@ -1910,9 +1943,10 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     prep_distro: clean_logs
 	    -systemctl --full --lines=250 stop kiwid.service || true
 	    -systemctl --full --lines=250 enable kiwid.service || true
-	    (cd $(DIR_CFG); sed -i -e 's/\"onetime_password_check\": true/\"onetime_password_check\": false/' admin.json)
+	    (cd $(DIR_CFG); sed -i -e 's/\"onetime_password_check\": ?true/\"onetime_password_check\": false/' admin.json)
 	    (cd $(DIR_CFG); rm -f .do_once.dep .keyring4.dep frpc.ini seq_serno)
-	    -rm -f /tmp/.kiwi* /root/.ssh/auth*
+	    -rm -f /tmp/.kiwi* /root/.ssh/auth* /root/.ssh/known*
+	    -rm -f build.log
 	    -touch unix_env/reflash_delay_update
 	    -cp unix_env/shadow /etc/shadow
 	    sum *.bit
