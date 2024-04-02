@@ -125,7 +125,7 @@ function iframe_config_html()
                   w3_text('w3-bold w3-text-teal w3-show-block', 'HTML/Javascript'),
                   w3_button('w3-margin-left w3-aqua', 'Save', 'iframe_src_save_cb')
                ),
-               'iframe.html', 10, 50, 'webpage_string_cb', ''
+               'iframe.html', 10, 50, 'w3_string_set_cfg_cb', ''
             )
          ), 65,
          '', 5,
@@ -147,7 +147,7 @@ function iframe_src_save_cb(path)
    //console.log('iframe_src_save_cb');
    var el = w3_el('id-iframe.html');
    //console.log('val='+ el.value);
-   webpage_string_cb('iframe.html', el.value);
+   w3_string_set_cfg_cb('iframe.html', el.value);
    w3_schedule_highlight(el);
 }
 

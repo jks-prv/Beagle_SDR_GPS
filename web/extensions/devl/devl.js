@@ -68,7 +68,7 @@ function devl_num_cb(path, val)
 	   v = 0;
 	}
 	console.log('devl_num_cb: path='+ path +' val='+ val +' v='+ v);
-	setVarFromString(path, v);
+	w3_num_cb(path, v);
 	ext_send('SET '+ path +'='+ v);
 }
 

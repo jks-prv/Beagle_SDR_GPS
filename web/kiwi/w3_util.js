@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2016-2024 John Seamons, ZL4VO/KF6VO
 
 /*
 
@@ -17,12 +17,14 @@
 	link
    
 	radio_button               T     no label option needed
-	radio_button_get_param     T
+	radio_button_get_param     T     w3-defer
 	radio_unhighlight
 	
 	switch                     T
 	switch_label               TL    rename w3_switch_label() to w3_switch()? Any external API users?
+	switch_label_get_param           w3-defer
 	switch_set_value
+	switch_get_param                 w3-defer
 	
 	button                     T     w3-noactive w3-momentary w3-custom-events w3-disabled
     button_path
@@ -32,25 +34,26 @@
 	
 	input                      L3 cb F
 	input_change
-	input_get
+	input_get                        w3-defer
 	
 	textarea                   L
-	textarea_get_param         L
+	textarea_get_param         L     w3-defer
 	
 	checkbox                   L3
-	checkbox_get_param         L
+	checkbox_get_param         L     w3-defer
 	checkbox_get
 	checkbox_set
 	
 	select                     L3
 	select_hier                L
-	select_get_param           L
+	select_get_param           L     w3-defer
 	select_enum
 	select_value
 	select_set_if_includes
 	
 	slider                     L3
 	slider_set
+	slider_get_param                 w3-defer
 	
 	menu
 	menu_items
@@ -184,7 +187,6 @@
 	   w3_inline()                   only in OLDER versions of the ant_switch ext
 	   w3_btn()
 	   w3_radio_btn(yes/no)    DEP   w3_radio_button
-	   w3_input_get_param()    DEP   w3_input_get
 	   w3_string_set_cfg_cb()
 	   w3_highlight()
 	   w3_unhighlight()
@@ -267,6 +269,23 @@ function w3int_console_replacer(k, v)
    if (isNull(v)) return '<null>';
    if (isFunction(v)) return '<function>';
    return '<'+ v.toString() +'>';
+}
+
+function w3_json_to_string(id, s)
+{
+   s = kiwi_decodeURIComponent(id, s);
+   s = s.replace(/\\"/g, '"');
+   return s;
+}
+
+function w3_json_to_html(id, s)
+{
+   s = kiwi_decodeURIComponent(id, s);
+   //console.log('1> '+ kiwi_string_to_hex(s, '-'));
+   //console.log('1> '+ JSON.stringify(s));
+   s = s.replace(/\n/g, '<br>').replace(/\\"/g, '"');
+   //console.log('2> '+ JSON.stringify(s));
+   return s;
 }
 
 function w3_strip_quotes(s)
@@ -365,7 +384,7 @@ function w3_opt(opt, elem, default_val, pre, post)
    //console.log('w3_opt opt:');
    //console.log(opt);
    var s;
-   if (isDefined(opt) && isDefined(opt[elem])) {
+   if (isArg(opt) && isDefined(opt[elem])) {
       //console.log('w3_opt elem='+ elem +' DEFINED rv='+ opt[elem]);
       s = opt[elem];
    } else {
@@ -863,7 +882,7 @@ function w3_field_select(el_id, opts)
 	var el = w3_el(el_id);
 	el = (el && isFunction(el.select))? el : null;
 
-   var trace = 0;
+   var trace = opts['trace'];
    if (trace) {
       var id = isObject(el_id)? el_id.id : el_id;
       console.log('w3_field_select id='+ id +' el='+ el +' v='+ (el? el.value:null));
@@ -1140,7 +1159,7 @@ function w3_disable(el_id, disable)
    //console.log(el);
 	w3_set_props(el, 'w3-disabled', disable);
 	
-	// for disabling menu popup
+	// for disabling menu popup and sliders
 	if (isDefined(el.nodeName) && (el.nodeName == 'SELECT' || el.nodeName == 'INPUT')) {
 	   try {
          if (disable)
@@ -1164,7 +1183,7 @@ function w3_disable_multi(el_id, disable)
          //console.log(el);
          w3_set_props(el, 'w3-disabled', disable);
    
-         // for disabling menu popup
+         // for disabling menu popup and sliders
          if (isDefined(el.nodeName) && (el.nodeName == 'SELECT' || el.nodeName == 'INPUT')) {
             try {
                if (disable)
@@ -1870,12 +1889,12 @@ function w3_click_nav(nav_id, next_id, cb_next, cb_param, from)
 	});
 
    // toggle visibility of current content
-	if (cur_id)
-		w3_toggle(cur_id, 'w3-show-block');
 	if (cur_id && cb_prev) {
 		//console.log('w3_click_nav BLUR cb_prev='+ cb_prev +' cur_id='+ cur_id);
 		w3_call(cb_prev +'_blur', cur_id);
 	}
+	if (cur_id)
+		w3_toggle(cur_id, 'w3-show-block');
 
    // make new nav item current and visible / focused
 	if (next_el) {
@@ -2174,8 +2193,9 @@ function w3_radio_button_get_param(psa, text, path, selected_if_val, init_val, c
 {
    // FIXME
    //var update_path_var = psa.includes('w3-update');
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
 	//console.log('w3_radio_button_get_param: '+ path);
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save);
 	
 	// set default selection of button based on current value
 	var isSelected = (cur_val == selected_if_val)? w3_SELECTED : w3_NOT_SELECTED;
@@ -2233,7 +2253,8 @@ function w3_switch_get_param(psa, text_0, text_1, path, text_0_selected_if_val, 
 {
    // FIXME
    //var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save);
 
 	// set default selection of button based on current value
 	//if (w3_contains(psa, 'id-net-ssl'))
@@ -2247,7 +2268,8 @@ function w3_switch_label_get_param(psa, label, text_0, text_1, path, text_0_sele
 {
    // FIXME
    //var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save);
 
 	// set default selection of button based on current value
 	//if (w3_contains(psa, 'id-net-ssl'))
@@ -2733,6 +2755,7 @@ function w3int_input_up_down_cb(path, cb_param, first, ev)
 function w3_input(psa, label, path, val, cb, placeholder)
 {
    var dump = psa.includes('w3-dump');
+   if (dump) console.log('w3_input()...');
 	var id = w3_add_id(path);
 	cb = cb || '';
 	var phold = placeholder? ('placeholder="'+ placeholder +'"') : '';
@@ -2779,7 +2802,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
          w3int_label(psa_label, label, path) +
          in_s +
       '</div>';
-	//if (path == 'freq-input') console.log(s);
+	if (dump) console.log(s);
 	//w3int_input_set_id(id);
 	return s;
 }
@@ -2827,19 +2850,11 @@ function w3_input_get(psa, label, path, cb, init_val, placeholder)
 {
    // FIXME
    //var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save);
 	cur_val = kiwi_decodeURIComponent('w3_input_get:'+ path, cur_val);
 	//console.log('w3_input_get: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
 	return w3_input(psa, label, path, cur_val, cb, placeholder);
-}
-
-// DEPRECATED (still used by ant switch ext)
-function w3_input_get_param(label, path, cb, init_val, placeholder)
-{
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
-	cur_val = kiwi_decodeURIComponent('w3_input_get_param:'+ path, cur_val);
-	//console.log('w3_input_get_param: path='+ path +' cur_val="'+ cur_val +'" placeholder="'+ placeholder +'"');
-	return w3_input('', label, path, cur_val, cb, placeholder);
 }
 
 
@@ -2889,7 +2904,8 @@ function w3_textarea_get_param(psa, label, path, rows, cols, cb, init_val)
 {
    // FIXME
    //var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save);
 	cur_val = kiwi_decodeURIComponent('w3_textarea_get_param:'+ path, cur_val);
 	//if (psa.includes('w3-dump')) console.log('w3_textarea_get_param: path='+ path +' cur_val="'+ cur_val +'"');
 	return w3_textarea(psa, label, path, cur_val, rows, cols, cb);
@@ -2956,7 +2972,8 @@ function w3_checkbox(psa, label, path, checked, cb, cb_param)
 function w3_checkbox_get_param(psa, label, path, cb, init_val)
 {
    var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, undefined, update_path_var);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save, update_path_var);
 	//console.log('w3_checkbox_get_param: path='+ path +' update_path_var='+ update_path_var +' cur_val='+ cur_val +' init_val='+ init_val);
 	return w3_checkbox(psa, label, path, cur_val, cb);
 }
@@ -3218,7 +3235,8 @@ function w3_select_set_disabled(path, value, disabled, title)
 function w3_select_get_param(psa, label, title, path, opts, cb, init_val)
 {
    var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, undefined, update_path_var);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, save, update_path_var);
 	return w3_select(psa, label, title, path, cur_val, opts, cb);
 }
 
@@ -3401,7 +3419,8 @@ function w3_slider_setup(path, min, max, step, val)
 function w3_slider_get_param(psa, label, path, min, max, step, cb, cb_param, init_val)
 {
    var update_path_var = psa.includes('w3-update');
-	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, undefined, update_path_var);
+   var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
+	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, save, update_path_var);
 	//console.log('w3_slider_get_param path='+ path +' update_path_var='+ update_path_var +' init_val='+ init_val +' cur_val='+ cur_val +' psa='+ psa);
    return w3_slider(psa, label, path, cur_val, min, max, step, cb, cb_param);
 }
@@ -3767,21 +3786,36 @@ function w3_bool_set_cfg_cb(path, val, first)
 	ext_set_cfg_param(path, v, save);
 }
 
-function w3_string_set_cfg_cb(path, val, first)
+function w3_string_old_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
+	console.log('w3_string_old_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
 	
 	// if first time don't save, otherwise always save
 	var save = isArg(first)? (first? false : true) : true;
 	ext_set_cfg_param(path, encodeURIComponent(val.toString()), save);
 }
 
-// unlike w3_string_set_cfg_cb(), saving json doesn't need encodeURIComponent()
-// because JSON.stringify() escapes everything properly
+function w3_string_set_cfg_cb(path, val, first)
+{
+	console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+   w3_json_set_cfg_cb(path, val, first);
+}
+
 function w3_json_set_cfg_cb(path, val, first)
 {
-	console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
-	
+	console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+
+	// verify that value is valid JSON
+	var v = val;
+	if (isString(v)) v = JSON.stringify(v);
+   try {
+      JSON.parse(v);
+   } catch(ex) {
+      console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+      console.log('w3_json_set_cfg_cb: DANGER value did not parse as JSON!');
+      return;
+   }
+
 	// if first time don't save, otherwise always save
 	var save = isArg(first)? (first? false : true) : true;
 	ext_set_cfg_param(path, val, save);
@@ -3790,7 +3824,7 @@ function w3_json_set_cfg_cb(path, val, first)
 // like w3_string_set_cfg_cb(), but enforces specification of leading 'http://' or 'https://'
 function w3_url_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_url_set_cfg_cb: path='+ path +' '+ typeof(val) +' "'+ val +'" first='+ first);
+	//console.log('w3_url_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
 	if (val != '' && !val.startsWith('http://') && !val.startsWith('https://')) val = 'http://'+ val;
 	w3_string_set_cfg_cb(path, val, first);
 	w3_set_value(path, val);
@@ -3953,7 +3987,7 @@ function w3_inline(psa, attr)
          if (dump) console.log('w3_inline i='+ i +' a='+ a);
          
          // merge a pseudo psa specifier into the next argument
-         // i.e. 'w3-*', w3_*('w3-psa') => w3_*('w3-* w3-psa')
+         // e.g. 'w3-*', w3_*('w3-psa') => w3_*('w3-* w3-psa')
          var psa_merge = false;
          if (a.startsWith('w3-') || a.startsWith('id-')) {
             psa = w3_psa(psa3.right, a);
@@ -3961,17 +3995,43 @@ function w3_inline(psa, attr)
             a = arguments[i];
             psa_merge = true;
          } else {
-            psa = psa_inner;
+            var psa = '';
+            if (psa_inner != '') {
+               // if any psa prop is of the form N:prop then only use prop if N == current arg number
+               // e.g.
+               // w3_inline('foo/bar 1:baz', w3_div('#0'), w3_div('#1'), w3_div('#2')) =>
+               // <div class="foo">
+               //    <div class="bar #0">
+               //    <div class="bar baz #1">
+               //    <div class="bar #2">
+               var psa3r = '';
+               var a1 = psa3.right.split(' ');
+               a1.forEach(
+                  function(p1) {
+                     //console.log('N:prop i='+ (i-1) +' p1=');
+                     var a2 = p1.split(':');
+                     //console.log(a2);
+                     if (a2.length == 2) {
+                        var n = +a2[0];
+                        //console.log('i='+ i +' n='+ n +' '+ (n == (i-1)));
+                        psa3r = w3_sb(psa3r, (n == (i-1))? a2[1] : '');
+                     } else {
+                        psa3r = w3_sb(psa3r, p1);
+                     }
+                  }
+               );
+               psa = w3_psa(psa3r);
+            }
          }
          
-         // If the psa is null, and the arg is a div, don't wrap it with our usual enclosing div.
+         // If the psa is empty, and the arg is a div, don't wrap it with our usual enclosing div.
          // This solves the "w3_inline() + w3-hide" problem where our extra div
          // added by w3_inline isn't the one with the w3-hide, and causes unwanted spacing when
          // using w3_inline('w3-halign-space-between/').
          if (psa3.right == '' && !psa_merge && a.startsWith('<div '))
             s += a;
          else
-            s += '<div w3d-inli-'+ (i-1) +' '+ psa +'>'+ a + '</div>';
+            s += '<div w3d-inli-'+ w3_sb(i-1, psa) +'>'+ a + '</div>';
       }
       s += '</div>';
       if (dump) console.log(s);
