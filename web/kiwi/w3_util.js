@@ -871,7 +871,7 @@ function w3_boundingBox_children(el_id, debug)
 function w3_center_in_window(el_id, id)
 {
 	var el = w3_el(el_id);
-	var rv = window.innerHeight/2 - el.clientHeight/2;
+	var rv = (window.innerHeight - el.clientHeight) / 2;
 	//console.log('w3_center_in_window wh='+ window.innerHeight +' ch='+ el.clientHeight +' rv='+ rv + (id? (' '+ id) : ''));
 	return rv;
 }

@@ -1597,7 +1597,7 @@ function network_html()
                   'Set "yes" for special cases e.g. <br>' +
                   'when a local service such as DDNS <br>' +
                   'must talk to a hosting provider <br>' +
-                  'in a blacklisted IP range.'
+                  'located in a blacklisted IP range.'
                )
             )
          ),
