@@ -3056,6 +3056,8 @@ function right_click_menu_init()
 function right_click_menu(x, y, which)
 {
    if (owrx.debug_drag) canvas_log('RCM'+ which);
+   
+   // update menu items whose underlying value might have changed
    var db1 = (dx.db + 1) % dx.DB_N;
    var db2 = (dx.db + 2) % dx.DB_N;
    owrx.right_click_menu_content[owrx.rcm_db1] = 'DX '+ dx.db_short_s[db1] +' database';
@@ -3075,6 +3077,8 @@ function right_click_menu(x, y, which)
 
    owrx.right_click_menu_content[owrx.rcm_lookup] = db + ' database lookup';
    owrx.right_click_menu_content[owrx.rcm_snap] = owrx.wf_snap? 'no snap' : 'snap to nearest';
+   owrx.right_click_menu_content[owrx.rcm_freq_dsp] = (owrx.freq_dsp_1Hz? '10' : '1') +' Hz frequency display';
+   owrx.right_click_menu_content[owrx.rcm_lock] = (owrx.tuning_locked? '🔓 unlock' : '🔒 lock') +' tuning';
    
    w3_menu_items('id-right-click-menu', owrx.right_click_menu_content);
    w3_menu_popup('id-right-click-menu',
@@ -9582,7 +9586,7 @@ function ident_keyup(el, evt, which)
 // letters avail: F G K L O Q tT U X Y
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F........ ......   ..F.      F .     .. F  ... FFFFFFFFFFFFFFF
+// ..........F........ ......   ..F..     F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..  ...  F. . ..  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab: :arrow-UDLR:
@@ -9643,6 +9647,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', 'o', 25, 'toggle between option bar <x1>off</x1> <x1>user</x1> and <x1>stats</x1> mode,<br>others selected by related shortcut key'),
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '$', 25, 'toggle 1 Hz frequency readout'),
+         w3_inline_percent('w3-padding-tiny', '%', 25, 'toggle tuning lock'),
          w3_inline_percent('w3-padding-tiny', '@ alt-@', 25, 'open DX label filter, quick clear'),
          w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database,<br>alt to toggle <x1>filter by time/day-of-week</x1> checkbox'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
@@ -9682,7 +9687,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 660);   // height +15 per added line
+   confirmation_show_content(shortcut.help, 550, 685);   // height +15 or 20 per added line
 }
 
 function freq_input_help()
@@ -9804,6 +9809,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    case 'r': toggle_or_set_rec(); break;
    case 'R': keyboard_shortcut_nav('rf'); break;
    case '$': owrx.freq_dsp_1Hz ^= 1; kiwi_storeWrite('freq_dsp_1Hz', owrx.freq_dsp_1Hz); freqset_update_ui(owrx.FSET_NOP); break;
+   case '%': owrx.tuning_locked ^= 1; freqset_update_ui(owrx.FSET_NOP); break;
    case 'x': toggle_or_set_hide_panels(); break;
    case 'y': toggle_or_set_hide_bars(); break;
    case '@': dx_filter(key_mod == shortcut.SHIFT_PLUS_CTL_ALT); break;
@@ -10042,7 +10048,7 @@ function test_audio_suspended()
    if (onclick != null) {
       var s2 =
          w3_div('id-play-button-container class-overlay-container w3-valign w3-halign-center||'+ onclick,
-            w3_inline('id-play-button w3-flex-col/',
+            w3_inline('id-play-button w3-relative w3-flex-col/',
                '<img src="gfx/openwebrx-play-button.png" width="150" height="150" /><br><br>', s1
             )
          );
@@ -10056,7 +10062,7 @@ function test_audio_suspended()
       }
 
       el = w3_el('id-play-button');
-      el.style.marginTop = px(w3_center_in_window(el));
+      //el.style.top = px(w3_center_in_window(el, 'PB'));
       //alert('state '+ ac_play_button.state);
    }
 }
