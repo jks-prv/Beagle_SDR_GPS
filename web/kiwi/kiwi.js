@@ -661,8 +661,12 @@ function geoloc_json(json)
 	}
 	
 	geo.geo = '';
-	if (json.city) geo.geo += json.city;
-	if (country) geo.geo += (json.city? ', ':'') + country;
+	if (cfg.show_geo_city) {
+      if (json.city) geo.geo += json.city;
+      if (country) geo.geo += (json.city? ', ':'') + country;
+   } else {
+      if (country) geo.geo += country;
+   }
    console.log('GEOLOC '+ geo.geo);
 }
     
@@ -2471,23 +2475,15 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
          w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
       );
 
-	var t = uptime_secs;
-	var sec = Math.trunc(t % 60); t = Math.trunc(t/60);
-	var min = Math.trunc(t % 60); t = Math.trunc(t/60);
-	var hr  = Math.trunc(t % 24); t = Math.trunc(t/24);
-	var days = t;
-
-   var s = ' up ';
-	if (days) s += days +'d:';
-	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	var o = kiwi_dhms(uptime_secs);
 	w3_innerHTML('id-status-config',
       w3_text('w3-text-css-orange', 'KiwiSDR '+ kiwi.model),
-      w3_text('', s +', '+ kiwi_config_str)
+      w3_text('', ' up '+ o.dhms +', '+ kiwi_config_str)
 	);
 
 	s = ' | Uptime: ';
-	if (days) s += days +' '+ ((days > 1)? 'days':'day') +' ';
-	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	if (o.days) s += o.days +' '+ ((o.days > 1)? 'days':'day') +' ';
+	s += o.hms;
 
 	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
 	if (server_time_utc) s += ' | UTC: '+ server_time_utc;
