@@ -281,26 +281,89 @@ void kiwi_str_redup(char **ptr, const char *from, const char *s)
     #endif
 }
 
-void *kiwi_table_realloc(const char *id, void *cur_p, int cur_size, int inc_size, int el_size)
+void *kiwi_table_realloc(const char *id, void *cur_p, int cur_nel, int inc_nel, int el_bytes)
 {
     void *new_p;
     char *clr_p = NULL;
-    int new_size = cur_size + inc_size;
+    int new_nel = cur_nel + inc_nel, clr_bytes = 0;
     
-    if ((cur_size == 0 && cur_p != NULL) || (cur_size != 0 && cur_p == NULL)) {
-        real_printf("INVALID COMBO: cur_size=%d cur_p=%p\n", cur_size, cur_p);
+    if ((cur_nel == 0 && cur_p != NULL) || (cur_nel != 0 && cur_p == NULL)) {
+        real_printf("INVALID COMBO: cur_nel=%d cur_p=%p\n", cur_nel, cur_p);
         mt_gdb("kiwi_table_realloc");
     }
     
-    if (cur_size == 0) {
-        new_p = kiwi_malloc(id, new_size * el_size);    // kiwi_malloc() zeros mem
+    if (cur_nel == 0) {
+        new_p = kiwi_malloc(id, new_nel * el_bytes);    // kiwi_malloc() zeros mem
     } else {
-        new_p = kiwi_realloc(id, cur_p, new_size * el_size);
-        clr_p = ((char *) new_p) + (cur_size * el_size);
-        memset(clr_p, 0, inc_size * el_size);   // zero new part since kiwi_realloc() doesn't
+        new_p = kiwi_realloc(id, cur_p, new_nel * el_bytes);
+        clr_p = ((char *) new_p) + (cur_nel * el_bytes);
+        clr_bytes = inc_nel * el_bytes;
+        memset(clr_p, 0, clr_bytes);   // zero new part since kiwi_realloc() doesn't
     }
 
-    //real_printf("kiwi_table_realloc %s: cur_p=%p cur_size=%d inc_size=%d el_size=%d | new_p=%p clr_p=%p new_size=%d\n",
-    //    id, cur_p, cur_size, inc_size, el_size, new_p, clr_p, new_size);
+    //real_printf("kiwi_table_realloc %s: cur_p=%p cur_nel=%d inc_nel=%d el_bytes=%d | new_p=%p new_nel=%d clr_p=%p clr_bytes=%d\n",
+    //    id, cur_p, cur_nel, inc_nel, el_bytes, new_p, new_nel, clr_p, clr_bytes);
     return new_p;
+}
+
+
+////////////////////////////////
+// list/item
+////////////////////////////////
+
+list_t *list_init(const char *id, u4_t item_bytes, u4_t inc_nel)
+{
+    list_t *list = (list_t *) kiwi_malloc("list_t", sizeof(list_t));   // NB: kiwi_malloc() zeros
+    list->id = id;
+    list->item_bytes = item_bytes;
+    list->inc_nel = list->cur_nel = inc_nel;
+    list->items = kiwi_malloc(id, inc_nel * item_bytes);
+    return list;
+}
+
+void list_grow(list_t *list, u4_t idx)
+{
+    while (idx >= list->cur_nel) {
+        // NB: kiwi_table_realloc() zeros newly allocated area
+        list->items = kiwi_table_realloc("list_grow",
+            list->items, list->cur_nel, list->inc_nel, list->item_bytes);
+        list->cur_nel += list->inc_nel;
+        //real_printf("list_grow REALLOC n=%d cur_nel=%d\n", list->n_items, list->cur_nel);
+    }
+        
+}
+
+void *item_ptr(list_t *list, u4_t idx)
+{
+    return TO_VOID_PARAM((char *) FROM_VOID_PARAM(list->items)  + (list->item_bytes * idx));
+}
+
+u4_t item_find(list_t *list, void *const_item, item_cmp_t item_cmp, bool *found)
+{
+    int i;
+    *found = false;
+    char *item_base = (char *) FROM_VOID_PARAM(list->items);
+
+    for (i = 0; i < list->n_items; i++) {
+        //real_printf("item_find %d ", i);
+        void *item = item_ptr(list, i);
+        *found = item_cmp(const_item, item);
+        //real_printf("%s\n", *found? "   FOUND" : "");
+        if (*found) {
+            break;
+        }
+    }
+    return i;
+}
+
+u4_t item_find_grow(list_t *list, void *const_item, item_cmp_t item_cmp, bool *isNew)
+{
+    bool found;
+    int idx = item_find(list, const_item, item_cmp, &found);
+    if (!found) {
+        list_grow(list, idx);
+        list->n_items++;
+    }
+    *isNew = !found;
+    return idx;
 }

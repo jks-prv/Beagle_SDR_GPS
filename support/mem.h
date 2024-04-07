@@ -80,4 +80,23 @@ extern mem_t mem;
 #endif
 
 void kiwi_str_redup(char **ptr, const char *from, const char *s);
-void *kiwi_table_realloc(const char *id, void *cur_p, int cur_size, int new_size, int el_size);
+void *kiwi_table_realloc(const char *id, void *cur_p, int cur_nel, int inc_nel, int el_bytes);
+
+
+////////////////////////////////
+// list/item
+////////////////////////////////
+
+typedef struct {
+    const char *id;
+    u4_t n_items, cur_nel;
+    u4_t item_bytes, inc_nel;
+	void *items;
+} list_t;
+
+list_t *list_init(const char *id, u4_t item_bytes, u4_t inc_nel);
+typedef bool (item_cmp_t)(const void *, void *);
+u4_t item_find(list_t *list, void *const_item, item_cmp_t item_cmp, bool *found);
+u4_t item_find_grow(list_t *list, void *const_item, item_cmp_t item_cmp, bool *isNew);
+void list_grow(list_t *list, u4_t idx);
+void *item_ptr(list_t *list, u4_t idx);
