@@ -977,6 +977,20 @@ function kiwi_UTC_minutes()
    return (d.getUTCHours()*60 + d.getUTCMinutes());
 }
 
+function kiwi_dhms(secs)
+{
+	var t = +secs;
+	var sec = Math.trunc(t % 60); t = Math.trunc(t/60);
+	var min = Math.trunc(t % 60); t = Math.trunc(t/60);
+	var hr  = Math.trunc(t % 24); t = Math.trunc(t/24);
+	var days = t;
+	var hms = hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	var d = '';
+	if (days) d = days +'d:';
+	var dhms = d + hms;
+	return { dhms:dhms, hms:hms, days:days, hr:hr, min:min, sec:sec, secs:secs };
+}
+
 function kiwi_hh_mm(hh_mm)
 {
    if (isNumber(hh_mm)) return hh_mm;
