@@ -24,6 +24,7 @@ Boston, MA  02110-1301, USA.
 #include "services.h"
 #include "rx.h"
 #include "rx_util.h"
+#include "stats.h"
 #include "mem.h"
 #include "misc.h"
 #include "str.h"
@@ -566,7 +567,19 @@ void c2s_admin(void *param)
                 admcfg_string_free(proxy_server);
 				continue;
 			}
-		
+
+
+////////////////////////////////
+// users
+////////////////////////////////
+			i = strcmp(cmd, "SET get_user_list");
+			if (i == 0) {
+			    sb = user_list();
+				send_msg_encoded(conn, "SET", "user_list", "%s", kstr_sp(sb));
+                kstr_free(sb);
+				continue;
+			}
+
 
 ////////////////////////////////
 // config

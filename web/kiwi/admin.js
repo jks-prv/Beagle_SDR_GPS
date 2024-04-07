@@ -19,6 +19,9 @@ var admin = {
    
    spectral_inversion_lockout: false,
    
+   users_seq: 0,
+   exp_vis: [],
+   
    _last_: 0
 };
 
@@ -1227,6 +1230,90 @@ function connect_proxy_server_cb(path, val)
 	connect_update_url();
    connect_rev_register_cb();
    connect_rev_usage();
+}
+
+
+////////////////////////////////
+// users
+////////////////////////////////
+
+function users_html()
+{
+   var s =
+      w3_div('id-users w3-container w3-section w3-hide',
+         w3_div('id-users-container w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+            w3_table('id-users-table w3-margin-bottom w3-table-6-8 w3-striped-except-hidden')
+         )
+      );
+   return s;
+}
+
+function users_focus()
+{
+	admin.users_interval = kiwi_setInterval(users_get_list, 10000);
+}
+
+function users_blur()
+{
+	kiwi_clearInterval(admin.users_interval);
+}
+
+function users_get_list()
+{
+   ext_send("SET get_user_list");
+}
+
+function users_expand_cb(path, idx)
+{
+   var i = +idx;
+   admin.exp_vis[i] ^= 1;
+   var vis = admin.exp_vis[i];
+   console.log('users_expand_cb i='+ i +' vis='+ vis);
+   w3_innerHTML('id-users-icon-'+ i,
+      w3_icon('', 'fa-chevron-circle-'+ (vis? 'down' : 'right'), 20, vis? 'red' : 'blue'));
+   w3_els('id-users-'+ i, function(el, i) { w3_hide2(el, !vis); } );
+}
+
+function users_list_cb(s)
+{
+   admin.users_seq++;
+   //if (admin.users_seq > 1) return;
+   var i, j;
+   //console.log(s);
+   var o = JSON.parse(s);
+   console.log(o);
+   
+   var detail = function(ar, i) {
+      var a = ar[i];
+      var o = kiwi_dhms(+ar[i].t);
+      return { ip: a.ip, geo: a.g, dhms: o.dhms };
+   };
+   
+   var s =
+      w3_table_row('',
+         w3_table_heads('', '', 'user', 'IP', 'location', 'connected', 'notes')
+      );
+
+   o.forEach(function(u,i) {
+      var multi = (u.a.length > 1);
+      if (isUndefined(admin.exp_vis[i])) admin.exp_vis[i] = 0;
+      admin.exp_vis[i] = 0;   //jksx
+      var vis = admin.exp_vis[i];
+      var notes = '';
+      if (+u.c > 1) notes += ' ['+ u.c +' conns]';
+      if (multi) notes += ' ['+ kiwi_dhms(+u.t).dhms +' total]';
+      var d = detail(u.a, 0);
+      s += w3_table_row('',
+         w3_table_cells('', multi? w3_button('id-users-icon-'+ i +' w3-padding-0', w3_icon('', 'fa-chevron-circle-right', 20, 'blue'), 'users_expand_cb', i) : '',
+            dq(u.i), d.ip, d.geo, d.dhms, notes)
+      );
+      for (j = 1; j < u.a.length; j++) {
+         d = detail(u.a, j);
+         s += w3_table_row(sprintf('id-users-%d %s', i, vis? '' : 'w3-hide'),
+            w3_table_cells('', '', '', d.ip, d.geo, d.dhms, '&nbsp;'));
+      }
+   });
+   w3_innerHTML('id-users-table', s);
 }
 
 
@@ -3800,7 +3887,8 @@ var admin_colors = [
 	'w3-hover-indigo',
 	'w3-hover-brown',
 	'w3-hover-teal',
-	'w3-hover-blue-grey'
+	'w3-hover-blue-grey',
+	'w3-hover-deep-orange'
 ];
 
 function admin_main()
@@ -3831,10 +3919,10 @@ function admin_draw(sdr_mode)
       w3_nav(admin_colors[ci++], 'Status', 'id-navbar-admin', 'status', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Mode', 'id-navbar-admin', 'mode', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Control', 'id-navbar-admin', 'control', 'admin_nav') +
+      w3_nav(admin_colors[ci++], 'Users', 'id-navbar-admin', 'users', 'admin_nav') +
       w3_nav(admin_colors[ci++], 'Connect', 'id-navbar-admin', 'connect', 'admin_nav');
 	if (sdr_mode)
 	   s +=
-         //w3_nav(admin_colors[ci++], 'Channels', 'id-navbar-admin', 'channels', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Config', 'id-navbar-admin', 'config', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Webpage', 'id-navbar-admin', 'webpage', 'admin_nav') +
          w3_nav(admin_colors[ci++], 'Public', 'id-navbar-admin', 'public', 'admin_nav') +
@@ -3897,11 +3985,11 @@ function admin_draw(sdr_mode)
 	s +=
 		mode_html() +
 		control_html() +
+      users_html() +
 		connect_html();
 
 	if (sdr_mode)
 	   s +=
-         //channels_html() +
 		   config_html() +
          webpage_html() +
          kiwi_reg_html() +
@@ -4097,6 +4185,7 @@ function admin_msg(param)
 var log_msg_idx, log_msg_not_shown = 0;
 var admin_sdr_mode = 1;
 
+// Process replies to our messages sent via ext_send('ADM ...')
 // after calling admin_main(), server will download cfg and adm state to us, then send 'init' message
 function admin_recv(data)
 {
@@ -4263,6 +4352,10 @@ function admin_recv(data)
                w3_innerHTML('id-ip-blacklist-status', 'updated');
 				break;
 			
+         case "user_list":
+            users_list_cb(decodeURIComponent(param[1]));
+            break;
+
 			default:
             if (param[0].startsWith('antsw_')) {
                if (ant_switch_admin_msg(param))

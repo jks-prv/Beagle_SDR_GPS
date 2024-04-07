@@ -375,6 +375,173 @@ static void called_every_second()
 	}
 }
 
+
+
+////////////////////////////////
+// user list
+////////////////////////////////
+    
+#define N_USER_LOG_ALLOC 2
+static list_t *user_base;
+
+typedef struct {
+    u4_t idx;
+    #define UL_FL 1
+    u2_t flags;
+    u2_t connected;
+	char *ident;
+	list_t *entry_base;
+	u4_t total_time;
+} user_log_t;
+
+typedef struct {
+    u2_t flags;
+    u2_t connected;
+    u4_t ip4;
+	char *geoloc;
+	u4_t connect_time;
+} user_entry_t;
+
+bool user_ident_cmp(const void *elem1, void *elem2)
+{
+	const char *s1 = (const char *) elem1;
+	user_log_t *ul = (user_log_t *) FROM_VOID_PARAM(elem2);
+    real_printf("user_strcmp <%s> <%s> ", s1, ul->ident);
+	return (strcmp(s1, ul->ident) == 0);
+}
+
+bool user_ip_cmp(const void *elem1, void *elem2)
+{
+	u4_t ip4_1 = (u4_t) FROM_VOID_PARAM(elem1);
+	user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(elem2);
+    real_printf("user_ip_cmp %s %s ", inet4_h2s(ip4_1, 0), inet4_h2s(entry->ip4, 1));
+	return (ip4_1 == entry->ip4);
+}
+
+void user_arrive(conn_t *c)
+{
+    int i, j;
+    
+    static bool init;
+    if (!init) {
+        printf_highlight(0, "user");
+        user_base = list_init("user_base", sizeof(user_log_t), N_USER_LOG_ALLOC);
+        init = true;
+    }
+    
+    const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
+    bool isNew;
+    
+    i = item_find_grow(user_base, TO_VOID_PARAM(ident), user_ident_cmp, &isNew);
+
+    user_log_t *ul;
+    if (isNew) {
+        // new ident
+        ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
+        ul->idx = i;
+        ul->ident = strdup(ident);
+        ul->entry_base = list_init("entry_base", sizeof(user_entry_t), N_USER_LOG_ALLOC);
+    } else {
+        // existing ident
+        ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
+    }
+    ul->connected++;
+    //real_printf("user %s #%d %s <%s>\n", isNew? "NEW" : "EXISTING", i, c->remote_ip, ul->ident);
+
+    bool err;
+    u4_t ip4 = inet4_d2h(c->remote_ip, &err);
+    if (err) panic("inet4_d2h");
+    list_t *entry_base = ul->entry_base;
+    
+    j = item_find_grow(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &isNew);
+    
+    user_entry_t *entry;
+    if (isNew) {
+        // new entry
+        entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+        entry->ip4 = ip4;
+        entry->geoloc = strdup(c->geo);
+    } else {
+        // existing entry
+        //entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+    }
+    
+    //user_dump();
+}
+
+void user_leaving(conn_t *c, u4_t connected_secs)
+{
+    const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
+    bool found;
+    if (!user_base) return;
+    int i = item_find(user_base, TO_VOID_PARAM(ident), user_ident_cmp, &found);
+    if (!found) return;
+    user_log_t *ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
+    ul->connected--;
+
+    list_t *entry_base = ul->entry_base;
+    ul->total_time += connected_secs;
+
+    bool err;
+    u4_t ip4 = inet4_d2h(c->remote_ip, &err);
+    if (err) panic("inet4_d2h");
+    int j = item_find(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &found);
+    
+    if (found) {
+        user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+        entry->connect_time += connected_secs;
+    }
+
+    //real_printf("user LEAVING #%d %d|%d secs %s\n", i, connected_secs, ul->total_time, ul->ident);
+}
+
+kstr_t *user_list()
+{
+    int i, j;
+    kstr_t *sb = (kstr_t *) "[";
+    if (user_base) {
+        user_log_t *ul;
+        bool comma = false;
+        for (i = 0, ul = (user_log_t *) user_base->items; i < user_base->n_items; ul++, i++) {
+            sb = kstr_asprintf(sb, "%s{\"i\":\"%s\",\"t\":%d,\"c\":%d,\"a\":[",
+                comma? ",":"", ul->ident, ul->total_time, ul->connected
+            );
+            comma = true;
+                bool comma2 = false;
+                list_t *entry_base = ul->entry_base;
+                for (j = 0; j < entry_base->n_items; j++) {
+                    user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+                    sb = kstr_asprintf(sb, "%s{\"ip\":\"%s\",\"g\":\"%s\",\"t\":%d,\"f\":%d}",
+                        comma2? ",":"", inet4_h2s(entry->ip4), entry->geoloc, entry->connect_time, entry->flags);
+                    comma2 = true;
+                }
+            sb = kstr_cat(sb, "]}");
+        }
+    }
+    return kstr_cat(sb, "]");
+}
+
+void user_dump()
+{
+    int i, j;
+    real_printf("user LIST n=%d cur_nel=%d\n", user_base->n_items, user_base->cur_nel);
+
+    user_log_t *ul;
+    for (i = 0, ul = (user_log_t *) user_base->items; i < user_base->n_items; ul++, i++) {
+        real_printf("user LIST #%d %d Tsecs <%s>\n", i, ul->total_time, ul->ident);
+        list_t *entry_base = ul->entry_base;
+        for (j = 0; j < entry_base->n_items; j++) {
+            user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+            real_printf("   %s %s %d secs\n", inet4_h2s(entry->ip4), entry->geoloc, entry->connect_time);
+        }
+    }
+}
+
+
+////////////////////////////////
+// CAT interface
+////////////////////////////////
+
 static void CAT_write_tty(void *param)
 {
     int CAT_fd = (int) FROM_VOID_PARAM(param);

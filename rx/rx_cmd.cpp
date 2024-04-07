@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
+#include "stats.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -1824,15 +1825,25 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         
             //cprintf(conn, "SET ident_user=<%s> noname=%d setUserIP=%d\n", ident_user_m, noname, setUserIP);
         
+            bool rename = false;
             if (setUserIP) {
+                if (conn->ident_user) {
+                    user_leaving(conn, timer_sec() - conn->arrival);
+                    rename = true;
+                }
                 kiwi_str_redup(&conn->ident_user, "ident_user", conn->remote_ip);
                 conn->isUserIP = TRUE;
                 // printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
                 // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->ident_user, cmd);
-            }
+                if (rename) user_arrive(conn);
+            } else
 
             // name sent: save new, replace previous (if any)
             if (!noname) {
+                if (conn->ident_user) {
+                    user_leaving(conn, timer_sec() - conn->arrival);
+                    rename = true;
+                }
                 kiwi_str_decode_inplace(ident_user_m);
                 int printable, UTF;
                 char *esc = kiwi_str_escape_HTML(ident_user_m, &printable, &UTF);
@@ -1860,6 +1871,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 conn->isUserIP = FALSE;
                 // printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
                 // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->ident_user, cmd);
+                if (rename) user_arrive(conn);
             }
         
             kiwi_asfree(ident_user_m);

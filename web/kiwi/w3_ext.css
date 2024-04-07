@@ -79,6 +79,16 @@
 	vertical-align: middle;*/
 }
 
+
+/*
+    vs w3.css::w3-striped this ignores hidden elements
+    see: developer.mozilla.org/en-US/docs/Web/CSS/:nth-child#the_of_selector_syntax
+*/
+.w3-striped-except-hidden tbody tr:nth-child(even of :not(.w3-hide))
+{
+    background-color: #f1f1f1
+}
+
 .w3-text
 {
     border: none;

@@ -186,6 +186,7 @@ function config_html()
             w3_checkbox_get_param('//w3-label-inline', 'Show 1 Hz frequency resolution', 'show_1Hz', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation info to users', 'show_geo', 'admin_bool_cb', true),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true),
             w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
          )
 		) +
@@ -786,26 +787,6 @@ function config_ext_freq_cb(path, val, first)
       if (f < 65000000 || f > 69000000) f = null;
    }
    admin_int_cb(path, f);
-}
-
-
-////////////////////////////////
-// channels [not used currently]
-////////////////////////////////
-
-function channels_html()
-{
-	var s =
-	w3_div('id-channels w3-hide',
-		'<hr>' +
-
-		w3_third('w3-margin-bottom w3-text-teal w3-restart', 'w3-container',
-			'foo',
-			'bar',
-			'baz'
-		)
-	);
-	return s;
 }
 
 

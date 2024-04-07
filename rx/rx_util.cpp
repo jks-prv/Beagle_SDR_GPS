@@ -43,6 +43,7 @@ Boston, MA  02110-1301, USA.
 #include "security.h"
 #include "options.h"
 #include "services.h"
+#include "stats.h"
 
 #include "wspr.h"
 #include "FT8.h"
@@ -102,9 +103,11 @@ void rx_loguser(conn_t *c, logtype_e type)
 	if (type == LOG_ARRIVED) {
 		asprintf(&s, "(ARRIVED)");
 		c->last_tune_time = now;
+		user_arrive(c);
 	} else
 	if (type == LOG_LEAVING) {
 		asprintf(&s, "(%s after %d:%02d:%02d)", c->preempted? "PREEMPTED" : "LEAVING", hr, min, sec);
+		user_leaving(c, now - c->arrival);
 	} else {
 		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
@@ -751,6 +754,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
         return false;
     }
     
+	char *geo = NULL;
     char *country_name = (char *) json_string(&cfg_geo, country_s, NULL, CFG_OPTIONAL);
     char *region_name = (char *) json_string(&cfg_geo, region_s, NULL, CFG_OPTIONAL);
     char *city = (char *) json_string(&cfg_geo, "city", NULL, CFG_OPTIONAL);
@@ -763,12 +767,15 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 		country = kstr_cat(country_name, NULL);     // possible that country_name == NULL
 	}
 
-	char *geo = NULL;
-	if (city && *city) {
-		geo = kstr_cat(geo, city);
-		geo = kstr_cat(geo, ", ");
-	}
-    geo = kstr_cat(geo, country);   // NB: country freed here
+    if (cfg_true("show_geo_city")) {
+        if (city && *city) {
+            geo = kstr_cat(geo, city);
+            geo = kstr_cat(geo, ", ");
+        }
+        geo = kstr_cat(geo, country);   // NB: country freed here
+    } else {
+        geo = kstr_cat(country, NULL);  // NB: country freed here
+    }
 
     //clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
 	kiwi_asfree(conn->geo);

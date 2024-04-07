@@ -20,9 +20,9 @@ Boston, MA  02110-1301, USA.
 #pragma once
 
 #include "types.h"
+#include "str.h"
 
-typedef struct {
-    u4_t flags;
-	char *ident;
-	u4_t total_time;
-} user_log_t;
+void user_arrive(conn_t *conn);
+void user_leaving(conn_t *conn, u4_t connected_secs);
+kstr_t *user_list();
+void user_dump();
