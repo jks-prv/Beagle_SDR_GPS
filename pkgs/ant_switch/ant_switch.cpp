@@ -377,7 +377,7 @@ void ant_switch_init()
 	GPIO_OUTPUT(P819); GPIO_WRITE_BIT(P819, 0);
 	GPIO_OUTPUT(P826); GPIO_WRITE_BIT(P826, 0);
 	
-    printf_highlight(0, "ant_switch");
+    //printf_highlight(0, "ant_switch");
 
 	// migrate from prior ant switch extension backend selection
 	char path[256];
