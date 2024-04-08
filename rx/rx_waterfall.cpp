@@ -726,8 +726,9 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
-        // handle LOG_ARRIVED and missing ident for WF-only connections
-        if (conn->isMaster && !conn->arrived && (conn->ident || ((cmd_recv & CMD_SET_ZOOM) && timer_sec() > (conn->arrival + 15)))) {
+        // Handle LOG_ARRIVED and missing ident for WF-only connections.
+        bool too_much = ((cmd_recv & CMD_SET_ZOOM) && (timer_sec() > (conn->arrival + 15)));
+        if (conn->isMaster && !conn->arrived && (conn->ident || too_much)) {
             if (!conn->ident)
 			    kiwi_str_redup(&conn->ident_user, "user", (char *) "(no identity)");
             rx_loguser(conn, LOG_ARRIVED);

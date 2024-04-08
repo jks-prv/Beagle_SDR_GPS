@@ -69,7 +69,7 @@ typedef struct conn_st {
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
 	bool ident, arrived;
 	char *ident_user;
-	bool isUserIP;
+	bool isUserIP, require_id;
 
 	// set only in STREAM_SOUND
 	bool snd_cmd_recv_ok;

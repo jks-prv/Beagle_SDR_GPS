@@ -123,6 +123,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET GET_CO", CMD_GET_CONFIG },
     { "SET STATS_", CMD_STATS_UPD },
     { "SET GET_US", CMD_GET_USERS },
+    { "SET requir", CMD_REQUIRE_ID },
     { "SET ident_", CMD_IDENT_USER },
     { "SET need_s", CMD_NEED_STATUS },
     { "SET geoloc", CMD_GEO_LOC },        // kiwiclient still uses "geo="
@@ -1803,6 +1804,14 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 ////////////////////////////////
 // UI
 ////////////////////////////////
+
+    case CMD_REQUIRE_ID:
+        int require_id;
+        if (sscanf(cmd, "SET require_id=%d", &require_id) == 1) {
+            conn->require_id = require_id? true:false;
+            return true;
+        }
+        break;
 
     case CMD_IDENT_USER:
         if (kiwi_str_begins_with(cmd, "SET ident_user=")) {

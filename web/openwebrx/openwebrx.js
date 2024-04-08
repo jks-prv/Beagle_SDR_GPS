@@ -9507,7 +9507,8 @@ function ident_init()
 	el1.value = ident;
 	el2.value = ident;
 	ident_user = ident;
-	send_ident = true;
+	if (ident_user != '')
+	   send_ident = true;
 	//console.log('ident_init: SET send_ident=true ident='+ ident_user);
 }
 
@@ -10033,6 +10034,7 @@ function test_audio_suspended()
    //console.log('$test_audio_suspended require_id='+ cfg.require_id +' ident=<'+ ident +'>');
 
    if (cfg.require_id && isEmptyString(ident)) {
+      snd_send('SET require_id=1');
       s1 = w3_input('w3-flex w3-flex-col w3-valign-center//w3-custom-events w3-margin-T-10 w3-font-18px w3-normal'+
          '|padding:1px; width:300px|size=20'+
          ' onchange="ident_complete(\'el\', 3)" onkeyup="ident_keyup(this, event, 3)"',
@@ -12641,6 +12643,7 @@ function send_keepalive()
 			if (!ident_user) ident_user = '';
 			if (snd_send("SET ident_user="+ encodeURIComponent(ident_user)) < 0)
 				break;
+         snd_send('SET require_id=0');
          //canvas_log('send_ident');
 			send_ident = false;
 		}

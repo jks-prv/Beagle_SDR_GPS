@@ -572,11 +572,18 @@ void c2s_admin(void *param)
 ////////////////////////////////
 // users
 ////////////////////////////////
-			i = strcmp(cmd, "SET get_user_list");
-			if (i == 0) {
-			    sb = user_list();
+			n = sscanf(cmd, "SET get_user_list=%d", &i);
+			if (n == 1) {
+			    sb = user_list(i);
 				send_msg_encoded(conn, "SET", "user_list", "%s", kstr_sp(sb));
                 kstr_free(sb);
+				continue;
+			}
+
+			i = strcmp(cmd, "SET user_list_clear");
+			if (i == 0) {
+			    user_list_clear();
+				send_msg_encoded(conn, "SET", "user_list", "{\"end\":1}");
 				continue;
 			}
 

@@ -24,5 +24,6 @@ Boston, MA  02110-1301, USA.
 
 void user_arrive(conn_t *conn);
 void user_leaving(conn_t *conn, u4_t connected_secs);
-kstr_t *user_list();
+kstr_t *user_list(int idx);
+void user_list_clear();
 void user_dump();

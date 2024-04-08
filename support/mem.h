@@ -95,8 +95,10 @@ typedef struct {
 } list_t;
 
 list_t *list_init(const char *id, u4_t item_bytes, u4_t inc_nel);
+void list_grow(list_t *list, u4_t idx);
+void list_free(list_t *list);
+
 typedef bool (item_cmp_t)(const void *, void *);
 u4_t item_find(list_t *list, void *const_item, item_cmp_t item_cmp, bool *found);
 u4_t item_find_grow(list_t *list, void *const_item, item_cmp_t item_cmp, bool *isNew);
-void list_grow(list_t *list, u4_t idx);
 void *item_ptr(list_t *list, u4_t idx);

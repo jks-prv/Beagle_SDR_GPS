@@ -414,8 +414,11 @@ void c2s_sound(void *param)
 			panic("shouldn't return");
 		}
 
-        // set arrived when "ident_user=" received or if too much time has passed without it being received
-        if (!conn->arrived && (conn->ident || ((s->cmd_recv & CMD_FREQ) && timer_sec() > (conn->arrival + 15)))) {
+        // Set arrived when "ident_user=" received or if too much time has passed without it being received.
+        // But delay if waiting in the require id panel.
+        bool too_much = ((s->cmd_recv & CMD_FREQ) && (timer_sec() > (conn->arrival + 15)));
+        //printf("%d %d %d %d %s\n", conn->arrived, conn->ident, too_much, conn->require_id, conn->ident_user);
+        if (!conn->arrived && !conn->require_id && (conn->ident || too_much)) {
             if (!conn->ident)
 			    kiwi_str_redup(&conn->ident_user, "user", (char *) "(no identity)");
             rx_loguser(conn, LOG_ARRIVED);

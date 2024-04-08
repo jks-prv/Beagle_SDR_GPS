@@ -59,6 +59,7 @@ typedef struct {
     bool ext_clk;
     bool allow_admin_conns;
     bool spectral_inversion, spectral_inversion_lockout;
+    bool require_id;
     
     float rf_attn_dB;
     

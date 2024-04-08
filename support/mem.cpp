@@ -333,8 +333,15 @@ void list_grow(list_t *list, u4_t idx)
         
 }
 
+void list_free(list_t *list)
+{
+    kiwi_free(list->id, list->items);
+    kiwi_free("list_free", list);
+}
+
 void *item_ptr(list_t *list, u4_t idx)
 {
+    if (idx >= list->n_items) return NULL;
     return TO_VOID_PARAM((char *) FROM_VOID_PARAM(list->items)  + (list->item_bytes * idx));
 }
 

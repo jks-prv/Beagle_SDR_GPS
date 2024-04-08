@@ -19,7 +19,9 @@ var admin = {
    
    spectral_inversion_lockout: false,
    
+   users_list: null,
    users_seq: 0,
+   users_sort: 0,
    exp_vis: [],
    
    _last_: 0
@@ -1240,8 +1242,13 @@ function connect_proxy_server_cb(path, val)
 function users_html()
 {
    var s =
-      w3_div('id-users w3-container w3-section w3-hide',
-         w3_div('id-users-container w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
+      w3_div('id-users w3-container w3-hide',
+         w3_inline('w3-container/w3-margin-top',
+            w3_text('w3-text-teal w3-bold', 'All users since Kiwi restart'),
+            w3_button('w3-margin-left w3-aqua', 'Clear list', 'users_clear_cb')
+         ),
+         w3_hr('w3-margin-TB-16'),
+         w3_div('w3-container w3-margin-top w3-margin-bottom w3-card-8 w3-round-xlarge w3-pale-blue',
             w3_table('id-users-table w3-margin-bottom w3-table-6-8 w3-striped-except-hidden')
          )
       );
@@ -1250,7 +1257,11 @@ function users_html()
 
 function users_focus()
 {
-	admin.users_interval = kiwi_setInterval(users_get_list, 10000);
+	admin.users_interval = kiwi_setInterval(
+	   function() {
+	      users_get_list(0);
+	   }, 10000
+	);
 }
 
 function users_blur()
@@ -1258,9 +1269,15 @@ function users_blur()
 	kiwi_clearInterval(admin.users_interval);
 }
 
-function users_get_list()
+function users_get_list(i)
 {
-   ext_send("SET get_user_list");
+   ext_send("SET get_user_list="+ i);
+}
+
+function users_clear_cb(path, idx)
+{
+   admin.users_new = [];
+   ext_send("SET user_list_clear");
 }
 
 function users_expand_cb(path, idx)
@@ -1274,14 +1291,38 @@ function users_expand_cb(path, idx)
    w3_els('id-users-'+ i, function(el, i) { w3_hide2(el, !vis); } );
 }
 
-function users_list_cb(s)
+function users_sort_cb(path, idx)
 {
-   admin.users_seq++;
-   //if (admin.users_seq > 1) return;
+   admin.users_sort = +idx;
+   console.log('users_sort_cb='+ admin.users_sort);
+   admin.users_list.sort(users_sort);
+   users_list(admin.users_list);
+}
+
+function users_sort(a, b)
+{
+   switch (admin.users_sort) {
+      case 0: return kiwi_sort_numeric(a.s, b.s); break;
+
+      case 1: return kiwi_sort_ignore_case(a.i, b.i); break;
+      case 2: return kiwi_sort_ignore_case(b.i, a.i); break;
+
+      case 3: return kiwi_sort_ignore_case(a.a[0].ip, b.a[0].ip); break;
+      case 4: return kiwi_sort_ignore_case(b.a[0].ip, a.a[0].ip); break;
+
+      case 5: return kiwi_sort_ignore_case(a.a[0].g, b.a[0].g); break;
+      case 6: return kiwi_sort_ignore_case(b.a[0].g, a.a[0].g); break;
+
+      case 7: return kiwi_sort_numeric(a.t, b.t); break;
+      case 8: return kiwi_sort_numeric(b.t, a.t); break;
+
+      default: return 0; break;
+   }
+}
+
+function users_list(ar)
+{
    var i, j;
-   //console.log(s);
-   var o = JSON.parse(s);
-   console.log(o);
    
    var detail = function(ar, i) {
       var a = ar[i];
@@ -1289,18 +1330,30 @@ function users_list_cb(s)
       return { ip: a.ip, geo: a.g, dhms: o.dhms };
    };
    
+   i = 1;
+   var ud = function(id) {
+      var s = id;
+      s += w3_button('w3-margin-L-8 w3-padding-tiny', w3_icon('', 'fa-caret-up', 20, 'blue'), 'users_sort_cb', i++);
+      s += w3_button('w3-margin-L-8 w3-padding-tiny', w3_icon('', 'fa-caret-down', 20, 'blue'), 'users_sort_cb', i++);
+      return s;
+   };
+   
    var s =
       w3_table_row('',
-         w3_table_heads('', '', 'user', 'IP', 'location', 'connected', 'notes')
+         w3_table_heads('',
+            w3_button('w3-margin-L-8x w3-padding-tiny||title="sort in order\nof connection"',
+               w3_icon('', 'fa-bars', 20, 'blue'), 'users_sort_cb', 0),
+            ud('user'), ud('IP'), ud('location'), ud('connected'), 'notes'
+         )
       );
 
-   o.forEach(function(u,i) {
+   if (ar) ar.forEach(function(u,i) {
       var multi = (u.a.length > 1);
       if (isUndefined(admin.exp_vis[i])) admin.exp_vis[i] = 0;
       admin.exp_vis[i] = 0;   //jksx
       var vis = admin.exp_vis[i];
       var notes = '';
-      if (+u.c > 1) notes += ' ['+ u.c +' conns]';
+      //if (+u.c > 1) notes += ' ['+ u.c +' conns]';
       if (multi) notes += ' ['+ kiwi_dhms(+u.t).dhms +' total]';
       var d = detail(u.a, 0);
       s += w3_table_row('',
@@ -1313,7 +1366,36 @@ function users_list_cb(s)
             w3_table_cells('', '', '', d.ip, d.geo, d.dhms, '&nbsp;'));
       }
    });
+   
    w3_innerHTML('id-users-table', s);
+}
+
+function users_list_cb(s)
+{
+   admin.users_seq++;
+   //if (admin.users_seq > 1) return;
+   var o;
+   try {
+      o = JSON.parse(s);
+   } catch(ex) {
+      console.log(ex);
+      console.log(s);
+      return;
+   }
+   //console.log(o);
+   if (o.end) {
+      if (!isArg(admin.users_new)) admin.users_new = [];
+      admin.users_list = admin.users_new;
+      //console.log('users_sort='+ admin.users_sort);
+      if (admin.users_sort) admin.users_list.sort(users_sort);
+      users_list(admin.users_list);
+   } else {
+      var idx = +o.s;
+      if (idx == 0)
+         admin.users_new = [];
+      admin.users_new[idx] = o;
+      users_get_list(idx + 1);
+   }
 }
 
 
