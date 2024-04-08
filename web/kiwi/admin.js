@@ -1156,7 +1156,7 @@ function connect_rev_status_cb(status)
       if (cfg.sdr_hu_dom_sel == kiwi.REV) connect_dom_rev_focus(true);
    } else
    
-	if (status >= 100) {    // error
+	if (!(status >= 200 && status <= 299)) {     // error
 	   console.log('$error');
       ext_set_cfg_param('cfg.server_url', '', EXT_SAVE);
    }
