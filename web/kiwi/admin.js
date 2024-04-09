@@ -1260,7 +1260,7 @@ function users_focus()
 	admin.users_interval = kiwi_setInterval(
 	   function() {
 	      users_get_list(0);
-	   }, 10000
+	   }, 30000
 	);
 }
 
@@ -1271,6 +1271,7 @@ function users_blur()
 
 function users_get_list(i)
 {
+   if (i == 0) console.log('users_get_list(0)');
    ext_send("SET get_user_list="+ i);
 }
 
@@ -1291,6 +1292,20 @@ function users_expand_cb(path, idx)
    w3_els('id-users-'+ i, function(el, i) { w3_hide2(el, !vis); } );
 }
 
+function users_sort_ip4(a, b)
+{
+   a = a.split('.');
+   if (a.length < 4) return 0;
+   b = b.split('.');
+   if (b.length < 4) return 0;
+   
+   for (var i = 0; i < 4; i++) {
+      if (a[i] < b[i]) return -1;
+      if (a[i] > b[i]) return +1;
+   }
+   return 0;
+}
+
 function users_sort_cb(path, idx)
 {
    admin.users_sort = +idx;
@@ -1307,8 +1322,8 @@ function users_sort(a, b)
       case 1: return kiwi_sort_ignore_case(a.i, b.i); break;
       case 2: return kiwi_sort_ignore_case(b.i, a.i); break;
 
-      case 3: return kiwi_sort_ignore_case(a.a[0].ip, b.a[0].ip); break;
-      case 4: return kiwi_sort_ignore_case(b.a[0].ip, a.a[0].ip); break;
+      case 3: return users_sort_ip4(a.a[0].ip, b.a[0].ip); break;
+      case 4: return users_sort_ip4(b.a[0].ip, a.a[0].ip); break;
 
       case 5: return kiwi_sort_ignore_case(a.a[0].g, b.a[0].g); break;
       case 6: return kiwi_sort_ignore_case(b.a[0].g, a.a[0].g); break;
