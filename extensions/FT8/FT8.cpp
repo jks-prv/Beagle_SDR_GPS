@@ -170,12 +170,12 @@ void ft8_close(int rx_chan)
 bool ft8_msgs(char *msg, int rx_chan)
 {
 	ft8_t *e = &ft8[rx_chan];
+    e->rx_chan = rx_chan;   // remember our receiver channel number
 	int n;
 	
 	//rcprintf(rx_chan, "### ft8_msgs <%s>\n", msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
 		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
