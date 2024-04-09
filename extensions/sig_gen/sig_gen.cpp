@@ -61,13 +61,13 @@ void gen_inject(int rx_chan, int instance, int ns_out, TYPECPX *samps)
 bool gen_msgs(char *msg, int rx_chan)
 {
 	gen_t *e = &gen[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//printf("### gen_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
 

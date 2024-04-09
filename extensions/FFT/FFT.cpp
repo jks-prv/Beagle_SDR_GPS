@@ -193,13 +193,13 @@ bool fft_data(int rx_chan, int instance, int flags, int ratio, int nsamps, TYPEC
 bool fft_msgs(char *msg, int rx_chan)
 {
 	fft_t *e = &fft[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//printf("FFT RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
 

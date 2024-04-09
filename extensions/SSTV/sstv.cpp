@@ -114,6 +114,7 @@ void sstv_close(int rx_chan)
 bool sstv_msgs(char *msg, int rx_chan)
 {
 	sstv_chan_t *e = &sstv_chan[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int i, n;
     char *cmd_p;
 	
@@ -121,8 +122,6 @@ bool sstv_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 	    memset(e, 0, sizeof(*e));
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-
         e->fft.in1k = SSTV_FFTW_ALLOC_REAL(1024);
         assert(e->fft.in1k != NULL);
         e->fft.out1k = SSTV_FFTW_ALLOC_COMPLEX(1024);
@@ -139,7 +138,7 @@ bool sstv_msgs(char *msg, int rx_chan)
         sstv_video_once(e);
         sstv_sync_once(e);
         
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
 	
@@ -165,7 +164,7 @@ bool sstv_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET stop") == 0) {
 		printf("SSTV: stop\n");
 
-		sstv_close(e->rx_chan);
+		sstv_close(rx_chan);
         e->test = false;
 		return true;
 	}
@@ -209,7 +208,7 @@ bool sstv_msgs(char *msg, int rx_chan)
         }
 
         printf("SSTV: manual adjust @ %.1f Hz, Skip %d\n", e->pic.Rate, e->pic.Skip);
-        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status", "%s, man adj, %.1f Hz (hdr %+d), skip %d smp (%.1f ms)",
+        ext_send_msg_encoded(rx_chan, false, "EXT", "status", "%s, man adj, %.1f Hz (hdr %+d), skip %d smp (%.1f ms)",
             m->ShortName, e->pic.Rate, e->pic.HeaderShift, e->pic.Skip, e->pic.Skip * (1e3 / e->pic.Rate));
         sstv_video_get(e, "man-redraw", e->pic.Skip, true);
 
@@ -232,8 +231,8 @@ bool sstv_msgs(char *msg, int rx_chan)
 
         bool test = (snd_rate != SND_RATE_3CH);
 		e->test = test;
-		if (test) ext_send_msg_encoded(e->rx_chan, false, "EXT", "mode_name", "");
-        ext_send_msg_encoded(e->rx_chan, false, "EXT", "status",
+		if (test) ext_send_msg_encoded(rx_chan, false, "EXT", "mode_name", "");
+        ext_send_msg_encoded(rx_chan, false, "EXT", "status",
             test? "test image" : "test image not available in 3-channel/20 kHz mode");
 		return true;
 	}

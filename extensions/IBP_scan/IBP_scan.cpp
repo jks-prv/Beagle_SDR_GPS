@@ -19,13 +19,13 @@ static ibp_scan_t ibp_scan[MAX_RX_CHANS];
 bool ibp_scan_msgs(char *msg, int rx_chan)
 {
 	ibp_scan_t *e = &ibp_scan[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//printf("### ibp_scan_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, false, "EXT ready");
+		ext_send_msg(rx_chan, false, "EXT ready");
 		return true;
 	}
 

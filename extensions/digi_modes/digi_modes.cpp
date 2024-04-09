@@ -147,6 +147,7 @@ void digi_close(int rx_chan)
 bool digi_msgs(char *msg, int rx_chan)
 {
 	digi_t *e = &digi[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//rcprintf(rx_chan, "### digi_msgs <%s>\n", msg);
@@ -158,8 +159,7 @@ bool digi_msgs(char *msg, int rx_chan)
 	}
 
 	if (strcmp(msg, "SET digi_start") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-        conn_t *conn = rx_channels[e->rx_chan].conn;
+        conn_t *conn = rx_channels[rx_chan].conn;
 		e->rsid = &m_RsId[rx_chan];
 		e->last_freq_kHz = conn->freqHz/1e3;
         digi_conf.freq_offset_Hz = (u4_t) (freq_offset_kHz * 1e3);

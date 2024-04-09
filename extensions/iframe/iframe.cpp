@@ -28,10 +28,10 @@ static iframe_t iframe[MAX_RX_CHANS];
 bool iframe_msgs(char *msg, int rx_chan)
 {
 	iframe_t *e = &iframe[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, IFRAME_DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, IFRAME_DEBUG_MSG, "EXT ready");
 		return true;
 	}
     
