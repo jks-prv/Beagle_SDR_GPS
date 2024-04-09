@@ -919,15 +919,21 @@ function tdoa_style_marker(marker, idx, name, type, map)
                      tdoa_marker_dblclick(ev.target);
                   });
                   el.addEventListener('mouseenter', function(ev) {
-                     console.log('tooltip mouseenter');
-                     console.log(ev);
-                     if (!rh.selected) w3_color(el, 'black', 'yellow');
+                     //console.log('tooltip mouseenter z='+ el.style.zIndex);
+                     //console.log(ev);
+                     if (!rh.selected) {
+                        w3_color(el, 'black', 'yellow');
+                        el.style.zIndex = 9001;    // put highlighted marker on top
+                     }
                      tdoa_clear_unspiderfy_timeout();
                   });
                   el.addEventListener('mouseleave', function(ev) {
-                     console.log('tooltip mouseleave');
+                     //console.log('tooltip mouseleave z='+ el.style.zIndex);
                      //console.log(ev);
-                     if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+                     if (!rh.selected) {
+                        rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+                        el.style.zIndex = 9000;    // NB: "z-index: 9000" in TDoA.css
+                     }
                      tdoa_set_unspiderfy_timeout();
                   });
                }
