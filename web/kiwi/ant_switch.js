@@ -496,6 +496,10 @@ function ant_switch_admin_msg(param)
             w3_select('w3-width-auto w3-label-inline', 'Switch device:', 'select',
                'ant_sw.backend', ant_sw.backend, ant_sw.backends_s, 'ant_switch_backend_cb')
          );
+         w3_innerHTML('id-antsw-ip-url',
+            w3_input('/w3-label-inline w3-label-not-bold w3-nowrap/w3-padding-small||size=40', 'IP address or URL:',
+               'ant_sw.ip_or_url', ant_sw.ip_or_url, 'ant_switch_set_ip_or_url_cb')
+         );
          return true;
          
       case "antsw_backend":
@@ -621,10 +625,9 @@ function ant_switch_config_html()
       w3_div('id-antsw w3-text-teal', '<b>Antenna switch configuration</b>' + '<hr>' +
          w3_div('',
             w3_inline('w3-gap-32/',
-               w3_div('id-antsw-backends'),
+               w3_div('id-antsw-backends', '<b>Loading...</b>'),
                w3_div('id-antsw-ver'),
-               w3_input('/w3-label-inline w3-label-not-bold w3-nowrap/w3-padding-small||size=40', 'IP address or URL:',
-                  'ant_sw.ip_or_url', ant_sw.ip_or_url, 'ant_switch_set_ip_or_url_cb')
+               w3_div('id-antsw-ip-url')
             ),
 
             w3_div('',
@@ -679,6 +682,11 @@ function ant_switch_config_html()
       )
    );
 
-   ext_send('ADM antsw_GetBackends');
-   ext_send('ADM antsw_GetInfo');
+   // delay to lessen impact on other tab updates
+   setTimeout(
+      function() {
+         ext_send('ADM antsw_GetBackends');
+         ext_send('ADM antsw_GetInfo');
+      }, 3000
+   );
 }
