@@ -130,6 +130,10 @@ alias trunc="truncate -s 0"
 alias keys="cd /root; mkdir -p .ssh; cd .ssh; cat >authorized_keys"
 alias keys2="cp authorized_keys authorized_keys2"
 
+# debian acct
+alias chod="chown debian:debian"
+alias modn="stat -c '%a %n'"
+
 # pki colordiff
 p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn ${no_diff}"
 alias diff="colordiff"
