@@ -1346,22 +1346,24 @@ function users_list(ar)
    };
    
    i = 1;
+   var fmt = 'w3-margin-L-8 w3-padding-tiny';
    var ud = function(id) {
       var s = id;
-      s += w3_button('w3-margin-L-8 w3-padding-tiny', w3_icon('', 'fa-caret-up', 20, 'blue'), 'users_sort_cb', i++);
-      s += w3_button('w3-margin-L-8 w3-padding-tiny', w3_icon('', 'fa-caret-down', 20, 'blue'), 'users_sort_cb', i++);
+      s += w3_button(fmt, w3_icon('', 'fa-caret-up', 20, 'blue'), 'users_sort_cb', i++);
+      s += w3_button(fmt, w3_icon('', 'fa-caret-down', 20, 'blue'), 'users_sort_cb', i++);
       return s;
    };
    
    var s =
       w3_table_row('',
          w3_table_heads('',
-            w3_button('w3-margin-L-8x w3-padding-tiny||title="sort in order\nof connection"',
+            w3_button('w3-padding-tiny||title="sort in order\nof connection"',
                w3_icon('', 'fa-bars', 20, 'blue'), 'users_sort_cb', 0),
-            ud('user'), ud('IP'), ud('location'), ud('connected'), 'notes'
+            ud('name/callsign'), ud('IP address'), ud('location'), ud('connect time'), 'notes'
          )
       );
 
+   fmt = ' w3-padding-tiny||title="name&slash;callsign used\nmultiple IP addresses"';
    if (ar) ar.forEach(function(u,i) {
       var multi = (u.a.length > 1);
       if (isUndefined(admin.exp_vis[i])) admin.exp_vis[i] = 0;
@@ -1372,7 +1374,7 @@ function users_list(ar)
       if (multi) notes += ' ['+ kiwi_dhms(+u.t).dhms +' total]';
       var d = detail(u.a, 0);
       s += w3_table_row('',
-         w3_table_cells('', multi? w3_button('id-users-icon-'+ i +' w3-padding-0', w3_icon('', 'fa-chevron-circle-right', 20, 'blue'), 'users_expand_cb', i) : '',
+         w3_table_cells('', multi? w3_button('id-users-icon-'+ i + fmt, w3_icon('', 'fa-chevron-circle-right', 20, 'blue'), 'users_expand_cb', i) : '',
             dq(u.i), d.ip, d.geo, d.dhms, notes)
       );
       for (j = 1; j < u.a.length; j++) {
