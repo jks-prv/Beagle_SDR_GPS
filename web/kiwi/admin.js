@@ -1271,7 +1271,7 @@ function users_blur()
 
 function users_get_list(i)
 {
-   if (i == 0) console.log('users_get_list(0)');
+   //if (i == 0) console.log('users_get_list(0)');
    ext_send("SET get_user_list="+ i);
 }
 
