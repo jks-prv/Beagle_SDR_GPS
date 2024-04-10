@@ -49,53 +49,53 @@ void c2s_mon(void *param)
 	nbuf_t *nb = NULL;
 	while (TRUE) {
 	
-		if (nb) web_to_app_done(conn_mon, nb);
-		n = web_to_app(conn_mon, &nb);
-				
-		if (n) {
-			char *cmd = nb->buf;
-			cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
+        if (nb) web_to_app_done(conn_mon, nb);
+        n = web_to_app(conn_mon, &nb);
+            
+        if (n) {
+            char *cmd = nb->buf;
+            cmd[n] = 0;		// okay to do this -- see nbuf.c:nbuf_allocq()
 
-			// SECURITY: this must be first for auth check
-			if (rx_common_cmd(STREAM_MONITOR, conn_mon, cmd)) {
-			    if (!init) {
-			        if (kiwi_str_begins_with(cmd, "SET auth")) {
+            // SECURITY: this must be first for auth check
+            if (rx_common_cmd(STREAM_MONITOR, conn_mon, cmd)) {
+                if (!init) {
+                    if (kiwi_str_begins_with(cmd, "SET auth")) {
                         send_msg(conn_mon, false, "MSG monitor");
-			            init = true;
-			        }
-			    }
-				continue;
-			}
-			
-			//cprintf(conn_mon, "CAMP: Q=%d <%s>\n", conn_mon->queued? 1:0, cmd);
-			
-			int rx;
-			if (sscanf(cmd, "SET MON_CAMP=%d", &rx) == 1) {
-			    //cprintf(conn_mon, "CAMP: SET MON_CAMP=%d\n", rx);
+                        init = true;
+                    }
+                }
+                continue;
+            }
+        
+            //cprintf(conn_mon, "CAMP: Q=%d <%s>\n", conn_mon->queued? 1:0, cmd);
+        
+            int rx;
+            if (sscanf(cmd, "SET MON_CAMP=%d", &rx) == 1) {
+                //cprintf(conn_mon, "CAMP: SET MON_CAMP=%d\n", rx);
 
                 // remove any previous camping
                 bool stop = false;
                 for (i = 0; i < MAX_RX_CHANS; i++) {
-			        rx_chan_t *rxc = &rx_channels[i];
+                    rx_chan_t *rxc = &rx_channels[i];
                     for (j = 0; j < n_camp; j++) {
                         conn_t *c = rxc->camp_conn[j];
                         if (c == conn_mon) {
                             c->camp_init = false;
                             rxc->camp_conn[j] = NULL;
-			                rxc->n_camp--;
+                            rxc->n_camp--;
                             //cprintf(conn_mon, "CAMP: rem rx%d slot=%d/%d\n", i, rxc->camp_id[i], j+1, n_camp);
                             stop = true;
                         }
                     }
                 }
-                
+            
                 if (rx == -1 || stop) send_msg(conn_mon, false, "MSG audio_camp=1,0");      // audio disconnect
                 camped_rx = -1;
                 if (rx == -1) continue;
 
-			    int okay = 0;
-			    rx_chan_t *rxc = &rx_channels[rx];
-			    if (rxc->n_camp < n_camp) {
+                int okay = 0;
+                rx_chan_t *rxc = &rx_channels[rx];
+                if (rxc->n_camp < n_camp) {
                     for (i = 0; i < n_camp; i++) {
                         conn_t *c = rxc->camp_conn[i];
                         if (c != NULL) continue;
@@ -106,21 +106,21 @@ void c2s_mon(void *param)
                         camped_rx = rx;
                         break;
                     }
-			        rxc->n_camp++;
-			    }
-			    
+                    rxc->n_camp++;
+                }
+            
                 send_msg(conn_mon, false, "MSG camp=%d,%d", okay, rx);
-			    continue;
-			}
+                continue;
+            }
 
-			if (sscanf(cmd, "SET MON_QSET=%d", &i) == 1) {
-			    conn_mon->queued = (i != 0);
-			    conn_mon->arrival = conn_mon->queued? timer_sec() : 0;
-			    continue;
-			}
+            if (sscanf(cmd, "SET MON_QSET=%d", &i) == 1) {
+                conn_mon->queued = (i != 0);
+                conn_mon->arrival = conn_mon->queued? timer_sec() : 0;
+                continue;
+            }
 
-			if (strcmp(cmd, "SET MON_QPOS") == 0) {
-			    int pos = 0, waiters = 0;
+            if (strcmp(cmd, "SET MON_QPOS") == 0) {
+                int pos = 0, waiters = 0;
                 conn_t *c = conns;
                 for (i = 0; i < N_CONNS; i++, c++) {
                     if (c->type == STREAM_MONITOR && c->queued && c->arrival) {
@@ -133,10 +133,10 @@ void c2s_mon(void *param)
                 int rx_free = rx_chan_free_count(RX_COUNT_ALL);
                 int chan_no_pwd = rx_chan_no_pwd(PWD_CHECK_YES);
                 bool chan_avail;
-                
+            
                 if (chan_no_pwd) {
                     int chan_need_pwd = rx_chans - chan_no_pwd;
-                
+            
                     // Allow if minimum number of channels needing password remains.
                     // This minimum number is reduced by the number of already privileged connections.
                     int already_privileged_conns = rx_count_server_conns(LOCAL_OR_PWD_PROTECTED_USERS);
@@ -150,7 +150,7 @@ void c2s_mon(void *param)
                 } else {
                     chan_avail = (rx_free > 0);
                 }
-                
+            
                 bool redirect = false;
                 if (!chan_avail) {
                     char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
@@ -160,24 +160,24 @@ void c2s_mon(void *param)
                     admcfg_string_free(url_redirect);
                 }
 
-		        static u4_t lockout;
-		        bool locked = (lockout > timer_sec())? 1:0;
-		        
-		        //int reload = (!locked && pos == 1 && (chan_avail || redirect))? 1:0;
-		        int reload = (!locked && pos == 1 && chan_avail)? 1:0;
-		        if (reload) lockout = timer_sec() + 10;
-		        //cprintf(conn_mon, "CAMP: QPOS=%d waiters=%d rx_chans=%d rx_free=%d locked=%d chan_avail=%d redirect=%d reload=%d\n",
-		        //    pos, waiters, rx_chans, rx_free, locked, chan_avail, redirect, reload);
+                static u4_t lockout;
+                bool locked = (lockout > timer_sec())? 1:0;
+            
+                //int reload = (!locked && pos == 1 && (chan_avail || redirect))? 1:0;
+                int reload = (!locked && pos == 1 && chan_avail)? 1:0;
+                if (reload) lockout = timer_sec() + 10;
+                //cprintf(conn_mon, "CAMP: QPOS=%d waiters=%d rx_chans=%d rx_free=%d locked=%d chan_avail=%d redirect=%d reload=%d\n",
+                //    pos, waiters, rx_chans, rx_free, locked, chan_avail, redirect, reload);
 
                 send_msg(conn_mon, false, "MSG qpos=%d,%d,%d", pos, waiters, reload);
-			    continue;
-			}
+                continue;
+            }
 
-			//cprintf(conn_mon, "c2s_mon: unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
-			//    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_mon->remote_ip);
+            //cprintf(conn_mon, "c2s_mon: unknown command: sl=%d %d|%d|%d [%s] ip=%s ==================================\n",
+            //    strlen(cmd), cmd[0], cmd[1], cmd[2], cmd, conn_mon->remote_ip);
 
-			continue;
-		}
+            continue;       // keep checking until no cmds in queue
+        }
 		
         // detect camped connection has gone away
 		if (camped_rx != -1) {
@@ -205,6 +205,6 @@ void c2s_mon(void *param)
 			panic("shouldn't return");
 		}
 		
-		TaskSleepReasonMsec("mon-cmd", 250);
+		TaskSleepReasonMsec("mon-cmd", 200);
 	}
 }

@@ -47,7 +47,7 @@
 
 antsw_t antsw;
 static bool using_defaults;
-static const int poll_msec = 500;
+static const int poll_msec = 100;
 
 #define ANTSW_SHMEM_STATUS shmem->status_u4[N_SHMEM_STATUS_ANT_SW][0]
 #define ANTSW_SHMEM_ANTS   &shmem->status_str_small[0]
