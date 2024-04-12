@@ -1,9 +1,8 @@
 # specify explicitly so as not to include unwanted .js files
 FILES_EMBED_JS += web/pkgs/w3color.js
 #FILES_EMBED_JS += web/pkgs/xdLocalStorage/xdLocalStorage.js web/pkgs/xdLocalStorage/xd-utils.js
-FILES_EMBED_JS_NOPKG += $(wildcard web/pkgs/js/*.js) $(wildcard web/pkgs/js/*/*.js)
 
-FILES_EMBED_CSS += web/pkgs/w3.css
+FILES_EMBED_JS_NOPKG += $(wildcard web/pkgs/js/*.js) $(wildcard web/pkgs/js/*/*.js)
 
 # NB: FILES_EMBED_MISC not FILES_EMBED_HTML because want to leave intact
 #FILES_EMBED_MISC += $(wildcard web/pkgs/xdLocalStorage/*.html)

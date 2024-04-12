@@ -48,6 +48,7 @@ int median_i(int *i, int len, int *pct_1 = NULL, int *pct_2 = NULL);
 #define SM_NO_DEBUG	    false
 #define SM_RX_CHAN_ALL  -1
 #define SM_SND_ADM_ALL  -2
+#define SM_ADMIN_ALL    -3
 
 void send_msg_buf(conn_t *c, char *s, int slen);
 void send_msg(conn_t *c, bool debug, const char *msg, ...);

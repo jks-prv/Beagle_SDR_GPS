@@ -593,7 +593,10 @@ retry:
 			
 			if (rx_n != -1) {
 			    conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx_n);
-			    rx_channels[rx_n].busy = true;
+			    rx_chan_t *rxc;
+			    rxc = &rx_channels[rx_n];
+			    memset(rxc, 0, sizeof(rx_chan_t));
+			    rxc->busy = true;
 			}
 		} else {
             conn_printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",

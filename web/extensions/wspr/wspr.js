@@ -405,11 +405,12 @@ function wspr_controls_setup()
 	ext_panel_show(controls_html, data_html, null);
    var wh = waterfall_height();
    //var ch = (wh <= 546)? 240 : Math.round(wh * 0.44);    // scale control panel height on larger screens
-   var ch = Math.round(wh * 0.9);   // scale control panel height on larger screens
+   //var ch = Math.round(wh * 0.9);   // scale control panel height on larger screens
+   var ch = (wh <= 225)? 203 : Math.round(wh * 0.9);     // scale control panel height on larger screens
    ext_set_controls_width_height(null, ch);
    var dh = ch - w3_el('id-wspr-controls-top').clientHeight - /* borders */ 20;
    w3_el('id-wspr-decode').style.height = px(dh);
-   //console.log('WSPR wh='+ wh +' ch='+ ch +' dh='+ dh);
+   console.log('WSPR wh='+ wh +' ch='+ ch +' dh='+ dh);
 	time_display_setup('wspr');
 	wspr.saved_mode = ext_get_mode();
 	//wspr_resize();
@@ -842,7 +843,7 @@ function wspr_draw_scale(cf)
 function wspr_set_upload_cb(path, checked)
 {
 	// remove old cookie use
-	deleteCookie('wspr_upload');
+	kiwi_storeDelete('wspr_upload');
 	
 	if (!wspr_config_okay || wspr.upload_lockout) checked = false;
 	wspr.upload = checked;

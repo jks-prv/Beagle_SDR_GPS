@@ -160,6 +160,18 @@ void printf_init()
     holdover = (char *) "";
 }
 
+#define N_HIGHLIGHT 2
+static int highlight_sl[N_HIGHLIGHT];
+char *highlight_s[N_HIGHLIGHT];
+
+void printf_highlight(int which, const char *prefix)
+{
+    which = CLAMP(which, 0, N_HIGHLIGHT-1);
+    kiwi_asfree(highlight_s[which]);
+    highlight_sl[which] = strlen(prefix);
+    if (highlight_sl[which]) highlight_s[which] = strdup(prefix);
+}
+
 static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 {
 	int i, n, sl;
@@ -265,7 +277,14 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 		
 		// remove our override and call the actual underlying printf
 		#undef printf
-            printf("%s%s %s %c %s", need_newline? "\n":"", tb, sp, want_logged? 'L':' ', buf);
+		    bool color = highlight_sl[0]? (strncasecmp(buf, highlight_s[0], highlight_sl[0]) == 0) : false;
+		    const char *color_s = CYAN " ";
+		    if (!color) {
+		        color = highlight_sl[1]? (strncasecmp(buf, highlight_s[1], highlight_sl[1]) == 0) : false;
+		        color_s = YELLOW " ";
+		    }
+            printf("%s%s %s %c %s%.*s%s", need_newline? "\n":"", tb, sp, want_logged? 'L':' ',
+                color? color_s : "", (int) strlen(buf)-1, buf, color? NONL : "\n");
             need_newline = false;
 		#define printf ALT_PRINTF
 
@@ -337,10 +356,10 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
                 if (i == 0 && buf[0] == '\r') leading_nl = "\r";
                 //real_printf("%d leading_nl='%s' <%s%s> delim='%s'\n", i, ASCII[buf[0]], leading_nl, lines[i].str, ASCII[lines[i].delim]);
                 if (i == n-1 && lines[i].str[0] != '\0' && lines[i].delim == '\0') {
-                    asprintf(&holdover, "%s", lines[i].str);
+                    holdover = strdup(lines[i].str);
                     //real_printf("(holdover)\n");
                 } else {
-                    send_msg_encoded(c, "MSG", "status_msg_text", "%s%s%s%c",
+                    send_msg_encoded(c, "MSG", "output_msg", "%s%s%s%c",
                         (i == 0 && (type & PRINTF_FF))? "\f" : holdover, leading_nl, lines[i].str, lines[i].delim);
                     if (holdover[0] != '\0') {
                         free(holdover);

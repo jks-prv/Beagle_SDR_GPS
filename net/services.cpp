@@ -208,9 +208,12 @@ void my_kiwi_register(bool reg, int root_pwd_unset, int debian_pwd_default)
         cmd_p2 = kstr_asprintf(cmd_p2, "&r=%d&d=%d", root_pwd_unset, debian_pwd_default);
 
     char *kiwisdr_com = DNS_lookup_result("my_kiwi", "kiwisdr.com", &net.ips_kiwisdr_com);
+    int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
+        int dom_stat = (dom_sel == DOM_SEL_REV)? net.proxy_status : (DUC_enable_start? net.DUC_status : -1);
+
     asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
-        "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&reg=%d&pub=%s&pvt=%s&port=%d&serno=%d&jq=%d&deb=%d.%d&ver=%d.%d%s\"",
-        kiwisdr_com, reg? 1:0, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port, net.serno,
+        "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&reg=%d&dom=%d&dom_stat=%d&pub=%s&pvt=%s&port=%d&serno=%d&jq=%d&deb=%d.%d&ver=%d.%d%s\"",
+        kiwisdr_com, reg? 1:0, dom_sel, dom_stat, net.ip_pub, net.ip_pvt, net.use_ssl? net.port_http_local : net.port, net.serno,
         kiwi_file_exists("/usr/bin/jq"), debian_maj, debian_min, version_maj, version_min, kstr_sp(cmd_p2));
 
     kstr_free(non_blocking_cmd(cmd_p, &status));
@@ -302,12 +305,8 @@ static void misc_NET(void *param)
 
         status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root::' /etc/shadow", POLL_MSEC(250));
         root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
-        if (!root_pwd_unset && debian_ver == 11) {
+        if (!root_pwd_unset && debian_ver >= 11) {
             status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root:$y$j9T$lTPmWl28QqgcbJAEAXpLG.$uZrtdkucDJ.DhOP32b2/9taPXDYIgNCNzYIcxZmCV18:' /etc/shadow", POLL_MSEC(250));
-            root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
-        }
-        if (!root_pwd_unset && debian_ver >= 12) {
-            status = non_blocking_cmd_system_child("kiwi.chk_pwd", "grep -q '^root:$y$j9T$WXtmpucuvbSoscS4pSSZ71$5JyHHvnvrDY5BSdBGJaG0G.ipdawbNH8ly4fZv2eFo2:' /etc/shadow", POLL_MSEC(250));
             root_pwd_unset = (WEXITSTATUS(status) == 0)? 1:0;
         }
         
@@ -695,7 +694,12 @@ static void pub_NET(void *param)
 
         retry++;
     } while (!okay && retry <= N_IPINFO_RETRY);   // make multiple attempts
-    if (!okay) lprintf("IPINFO: ### FAILED for all ipinfo servers ###\n");
+    if (!okay) {
+        lprintf("IPINFO: ### FAILED for all ipinfo servers ###\n");
+    } else {
+        // updates places waiting to receive a valid public IP e.g. admin network tab
+        rx_send_config(SM_SND_ADM_ALL);
+    }
 }
 
 /*
@@ -899,6 +903,12 @@ static void reg_public(void *param)
 
 void file_GET(void *param)
 {
+    if (kiwi_file_exists("/root/" REPO_NAME "/unix_env/reflash_delay_update")) {
+        lprintf("file_GET: due to recent re-flash, file update on restart delayed until update window\n");
+        kiwi.allow_admin_conns = true;
+        return;
+    }
+
     // called from _update_task() or check_for_update()
 	bool download_diff_restart = ((int) FROM_VOID_PARAM(param) == FILE_DOWNLOAD_DIFF_RESTART);
 	
@@ -945,7 +955,7 @@ void services_start()
 	CreateTask(pub_NET, 0, SERVICES_PRIORITY);
 	CreateTask(get_TZ, 0, SERVICES_PRIORITY);
 	CreateTask(misc_NET, 0, SERVICES_PRIORITY);
-    SNR_meas_tid = CreateTaskF(SNR_meas_task, 0, SERVICES_PRIORITY, CTF_NO_LOG);
+    SNR_meas_tid = CreateTaskF(SNR_meas, 0, SERVICES_PRIORITY, CTF_NO_LOG);
 	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
     if (!disable_led_task)

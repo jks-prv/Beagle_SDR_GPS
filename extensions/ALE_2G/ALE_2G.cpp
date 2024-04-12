@@ -248,20 +248,20 @@ bool ale_2g_receive_cmds(u2_t key, char *cmd, int rx_chan)
 bool ale_2g_msgs(char *msg, int rx_chan)
 {
 	ale_2g_chan_t *e = &ale_2g_chan[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//printf("### ale_2g_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
 
-		ext_send_msg(e->rx_chan, ALE_2G_DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, ALE_2G_DEBUG_MSG, "EXT ready");
 		return true;
 	}
 
 	if (strcmp(msg, "SET start") == 0) {
 		//printf("ALE_2G: start\n");
-        //c2s_waterfall_no_sync(e->rx_chan, true);
+        //c2s_waterfall_no_sync(rx_chan, true);
 
         #ifdef ALE_2G_TEST_FILE
             e->s2p = e->s2px = e->s22p = ale_2g.s2p_start;
@@ -288,8 +288,8 @@ bool ale_2g_msgs(char *msg, int rx_chan)
 
 	if (strcmp(msg, "SET stop") == 0) {
 		//printf("ALE_2G: stop\n");
-        //c2s_waterfall_no_sync(e->rx_chan, false);
-		ale_2g_close(e->rx_chan);
+        //c2s_waterfall_no_sync(rx_chan, false);
+		ale_2g_close(rx_chan);
 		e->test = false;
 		return true;
 	}
@@ -298,7 +298,7 @@ bool ale_2g_msgs(char *msg, int rx_chan)
 		//printf("ALE_2G: RESET\n");
 		e->reset = true;
 		e->test = false;
-		e->decode.modem_init(e->rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
+		e->decode.modem_init(rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
 		return true;
 	}
 	
@@ -306,7 +306,7 @@ bool ale_2g_msgs(char *msg, int rx_chan)
 	if (sscanf(msg, "SET use_new_resampler=%d", &use_new_resampler) == 1) {
 		//printf("ALE_2G: use_new_resampler %d\n", use_new_resampler);
 		e->use_new_resampler = use_new_resampler? true:false;
-		e->decode.modem_init(e->rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
+		e->decode.modem_init(rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
 		return true;
 	}
 	
@@ -349,7 +349,7 @@ bool ale_2g_msgs(char *msg, int rx_chan)
         e->test = (test_f != 0);
         //printf("ALE_2G: test=%d test_f=%.2f\n", e->test, e->test_f);
         if (e->test) {
-            e->decode.modem_init(e->rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
+            e->decode.modem_init(rx_chan, e->use_new_resampler, ext_update_get_sample_rateHz(rx_chan), FASTFIR_OUTBUF_SIZE);
 		    e->decode.set_freq(fabs(e->test_f));
         } else {
             e->decode.modem_reset();    // in case need to reset active state due to a force cleared test mode

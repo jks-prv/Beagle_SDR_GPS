@@ -723,7 +723,7 @@ function tdoa_open_window(host)
    var pb = ext_get_passband();
    url += '&pbw='+ (pb.high * 2).toFixed(0);
    console.log('tdoa_open_window '+ url);
-   var win = window.open(url, '_blank');
+   var win = kiwi_open_or_reload_page({ url:url, tab:1 });
    if (win) win.focus();
 }
 
@@ -919,15 +919,21 @@ function tdoa_style_marker(marker, idx, name, type, map)
                      tdoa_marker_dblclick(ev.target);
                   });
                   el.addEventListener('mouseenter', function(ev) {
-                     console.log('tooltip mouseenter');
-                     console.log(ev);
-                     if (!rh.selected) w3_color(el, 'black', 'yellow');
+                     //console.log('tooltip mouseenter z='+ el.style.zIndex);
+                     //console.log(ev);
+                     if (!rh.selected) {
+                        w3_color(el, 'black', 'yellow');
+                        el.style.zIndex = 9001;    // put highlighted marker on top
+                     }
                      tdoa_clear_unspiderfy_timeout();
                   });
                   el.addEventListener('mouseleave', function(ev) {
-                     console.log('tooltip mouseleave');
+                     //console.log('tooltip mouseleave z='+ el.style.zIndex);
                      //console.log(ev);
-                     if (!rh.selected) rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+                     if (!rh.selected) {
+                        rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+                        el.style.zIndex = 9000;    // NB: "z-index: 9000" in TDoA.css
+                     }
                      tdoa_set_unspiderfy_timeout();
                   });
                }
@@ -1440,7 +1446,7 @@ function tdoa_get_hosts_cb(hosts)
 
    // now that we have all Kiwi host and ref markers we can process extension parameters
 	var lat, lon, zoom, maptype, init_submit;
-   console.log(tdoa.params);
+   if (isArg(tdoa.params)) console.log(tdoa.params);
    if (tdoa.params) {
       var p = tdoa.params.split(',');
       tdoa.params = null;  // if extension is reloaded don't reprocess params
@@ -3071,7 +3077,7 @@ function tdoa_preview_click(mkr, ev)
       // must delay call to tdoa_wf_preview() until tdoa_waterfall_close() has been called
       tdoa.wf_ws.close();
    } else {
-      var auto = (wf.aper == kiwi.aper_e.auto);
+      var auto = (wf.aper == kiwi.APER_AUTO);
       tdoa.aper_save = wf.aper;
 
       // must also save/restore man maxdb/mindb_un, source depends on aperture mode
@@ -3131,7 +3137,7 @@ function tdoa_waterfall_add_queue(what, ws, firstChars)
       waterfall_add_queue2(what, ws, firstChars);
       tdoa.preview_lines++;
       if (tdoa.preview_lines == 2) {
-         wf_aper_cb('wf.aper', kiwi.aper_e.man);
+         wf_aper_cb('wf.aper', kiwi.APER_MAN);
          setTimeout(wf_autoscale_cb, 1);
       }
    else
@@ -3151,13 +3157,13 @@ function tdoa_waterfall_close()
    } else {
       tdoa.wf_ws = tdoa.wf_mkr = null;
       kiwi.wf_preview_mode = false;
-      var auto = (wf.aper == kiwi.aper_e.auto);
+      var auto = (wf.aper == kiwi.APER_AUTO);
       //console.log('TDoA aper RESTORE '+ (auto? 'AUTO' : 'MAN') +' maxdb='+ tdoa.maxdb_save +' mindb='+ tdoa.mindb_un_save);
       
       // restore for both cases: returning to auto or man aperture mode
-      wf.save_maxdb = maxdb = tdoa.maxdb_save;
-      wf.save_mindb_un = mindb_un = tdoa.mindb_un_save;
-      wf_aper_cb('wf.aper', tdoa.aper_save);
+      if (isArg(tdoa.maxdb_save)) wf.save_maxdb = maxdb = tdoa.maxdb_save;
+      if (isArg(tdoa.mindb_un_save)) wf.save_mindb_un = mindb_un = tdoa.mindb_un_save;
+      if (isArg(tdoa.aper_save)) wf_aper_cb('wf.aper', tdoa.aper_save);
 
       if (!tdoa.wf_conn_bad) {
          w3_clearInnerHTML('id-tdoa-submit-status');

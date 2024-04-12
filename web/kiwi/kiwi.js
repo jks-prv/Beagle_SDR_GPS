@@ -1,6 +1,6 @@
 // KiwiSDR
 //
-// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 var kiwi = {
    d: {},      // debug
@@ -38,6 +38,7 @@ var kiwi = {
    AUTH_USER: 2,
    is_local: [],
    tlimit_exempt_by_pwd: [],
+   admin_save_pwd: false,
 
    conn_tstamp: 0,
    isOffset: false,
@@ -54,6 +55,11 @@ var kiwi = {
    foff_error_pend: 0,
    notify_seq: 0,
    ident_min: 16,    // e.g. "wsprdaemon_v3.0a" is 16 chars
+   
+   // fixed height instead of content dependent so height is constant between different optbar types
+   OPTBAR_CONTENT_HEIGHT: 150,
+   cur_optbar: null,
+   virt_optbar_click: false,
 
    volume: 50,
    volume_f: 1e-6,
@@ -66,12 +72,12 @@ var kiwi = {
    // CAUTION: must match order in mode.h
    // CAUTION: add new entries at the end
    modes_lc: [ 'am', 'amn', 'usb', 'lsb', 'cw', 'cwn', 'nbfm', 'iq', 'drm',
-              'usn', 'lsn', 'sam', 'sau', 'sal', 'sas', 'qam', 'nnfm' ],
+              'usn', 'lsn', 'sam', 'sau', 'sal', 'sas', 'qam', 'nnfm', 'amw' ],
    modes_uc: [],
    modes_idx: {},
    
    // order that modes appear in menus as opposed to new-entry-appending behavior of kiwi.modes_lc
-   mode_menu: [ 'AM', 'AMN', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
+   mode_menu: [ 'AM', 'AMN', 'AMW', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
                 'IQ', 'DRM', 'SAM', 'SAU', 'SAL', 'SAS', 'QAM' ],
 
    
@@ -103,7 +109,8 @@ var kiwi = {
       custom_1:6, custom_2:7, custom_3:8, custom_4:9
    },
    aper_s: [ 'man', 'auto' ],
-   aper_e: { man:0, auto:1 },
+   APER_MAN: 0,
+   APER_AUTO: 1,
    
    esc_lt: '\x11',   // ascii dc1
    esc_gt: '\x12',   // ascii dc2
@@ -182,7 +189,7 @@ function kiwi_bodyonload(error)
 	} else
 	
 	{
-	   if (initCookie('ident', "").endsWith('KF6VO')) dbgUs = true;
+	   if (kiwi_storeInit('ident', "").endsWith('KF6VO')) dbgUs = true;
 	   
 	   // for testing a clean webpage, e.g. kiwi:8073/test
 	   /*
@@ -212,8 +219,6 @@ function kiwi_bodyonload(error)
          // BUT NB: if you put an alert before the assignment to extint.ws there will be a race with
          // extint.ws needing to be used by ext_send() called by descendents of kiwi_open_ws_cb().
 
-	      //deleteCookie('kiwi');    // for testing only
-         
 			extint.ws = owrx_ws_open_snd(kiwi_open_ws_cb, { conn_type:conn_type });
 		} else {
 			// e.g. admin or mfg connections
@@ -353,7 +358,7 @@ function kiwi_queue_or_camp_cb(path, val, first)
    console.log(url);
    url = url + kiwi_add_search_param(window.location, 'camp');
    console.log('--> '+ url);
-   kiwi_reload_page({ url:url });
+   kiwi_open_or_reload_page({ url:url });
 }
 
 function kiwi_ask_pwd(conn_kiwi)
@@ -366,11 +371,14 @@ function kiwi_ask_pwd(conn_kiwi)
 	      'or camp on an existing channel: <br>' +
          w3_button('w3-medium w3-padding-smaller w3-aqua w3-margin-T-8', 'Queue or Camp', 'kiwi_queue_or_camp_cb');
 	}
-	
+
 	// "&& conn_kiwi" to ignore pathological "/admin?prot" etc.
    var prot = (kiwi_url_param(['p', 'prot', 'protected'], true, false) && conn_kiwi);
 	if (prot) s1 = 'You have requested a password protected channel<br>';
-	var s = "KiwiSDR: software-defined receiver <br>"+ s1 + try_again +
+
+	var user_login = conn_kiwi? w3_innerHTML('id-kiwi-user-login').trim() : '';
+	var s = isNonEmptyString(user_login)? (user_login +'<br><br>') : 'KiwiSDR: software-defined receiver<br>';
+	s += s1 + try_again +
       w3_input('w3-retain-input-focus w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb') +
       s2;
 
@@ -513,13 +521,15 @@ function kiwi_get_init_settings()
 		+' min='+ init_min_dB +' max='+ init_max_dB);
 
 	w3_call('init_scale_dB');
+	
+	//console.log('$ override_1Hz='+ override_1Hz +' cfg.show_1Hz='+ cfg.show_1Hz);
+	if (override_1Hz)
+	   kiwi_storeWrite('freq_dsp_1Hz', 1);
+	else
+	   kiwi_storeInit('freq_dsp_1Hz', cfg.show_1Hz? 1:0);  // set init value from cfg if unset
+	//console.log('$ freq_dsp_1Hz='+ kiwi_storeInit('freq_dsp_1Hz'));
 
-	var ant = ext_get_cfg_param('rx_antenna');
-	var el = w3_el('rx-antenna');
-	if (el != undefined && ant) {
-		el.innerHTML = 'Antenna: '+ kiwi_decodeURIComponent('rx_antenna', ant);
-	}
-
+	w3_innerHTML('rx-antenna', 'Antenna: '+ ext_get_cfg_param_string('rx_antenna'));
    kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '', EXT_NO_SAVE);
 }
 
@@ -547,7 +557,8 @@ function config_save(cfg_s, cfg)
    }
    
    // Can't do this because it defeats the kiwi.cfg.lock mechanism!
-   // Better to just fix the places where back-to-back requests are occurring.
+   // Better to just fix the places where back-to-back requests are occurring
+   // e.g. use w3-defer, EXT_SAVE_DEFER etc.
    /*
    // coalesce back-to-back save requests
    if (kiwi.test_cfg_save_seq == false) {
@@ -571,12 +582,6 @@ function config_save2(kiwi_cfg, cfg)
 
 function cfg_save_json(id, path, val)
 {
-   // ignore first spurious cfg save from ant switch extension
-   if (path == 'cfg.ant_switch.denyswitching' && !kiwi.ant_sw_first_set_ignored) {
-      kiwi.ant_sw_first_set_ignored = true;
-      return;
-   }
-   
 	//console.log('cfg_save_json: BEGIN from='+ id +' path='+ path + (isArg(val)? (' val='+ val) : ''));
 	//if (path.includes('kiwisdr_com_register')) kiwi_trace();
 	//if (path.includes('rev_')) kiwi_trace();
@@ -594,7 +599,7 @@ function cfg_save_json(id, path, val)
 	} else {    // cfg.*
       config_save('cfg', cfg);
 	}
-	//console.log('cfg_save_json: from='+ id +' path='+ path +' DONE');
+	console.log('cfg_save_json: from='+ id +' path='+ path +' val=<'+ val +'> DONE');
 }
 
 ////////////////////////////////
@@ -656,8 +661,12 @@ function geoloc_json(json)
 	}
 	
 	geo.geo = '';
-	if (json.city) geo.geo += json.city;
-	if (country) geo.geo += (json.city? ', ':'') + country;
+	if (cfg.show_geo_city) {
+      if (json.city) geo.geo += json.city;
+      if (country) geo.geo += (json.city? ', ':'') + country;
+   } else {
+      if (country) geo.geo += country;
+   }
    console.log('GEOLOC '+ geo.geo);
 }
     
@@ -2241,8 +2250,8 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	   w3_text('w3-text-css-orange', 'GPS'),
 	   w3_text('', 'acq '+ s)
 	);
-	extint_adc_clock_Hz = adc_clock * 1e6;
-	extint_adc_gps_clock_corr = adc_gps_clk_corrections;
+	extint.adc_clock_Hz = adc_clock * 1e6;
+	extint.adc_gps_clock_corr = adc_gps_clk_corrections;
 	if (adc_gps_clk_corrections) {
 	   s = adc_clock.toFixed(6) +' ('+ adc_gps_clk_corrections.toUnits() +' avgs)';
 	   var el = w3_el('id-msg-gps');
@@ -2306,7 +2315,7 @@ function kiwi_exclusive_use()
 function kiwi_ip_limit_pwd_cb(pwd)
 {
    console.log('kiwi_ip_limit_pwd_cb pwd='+ pwd);
-	writeCookie('iplimit', encodeURIComponent(pwd));
+	kiwi_storeWrite('iplimit', encodeURIComponent(pwd));
    window.location.reload(true);
 }
 
@@ -2466,23 +2475,15 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
          w3_text('w3-text-black', 'FPGA eCPU: '+ ecpu.toFixed(0) +'%')
       );
 
-	var t = uptime_secs;
-	var sec = Math.trunc(t % 60); t = Math.trunc(t/60);
-	var min = Math.trunc(t % 60); t = Math.trunc(t/60);
-	var hr  = Math.trunc(t % 24); t = Math.trunc(t/24);
-	var days = t;
-
-   var s = ' up ';
-	if (days) s += days +'d:';
-	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	var o = kiwi_dhms(uptime_secs);
 	w3_innerHTML('id-status-config',
       w3_text('w3-text-css-orange', 'KiwiSDR '+ kiwi.model),
-      w3_text('', s +', '+ kiwi_config_str)
+      w3_text('', ' up '+ o.dhms +', '+ kiwi_config_str)
 	);
 
 	s = ' | Uptime: ';
-	if (days) s += days +' '+ ((days > 1)? 'days':'day') +' ';
-	s += hr +':'+ min.leadingZeros(2) +':'+ sec.leadingZeros(2);
+	if (o.days) s += o.days +' '+ ((o.days > 1)? 'days':'day') +' ';
+	s += o.hms;
 
 	var noLatLon = (server_time_local == '' || server_time_tzname == 'null');
 	if (server_time_utc) s += ' | UTC: '+ server_time_utc;
@@ -2520,11 +2521,12 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 				w3_col_percent('',
 					w3_div('', 'Public IP address (outside your firewall/router): '+ pub +' [port '+ port_ext +']'), 50,
 					w3_div('', 'Ethernet MAC address: '+ mac.toUpperCase()), 30,
-					w3_div('', 'KiwiSDR serial number: '+ serno), 20
+					w3_div('', 'Model: KiwiSDR '+ kiwi.model), 20
 				),
 				w3_col_percent('',
 					w3_div('', 'Private IP address (inside your firewall/router): '+ pvt +' [port '+ port_int +']'), 50,
-					w3_div('', 'Private netmask: /'+ nm), 50
+					w3_div('', 'Private netmask: /'+ nm), 30,
+					w3_div('', 'Serial number: '+ serno), 20
 				)
 			);
 		config_net.pub_ip = pub;
@@ -2533,6 +2535,8 @@ function config_cb(rx_chans, gps_chans, serno, pub, port_ext, pvt, port_int, nm,
 		config_net.pvt_port = port_int;
 		config_net.mac = mac;
 		config_net.serno = serno;
+		
+		w3_call('connect_update_url');
 	}
 }
 
@@ -2758,10 +2762,14 @@ function user_cb(obj)
          confirmation_show_content(s, 425, 100);
       }
 
-      if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
-         console.log('$ NOTIFY sn='+ obj.ns);
+      //if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
+      if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan) {
+         //console.log('NOTIFY nc|rx_chan='+ obj.nc +'|'+ rx_chan +' seq='+ obj.ns +'|'+ kiwi.notify_seq);
+         if (isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
+         //console.log('NOTIFY sn='+ obj.ns);
 		   msg_send('SET notify_msg');
          kiwi.notify_seq = obj.ns;
+         }
       }
 	});
 	
@@ -2795,7 +2803,7 @@ function kiwi_toggle(flags, val_set, val_default, cookie_id)
 	} else
 	
 	if (flags & toggle_e.FROM_COOKIE) {
-		rv = readCookie(cookie_id);
+		rv = kiwi_storeRead(cookie_id);
 		if (rv != null) {
 		   // backward compatibility: interpret as number
 		   // FIXME: fails if string value looks like a number
@@ -2884,14 +2892,33 @@ function kiwi_init_cfg(stream_name)
 {
    kiwi_set_freq_offset(cfg.freq_offset);
    
-   var page_title = kiwi_decodeURIComponent('PAGE_TITLE', cfg.index_html_params.PAGE_TITLE);
+   // in user and admin html both
+   var page_title = ext_get_cfg_param_string('cfg.index_html_params.PAGE_TITLE');
    if (page_title == '') page_title = 'KiwiSDR';
-   var el = w3_el('id-page-title');    // in user and admin html
-   if (el) el.innerHTML = ((stream_name == 'admin')? 'Admin ':'') + page_title;
-   w3_innerHTML('id-rx-photo-title', kiwi_decodeURIComponent('RX_PHOTO_TITLE', cfg.index_html_params.RX_PHOTO_TITLE));
-   w3_innerHTML('id-rx-photo-desc', kiwi_decodeURIComponent('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC));
-   w3_innerHTML('id-rx-title', kiwi_decodeURIComponent('RX_TITLE', cfg.index_html_params.RX_TITLE));
-   w3_innerHTML('id-owner-info', kiwi_decodeURIComponent('owner_info', cfg.owner_info));
+   w3_innerHTML('id-page-title', ((stream_name == 'admin')? 'Admin ':'') + page_title);
+
+   w3_innerHTML('id-rx-photo-title', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_TITLE'));
+   w3_innerHTML('id-rx-photo-desc', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_DESC'));
+   w3_innerHTML('id-rx-title', ext_get_cfg_param_string('cfg.index_html_params.RX_TITLE'));
+   w3_innerHTML('id-owner-info', ext_get_cfg_param_string('cfg.owner_info'));
+}
+
+function kiwi_snr_stats(all, hf)
+{
+   //console.log('SNR ', all, ':', hf, ' dB ');
+   if (hf == -1) {
+      // only show single SNR when transverter frequency offset
+      //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB');
+      w3_innerHTML('id-rx-snr', ', SNR ', all, ' dB');
+
+      w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: All ', all, ' dB'); });
+   } else {
+      //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB, HF ', hf, ' dB');
+      w3_innerHTML('id-rx-snr', ', SNR ', all, '/', hf, ' dB');
+      w3_title('id-rx-snr', all +' dB, 0-30 MHz\n'+ hf +' dB, 1.8-30 MHz');
+
+      w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: ', all, ' dB (0-30 MHz), ', hf, ' dB (1.8-30 MHz)'); });
+   }
 }
 
 
@@ -3043,6 +3070,7 @@ function kiwi_msg(param, ws)
 		case "cfg_loaded":
 			console.log('### cfg_loaded');
          owrx_init_cfg();
+         w3_call('ant_switch_user_refresh');
 			break;
 		
 		case "no_admin_conns":
@@ -3146,30 +3174,23 @@ function kiwi_msg(param, ws)
 				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
 				
-				if (o.sh == -1) {
-				   // only show single SNR when transverter frequency offset
-               w3_innerHTML('id-rx-snr', ', SNR ', o.sa, ' dB');
-               w3_innerHTML('id-msg-snr', 'SNR: All ', o.sa, ' dB');
-				} else {
-               w3_innerHTML('id-rx-snr', ', SNR ', o.sa, ':', o.sh, ' dB');
-               w3_innerHTML('id-msg-snr', 'SNR: All ', o.sa, ' dB, HF ', o.sh, ' dB');
-				}
-
+				kiwi_snr_stats(o.sa, o.sh);
+				
 				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				w3_call('config_status_cb', o);
 				time_display_cb(o);
 			}
 			break;
 
-		case "status_msg_text":
+		case "output_msg":
 		   // kiwi_output_msg() does decodeURIComponent()
-		   //console.log('status_msg_text: '+ param[1]);
+		   //console.log('output_msg: '+ param[1]);
 		   kiwi_output_msg_p.s = param[1];
 			kiwi_output_msg('id-output-msg', 'id-output-msg', kiwi_output_msg_p);
 			break;
 
 		case "status_msg_html":
-		   var s = kiwi_decodeURIComponent('status_msg_html', param[1]);
+		   var s = w3_json_to_html('status_msg_html', param[1]);
 		   //console.log('status_msg_html: <'+ s +'>');
 			w3_innerHTML('id-status-msg', s);		// overwrites last status msg
 			w3_innerHTML('id-msg-status', s);		// overwrites last status msg
@@ -3203,7 +3224,7 @@ function kiwi_msg(param, ws)
 		   break;
 		
 		case "authkey_cb":
-			extint_authkey_cb(param[1]);
+			extint.authkey_cb(param[1]);
 			break;
 
 		case "down":
@@ -3238,7 +3259,7 @@ function kiwi_msg(param, ws)
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
 			reason_disabled = 'User connections disabled.'+
-			   ((param[1] != '')? (' Reason: '+ kiwi_decodeURIComponent('reason_disabled', param[1])) : '');
+			   ((param[1] != '')? (' Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
 			break;
 		
 		case "sample_rate":
@@ -3256,11 +3277,11 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'adc_clk_nom':
-			extint_adc_clock_nom_Hz = +param[1];
+			extint.adc_clock_nom_Hz = +param[1];
 			break;
 
 		case 'notify_msg':
-		   var s = kiwi_decodeURIComponent('notify_msg', param[1]);
+		   var s = w3_json_to_html('notify_msg', param[1]);
 			console.log('notify_msg: '+ s);
 			if (confirmation.displayed) break;
          s = w3_div('', s);
@@ -3269,15 +3290,24 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'kiwi_kick':
-		   var s = param[1] + ((cfg.reason_kicked != '')? ('<br>Reason: '+ cfg.reason_kicked) : '');
-		   s = kiwi_decodeURIComponent('kiwi_kick', s);
+		   var s = ext_get_cfg_param_string('cfg.reason_kicked');
+		   var s = w3_json_to_html('kiwi_kick', param[1]) + ((s != '')? ('<br>Reason: '+ s) : '');
          //kiwi_show_msg(s);
 			if (confirmation.displayed) break;
          s = w3_div('', s);
          confirmation_show_content(s, 425, 75, null, 'red');
 			break;
+		
+		case 'snr_stats':
+		   var p = param[1].split(',');
+         kiwi_snr_stats(p[0], p[1]);
+         break;
 
 		default:
+		   if (param[0].startsWith('antsw_')) {
+		      if (ant_switch_msg(param))
+		         break;
+		   }
 			rtn = false;
 			break;
 	}

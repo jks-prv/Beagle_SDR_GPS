@@ -68,7 +68,7 @@ var audio_stat_total_input_size = 0;
 var audio_reconnect = 0;
 var audio_silence_count = 0;
 var audio_restart_count = 0;
-var audio_stat_output_bufs;
+var audio_stat_output_bufs = 0;
 var audio_underrun_errors = 0;
 var audio_overrun_errors = 0;
 var audio_last_underruns = 0;
@@ -545,11 +545,11 @@ function audio_set_pan(pan)
 // NB: always use kiwi_log() instead of console.log() in here
 function audio_connect(reconnect)
 {
-   //kiwi_log('AUDIO audio_connect reconnect='+ reconnect);
+   if (audio.d) kiwi_log('AUDIO audio_connect reconnect='+ reconnect);
    
 	if (audio_context == null) return;
 	if (!audio_initial_connect && reconnect) {
-	   //kiwi_log('AUDIO audio_connect reconnect attempt too early -- IGNORED');
+	   if (audio.d) kiwi_log('AUDIO audio_connect reconnect attempt too early -- IGNORED');
 	   return;
 	}
 	if (!reconnect) audio_initial_connect = true;
@@ -565,7 +565,7 @@ function audio_connect(reconnect)
 	audio_stat_output_epoch = -1;
    audio_change_LPF_delayed = false;
 
-	//kiwi_log('audio_connect: reconnect='+ reconnect +' audio_mode_iq='+ audio_mode_iq +' audio_channels='+ audio_channels +' audio_compression='+ audio_compression);
+	if (audio.d) kiwi_log('audio_connect: reconnect='+ reconnect +' audio_mode_iq='+ audio_mode_iq +' audio_channels='+ audio_channels +' audio_compression='+ audio_compression);
 	audio_source = audio_context.createScriptProcessor(audio_buffer_size, 0, audio_channels);		// in_nch=0, out_nch=audio_channels
 	audio_source.onaudioprocess = audio_onprocess;
    audio_disconnected = false;
@@ -717,6 +717,7 @@ function audio_periodic()
          audio_prepared_flags.shift();
          audio_prepared_smeter.shift();
       }
+      if (audio.d) console.log('audio_periodic: '+ audio_context.state);
       return;
    }
 

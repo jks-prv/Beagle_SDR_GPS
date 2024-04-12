@@ -62,6 +62,14 @@ Boston, MA  02110-1301, USA.
 #define FL_PANIC    1
 static bool _cfg_parse_json(cfg_t *cfg, u4_t flags = 0);
 
+//#define CFG_PRF_SAVE
+#ifdef CFG_PRF_SAVE
+    #define cfg_printf(fmt, ...) \
+        printf(fmt, ## __VA_ARGS__)
+#else
+    #define cfg_printf(fmt, ...)
+#endif
+
 //#define CFG_TEST
 #ifdef CFG_TEST
 
@@ -177,6 +185,7 @@ int serial_number;
 // only called once from main()
 void cfg_reload()
 {
+    //printf_highlight(1, "_cfg_");
 	cfg_init();
 	admcfg_init();
 
@@ -352,6 +361,11 @@ void _cfg_release(cfg_t *cfg)
 	    kiwi_free(cfg->id_json, cfg->json);
 	}
 	cfg->json = NULL;
+}
+
+bool cfg_gdb_break(bool val)
+{
+    return val;
 }
 
 
@@ -656,9 +670,10 @@ int _cfg_set_int(cfg_t *cfg, const char *name, int val, u4_t flags, int pos)
 	}
 
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-    if (flags & CFG_SAVE)
+    if (flags & CFG_SAVE) {
+        cfg_printf("_cfg_set_int %s=%d SAVE\n", name, val);
         _cfg_save_json(cfg, cfg->json);
-    else
+    } else
 	    _cfg_parse_json(cfg, FL_PANIC);	// must re-parse
 	return pos;
 }
@@ -672,7 +687,7 @@ int _cfg_default_int(cfg_t *cfg, const char *name, int val, bool *error_p)
 		existing = val;
 		//printf("_cfg_default_int: %s = %d\n", name, val);
 	}
-	if (error_p) *error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | cfg_gdb_break(error);
 	return existing;
 }
 
@@ -789,9 +804,10 @@ int _cfg_set_float(cfg_t *cfg, const char *name, double val, u4_t flags, int pos
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-    if (flags & CFG_SAVE)
+    if (flags & CFG_SAVE) {
+        cfg_printf("_cfg_set_float %s=%f SAVE\n", name, val);
         _cfg_save_json(cfg, cfg->json);
-    else
+    } else
 	    _cfg_parse_json(cfg, FL_PANIC);	// must re-parse
 	return pos;
 }
@@ -805,7 +821,7 @@ double _cfg_default_float(cfg_t *cfg, const char *name, double val, bool *error_
 		existing = val;
 		//printf("_cfg_default_float: %s = %g\n", name, val);
 	}
-	if (error_p) *error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | cfg_gdb_break(error);
 	return existing;
 }
 
@@ -912,9 +928,10 @@ int _cfg_set_bool(cfg_t *cfg, const char *name, u4_t val, u4_t flags, int pos)
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-    if (flags & CFG_SAVE)
+    if (flags & CFG_SAVE) {
+        cfg_printf("_cfg_set_bool %s=%d SAVE\n", name, val);
         _cfg_save_json(cfg, cfg->json);
-    else
+    } else
 	    _cfg_parse_json(cfg, FL_PANIC);	// must re-parse
 	return pos;
 }
@@ -928,7 +945,7 @@ bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error_p)
 		existing = val;
 		//printf("_cfg_default_bool: %s = %s\n", name, val? "true" : "false");
 	}
-	if (error_p) *error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | cfg_gdb_break(error);
 	return existing;
 }
 
@@ -936,6 +953,24 @@ bool _cfg_default_bool(cfg_t *cfg, const char *name, u4_t val, bool *error_p)
 ////////////////////////////////
 // string
 ////////////////////////////////
+
+static char *_cfg_string_check_utf8(cfg_t *cfg, const char *name, const char *val, bool *error = NULL)
+{
+    bool err = false;
+    char *uc = strdup(val);
+        void *invalid_cp = utf8valid(uc);
+        if (cfg == &cfg_cfg && invalid_cp) {
+            printf("================================================================================\n");
+            lprintf("NOT VALID UTF-8: pos=%d %s=<%s>\n", (char *) invalid_cp - uc, name, val);
+            utf8makevalid(uc, '?');
+            char *uc2 = kiwi_str_encode(uc);
+                kiwi_str_decode_selective_inplace(uc2);
+            kiwi_ifree(uc2, "cfg utf8");
+            err = true;
+        }
+    if (error) *error = err;
+    return uc;      // caller must kiwi_asfree()
+}
 
 const char *_cfg_string(cfg_t *cfg, const char *name, bool *error, u4_t flags)
 {
@@ -1025,42 +1060,31 @@ int _cfg_set_string(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-    if (flags & CFG_SAVE)
+    if (flags & CFG_SAVE) {
+        cfg_printf("_cfg_set_string %s=%s SAVE\n", name, val);
         _cfg_save_json(cfg, cfg->json);
-    else
+    } else {
 	    _cfg_parse_json(cfg, FL_PANIC);	// must re-parse
+	}
 	return pos;
 }
 
-void _cfg_default_string(cfg_t *cfg, const char *name, const char *val, bool *error_p)
+void _cfg_default_string(cfg_t *cfg, const char *name, const char *def, bool *error_p)
 {
+    // v1.463
+    // Recover from broken UTF-8 sequences stored in cfg by checking each time
+    // even when default is not going to be stored.
     bool error;
-	const char *s = _cfg_string(cfg, name, &error, CFG_OPTIONAL);
-	if (error) {
-		_cfg_set_string(cfg, name, val, CFG_SET, 0);
-		//printf("_cfg_default_string: %s = %s\n", name, val);
-	} else {
-	
-	    // v1.463
-        // Recover from broken UTF-8 sequences stored in cfg.
-	    if (cfg == &cfg_cfg) {
-	        char *uc = strdup(s);
-                void *invalid_cp;
-                invalid_cp = utf8valid(uc);
-                if (invalid_cp) {
-                    lprintf("NOT VALID UTF-8: pos=%d %s=<%s>\n", (char *) invalid_cp - uc, name, s);
-                    utf8makevalid(uc, '?');
-                    char *uc2 = kiwi_str_encode(uc);
-                        kiwi_str_decode_selective_inplace(uc2);
-                        _cfg_set_string(cfg, name, uc2, CFG_SET, 0);
-                    kiwi_ifree(uc2, "cfg utf8");
-                    error = true;
-                }
-	        kiwi_asfree(uc);
-	    }
-		_cfg_free(cfg, s);
-	}
-	if (error_p) *error_p = *error_p | error;
+	const char *str = _cfg_string(cfg, name, &error, CFG_OPTIONAL);
+
+    char *val = _cfg_string_check_utf8(cfg, name, error? def : str);
+    if (error) {
+        printf("_cfg_default_string: %s = <%s>\n", name, def);
+        _cfg_set_string(cfg, name, def, CFG_SET, 0);
+    }
+    kiwi_asfree(val);
+    _cfg_free(cfg, str);
+	if (error_p) *error_p = *error_p | cfg_gdb_break(error);
 }
 
 
@@ -1179,9 +1203,10 @@ int _cfg_set_object(cfg_t *cfg, const char *name, const char *val, u4_t flags, i
 	}
 	
     assert((cfg->flags & CFG_NO_UPDATE) == 0);
-    if (flags & CFG_SAVE)
+    if (flags & CFG_SAVE) {
+        cfg_printf("_cfg_set_object %s=%s SAVE\n", name, val);
         _cfg_save_json(cfg, cfg->json);
-    else
+    } else
 	    _cfg_parse_json(cfg, FL_PANIC);	// must re-parse
 	return pos;
 }
@@ -1196,7 +1221,7 @@ void _cfg_default_object(cfg_t *cfg, const char *name, const char *val, bool *er
 	} else {
 		_cfg_free(cfg, s);
 	}
-	if (error_p) *error_p = *error_p | error;
+	if (error_p) *error_p = *error_p | cfg_gdb_break(error);
 }
 
 
@@ -1350,6 +1375,9 @@ static bool _cfg_parse_json(cfg_t *cfg, u4_t flags)
 		cfg->tokens = (jsmntok_t *) kiwi_malloc(cfg->id_tokens, sizeof(jsmntok_t) * cfg->tok_size);
 
 		jsmn_init(&parser);
+		if (cfg == &cfg_cfg) {
+		    cfg_printf("_cfg_parse_json cfg_cfg\n");
+		}
 		if ((rc = jsmn_parse(&parser, cfg->json, slen, cfg->tokens, cfg->tok_size, yield)) >= 0)
 			break;
 		
@@ -1441,6 +1469,7 @@ static bool _cfg_load_json(cfg_t *cfg)
 	        ",\"passbands\":{"
 	            "\"am\":  {\"lo\":-4900, \"hi\":4900},"
 	            "\"amn\": {\"lo\":-2500, \"hi\":2500},"
+	            "\"amw\": {\"lo\":-6000, \"hi\":6000},"
                 "\"sam\": {\"lo\":-4900, \"hi\":4900},"
                 "\"sal\": {\"lo\":-4900, \"hi\":   0},"
                 "\"sau\": {\"lo\":    0, \"hi\":4900},"
@@ -1494,12 +1523,20 @@ static void _cfg_write_file(void *param)
 
 void _cfg_save_json(cfg_t *cfg, char *json)
 {
-	TMEAS(u4_t start = timer_ms(); printf("cfg_save_json START %s json_len=%d\n", cfg->basename, strlen(cfg->json));)
+    int jsl = strlen(json);
+    if (cfg == &cfg_cfg) {
+        printf("_cfg_save_json CFG size %d\n", jsl);
+        if (jsl < 32)
+            panic("_cfg_save_json too small?");
+    }
+    
+    TMEAS(static int g_seq; int seq = g_seq; g_seq++;)
+	TMEAS(u4_t start = timer_ms(); printf("cfg_save_json START #%d %s json_len=%d\n", seq, cfg->basename, strlen(cfg->json));)
 
 	// if new buffer is different update our copy
 	if (!cfg->json || (cfg->json && cfg->json != json)) {
-	    //printf("_cfg_save_json CUR:json=%d CUR:json_buf_size=%d NEW:json=%d new_size=%d\n", strlen(cfg->json), cfg->json_buf_size, strlen(json), strlen(json) + SPACE_FOR_NULL);
-		_cfg_realloc_json(cfg, strlen(json) + SPACE_FOR_NULL, CFG_NONE);
+	    //printf("_cfg_save_json CUR:json=%d CUR:json_buf_size=%d NEW:json=%d new_size=%d\n", strlen(cfg->json), cfg->json_buf_size, jsl, jsl + SPACE_FOR_NULL);
+		_cfg_realloc_json(cfg, jsl + SPACE_FOR_NULL, CFG_NONE);
 		//printf("_cfg_save_json NEW:json_buf_size=%d\n", cfg->json_buf_size);
 		strcpy(cfg->json, json);
 	}
@@ -1535,9 +1572,11 @@ void _cfg_save_json(cfg_t *cfg, char *json)
                 lprintf("cfg_save_json: %s JSON PARSE ERROR -- FILE SAVE ABORTED!\n", cfg->filename);
                 #define PANIC_ON_INTEGRITY_FAIL
                 #ifdef PANIC_ON_INTEGRITY_FAIL
+                    real_printf("%s\n", tcfg.json);
                     panic("json integrity fail");
                 #else
                     free(cfg->json_write);
+                    cfg->json_write = NULL;
                     return;
                 #endif
             }
@@ -1552,7 +1591,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
     } else {
         cfg->flags &= ~CFG_PARSE_VALID;
     }
-    TMEAS(u4_t split = timer_ms(); printf("cfg_save_json SPLIT %s reparse %.3f msec\n", cfg->basename, TIME_DIFF_MS(split, start));)
+    TMEAS(u4_t split = timer_ms(); printf("cfg_save_json SPLIT #%d %s reparse %.3f msec\n", seq, cfg->basename, TIME_DIFF_MS(split, start));)
 
     // File writes can sometimes take a long time -- use a child task and wait via NextTask()
     // CAUTION: Must not do any task yielding until re-parse above (if any) is finished
@@ -1564,9 +1603,10 @@ void _cfg_save_json(cfg_t *cfg, char *json)
     }
 
     free(cfg->json_write);
+    cfg->json_write = NULL;
     //printf("cfg_save_json DONE\n");
 
-    TMEAS(u4_t now = timer_ms(); printf("cfg_save_json DONE %s file save %.3f/%.3f msec\n", cfg->basename, TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
+    TMEAS(u4_t now = timer_ms(); printf("cfg_save_json DONE #%d %s file save %.3f/%.3f msec\n", seq, cfg->basename, TIME_DIFF_MS(now, split), TIME_DIFF_MS(now, start));)
 }
 
 void _cfg_update_json(cfg_t *cfg)

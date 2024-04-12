@@ -194,20 +194,20 @@ static void dumphfdl_task(void *param)
 bool hfdl_msgs(char *msg, int rx_chan)
 {
 	hfdl_chan_t *e = &hfdl_chan[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//printf("### hfdl_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
 
-		ext_send_msg(e->rx_chan, false, "EXT ready");
+		ext_send_msg(rx_chan, false, "EXT ready");
 		return true;
 	}
 
 	if (strcmp(msg, "SET start") == 0) {
 		//printf("HFDL: start\n");
-        //c2s_waterfall_no_sync(e->rx_chan, true);
+        //c2s_waterfall_no_sync(rx_chan, true);
 
         e->s2p = e->s2px = e->s22p = hfdl.s2p_start;
 
@@ -228,8 +228,8 @@ bool hfdl_msgs(char *msg, int rx_chan)
 
 	if (strcmp(msg, "SET stop") == 0) {
 		//printf("HFDL: stop\n");
-        //c2s_waterfall_no_sync(e->rx_chan, false);
-		hfdl_close(e->rx_chan);
+        //c2s_waterfall_no_sync(rx_chan, false);
+		hfdl_close(rx_chan);
 		e->test = false;
 		return true;
 	}

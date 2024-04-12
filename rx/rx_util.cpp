@@ -43,6 +43,7 @@ Boston, MA  02110-1301, USA.
 #include "security.h"
 #include "options.h"
 #include "services.h"
+#include "stats.h"
 
 #include "wspr.h"
 #include "FT8.h"
@@ -102,9 +103,11 @@ void rx_loguser(conn_t *c, logtype_e type)
 	if (type == LOG_ARRIVED) {
 		asprintf(&s, "(ARRIVED)");
 		c->last_tune_time = now;
+		user_arrive(c);
 	} else
 	if (type == LOG_LEAVING) {
 		asprintf(&s, "(%s after %d:%02d:%02d)", c->preempted? "PREEMPTED" : "LEAVING", hr, min, sec);
+		user_leaving(c, now - c->arrival);
 	} else {
 		asprintf(&s, "%d:%02d:%02d%s", hr, min, sec, (type == LOG_UPDATE_NC)? " n/c":"");
 	}
@@ -248,7 +251,9 @@ void rx_server_kick(kick_e kick, int chan)
 	printf("rx_server_kick %s rx=%d\n", kick_s[kick], chan);
 	conn_t *c = conns;
 	bool kick_chan_all = (kick == KICK_CHAN && chan == -1);
-	const char *msg = (kick == KICK_CHAN && chan != -1)? "You were kicked!" : "Everyone was kicked!";
+	const char *msg =
+	        (kick == KICK_CHAN && chan != -1)? "You were kicked!" :
+	        ((kick == KICK_USERS)? "Kiwi down for maintenance." : "Everyone was kicked!");
 	
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
@@ -427,11 +432,19 @@ typedef struct {
 
 static save_cfg_t save_cfg = { "cfg" }, save_dxcfg = { "dxcfg" }, save_adm = { "adm" };
 
+//#define SAVE_DBG
+#ifdef SAVE_DBG
+	#define save_prf(conn, fmt, ...) \
+	    clprintf(conn, fmt,  ## __VA_ARGS__);
+#else
+	#define save_prf(conn, fmt, ...)
+#endif
+
 bool save_config(u2_t key, conn_t *conn, char *cmd)
 {
     int n, seq;
     char *sb;
-    const bool dbug = false;
+    const bool dbug = true;
     save_cfg_t *cfg;
     
     switch (key) {
@@ -462,7 +475,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         cfg->remote_port != conn->remote_port || cfg->tstamp != conn->tstamp) {
         // persists: init, frag_prefix_s, end_prefix_s
         cfg->seq = 0;
-        if (dbug) clprintf(conn, "save_config: %s RESET cfg|conn %d|%d %p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx json %d|%d<%s>\n",
+        save_prf(conn, "save_config: %s RESET cfg|conn %d|%d %p|%p IP:%s|%s PORT:%d|%d TSTAMP:0x%llx|0x%llx json %d|%d<%s>\n",
             cfg->name, cfg->conn? cfg->conn->self_idx : -1, conn? conn->self_idx : -1, cfg->conn, conn,
             cfg->remote_ip, conn->remote_ip, cfg->remote_port, conn->remote_port, cfg->tstamp, conn->tstamp,
             cfg->json_slen, kstr_len(cfg->json), kstr_sp(cfg->json));
@@ -494,15 +507,15 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             printf("save_config: BAD DECODE n=%d \"%.32s\"\n", n, cmd);
             return true;
         }
-        if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
+        save_prf(conn, "save_config: %s FRAG conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
         if (seq < cfg->seq) {
             kiwi_asfree(sb);
-            if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s FRAG conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
             return true;
         }
         if (cfg->json != NULL && seq > cfg->seq) {
             kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
-            if (dbug) clprintf(conn, "save_config: %s FRAG conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s FRAG conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
         }
         cfg->seq = seq;     // lock to new seq
         cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
@@ -520,21 +533,25 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
             printf("save_config: BAD DECODE n=%d \"%.32s\"\n", n, cmd);
             return true;
         }
-        if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
+        save_prf(conn, "save_config: %s END conn=%p seq=%d sl=%d\n", cfg->name, conn, seq, strlen(sb));
         if (seq < cfg->seq) {
             kiwi_asfree(sb);
-            if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s END conn=%p seq=%d < cfg.seq=%d IGNORE DELAYED, OUT-OF-SEQ FRAG\n", cfg->name, conn, seq, cfg->seq);
             return true;
         }
         
         // this should only happen in the case of seq N being fragmented, but seq N+1 having no fragments (due to reduced size presumably)
         if (cfg->json != NULL && seq > cfg->seq) {
             kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
-            if (dbug) clprintf(conn, "save_config: %s END conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
+            save_prf(conn, "save_config: %s END conn=%p seq=%d > cfg.seq=%d NEW SEQ, DISCARD ACCUMULATED FRAGS\n", cfg->name, conn, seq, cfg->seq);
         }
         cfg->seq = seq;     // lock to new seq
         cfg->json = kstr_cat(cfg->json, kstr_wrap(sb), &cfg->json_slen);
-        
+         
+        // The following comment is no longer true for cfg string params since they are now JSON.stringify() based.
+        // This is because the first encoding mentioned is not performed since the JSON.stringify() handles all escaping properly.
+        // Doing the double decodeURI below causes no harm in that case.
+
         // For cfg strings double URI encoding is effectively used since they are stored encoded and
         // another encoding is done for transmission.
         // So decode the transmission encoding with kiwi_str_decode_inplace()
@@ -544,7 +561,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         kiwi_str_decode_selective_inplace(sp);
 
         switch (key) {
-            case CMD_SAVE_CFG:   cfg_save_json(sp); break;
+            case CMD_SAVE_CFG:   printf("_cfg_save_json save_config:CMD_SAVE_CFG\n"); cfg_save_json(sp); break;
             case CMD_SAVE_DXCFG: dxcfg_save_json(sp); break;
             case CMD_SAVE_ADM:   admcfg_save_json(sp); break;
             default: panic("save_config"); break;
@@ -570,7 +587,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         // NB: cfg->json = NULL here is extremely important
         kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
         update_vars_from_config();      // update C copies of vars
-        if (dbug) clprintf(conn, "save_config: %s COMMIT conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
+        save_prf(conn, "save_config: %s " RED "COMMIT" NORM " conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
         return true;
     }
 
@@ -610,10 +627,16 @@ void dump()
 	
 	lprintf("\n");
 	lprintf("dump --------\n");
+	lprintf("rf_attn_dB=%.1f\n", kiwi.rf_attn_dB);
+	lprintf("\n");
+	
 	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn-%2s %p\n", i, rx->chan_enabled, rx->busy,
-			rx->conn? stprintf("%02d", rx->conn->self_idx) : "", rx->conn? rx->conn : 0);
+		lprintf("RX%d en%d busy%d conn-%2s %2.0f %2.0f %p\n", i, rx->chan_enabled, rx->busy,
+			rx->conn? stprintf("%02d", rx->conn->self_idx) : "",
+			//toUnits(audio_bytes[i], 0), toUnits(waterfall_bytes[i], 1),   // %6s
+			audio_kbps[i], waterfall_kbps[i],
+			rx->conn? rx->conn : 0);
 	}
 
 	conn_t *cd;
@@ -731,6 +754,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
         return false;
     }
     
+	char *geo = NULL;
     char *country_name = (char *) json_string(&cfg_geo, country_s, NULL, CFG_OPTIONAL);
     char *region_name = (char *) json_string(&cfg_geo, region_s, NULL, CFG_OPTIONAL);
     char *city = (char *) json_string(&cfg_geo, "city", NULL, CFG_OPTIONAL);
@@ -743,12 +767,15 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 		country = kstr_cat(country_name, NULL);     // possible that country_name == NULL
 	}
 
-	char *geo = NULL;
-	if (city && *city) {
-		geo = kstr_cat(geo, city);
-		geo = kstr_cat(geo, ", ");
-	}
-    geo = kstr_cat(geo, country);   // NB: country freed here
+    if (cfg_true("show_geo_city")) {
+        if (city && *city) {
+            geo = kstr_cat(geo, city);
+            geo = kstr_cat(geo, ", ");
+        }
+        geo = kstr_cat(geo, country);   // NB: country freed here
+    } else {
+        geo = kstr_cat(country, NULL);  // NB: country freed here
+    }
 
     //clprintf(conn, "GEOLOC: %s <%s>\n", geo_host_ip_s, kstr_sp(geo));
 	kiwi_asfree(conn->geo);
@@ -992,10 +1019,11 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
 
 int SNR_meas_tid;
 
-void SNR_meas_task(void *param)
+void SNR_meas(void *param)
 {
     int i, j, n, len;
     static internal_conn_t iconn;
+	bool regular_wakeup;
     TaskSleepSec(20);
     
     //#define SNR_MEAS_SELECT WF_SELECT_1FPS
@@ -1081,12 +1109,18 @@ void SNR_meas_task(void *param)
             #ifdef OPTION_HONEY_POT
                 snr_all = snr_HF = 55;
             #endif
+
+            if (!regular_wakeup) {
+                printf("SNR_meas: admin measure now %d:%d\n", snr_all, freq_offset_kHz? -1 : snr_HF);
+                snd_send_msg(SM_SND_ADM_ALL, SM_NO_DEBUG,
+                    "MSG snr_stats=%d,%d", snr_all, freq_offset_kHz? -1 : snr_HF);
+            }
         }
         
         //TaskSleepSec(60);
         // if disabled check again in an hour to see if re-enabled
         u64_t hrs = snr_meas_interval_hrs? snr_meas_interval_hrs : 1;
-        TaskSleepSec(hrs * 60 * 60);
+        regular_wakeup = (bool) FROM_VOID_PARAM(TaskSleepSec(hrs * 60 * 60));
         //TaskSleepSec(60);
     } while (1);
 }

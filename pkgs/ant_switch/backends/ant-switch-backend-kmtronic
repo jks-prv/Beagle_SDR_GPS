@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# The MIT License (MIT)
+#   
+# ant-switch-backend-kmtronic - kmtronic backend for antenna switch
+#
+# This is part of KiwiSDR antenna switch extension
+#
+# Copyright (c) 2017 Kari Karvonen
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+VERSION=0.2
+ADDR_FILE="/etc/default/kmtronic"
+
+if [ -e $ADDR_FILE ]; then
+	. $ADDR_FILE
+else
+    KMTRONIC_URL="http://192.168.1.199:80"
+fi
+
+CURLEXEC=/usr/bin/curl
+# no switch auth currently
+CURLOPTS=" --silent --connect-timeout 1 --max-time 1 "
+
+AntSW_ShowBackend() {
+    echo "kmtronic v$VERSION 8ch $KMTRONIC_URL"
+    echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-kmtronic.txt"
+}
+
+AntSW_SetAddress() {
+    if [[ -z "${1// }" ]]; then
+        echo -n "Enter URL (currently $KMTRONIC_URL): "
+        read url
+    else
+        url=$1
+    fi
+    if [ "x$url" != "x" ]; then
+        echo "KMTRONIC_URL=\"$url\"" >$ADDR_FILE
+    fi
+}
+
+AntSW_Initialize() {
+    # This function initalises extension. You can leave empty
+    :
+}
+
+AntSW_GroundAll() {
+    # This function grounds all antennas
+    # no return value
+    $CURLEXEC $CURLOPTS $KMTRONIC_URL/FFE000 > /dev/null 2>&1
+}
+
+AntSW_SelectAntenna() {
+    # This function selects antenna (turn on)
+    # Only one antenna
+    # Antenna to select is on variable $1
+    # no return value
+    $CURLEXEC $CURLOPTS $KMTRONIC_URL/FF0${1}01 > /dev/null 2>&1
+}
+
+AntSW_DeSelectAntenna() {
+    # This function deselects antenna (turn off)
+    # Antenna to deleselct is on variable $1
+    # Only one antenna
+    # no return value
+    $CURLEXEC $CURLOPTS $KMTRONIC_URL/FF0${1}00 > /dev/null 2>&1
+}
+
+AntSW_ToggleAntenna() {
+    # This function toggles antenna
+    # if on, then off
+    # if off, then on
+    # Antenna to toogle is on variable $1
+    # Only one antenna
+    # no return value
+    $CURLEXEC $CURLOPTS $KMTRONIC_URL/relays.cgi?relay=$1 > /dev/null 2>&1
+}
+
+AntSW_ShowSelected() {
+    # This function show relected antennas
+    # returns a string
+    # Selected antennas: 1
+    # or comma separated list
+    # Selected antennas: 1,2,3,4
+
+    #reply='
+    #<response>
+    #<relay0>[01]</relay0>      // heartbeat?
+    #<relay1>[01]</relay1>      // first ant
+    # ...
+    #<relay8>[01]</relay8>      // last ant
+    #</response>
+    #'
+    reply=`$CURLEXEC $CURLOPTS $KMTRONIC_URL/status.xml`
+    digits=`echo $reply | sed 's/relay[0-8]//g' | sed 's/[^0-1]//g' | /usr/bin/tr -d '\n'`
+    if [[ "x$digits" == "x" ]] || [[ ${#digits} != 9 ]]; then
+        # curl failed. Reply with invalid message so 
+        # gui doesn't get hang. fixme.
+        digits="000000000"
+    fi
+    for s in 1 2 3 4 5 6 7 8; do
+        thisbit=${digits:${s}:1}
+        if [ "x$thisbit" == "x1" ]; then
+            selectedantennas="${selectedantennas}$(($s)),"
+            antennafound=$(($antennafound+1))
+        fi
+    done
+    thisbits=${digits:1:8}
+    if [ "x$thisbits" == "x00000000" ]; then
+        # All antenna inputs are grounded
+        antennafound=1
+        selectedantennas="g,"
+    fi
+    # remove trailing ','
+    selectedantennas=${selectedantennas%?}
+    echo -n "Selected antennas: "
+    echo $selectedantennas
+}

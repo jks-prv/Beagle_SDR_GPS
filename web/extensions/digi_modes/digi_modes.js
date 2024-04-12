@@ -93,6 +93,7 @@ function digi_recv(data)
 function digi_output_chars(c)
 {
    c = kiwi_decodeURIComponent('digi', c);    // NB: already encoded on C-side
+   //console.log('digi_output_chars <'+ c +'>');
    //digi.log_txt += kiwi_remove_escape_sequences(c);
 
    var a = c.split('');
@@ -242,26 +243,15 @@ function digi_modes_blur()
 function digi_modes_help(show)
 {
    if (show) {
-      var s =
+      var s = 
          w3_text('w3-medium w3-bold w3-text-aqua', 'Digital modes decoder help') +
-         '<br>Spots are uploaded to pskreporter.info if the <i>reporter call</i> and <i>reporter grid</i> ' +
-         'fields on the admin page, extensions tab, FT8 subtab have valid entries. ' +
-         'Leave the callsign field blank if you do not want any uploads to pskreporter.info ' +
-         'But consider leaving the grid field set so the km distance from the Kiwi to the ' +
-         'spot will be shown.<br><br>' +
-         
-         'Uploaded spots are highlighted in green. Spots are only uploaded once every 60 minutes. ' +
-         'The <i>age</i> column shows, in minutes, how long it has been since the last upload. ' +
-         '<br>SNR information is currently not uploaded as it is not accurate.<br><br>' +
-         
-         'Clicking the <i>pskreporter.info</i> link will take you directly to the map with the ' +
-         'reporter callsign of the Kiwi preset.<br><br>' +
-         
-         'URL parameters:<br>' +
-         'The first parameters can select one of the entries in the <i>freq</i> menu<br>' +
-         'e.g. <i>my_kiwi:8073/?ext=ft8,10136</i>' +
-         '';
-      confirmation_show_content(s, 610, 300);
+         w3_div('w3-margin-T-8 w3-scroll-y|height:90%',
+            w3_div('w3-margin-R-8 w3-margin-bottom',
+               'To be supplied...'
+            )
+         );
+      confirmation_show_content(s, 600, 300);
+      w3_el('id-confirmation-container').style.height = '100%';   // to get the w3-scroll-y above to work
    }
    return true;
 }

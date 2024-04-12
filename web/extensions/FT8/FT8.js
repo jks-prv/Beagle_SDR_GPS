@@ -282,6 +282,15 @@ function FT8_config_html()
             w3_input_get('', 'dT correction', 'ft8.dT_adj', 'w3_num_set_cfg_cb', ''), 22
          ),
 
+         w3_col_percent('w3-container w3-margin-T-8 w3-margin-B-16/',
+            w3_divs('w3-center w3-tspace-8',
+               w3_switch_label('w3-center', 'Log decodes to<br>syslog?', 'Yes', 'No', 'ft8.syslog', cfg.ft8.syslog, 'admin_radio_YN_cb'),
+               w3_text('w3-text-black w3-center',
+                  'Use with care as over time <br> filesystem can fill up.'
+               )
+            ), 22
+         ),
+
          '<hr>',
          w3_div('w3-container',
             w3_div('', '<b>Autorun</b>'),

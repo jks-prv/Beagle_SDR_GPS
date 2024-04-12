@@ -17,6 +17,8 @@ typedef struct {
     int test;
     s2_t *s2p_start, *s2p_end;
     int tsamps;
+    
+    int syslog;
 } ft8_conf_t;
 
 extern ft8_conf_t ft8_conf;

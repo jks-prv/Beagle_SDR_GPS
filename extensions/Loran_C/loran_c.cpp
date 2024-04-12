@@ -210,6 +210,7 @@ static void init_gri(loran_c_t *e, int ch, int gri)
 bool loran_c_msgs(char *msg, int rx_chan)
 {
 	loran_c_t *e = &loran_c[rx_chan];
+    e->rx_chan = rx_chan;
 	loran_c_ch_t *c;
 	int n, ch;
 	
@@ -217,7 +218,6 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
 		memset(e, 0, sizeof(loran_c_t));
-		e->rx_chan = rx_chan;
 		e->srate = ext_update_get_sample_rateHz(rx_chan);
 		e->i_srate = snd_rate;
 		float ms_per_bin = 1.0/e->srate * 1e3;
@@ -294,9 +294,9 @@ bool loran_c_msgs(char *msg, int rx_chan)
 	if (strcmp(msg, "SET stop") == 0) {
 		//printf("LORAN_C: stop\n");
 		#ifdef USE_IQ
-			ext_unregister_receive_iq_samps(e->rx_chan);
+			ext_unregister_receive_iq_samps(rx_chan);
 		#else
-			ext_unregister_receive_real_samps(e->rx_chan);
+			ext_unregister_receive_real_samps(rx_chan);
 		#endif
 		return true;
 	}

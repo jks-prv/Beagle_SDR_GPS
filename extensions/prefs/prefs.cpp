@@ -26,13 +26,13 @@ static prefs_t prefs[MAX_RX_CHANS];
 bool prefs_msgs(char *msg, int rx_chan)
 {
 	prefs_t *e = &prefs[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	printf("### prefs_msgs RX%d <%s>\n", rx_chan, msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, PREFS_DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, PREFS_DEBUG_MSG, "EXT ready");
 		return true;
 	}
 	

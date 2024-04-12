@@ -170,13 +170,13 @@ void ft8_close(int rx_chan)
 bool ft8_msgs(char *msg, int rx_chan)
 {
 	ft8_t *e = &ft8[rx_chan];
+    e->rx_chan = rx_chan;   // remember our receiver channel number
 	int n;
 	
 	//rcprintf(rx_chan, "### ft8_msgs <%s>\n", msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		ext_send_msg(rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
 
@@ -184,7 +184,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	if (sscanf(msg, "SET ft8_start=%d", &proto) == 1) {
 	    e->debug = kiwi.dbgUs;
 	    e->proto = proto;
-        conn_t *conn = rx_channels[e->rx_chan].conn;
+        conn_t *conn = rx_channels[rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
         ft8_conf.freq_offset_Hz = (u4_t) (freq_offset_kHz * 1e3);
 		//rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
@@ -206,7 +206,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	
 	if (sscanf(msg, "SET ft8_protocol=%d", &proto) == 1) {
 	    e->proto = proto;
-        conn_t *conn = rx_channels[e->rx_chan].conn;
+        conn_t *conn = rx_channels[rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
 		//rcprintf(rx_chan, "FT8 protocol %s freq %.2f\n", proto? "FT4" : "FT8", conn->freqHz/1e3);
 		decode_ft8_protocol(rx_chan, conn->freqHz, proto? 1:0);
@@ -321,7 +321,7 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     }
 
     ft8_conf2.GPS_update_grid = cfg_default_bool("ft8.GPS_update_grid", false, &update_cfg);
-    ft8_conf2.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
+    ft8_conf2.syslog = ft8_conf.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
     ft8_conf2.spot_log = cfg_default_bool("ft8.spot_log", false, &update_cfg);
 
 	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf2.rgrid=<%s> ft8_conf2.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf2.rgrid, ft8_conf2.GPS_update_grid);

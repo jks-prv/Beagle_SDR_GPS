@@ -1,6 +1,6 @@
 
 
-/* web/openwebrx/openwebrx.min.css (web/openwebrx/openwebrx.css = Tue Jan  2 13:06:11 2024) */
+/* web/openwebrx/openwebrx.min.css (web/openwebrx/openwebrx.css = Sat Mar 30 14:37:01 2024) */
 /*
 OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
 
@@ -131,10 +131,10 @@ This file is part of OpenWebRX.
 	/*overflow-y:scroll;*//*}*/.class-error{font-weight:bold;color:#ff6262;}.class-vis{position:absolute;width:34px;/* 24 + 5 border */height:34px;cursor:pointer;/*left: 570px;*/top:51px;z-index:9999;}.class-vis-show{display:none;width:34px;/* 24 + 5 border */height:34px;background-color:#575757;border-style:solid;border-color:#575757;border-width:5px 5px 5px 5px;border-radius:5px;-moz-border-radius:5px;}/*---- end id-msgs *//*---- end id-main-container
 
 
-/*---- begin misc */@font-face{font-family:'expletus-sans-medium';src:url('gfx/font-expletus-sans/ExpletusSans-Medium.ttf');font-weight:normal;font-style:normal;}/*---- end misc *//*---- begin generic .class */.class-inline-block{display:inline-block;}.class-panel{visibility:hidden;background-color:#575757;padding:10px;color:white;position:fixed;font-size:85%;border-radius:15px;-moz-border-radius:15px;}.class-panel a{color:hsl(212, 100%, 80%);/* prev hsl(212, 100%, 68%) = #5ca8ff */text-shadow:none;}.class-panel-inner{position:relative;overflow-y:auto;overflow-x:hidden;height:100%;}.class-button{display:inline;background-color:#373737;padding:3px 5px 3px 5px;border-radius:5px;-moz-border-radius:5px;color:white;text-align:center;font-weight:bold;cursor:pointer;/*
+/*---- begin misc */@font-face{font-family:'expletus-sans-medium';src:url('gfx/font-expletus-sans/ExpletusSans-Medium.ttf');font-weight:normal;font-style:normal;}/*---- end misc *//*---- begin generic .class */.class-inline-block{display:inline-block;}.class-panel{visibility:hidden;background-color:#575757;padding:10px;color:white;position:fixed;font-size:85%;border-radius:15px;-moz-border-radius:15px;}.class-panel a{color:hsl(212, 100%, 80%);/* prev hsl(212, 100%, 68%) = #5ca8ff */text-shadow:none;}.class-panel-inner{position:relative;overflow-y:auto;overflow-x:hidden;height:100%;}.class-button{display:inline;background-color:#373737;padding:3px 5px 3px 5px;border-radius:6px;-moz-border-radius:6px;color:white;text-align:center;font-weight:bold;cursor:pointer;/*
 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #373737), color-stop(1, #4F4F4F) );
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
-	*/}.class-button.class-button-disabled{cursor:not-allowed;opacity:0.3;}#id-button-hang{border-width:2px;border-style:solid;/*border-color: red;*/padding:1px 3px 1px 3px;}.class-button:hover{/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #3F3F3F), color-stop(1, #777777) );
+	*/}.class-button.class-button-disabled{cursor:not-allowed;opacity:0.3;}.id-button-hang{border-width:2px;border-style:solid;/*border-color: red;*/padding:1px 3px 1px 3px;}.class-button:hover{/*background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #3F3F3F), color-stop(1, #777777) );
 	background:-moz-linear-gradient( center top, #373737 5%, #4F4F4F 100% );*/background:#474747;/*color: #FFFF50;*/}.class-button:active{background:#777777;/*color: #FFFF50;*/}.class-button.class-button-noactive:active{background:inherit !important;}.class-button-small{display:inline;background-color:#373737;font-size:85%;padding:3px 4px;border-radius:5px;-moz-border-radius:5px;color:white;text-align:center;font-weight:bold;cursor:pointer;}.class-icon{display:inline;}.class-slider{white-space:nowrap;}.class-slider input{margin:0;padding:1px 10px 1px 10px;}.class-red-text{color:red;}.class-yellow-text{color:yellow;}.class-KS{background:white;padding:4px;border-radius:4px;-moz-border-radius:4px;}/*---- end generic .class */
 
 

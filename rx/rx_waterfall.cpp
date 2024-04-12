@@ -250,6 +250,7 @@ void c2s_waterfall(void *param)
 	rx_common_init(conn);
 	int rx_chan = conn->rx_channel;
 	wf_inst_t *wf;
+	rx_chan_t *rxc = &rx_channels[rx_chan];
 	int i, j, k, n;
 	//float adc_scale_samps = powf(2, -ADC_BITS);
 
@@ -264,7 +265,6 @@ void c2s_waterfall(void *param)
 	int tr_cmds = 0;
 	u4_t cmd_recv = 0;
 	double adc_clock_corrected = 0;
-	u4_t cfg_update_seq = 0;
 	u4_t dx_update_seq = 0;
 	int wf_cal = waterfall_cal;
 	
@@ -726,8 +726,9 @@ void c2s_waterfall(void *param)
 			continue;
 		}
 		
-        // handle LOG_ARRIVED and missing ident for WF-only connections
-        if (conn->isMaster && !conn->arrived && (conn->ident || ((cmd_recv & CMD_SET_ZOOM) && timer_sec() > (conn->arrival + 15)))) {
+        // Handle LOG_ARRIVED and missing ident for WF-only connections.
+        bool too_much = ((cmd_recv & CMD_SET_ZOOM) && (timer_sec() > (conn->arrival + 15)));
+        if (conn->isMaster && !conn->arrived && (conn->ident || too_much)) {
             if (!conn->ident)
 			    kiwi_str_redup(&conn->ident_user, "user", (char *) "(no identity)");
             rx_loguser(conn, LOG_ARRIVED);
@@ -867,9 +868,9 @@ void c2s_waterfall(void *param)
 		}
 		
         // admin requested that all clients get updated cfg (e.g. admin changed dx type menu)
-        if (cfg_update_seq != cfg_cfg.update_seq) {
+        if (rxc->cfg_update_seq != cfg_cfg.update_seq) {
+            rxc->cfg_update_seq = cfg_cfg.update_seq;
             rx_server_send_config(conn);
-            cfg_update_seq = cfg_cfg.update_seq;
         }
 
         // get client to request updated dx list because admin edited masked list

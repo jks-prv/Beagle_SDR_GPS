@@ -116,7 +116,7 @@ function ibp_controls_setup()
       }
    }
 
-   ibp.autosave = readCookie('IBP_PNG_Autosave');
+   ibp.autosave = kiwi_storeRead('IBP_PNG_Autosave');
    if (ibp.autosave != 'true') ibp.autosave = false;
    w3_checkbox_set('id-IBP-Autosave', ibp.autosave);
       
@@ -141,7 +141,7 @@ function ibp_controls_setup()
       }
    }
 
-   var cookie = readCookie('mindb_band');
+   var cookie = kiwi_storeRead('mindb_band');
    if (cookie) {
       var obj = kiwi_JSON_parse('ibp_controls_setup', cookie);
       if (obj) ibp.mindb_band = obj;
@@ -168,7 +168,7 @@ function IBP_scan_blur()
 function IBP_Autosave(path, checked)
 {
    ibp.autosave = checked? true:false;
-   writeCookie('IBP_PNG_Autosave', ibp.autosave);
+   kiwi_storeWrite('IBP_PNG_Autosave', ibp.autosave);
 }
 
 // If menu has ever been selected then we restore band to 20m on blur,
@@ -323,7 +323,7 @@ function IBP_scan_plot(oneline_image)
    } else {
       if (ibp.mindb_band[fb] != mindb) { 
          ibp.mindb_band[fb] = mindb;
-         writeCookie('mindb_band', JSON.stringify(ibp.mindb_band));
+         kiwi_storeWrite('mindb_band', JSON.stringify(ibp.mindb_band));
       }
    }
 

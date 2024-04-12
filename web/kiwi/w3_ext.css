@@ -79,6 +79,16 @@
 	vertical-align: middle;*/
 }
 
+
+/*
+    vs w3.css::w3-striped this ignores hidden elements
+    see: developer.mozilla.org/en-US/docs/Web/CSS/:nth-child#the_of_selector_syntax
+*/
+.w3-striped-except-hidden tbody tr:nth-child(even of :not(.w3-hide))
+{
+    background-color: #f1f1f1
+}
+
 .w3-text
 {
     border: none;
@@ -420,7 +430,12 @@ input[type=range]::-moz-range-thumb {
 
 .w3-margin-10
 {
-    margin: 8px !important
+    margin: 10px !important
+}
+
+.w3-margin-12
+{
+    margin: 12px !important
 }
 
 .w3-margin-16
@@ -548,6 +563,11 @@ input[type=range]::-moz-range-thumb {
 .w3-margin-R-16
 {
     margin-right: 16px
+}
+
+.w3-margin-R-24
+{
+    margin-right: 24px
 }
 
 .w3-margin-T-2
@@ -704,6 +724,7 @@ input[type=range]::-moz-range-thumb {
         w3-padding-large    12px 24px
         w3-padding-medium   8px 16px    (w3-padding)
         w3-padding-small    4px 8px
+        w3-padding-smaller  3px 6px
         w3-padding-tiny     2px 4px
         w3-padding-{4,8,12,16,24,32,48,64,128, top,bottom,left,right}
 */
@@ -805,8 +826,27 @@ input[type=range]::-moz-range-thumb {
     padding: 0 0 8px 0
 }
 
+
+/*
+    w3.css:
+        w3-round-small              2px
+        w3-round-3px                3px
+        w3-round w3-round-medium    4px
+        w3-round-5px                5px
+        w3-round-6px                6px
+        w3-round-large              8px
+*/
+
 .w3-round-3px {
     border-radius: 3px !important
+}
+
+.w3-round-5px {
+    border-radius: 5px !important
+}
+
+.w3-round-6px {
+    border-radius: 6px !important
 }
 
 .w3-text-in-circle
@@ -875,9 +915,11 @@ input[type=range]::-moz-range-thumb {
 
 .w3-gap-8 { gap: 8px }
 .w3-gap-10 { gap: 10px }
+.w3-gap-12 { gap: 12px }
 .w3-gap-15 { gap: 15px }
 .w3-gap-16 { gap: 16px }
 .w3-gap-20 { gap: 20px }
+.w3-gap-32 { gap: 32px }
 
 .w3-perfect-center, .w3-perfect-centering, .w3-perfectly-centered
 {
@@ -916,12 +958,13 @@ input[type=range]::-moz-range-thumb {
 */
 
 /* per-item override of container w3-valign-* */
-.w3-salign-auto { align-self: auto }
-.w3-salign-center { align-self: center }
-.w3-salign-start { align-self: flex-start }
-.w3-salign-end { align-self: flex-end }
-.w3-salign-stretch { align-self: stretch }
-.w3-salign-baseline { align-self: baseline }
+.w3-ialign-auto { align-self: auto }
+.w3-ialign-center { align-self: center }
+.w3-ialign-start { align-self: flex-start }
+.w3-ialign-end { align-self: flex-end }
+.w3-ialign-stretch { align-self: stretch }
+.w3-ialign-baseline { align-self: baseline }
+.w3-ialign-right { margin-left: auto }      /* medium.com/@iamryanyu/how-to-align-last-flex-item-to-right-73512e4e5912 */
 
 
 .w3-hcenter, .w3-halign
@@ -1145,6 +1188,11 @@ input[type=range]::-moz-range-thumb {
 .w3-nowrap
 {
 	white-space: nowrap;
+}
+
+.w3-normal
+{
+	font-weight: normal;
 }
 
 .w3-bold
@@ -1394,4 +1442,8 @@ input[type=range]::-moz-range-thumb {
 
 .w3-underline {
     text-decoration-line: underline;
+}
+
+.w3-text-decor-none {
+    text-decoration: none;
 }

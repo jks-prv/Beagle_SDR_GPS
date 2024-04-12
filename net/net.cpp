@@ -535,11 +535,11 @@ void inet4_h2d(u4_t inet4, u1_t *ap, u1_t *bp, u1_t *cp, u1_t *dp)
     if (dp != NULL) *dp = bf(inet4,  7,  0);
 }
 
-char *inet4_h2s(u4_t inet4)
+char *inet4_h2s(u4_t inet4, int which)
 {
     u1_t a,b,c,d;
     inet4_h2d(inet4, &a,&b,&c,&d);
-    return stprintf("%d.%d.%d.%d", a,b,c,d);
+    return stnprintf(which, "%d.%d.%d.%d", a,b,c,d);
 }
 
 // ::ffff:a.b.c.d/96
@@ -646,6 +646,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
 
     assert(n_ips <= N_IPS);
     asprintf(&cmd_p, "dig +short +noedns +time=3 +tries=3 %s A %s AAAA", domain_name, domain_name);
+    //printf("LOOKUP: \"%s\" <%s>\n", domain_name, cmd_p);
 	kstr_t *reply = non_blocking_cmd(cmd_p, &status);
 	
 	if (reply != NULL && status >= 0 && WEXITSTATUS(status) == 0) {
@@ -671,6 +672,7 @@ int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const cha
             r_ips->valid = r_ips->backup = true;
             lprintf("WARNING: lookup for \"%s\" failed, using backup IPv4 address %s\n", domain_name, ip_backup);
         } else {
+	        printf("LOOKUP: \"%s\" NOT FOUND\n", domain_name);
             n = 0;
         }
 	}

@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# The MIT License (MIT)
+#   
+# ant-switch-backend-kmtronic-udp - kmtronic-udp backend for antenna switch
+#
+# This is part of KiwiSDR antenna switch extension
+#
+# Copyright (c) 2017 Kari Karvonen
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+VERSION=0.2
+ADDR_FILE="/etc/default/kmtronic-udp"
+
+if [ -e $ADDR_FILE ]; then
+	. $ADDR_FILE
+else
+    KMTRONIC_UDP_HOST_PORT="192.168.1.199 12345"
+fi
+
+NETCAT_EXEC="timeout 0.2 nc"
+# no switch auth currently
+NETCAT_OPTS="-u -n"
+
+AntSW_ShowBackend() {
+    echo "kmtronic-udp v$VERSION 8ch" ${KMTRONIC_UDP_HOST_PORT// /:}
+    echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-kmtronic-udp.txt"
+}
+
+AntSW_SetAddress() {
+    if [[ -z "${1// }" ]]; then
+        echo -n "Enter IP and port (currently $KMTRONIC_UDP_HOST_PORT): "
+        read ip_port
+    else
+        # replace : with space we removed in AntSW_ShowBackend()
+        ip_port=${1//:/ }
+    fi
+    if [ "x$ip_port" != "x" ]; then
+        echo "KMTRONIC_UDP_HOST_PORT=\"$ip_port\"" >$ADDR_FILE
+    fi
+}
+
+AntSW_Initialize() {
+    # This function initalises extension. You can leave empty
+    :
+}
+
+AntSW_GroundAll() {
+    # This function grounds all antennas
+    # no return value
+    echo FFE000 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT > /dev/null 2>&1
+}
+
+AntSW_SelectAntenna() {
+    # This function selects antenna (turn on)
+    # Only one antenna
+    # Antenna to select is on variable $1
+    # no return value
+    echo FF0${1}01 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT > /dev/null 2>&1
+}
+
+AntSW_DeSelectAntenna() {
+    # This function deselects antenna (turn off)
+    # Antenna to deleselct is on variable $1
+    # Only one antenna
+    # no return value
+    echo FF0${1}00 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT > /dev/null 2>&1
+}
+
+AntSW_ToggleAntenna() {
+	ANT=$(($1-1))
+	# Read antenna status
+    digits=`echo FF0000 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT`
+    thisbits=${digits:$ANT:1}
+	if [ "x$thisbits" == "x0" ]; then
+		AntSW_SelectAntenna $1
+	else
+		AntSW_DeSelectAntenna $1 
+	fi
+}
+
+AntSW_ShowSelected() {
+    # This function show relected antennas
+    # returns a string
+    # Selected antennas: 1
+    # or comma separated list
+    # Selected antennas: 1,2,3,4
+
+    digits=`echo FF0000 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT`
+    if [[ "x$digits" == "x" ]] || [[ ${#digits} != 8 ]]; then
+        # netcat failed. Reply with invalid message so 
+        # gui doesn't get hang. fixme.
+        digits="00000000"
+    fi
+    for s in 1 2 3 4 5 6 7 8; do
+        thisbit=${digits:($s-1):1}
+        if [ "x$thisbit" == "x1" ]; then
+            selectedantennas="${selectedantennas}$(($s)),"
+            antennafound=$(($antennafound+1))
+        fi
+    done
+    thisbits=${digits:0:8}
+    if [ "x$thisbits" == "x00000000" ]; then
+        # All antenna inputs are grounded
+        antennafound=1
+        selectedantennas="g,"
+    fi
+    # remove trailing ','
+    selectedantennas=${selectedantennas%?}
+    echo -n "Selected antennas: "
+    echo $selectedantennas
+}

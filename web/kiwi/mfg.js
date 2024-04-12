@@ -97,7 +97,7 @@ function mfg_html()
                '&nbsp;', 15,
             
                w3_input('id-mfg-seed//w3-margin-3 w3-padding-small|width:300px', w3_label('w3-bold', 'Seed phrase ') +
-                  w3_div('id-mfg-seed-check cl-admin-check w3-btn w3-round-large w3-margin-B-8', ' '),
+                  w3_div('id-mfg-seed-check cl-admin-check w3-btn w3-round-large w3-margin-B-8'),
                   'id-seed-phrase', '', 'mfg_set_seed_cb'
                )
             ),

@@ -914,8 +914,8 @@ html, body
 	display: inline;
 	background-color: #373737;
 	padding: 3px 5px 3px 5px;
-	border-radius: 5px;
-	-moz-border-radius: 5px;
+	border-radius: 6px;
+	-moz-border-radius: 6px;
 	color: white;
 	text-align: center;
 	font-weight: bold;
@@ -932,7 +932,7 @@ html, body
     opacity: 0.3;
 }
 
-#id-button-hang
+.id-button-hang
 {
 	border-width: 2px;
 	border-style: solid;

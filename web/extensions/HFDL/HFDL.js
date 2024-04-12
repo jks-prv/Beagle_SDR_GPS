@@ -641,7 +641,7 @@ function hfdl_update_AFT(gs, freqs)
    var i;
    //if (dbgUs) console.log('AFT: '+ gs);
    var left = (gs == 'New Zealand');
-   if (!left) freqs.sort(function(a,b) { return parseFloat(a) - parseFloat(b); });
+   if (!left) freqs.sort(kiwi_sort_numeric);
    //if (dbgUs) console.log(freqs);
    var gs_n = hfdl.bf_gs[gs];
    var hi = 0;
@@ -852,7 +852,7 @@ function hfdl_render_menus()
          //console.log(menu_s +'.'+ i +'.'+ key_s +'.'+ j +':');
          //console.log(o2);
          var name_s = o2.name.split(', ')[1];
-         o2.frequencies.sort(function(a,b) { return parseInt(a) - parseInt(b); });
+         o2.frequencies.sort(kiwi_sort_numeric);
          var freq_a = [];
          o2.frequencies.forEach(function(f) {
             if (f < hfdl.bf.length) {
@@ -892,7 +892,7 @@ function hfdl_render_menus()
    // "Bands" menu
    var bands = [];
    for (i = 0; i < hfdl.bf.length; i++) {
-      band[i].sort(function(a,b) { return parseInt(b) - parseInt(a); });
+      band[i].sort(kiwi_sort_numeric_reverse);
       var o = {};
       o.name = 'x, '+ hfdl.bf[i] + ' MHz';
       o.frequencies = [ i ];

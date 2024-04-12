@@ -63,6 +63,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define CFG_LOAD_ONLY   0x04000
 #define CFG_IS_JSON     0x08000
 #define CFG_NO_INTEG    0x10000
+#define CFG_GDB_BREAK   0x20000
 
 #define CFG_LOOKUP_LVL1 ((jsmntok_t *) -1)
 
@@ -85,6 +86,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define cfg_default_float(name, val, err)	_cfg_default_float(&cfg_cfg, name, val, err)
 
 #define cfg_bool(name, err, flags)			_cfg_bool(&cfg_cfg, name, err, flags)
+#define cfg_true(name)			            (_cfg_bool(&cfg_cfg, name, NULL, CFG_OPTIONAL) == true)
 #define cfg_set_bool(name, val)				_cfg_set_bool(&cfg_cfg, name, (u4_t) val, CFG_SET, 0)
 #define cfg_set_bool_save(name, val)		_cfg_set_bool(&cfg_cfg, name, (u4_t) val, CFG_SET | CFG_SAVE, 0)
 #define cfg_rem_bool(name)					_cfg_set_bool(&cfg_cfg, name, 0, CFG_REMOVE, 0)
@@ -125,6 +127,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define admcfg_default_float(name, val, err) _cfg_default_float(&cfg_adm, name, val, err)
 
 #define admcfg_bool(name, err, flags)		_cfg_bool(&cfg_adm, name, err, flags)
+#define admcfg_true(name)                   (_cfg_bool(&cfg_adm, name, NULL, CFG_OPTIONAL) == true)
 #define admcfg_set_bool(name, val)			_cfg_set_bool(&cfg_adm, name, (u4_t) val, CFG_SET, 0)
 #define admcfg_set_bool_save(name, val)		_cfg_set_bool(&cfg_adm, name, (u4_t) val, CFG_SET | CFG_SAVE, 0)
 #define admcfg_rem_bool(name)				_cfg_set_bool(&cfg_adm, name, 0, CFG_REMOVE, 0)
@@ -181,6 +184,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define json_rem_float(cfg, name)			_cfg_set_float(cfg, name, 0, CFG_REMOVE, 0)
 
 #define json_bool(cfg, name, err, flags)	_cfg_bool(cfg, name, err, flags)
+#define json_true(name)			            (_cfg_bool(cfg, name, NULL, CFG_OPTIONAL) == true)
 #define json_set_bool(cfg, name, val)		_cfg_set_bool(cfg, name, (u4_t) val, CFG_SET, 0)
 #define json_rem_bool(cfg, name)			_cfg_set_bool(cfg, name, 0, CFG_REMOVE, 0)
 
@@ -190,6 +194,7 @@ extern cfg_t cfg_cfg, cfg_adm, cfg_dx, cfg_dxcfg, cfg_dxcomm, cfg_dxcomm_cfg;
 #define json_rem_string(cfg, name)			_cfg_set_string(cfg, name, NULL, CFG_REMOVE, 0)
 
 void cfg_reload();
+bool cfg_gdb_break(bool val);
 
 bool _cfg_init(cfg_t *cfg, int flags, char *buf, const char *id = NULL);
 void _cfg_release(cfg_t *cfg);

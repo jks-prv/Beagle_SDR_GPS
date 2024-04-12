@@ -10,6 +10,13 @@ hr
     border-top: 1px solid #ddd;
 }
 
+.cl-cpanel-hr
+{
+    border-color: #aaa;
+    border-width: 3px;
+    margin: 12px 16px 12px 10px;
+}
+
 x0
 {
     padding: 0 2px;
@@ -198,7 +205,7 @@ x2
 {
 }
 
-.id-extensions-nav
+.id-sidenav-ext
 {
 	width: 10%;
 }
@@ -216,11 +223,12 @@ x2
 .cl-admin-check
 {
 	padding: 0px 10px;
+	text-decoration: none;
 }
 
 /* override the w3-sidenav select/hover styles */
-.id-admin-nav-dom > .w3int-cur-sel, .id-admin-nav-dom > .w3int-cur-sel:hover,
-.id-fw-nav > .w3int-cur-sel, .id-fw-nav > .w3int-cur-sel:hover
+.id-sidenav-dom > .w3int-cur-sel, .id-sidenav-dom > .w3int-cur-sel:hover,
+.id-sidenav-fw > .w3int-cur-sel, .id-sidenav-fw > .w3int-cur-sel:hover
 {
     color: white;
     background-color: #4CAF50;  /* select green */
@@ -553,4 +561,40 @@ input.kiwi-pw
 {
     color: black;
     background: cyan;
+}
+
+
+.ws_keep_conn { position: absolute; left: -9999px; visibility: hidden; }
+
+
+/* coloris color picker */
+
+.coloris-input {
+  width: 125px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  box-sizing: border-box;
+}
+  
+.coloris-square .clr-field button,
+.coloris-circle .clr-field button {
+  width: 22px;
+  height: 22px;
+  left: 5px;
+  right: auto;
+  border-radius: 5px;
+}
+
+.coloris-square .clr-field input,
+.coloris-circle .clr-field input {
+  padding-left: 36px;
+}
+
+.coloris-circle .clr-field button {
+  border-radius: 50%;
 }

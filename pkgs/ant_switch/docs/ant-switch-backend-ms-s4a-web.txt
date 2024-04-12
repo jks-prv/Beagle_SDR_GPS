@@ -1,0 +1,11 @@
+Backend to LZ2RR's MS-S4A-WEB antenna switch.
+
+The MS-S4A-WEB controller only allows a single antenna to be selected at a time (i.e. no antenna mixing).
+
+Factory default IP address of MS-S4A-WEB controller is 192.168.1.234
+
+If your controller has another IP, then you have to create the configuration file
+/etc/default/ms-s4a-web with the following:
+
+# KiwiSDR ant-switch-backend-ms-s4a-web configuration file
+IPADDRESS=192.168.0.101

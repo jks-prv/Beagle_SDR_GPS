@@ -20,16 +20,27 @@ FILES_EMBED_CSS_F1  = web/pkgs/text-security/text-security-disc.css
 FILES_EMBED_CSS_F1 += web/pkgs/w3.css
 #FILES_EMBED_CSS_KEEP_MIN2 = web/pkgs/w3-3.4-min.css
 
+# listed here instead of in subdirectory FILES_EMBED_CSS
+# because order is very important
+# add to web/web.cpp:gen_list_css[] if necessary
 FILES_EMBED_CSS_F2  = web/kiwi/w3_ext.css
 FILES_EMBED_CSS_F2 += web/openwebrx/openwebrx.css
+FILES_EMBED_CSS_F2 += web/pkgs/js/coloris/coloris.css
 FILES_EMBED_CSS_F2 += web/kiwi/kiwi.css
+
+FILES_EMBED_CSS_F2 +=  $(FILES_EMBED_CSS)
 FILES_EMBED_CSS_PKG = $(FILES_EMBED_CSS_F1) $(FILES_EMBED_CSS_F2) $(FILES_EMBED_CSS_KEEP_MIN) $(FILES_EMBED_CSS_KEEP_MIN2)
 
 FILES_EMBED_HTML_F = $(filter-out %.gz,$(filter-out %.min.js,$(FILES_EMBED_HTML)))
 FILES_EMBED_HTML_F2 = $(subst web/,,$(shell $(FILE_OPTIM) -t3 -u -html $(FILES_EMBED_HTML_F) 2> /dev/null))
 
 EMBED_FOPT_W = $(FILES_EMBED_JS_F) $(FILES_EMBED_JS_NOPKG_F) $(FILES_EMBED_CSS_F1) $(FILES_EMBED_CSS_F2) $(FILES_EMBED_HTML_F)
-EMBED_NW = $(subst web/,,$(FILES_EMBED_MISC)) $(FILES_EMBED_HTML_F2) $(subst web/,,$(FILES_EMBED_JS_NOPKG2)) kiwisdr.min.js.gz kiwisdr.min.css.gz
+
+############################################
+# CAUTION 4/2024: gzip of kiwisdr.min.css disabled due to browser unzip corruption!
+############################################
+#EMBED_NW = $(subst web/,,$(FILES_EMBED_MISC)) $(FILES_EMBED_HTML_F2) $(subst web/,,$(FILES_EMBED_JS_NOPKG2)) kiwisdr.min.js.gz kiwisdr.min.css.gz
+EMBED_NW = $(subst web/,,$(FILES_EMBED_MISC)) $(FILES_EMBED_HTML_F2) $(subst web/,,$(FILES_EMBED_JS_NOPKG2)) kiwisdr.min.js.gz kiwisdr.min.css
 
 CLEAN_MIN_GZ += web/kiwisdr.min.js web/kiwisdr.min.js.gz web/kiwisdr.min.css web/kiwisdr.min.css.gz
 
@@ -62,7 +73,10 @@ web/kiwisdr.min.css: $(FILES_EMBED_CSS_PKG)
 	cat `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F1)` >>web/kiwisdr.min.css
 #	cat $(FILES_EMBED_CSS_KEEP_MIN2) >>web/kiwisdr.min.css
 	cat `$(FILE_OPTIM) -t7 -u -css $(FILES_EMBED_CSS_F2)` >>web/kiwisdr.min.css
-	gzip --fast --keep --force web/kiwisdr.min.css
+	@echo "############################################"
+	@echo "# CAUTION 4/2024: gzip of kiwisdr.min.css disabled due to browser unzip corruption!"
+	@echo "############################################"
+#	gzip --fast --keep --force web/kiwisdr.min.css
 
 .PHONY: loptim_embed
 loptim_embed: $(FILE_OPTIM)

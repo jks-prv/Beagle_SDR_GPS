@@ -4,9 +4,9 @@
 # NB: this distro image is a flasher
 
 PLAT="BBG_BBB"
-VER="v1.663"
+VER="v1.665"
 DEBIAN_VER="11.9"
-CKSUM="89eba38a9a5ed2f88d1d7c8b4e97e3850a4bfeec737b106548b4fbb241a13f6a"
+CKSUM="1828e5d97be1dc0baea16a2f8075b27919acec95f863f7900509ee5d0f543d22"
 
 HOST="http://kiwisdr.com/files"
 DISTRO="KiwiSDR_${VER}_${PLAT}_Debian_${DEBIAN_VER}.img.xz"

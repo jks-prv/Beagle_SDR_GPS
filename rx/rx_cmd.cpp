@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
+#include "stats.h"
 #include "misc.h"
 #include "str.h"
 #include "printf.h"
@@ -41,6 +42,7 @@ Boston, MA  02110-1301, USA.
 #include "wspr.h"
 #include "security.h"
 #include "options.h"
+#include "ant_switch.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -121,6 +123,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET GET_CO", CMD_GET_CONFIG },
     { "SET STATS_", CMD_STATS_UPD },
     { "SET GET_US", CMD_GET_USERS },
+    { "SET requir", CMD_REQUIRE_ID },
     { "SET ident_", CMD_IDENT_USER },
     { "SET need_s", CMD_NEED_STATUS },
     { "SET geoloc", CMD_GEO_LOC },        // kiwiclient still uses "geo="
@@ -141,6 +144,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET close_", CMD_FORCE_CLOSE_ADMIN },
     { "SET get_au", CMD_GET_AUTHKEY },
     { "SET clk_ad", CMD_CLK_ADJ },
+    { "SET antsw_", CMD_ANT_SWITCH },
     { "SERVER DE ", CMD_SERVER_DE_CLIENT },
     { "SET x-DEBU", CMD_X_DEBUG },
     { 0 }
@@ -186,8 +190,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	    strcmp(cmd, "SET keepalive") != 0 &&
 	    kiwi_str_begins_with(cmd, "SET options") == false &&    // options needed before CMD_AUTH
 	    kiwi_str_begins_with(cmd, "SET auth") == false) {
-		    clprintf(conn, "### SECURITY: NO AUTH YET: %s %s %s %d <%.64s>\n",
-		        stream_name, rx_conn_type(conn), conn->remote_ip, strlen(cmd), cmd);
+		    clprintf(conn, "### SECURITY: NO AUTH YET: %s %s %s\n", stream_name, rx_conn_type(conn), conn->remote_ip);
+		    clprintf(conn, "%d <%.128s>\n", strlen(cmd), cmd);
             conn->kick = true;
 		    return true;	// fake that we accepted command so it won't be further processed
 	}
@@ -402,8 +406,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     pwd_printf("TLIMIT exempt local connection from %s\n", conn->remote_ip);
                 }
             #endif
-            pdb_printf("PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n",
-                ipl_m, tlimit_exempt_pwd);
+            pdb_printf("PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n", ipl_m, tlimit_exempt_pwd);
             if (ipl_m != NULL && tlimit_exempt_pwd != NULL && strcasecmp(ipl_m, tlimit_exempt_pwd) == 0) {
                 conn->tlimit_exempt = true;
                 conn->tlimit_exempt_by_pwd = true;
@@ -453,7 +456,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     json_set_int(&cfg_ipl, stprintf("%s_last", conn->remote_ip), last);
                     if (retries >= TOO_MANY_ATTEMPTS) {
                         pwd_printf("TLIMIT-IP RETRIES EXCEEDED, adding to blacklist: %s\n", conn->remote_ip);
-                        ip_blacklist_add_iptables(conn->remote_ip);
+                        ip_blacklist_add_iptables(conn->remote_ip, USE_IPTABLES);
                     }
                     
                     return true;
@@ -754,6 +757,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                             } else {
 		                        freq_offset_kHz = conn->foff;
                                 cfg_set_float("freq_offset", freq_offset_kHz);
+                                printf("_cfg_save_json freq_offset\n");
 		                        cfg_save_json(cfg_cfg.json);    // we just checked that no admin connections exist
                                 update_freqs();
                                 update_masked_freqs();
@@ -1801,6 +1805,14 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 // UI
 ////////////////////////////////
 
+    case CMD_REQUIRE_ID:
+        int require_id;
+        if (sscanf(cmd, "SET require_id=%d", &require_id) == 1) {
+            conn->require_id = require_id? true:false;
+            return true;
+        }
+        break;
+
     case CMD_IDENT_USER:
         if (kiwi_str_begins_with(cmd, "SET ident_user=")) {
             
@@ -1822,15 +1834,25 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
         
             //cprintf(conn, "SET ident_user=<%s> noname=%d setUserIP=%d\n", ident_user_m, noname, setUserIP);
         
+            bool rename = false;
             if (setUserIP) {
+                if (conn->ident_user) {
+                    user_leaving(conn, timer_sec() - conn->arrival);
+                    rename = true;
+                }
                 kiwi_str_redup(&conn->ident_user, "ident_user", conn->remote_ip);
                 conn->isUserIP = TRUE;
                 // printf(">>> isUserIP TRUE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
                 // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->ident_user, cmd);
-            }
+                if (rename) user_arrive(conn);
+            } else
 
             // name sent: save new, replace previous (if any)
             if (!noname) {
+                if (conn->ident_user) {
+                    user_leaving(conn, timer_sec() - conn->arrival);
+                    rename = true;
+                }
                 kiwi_str_decode_inplace(ident_user_m);
                 int printable, UTF;
                 char *esc = kiwi_str_escape_HTML(ident_user_m, &printable, &UTF);
@@ -1858,6 +1880,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 conn->isUserIP = FALSE;
                 // printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",
                 // 	conn->remote_ip, conn->remote_port, setUserIP, noname, conn->ident_user, cmd);
+                if (rename) user_arrive(conn);
             }
         
             kiwi_asfree(ident_user_m);
@@ -1951,6 +1974,18 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	    break;
     }
 
+
+////////////////////////////////
+// antenna switch
+////////////////////////////////
+
+    case CMD_ANT_SWITCH: {
+        if (kiwi_str_begins_with(cmd, "SET antsw_")) {
+            if (ant_switch_msgs(cmd, conn->rx_channel))
+                return true;
+        }
+        break;
+    }
 
 ////////////////////////////////
 // preferences

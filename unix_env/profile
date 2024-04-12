@@ -1,7 +1,7 @@
 # ~/.profile: executed by Bourne-compatible login shells.
 
-export HOME=/root
-cd $HOME
+cd
+export HOME=`pwd`
 
 # for benefit of KiwiSDR admin console
 if [ "x${TERM}" == "xdumb" ]; then

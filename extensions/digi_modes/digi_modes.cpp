@@ -113,7 +113,8 @@ static void digi_task(void *param)
 			e->rd_pos = (e->rd_pos+1) & (N_DPBUF-1);
 		}
 		
-		if (e->rsid->rsidTime != e->last_rsid_time) {
+		if (e->rsid && e->rsid->rsidTime != e->last_rsid_time) {
+		    //rcprintf(rx_chan, "digi CHARS %d|%d RSID: %s @ %0.1f Hz\n", e->rsid->rsidTime, e->last_rsid_time, e->rsid->rsidName, e->rsid->rsidFreq);
 		    ext_send_msg_encoded(e->rx_chan, false, "EXT", "chars", "RSID: %s @ %0.1f Hz\n", e->rsid->rsidName, e->rsid->rsidFreq);
             e->last_rsid_time = e->rsid->rsidTime;
 		}
@@ -122,6 +123,7 @@ static void digi_task(void *param)
 
 void digi_reset(digi_t *e)
 {
+    if (e->rsid) e->rsid->rsidTime = 0;     // otherwise last RSID msg is seen when ext reopened
     memset(e, 0, sizeof(*e));
 }
 
@@ -145,19 +147,20 @@ void digi_close(int rx_chan)
 bool digi_msgs(char *msg, int rx_chan)
 {
 	digi_t *e = &digi[rx_chan];
+    e->rx_chan = rx_chan;	// remember our receiver channel number
 	int n;
 	
 	//rcprintf(rx_chan, "### digi_msgs <%s>\n", msg);
 	
 	if (strcmp(msg, "SET ext_server_init") == 0) {
-		e->rx_chan = rx_chan;	// remember our receiver channel number
-		e->rsid = &m_RsId[rx_chan];
-		ext_send_msg(e->rx_chan, DEBUG_MSG, "EXT ready");
+		//rcprintf(rx_chan, "digi ext_server_init\n");
+		ext_send_msg(rx_chan, DEBUG_MSG, "EXT ready");
 		return true;
 	}
 
 	if (strcmp(msg, "SET digi_start") == 0) {
-        conn_t *conn = rx_channels[e->rx_chan].conn;
+        conn_t *conn = rx_channels[rx_chan].conn;
+		e->rsid = &m_RsId[rx_chan];
 		e->last_freq_kHz = conn->freqHz/1e3;
         digi_conf.freq_offset_Hz = (u4_t) (freq_offset_kHz * 1e3);
 		//rcprintf(rx_chan, "digi start\n");
@@ -183,7 +186,7 @@ bool digi_msgs(char *msg, int rx_chan)
 	}
 	
 	if (strcmp(msg, "SET digi_test") == 0) {
-		rcprintf(rx_chan, "digi test\n");
+		//rcprintf(rx_chan, "digi test\n");
         e->s2p = digi_conf.s2p_start;
 		e->test = true;
 		return true;

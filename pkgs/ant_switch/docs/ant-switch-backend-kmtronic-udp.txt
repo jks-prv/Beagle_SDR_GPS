@@ -1,0 +1,9 @@
+Backend to KMTronic LAN Ethernet IP 8 channels UDP Relay.
+
+https://info.kmtronic.com/lan-ethernet-ip-8-channels-udp-relay-board.html
+
+If your antenna switch host ip address and port number is something other than 192.168.1.199 and 12345
+then you have to create the configuration file /etc/default/kmtronic-udp with the following:
+
+# ip/port for KMTronic UDP Relay
+KMTRONIC_UDP_HOST_PORT="192.168.1.199 12345"

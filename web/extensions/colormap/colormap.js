@@ -219,25 +219,29 @@ function colormap_init()
    // has to be done after spectrum_init() but before audioFFT_setup()
    var init_cmap = +ext_get_cfg_param('init.colormap', -1, EXT_NO_SAVE);
    //console.log('# cmap  init_cmap='+ init_cmap +' cmap_override='+ wf.cmap_override);
-   var last_cmap = readCookie('last_cmap', (init_cmap == -1)? 0 : init_cmap);
+   var last_cmap = kiwi_storeRead('last_cmap', (init_cmap == -1)? 0 : init_cmap);
    if (wf.cmap_override != -1) last_cmap = wf.cmap_override;
    wf_cmap_cb('wf.cmap', last_cmap, false);     // writes 'last_cmap' cookie
 
-   wf.aper_w = parseFloat(w3_el('id-control').style.width);
+   wf.aper_w = w3_el('id-control-inner').clientWidth - kiwi_scrollbar_width() - 10;
    wf.aper_h = 16;
    w3_el('id-aper-data').style.width = px(wf.aper_w);
    var aper_canvas = w3_el('id-aper-canvas');
    aper_canvas.width = wf.aper_w;
    wf.aper_ctx = aper_canvas.getContext("2d");
    
-	if (wf.aper == kiwi.aper_e.man)
+	if (wf.aper == kiwi.APER_MAN)
       colormap_aper();
 }
 
 function colormap_select()
 {
    var which = cmap.which = (wf.cmap >= kiwi.cmap_e.custom_1)? (wf.cmap - kiwi.cmap_e.custom_1) : -1;
-   var s = kiwi_storeGet('colormap');
+   var s = kiwi_storeInit('colormap');
+   if (!isArg(s)) {
+      s = {};
+      kiwi_storeWrite('colormap', '{}');
+   }
    
    if (cmap.transfer_canvas && which == -1) {
       var c = cmap.transfer_canvas.ctx;
@@ -330,7 +334,7 @@ function colormap_clear_button_cb(path, idx)
 	colormap_color_gain_cb('', 0, true, false, cmap.R, 0);
 	colormap_color_gain_cb('', 0, true, false, cmap.G, 0);
 	colormap_color_gain_cb('', 0, true, false, cmap.B, 0);
-   kiwi_storeSet('colormap', JSON.stringify(cmap.save));
+   kiwi_storeWrite('colormap', JSON.stringify(cmap.save));
 }
 
 function colormap_color_gain_cb(path, val, done, first, param, y_new)
@@ -592,7 +596,7 @@ function colormap_transfer_mouseup_cb(evt, escape)
    
    var s = JSON.stringify(cmap.save);
    //console.log('SAVE '+ s);
-   kiwi_storeSet('colormap', s);
+   kiwi_storeWrite('colormap', s);
 }
 
 function colormap_escape_key_cb()

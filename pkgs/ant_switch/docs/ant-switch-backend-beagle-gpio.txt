@@ -1,0 +1,16 @@
+This GPIO backend to KiwiSDR antenna switch extension
+
+http://wiki.seeed.cc/BeagleBone_Green/
+
+This extension uses Beagle GPIO pins
+
+P8 pin 11 - Antenna 1
+P8 pin 12 - Antenna 2
+P8 pin 13 - Antenna 3
+P8 pin 14 - Antenna 4
+P8 pin 15 - Antenna 5
+P8 pin 16 - Antenna 6
+P8 pin 17 - Antenna 7
+P8 pin 18 - Antenna 8
+P8 pin 19 - Antenna 9
+P8 pin 26 - Antenna 10

@@ -38,6 +38,7 @@ Boston, MA  02110-1301, USA.
 #include "rx_server_ajax.h"
 #include "rx_util.h"
 #include "security.h"
+#include "ant_switch.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -95,7 +96,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	//	Returns JSON
 	//	Done as an AJAX because needed for .js file version checking long before any websocket available
 	case AJAX_VERSION:
-		asprintf(&sb, "{\"maj\":%d,\"min\":%d,\"ts\":%lld}", version_maj, version_min, rx_conn_tstamp());
+		asprintf(&sb, "{\"maj\":%d,\"min\":%d,\"ts\":%lld,\"sp\":%d}",
+		    version_maj, version_min, rx_conn_tstamp(), admcfg_true("admin_save_pwd"));
 		break;
 
 	// SECURITY:
@@ -233,7 +235,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                 #define NQS 15
                 str_split_t qs[NQS+1];
                 
-                sb2 = index(sb, '\n');
+                sb2 = strchr(sb, '\n');
                 *sb2 = '\0';
                 n = kiwi_split(sb, &r_buf, delim, qs, NQS,
                     KSPLIT_NO_SKIP_EMPTY_FIELDS | KSPLIT_HANDLE_EMBEDDED_DELIMITERS);
@@ -311,7 +313,7 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
                     float begin, end;
                     if (_dx_parse_csv_field(CSV_FLOAT, qs[10].str, &begin)) { rc = 22; goto fail; }
                     if (_dx_parse_csv_field(CSV_FLOAT, qs[11].str, &end)) { rc = 23; goto fail; }
-                    if ((begin != 0 || end != 0) && (begin != 0 && end != 2400))
+                    if (!(begin == 0 && end == 2400) && !(begin == 0 && end == 0))
                         sb3 = kstr_asprintf(sb3, "%s\"b0\":%.0f, \"e0\":%.0f", sb3? ", " : "", begin, end);
 
                     // N_CSV_FIELDS_SIG_BW field is optional for backward compatibility
@@ -611,10 +613,11 @@ fail:
 		cfg_string_free(pwd_s);
 		int chan_no_pwd = rx_chan_no_pwd();
 		int users_max = has_pwd? chan_no_pwd : rx_chans;
-		int users = MIN(current_nusers, users_max);
+		int users = MIN(kiwi.current_nusers, users_max);
 		bool no_open_access = (has_pwd && chan_no_pwd == 0);
         bool kiwisdr_com_reg = (admcfg_bool("kiwisdr_com_register", NULL, CFG_OPTIONAL) == 1)? 1:0;
-		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", current_nusers, users_max, users);
+        int model = kiwi.model? kiwi.model : KiwiSDR_1;
+		//printf("STATUS current_nusers=%d users_max=%d users=%d\n", kiwi.current_nusers, users_max, users);
 		//printf("STATUS has_pwd=%d chan_no_pwd=%d no_open_access=%d reg=%d\n", has_pwd, chan_no_pwd, no_open_access, kiwisdr_com_reg);
 
 
@@ -632,7 +635,7 @@ fail:
 			// Make sure to always keep set to private when private
 			status = "private";
 			users_max = rx_chans;
-			users = current_nusers;
+			users = kiwi.current_nusers;
 		} else
 		if (offline)
 			status = "offline";
@@ -661,7 +664,8 @@ fail:
 		
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
-			"name=%s\nsdr_hw=KiwiSDR v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
+			"name=%s\n"
+			"sdr_hw=KiwiSDR %d v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\n"
 			"bands=%.0f-%.0f\nfreq_offset=%.3f\n"
 			"users=%d\nusers_max=%d\npreempt=%d\n"
@@ -685,7 +689,7 @@ fail:
 			"dx_file=%d,%s,%d\n",
 			
 			status, no_open_access? "auth=password\n" : "", offline? "yes":"no",
-			name, version_maj, version_min,
+			name, model, version_maj, version_min,
 
 			// "nbsp;nbsp;" can't be used here because HTML can't be sent.
 			// So a Unicode "invisible separator" #x2063 surrounded by spaces gets the desired double spacing.
@@ -699,14 +703,14 @@ fail:
 			// Then enter 4 hex UTF-8 bytes into www.ltg.ed.ac.uk/~richard/utf-8.cgi?input=📶&mode=char
 			// Resulting hex UTF-16 field can be entered below.
 
-			has_20kHz?						" ⁣ 🎵 20 kHz" : "",
-			has_GPS?						" ⁣ 📡 GPS" : "",
-			has_limits?						" ⁣ " : "",
-			has_tlimit?						"⏳" : "",
-			has_masked?						"🚫" : "",
-			has_limits?						" LIMITS" : "",
-			have_DRM_ext?					" ⁣ 📻 DRM" : "",
-			have_ant_switch_ext?			" ⁣ 📶 ANT-SWITCH" : "",
+			has_20kHz?              " ⁣ 🎵 20 kHz" : "",
+			has_GPS?                " ⁣ 📡 GPS" : "",
+			has_limits?             " ⁣ " : "",
+			has_tlimit?             "⏳" : "",
+			has_masked?             "🚫" : "",
+			has_limits?             " LIMITS" : "",
+			have_DRM_ext?           " ⁣ 📻 DRM" : "",
+			antsw.isConfigured?     " ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset_kHz,

@@ -194,6 +194,13 @@ int snd_send_msg(int rx_chan, bool debug, const char *msg, ...)
 	vasprintf(&s, msg, ap);
 	va_end(ap);
 
+    if (rx_chan == SM_ADMIN_ALL) {
+        for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
+            if (!c->valid || c->type != STREAM_ADMIN) continue;
+            send_msg_buf(c, s, strlen(s));
+            rv = 0;
+        }
+    } else
     if (rx_chan == SM_SND_ADM_ALL) {
         for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
             if (!c->valid || (c->type != STREAM_SOUND && c->type != STREAM_ADMIN)) continue;

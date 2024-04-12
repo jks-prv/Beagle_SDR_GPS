@@ -19,6 +19,16 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
+#define USE_IPSET
+
+//#define IP_BL_DBG
+#ifdef IP_BL_DBG
+	#define ipbl_prf(fmt, ...) \
+	    printf(fmt,  ## __VA_ARGS__);
+#else
+	#define ipbl_prf(fmt, ...)
+#endif
+
 #define N_IP_BLACKLIST 512
 #define N_IP_BLACKLIST_HASH_BYTES 4     // 4 bytes = 8 chars
 
@@ -32,9 +42,13 @@ typedef struct {
     u4_t last_dropped;
 } ip_blacklist_t;
 
-int ip_blacklist_add_iptables(char *ip_s);
+void ip_blacklist_system(const char *cmd);
+void ip_blacklist_disable();
+void ip_blacklist_enable();
+#define USE_IPTABLES true
+int ip_blacklist_add_iptables(char *ip_s, bool use_iptables = false);
 void ip_blacklist_init();
-bool check_ip_blacklist(char *remote_ip, bool log=false);
+bool check_ip_blacklist(char *remote_ip, bool log = false);
 void ip_blacklist_dump(bool show_all);
 
 #define BL_DOWNLOAD_RELOAD          0

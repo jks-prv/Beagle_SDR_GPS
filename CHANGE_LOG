@@ -2,6 +2,141 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.666  April 12, 2024
+    Extensions moved to main control panel so they can be used while another extension is in use:
+        Antenna Switch extension => RF tab
+        Waterfall extension => WF tab
+        Noise Blanker/Filter extensions => Audio tab
+
+        Those three tabs, RF/WF/Audio, now scroll vertically to accomodate the new content.
+        
+        To avoid confusion all the previous methods of accessing those former extensions are still
+        available. So they continue to appear in the "extension" menu even though selecting them
+        now simply jumps to their respective control panel position.
+        Your existing bookmarks selecting an antenna will still work, e.g. kiwi:8073/?ext=ant,loop
+        even though there is now a simplified format: kiwi:8073/?ant=loop
+        
+        Because mouse wheel (and trackpad emulation of that) will now cause scrolling of the
+        RF/WF/Audio panel content you must now hold shift while the cursor is positioned over a
+        slider to get the sliders to adjust using the mouse/trackpad (the prior behavior).
+
+    The antenna switch has been integrated into KiwiSDR codebase to make the above change possible.
+    My thanks to the author Kiwi Karvonen, OK1KK, for agreeing to this change.
+    The antenna switch frontend & backend scripts have not changed. But now live in the directory
+    /root/Beagle_SDR_GPS/pkgs/ant_switch instead of /root/extensions/ant_switch
+    If you had the extension installed and configured the settings will be carried over to the
+    Kiwi version. Backend selection and configuration has been added to the admin extensions page.
+    As changes are made to the admin config they are immediately reflected on the new antenna switch
+    area of the RF tab. No restarting is required anymore. The changes are significant enough that
+    there will likely be bugs in the new scheme.
+
+
+    The following improvements are based on suggestions made by the Kiwi community. Thanks everyone!
+    
+    Waterfall tab (WFn) has a new entry called "Spec RF passband marker".
+    Similar to other SDR programs, when enabled this shows a transparent rectangle in the RF spectrum
+    that is the width of the passband. Color adjustment, including transparency, via a color picker.
+    Color is saved in browser storage. More marker improvements are planned, like being able to
+    adjust the passband width by dragging the edges of the marker.
+    
+    Admin page:
+        New checkbox on control tab: "Require name/callsign entry when connecting".
+        Forces the user to enter a non-blank entry before a new connection will proceed.
+        Not shown again since the name/callsign is now in browser storage for this Kiwi.
+        
+        RF attn slider on the admin config tab is now defined as the attenuation value preset
+        on server startup. When a connection is made from a user that has attenuator adjustment
+        permission, and has an attn value saved in browser storage, the storage value will be used.
+        The intent here is to provide a global default attenuation value when there are only users
+        connected who do not have attenuator adjust permission. Such as when the Kiwi owner/admin
+        knows a few dB is required to prevent significant ADC overload.
+
+        Admin password save:
+        On the admin security tab is a new switch "Save admin password in browser local storage?"
+        Note that browser storage is not the same as browser cookies in that local storage values
+        are not included in every web request as cookies are. Hence using local storage to save
+        the admin password is a better balance of security/convenience (but also note that cookies
+        are now gone as described below).
+        
+        URL tab select:
+        You can now specify an admin tab to select in the URL, e.g. my_kiwi:8073/admin?dx
+        or my_kiwi:8073/admin?ext,ant to select the antenna switch submenu on the extensions tab.
+        The names can be a case-insensitive substring of the full tab/menu names.
+        So /admin?e,w to select the Extensions > WSPR submenu.
+        
+        Map GPS resolution:
+        The webpage and public tabs had a button called "set from GPS" that would fill-in the
+        map/location fields with a lat/lon value computed by the GPS (if available).
+        The single button has been replaced with two: "lo res" and "hi res".
+        "lo res" works as before, giving only two significant digits of lat/lon.
+        A very rough location designed to protect your privacy.
+        The new "hi res" button gives the full 6-digits of resolution the GPS computes.
+        A warning is displayed when using this option telling you your precise location will be
+        revealed on map.kiwisdr.com and the [map] link at the top of the user page.
+    
+        The webpage tab now allows customization of the user README/welcome panel (the panel with a
+        violet color) and also the password panel shown (if any) when a user connects.
+        If you make the customization entry empty the default text is restored.
+    
+        There is additional error checking on the connect tab "Domain name" and "Specified IP" fields.
+        A domain name entry is looked up with DNS and an error displayed if the domain is not found.
+        An invalid IP address specification will also show an error message.
+        
+        A new config tab checkbox controls if the geolocated city for a user connection will be shown.
+        
+        New admin tab "Users":
+        Presents a list of all user connections since the server was last started.
+        Essentially a consolidation of the "ARRIVED" and "LEAVING" log messages.
+        A new entry appears when a user connects. And the "connected" time updates when a user leaves.
+        Users with the same name/callsign connecting from different IP addresses are shown in a
+        sublist, revealed by clicking an icon that will appear. Column sort options available.
+        One of the intended uses is to more conveniently spot new undesirable "bot" connections and
+        add them to the IP address blacklist.
+        
+        A new webpage tab checkbox allows centering of the top bar splash photo.
+    
+        The admin connection lockout period after restart (message: "Database update in progress")
+        has been eliminated. (thanks Christoph for recommending Linux "ipset")
+    
+    New keyboard shortcut keys:
+        '$' toggles 1 Hz frequency readout. Also added a new entry in the right-click menu.
+        '%' toggles tuning lock (existing entry in the right-click menu).
+        'R' switches to RF tab.
+    
+    Added AM wide mode. AM mode button now toggles AM => AMN => AMW => AM ...
+    AMW default passband values available on the admin config tab.
+    
+    "Measure SNR now" button on admin control tab now shows result values next to the button.
+    User and admin status page SNR values are now updated promptly.
+
+    When the cursor hovers over the "SNR xx/yy dB" text in the title bar a popup describes the
+    frequency ranges xx and yy refer to.
+    
+    Admin page > Extensions > FT8 has a new switch causing spots to be recorded to the syslog.
+    Same as what the WSPR extension has.
+    
+    The AGC tab has a "defaults" button that returns all settings to nominal values.
+    
+    TDoA extension: As you rollover markers, and they highlight yellow, they will now pop in front
+    of all other markers and be completely visible. Previously if they were obscured by another
+    marker you couldn't see all of their content.
+    
+    rx.kiwisdr.com will show the product model (e.g. "KiwiSDR 1" or "KiwiSDR 2") instead of just
+    "KiwiSDR". But only for Kiwis running v1.666 or later.
+    
+    All browser cookies have been moved to browser local storage. The difference is that local
+    storage is not transmitted with every web request like cookies are.
+    Cookies were originally used back in 2016 because local storage didn't exist back then.
+    Now it is widely supported by all modern browsers.
+    The cookie values were never used for anything on the Kiwi server side. Only for their
+    browser storage feature which persists across sessions. So their transmission with each
+    web request was very wasteful of network bandwidth (approximately 1 kB per web request).
+    
+    Bugs fixed:
+        Owner/Admin email link no longer closes browser connection.
+        Fixed bug in DX label CSV import relating to start/stop schedule times.
+        Some minor memory leaks were fixed.
+
 v1.665  March 11, 2024
     Fix EEPROMs with space in part number field.
 

@@ -21,6 +21,7 @@ Boston, MA  02110-1301, USA.
 #include "config.h"
 #include "options.h"
 #include "kiwi.h"
+#include "stats.h"
 #include "rx.h"
 #include "rx_util.h"
 #include "mem.h"
@@ -34,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "non_block.h"
 #include "eeprom.h"
 #include "shmem.h"
+#include "ant_switch.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -42,7 +44,6 @@ Boston, MA  02110-1301, USA.
 #include <errno.h>
 #include <fcntl.h>
 
-int current_nusers;
 static int last_hour = -1, last_min = -1;
 
 // called periodically (currently every 10 seconds)
@@ -135,7 +136,7 @@ static void webserver_collect_print_stats(int print)
 		
 		nusers++;
 	}
-	current_nusers = nusers;
+	kiwi.current_nusers = nusers;
 
 	// construct cpu stats response
 	#define NCPU 4
@@ -307,14 +308,14 @@ static void called_every_second()
             c->ext_api = false;
             c->ext_api_determined = true;
 		    web_served_clear_cache(c);
-		    cprintf(c, "API: decided connection is OKAY (%d) %s\n",
+		    cprintf(c, "API: decided connection is OKAY (served=%d) %s\n",
 		        served, c->browser? c->browser : "");
 		    continue;
 		}
 		
 		c->ext_api = c->ext_api_determined = true;
 		web_served_clear_cache(c);
-		cprintf(c, "API: decided connection is non-Kiwi app (%d) %s\n",
+		cprintf(c, "API: decided connection is non-Kiwi app (served=%d) %s\n",
 		    served, c->browser? c->browser : "");
 		//dump();
 
@@ -339,8 +340,8 @@ static void called_every_second()
                     bool hasDelimiter = (c->ident_user != NULL && strpbrk(c->ident_user, "-_.`,/+~") != NULL);
                     //bool trig = (c->type == STREAM_WATERFALL && freq_trig && hasDelimiter && c->zoom == 8);
                     bool trig = (c->type == STREAM_WATERFALL && freq_trig && c->zoom == 8);
-                    clprintf(c, "API: TRIG=%d %s(%d) f_kHz=%.3f freq_trig=%d hasDelimiter=%d z=%d\n",
-                        trig, rx_conn_type(c), c->type, f_kHz, freq_trig, hasDelimiter, c->zoom);
+                    clprintf(c, "API: TRIG=%s %s(T%d) f_kHz=%.3f freq_trig=%d hasDelimiter=%d z=%d\n",
+                        trig? "T":"F", rx_conn_type(c), c->type, f_kHz, freq_trig, hasDelimiter, c->zoom);
                     if (trig) {
                         clprintf(c, "API: non-Kiwi app fingerprint was denied connection\n");
                         kick = true;
@@ -373,6 +374,199 @@ static void called_every_second()
         }
 	}
 }
+
+
+
+////////////////////////////////
+// user list
+////////////////////////////////
+    
+typedef struct {
+    u4_t idx;
+    #define UL_FL 1
+    u2_t flags;
+    u2_t connected;
+	char *ident;
+	list_t *entry_base;
+	u4_t total_time;
+} user_log_t;
+#define N_USER_LOG_ALLOC 8
+static list_t *user_base;
+
+typedef struct {
+    u2_t flags;
+    u2_t connected;
+    u4_t ip4;
+	char *geoloc;
+	u4_t connect_time;
+} user_entry_t;
+#define N_USER_ENTRY_ALLOC 1
+
+bool user_ident_cmp(const void *elem1, void *elem2)
+{
+	const char *s1 = (const char *) elem1;
+	user_log_t *ul = (user_log_t *) FROM_VOID_PARAM(elem2);
+    //real_printf("user_strcmp <%s> <%s> ", s1, ul->ident);
+	return (strcmp(s1, ul->ident) == 0);
+}
+
+bool user_ip_cmp(const void *elem1, void *elem2)
+{
+	u4_t ip4_1 = (u4_t) FROM_VOID_PARAM(elem1);
+	user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(elem2);
+    //real_printf("user_ip_cmp %s %s ", inet4_h2s(ip4_1, 0), inet4_h2s(entry->ip4, 1));
+	return (ip4_1 == entry->ip4);
+}
+
+void user_list_clear()
+{
+    int i, j;
+    list_t *ub = user_base;
+    if (!ub) return;
+    user_base = NULL;
+    
+    user_log_t *ul;
+    for (i = 0, ul = (user_log_t *) ub->items; i < ub->n_items; ul++, i++) {
+        kiwi_ifree(ul->ident, "user_list_clear");
+        list_t *entry_base = ul->entry_base;
+        for (j = 0; j < entry_base->n_items; j++) {
+            user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+            kiwi_ifree(entry->geoloc, "user_list_clear");
+        }
+        list_free(entry_base);
+    }
+    list_free(ub);
+
+    user_base = list_init("user_base", sizeof(user_log_t), N_USER_LOG_ALLOC);
+}
+
+void user_arrive(conn_t *c)
+{
+    int i, j;
+    static bool init;
+    if (c->internal_connection || (init && !user_base)) return;
+    
+    if (!init) {
+        printf_highlight(0, "user");
+        user_base = list_init("user_base", sizeof(user_log_t), N_USER_LOG_ALLOC);
+        init = true;
+    }
+    
+    const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
+    bool isNew;
+    
+    i = item_find_grow(user_base, TO_VOID_PARAM(ident), user_ident_cmp, &isNew);
+
+    user_log_t *ul;
+    if (isNew) {
+        // new ident
+        ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
+        ul->idx = i;
+        ul->ident = strdup(ident);
+        ul->entry_base = list_init("entry_base", sizeof(user_entry_t), N_USER_ENTRY_ALLOC);
+    } else {
+        // existing ident
+        ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
+    }
+    ul->connected++;
+    //real_printf("user %s #%d %s <%s>\n", isNew? "NEW" : "EXISTING", i, c->remote_ip, ul->ident);
+
+    bool err;
+    u4_t ip4 = inet4_d2h(c->remote_ip, &err);
+    if (err) panic("inet4_d2h");
+    list_t *entry_base = ul->entry_base;
+    
+    j = item_find_grow(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &isNew);
+    
+    user_entry_t *entry;
+    if (isNew) {
+        // new entry
+        entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+        entry->ip4 = ip4;
+        entry->geoloc = strdup(c->geo? c->geo:"");
+    } else {
+        // existing entry
+        //entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+    }
+    
+    //user_dump();
+}
+
+void user_leaving(conn_t *c, u4_t connected_secs)
+{
+    const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
+    bool found;
+    if (c->internal_connection || !user_base) return;
+    
+    int i = item_find(user_base, TO_VOID_PARAM(ident), user_ident_cmp, &found);
+    if (!found) return;
+    user_log_t *ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
+    ul->connected--;
+
+    list_t *entry_base = ul->entry_base;
+    ul->total_time += connected_secs;
+
+    bool err;
+    u4_t ip4 = inet4_d2h(c->remote_ip, &err);
+    if (err) panic("inet4_d2h");
+    int j = item_find(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &found);
+    
+    if (found) {
+        user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+        entry->connect_time += connected_secs;
+    }
+
+    //real_printf("user LEAVING #%d %d|%d secs %s\n", i, connected_secs, ul->total_time, ul->ident);
+}
+
+kstr_t *user_list(int idx)
+{
+    int j;
+
+    kstr_t *sb = NULL;
+    bool comma = false;
+    user_log_t *ul = user_base? ((user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, idx))) : NULL;
+
+    if (ul) {
+        sb = kstr_asprintf(sb, "{\"s\":%d,\"i\":\"%s\",\"t\":%d,\"a\":[", idx, ul->ident, ul->total_time);
+            bool comma2 = false;
+            list_t *entry_base = ul->entry_base;
+            for (j = 0; j < entry_base->n_items; j++) {
+                user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+                sb = kstr_asprintf(sb, "%s{\"ip\":\"%s\",\"g\":\"%s\",\"t\":%d}", comma2? ",":"",
+                    inet4_h2s(entry->ip4), entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+                comma2 = true;
+            }
+        sb = kstr_cat(sb, "]}");
+    } else {
+        sb = (kstr_t *) "{\"end\":1}";
+    }
+    //real_printf("%s\n", kstr_sp(sb));
+    return sb;
+}
+
+void user_dump()
+{
+    int i, j;
+    if (!user_base) return;
+    real_printf("user LIST n=%d cur_nel=%d\n", user_base->n_items, user_base->cur_nel);
+
+    user_log_t *ul;
+    for (i = 0, ul = (user_log_t *) user_base->items; i < user_base->n_items; ul++, i++) {
+        real_printf("user LIST #%d %d Tsecs <%s>\n", i, ul->total_time, ul->ident);
+        list_t *entry_base = ul->entry_base;
+        for (j = 0; j < entry_base->n_items; j++) {
+            user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+            real_printf("   %s %s %d secs\n", inet4_h2s(entry->ip4),
+            entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+        }
+    }
+}
+
+
+////////////////////////////////
+// CAT interface
+////////////////////////////////
 
 static void CAT_write_tty(void *param)
 {
@@ -417,7 +611,7 @@ void CAT_task(void *param)
 void stat_task(void *param)
 {
 	u64_t stats_deadline = timer_us64() + SEC_TO_USEC(1);
-	u64_t secs = 0;
+	u4_t secs = 0;      // 136 year overflow at 1 Hz update
 
     bool err;
     int baud = cfg_int("CAT_baud", &err, CFG_OPTIONAL);
@@ -449,6 +643,7 @@ void stat_task(void *param)
 			if (do_sdr) {
 				webserver_collect_print_stats(print_stats & STATS_TASK);
 				if (!do_gps) nbuf_stat();
+	            ant_switch_poll();
 			}
 
             cull_zombies();

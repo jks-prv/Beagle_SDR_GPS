@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "ip_blacklist.h"
 
 #include <sys/types.h>
+#include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -149,6 +150,7 @@ typedef struct {
     int ip_blacklist_len;
     ip_blacklist_t ip_blacklist[N_IP_BLACKLIST];
     char ip_blacklist_hash[N_IP_BLACKLIST_HASH_BYTES*2 + SPACE_FOR_NULL];
+    FILE *isf;
 } net_t;
 
 // (net_t) net located in shmem for benefit of e.g. led task
@@ -162,14 +164,14 @@ struct conn_st;
 isLocal_t isLocal_if_ip(struct conn_st *conn, char *ip_addr, const char *log_prefix);
 
 bool find_local_IPs(int retry);
-u4_t inet4_d2h(char *inet4_str, bool *error, u1_t *ap=NULL, u1_t *bp=NULL, u1_t *cp=NULL, u1_t *dp=NULL);
+u4_t inet4_d2h(char *inet4_str, bool *error = NULL, u1_t *ap = NULL, u1_t *bp = NULL, u1_t *cp = NULL, u1_t *dp = NULL);
 void inet4_h2d(u4_t inet4, u1_t *ap, u1_t *bp, u1_t *cp, u1_t *dp);
-char *inet4_h2s(u4_t inet4);
+char *inet4_h2s(u4_t inet4, int which = 0);
 bool is_inet4_map_6(u1_t *a);
 int inet_nm_bits(int family, void *netmask);
 bool isLocal_ip(char *ip, bool *is_loopback = NULL, u4_t *ipv4 = NULL);
 
-int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup);
+int DNS_lookup(const char *domain_name, ip_lookup_t *r_ips, int n_ips, const char *ip_backup = NULL);
 char *DNS_lookup_result(const char *caller, const char *host, ip_lookup_t *ips);
 bool ip_match(const char *ip, ip_lookup_t *ips);
 

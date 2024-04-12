@@ -49,7 +49,13 @@ Boston, MA  02110-1301, USA.
 // Once with EDATA_EMBED defined when installed as the production server in /usr/local/bin
 // Once with EDATA_DEVEL defined when compiled into the build directory during development 
 
-#define MTR 0
+//#define WEB_DBG
+#ifdef WEB_DBG
+	#define web_prf(fmt, ...) \
+	    printf(fmt,  ## __VA_ARGS__);
+#else
+	#define web_prf(fmt, ...)
+#endif
 
 static int bsearch_edatacomp(const void *key, const void *elem)
 {
@@ -171,7 +177,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 #ifdef EDATA_DEVEL
 	if (!absPath) {
 		asprintf(&uri2, "web/%s", uri);
-        if (MTR) real_printf("-> edata() uri2 ASPR %p %d<%s>\n", uri2, strlen(uri2), uri2);
+        web_prf("-> ASPRINTF edata() uri2 %p %d<%s>\n", uri2, strlen(uri2), uri2);
 		free_uri2 = true;
 	}
 #endif
@@ -284,7 +290,7 @@ static const char* edata(const char *uri, bool cache_check, size_t *size, time_t
 	}
 
 	if (free_uri2) {
-        if (MTR) real_printf("-> edata() uri2 FREE %p %d<%s>\n", uri2, strlen(uri2), uri2);
+        web_prf("-> FREE edata() uri2 %p %d<%s>\n", uri2, strlen(uri2), uri2);
 	    kiwi_asfree(uri2);
 	}
 	return data;
@@ -324,12 +330,10 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
 	    *is_min = cached_is_min;
 	    *is_gzip = cached_is_gzip;
 	    *is_file = cached_is_file;
-	    *free_uri = FALSE;
 	    return cached_edata_data;
 	}
 	
 	web_printf_all("\n");
-	*free_uri = FALSE;
 	
 	char *sp;
 	const char **suffix;
@@ -359,19 +363,20 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
         suffix_len = ARRAY_LEN(zip_suffix);
     }
 	
+	*free_uri = FALSE;      // don't free the first one
 	for (int cm = (check_min_first? check_for_minified:0); cm >= 0 && cm <= 1; cm = cm + (check_min_first? -1:1)) {
 
         for (char **pre = (char **) prefix_list; *pre != NULL && !edata_data; pre++) {
             for (int i = 0; i < suffix_len && !edata_data; i++) {
                 if (cm) {
                     asprintf(&uri2, "%s%.*s.min%s%s", *pre, (int) (strlen(*o_uri) - strlen(sp)), *o_uri, sp, suffix[i]);
-                    if (MTR) real_printf("-> edata_with_file_ext() uri2-1 ASPR %p %d<%s>\n", uri2, strlen(uri2), uri2);
+                    web_prf("-> ASPRINTF edata_with_file_ext() uri2-1 %p %d<%s>\n", uri2, strlen(uri2), uri2);
                 } else {
                     asprintf(&uri2, "%s%s%s", *pre, *o_uri, suffix[i]);
-                    if (MTR) real_printf("-> edata_with_file_ext() uri2-2 ASPR %p %d<%s>\n", uri2, strlen(uri2), uri2);
+                    web_prf("-> ASPRINTF edata_with_file_ext() uri2-2 %p %d<%s>\n", uri2, strlen(uri2), uri2);
                 }
                 if (*free_uri) {
-                    if (MTR) real_printf("-> edata_with_file_ext() uri FREE %p %d<%s>\n", uri, strlen(uri), uri);
+                    web_prf("-> FREE edata_with_file_ext() uri %p %d<%s>\n", uri, strlen(uri), uri);
                     kiwi_asfree(uri);
                 }
                 uri = uri2;
@@ -392,10 +397,12 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
     if (*is_gzip) uri[strlen(uri) - 3] = '\0';      // remove ".gz" suffix
 
     if (cache_check) {
-        if (MTR && cached_o_uri) real_printf("-> edata_with_file_ext() cached_o_uri FREE %p %d<%s>\n", cached_o_uri, strlen(cached_o_uri), cached_o_uri);
+        if (cached_o_uri) {
+            web_prf("-> FREE edata_with_file_ext() cached_o_uri %p %d<%s>\n", cached_o_uri, strlen(cached_o_uri), cached_o_uri);
+        }
         kiwi_asfree(cached_o_uri);
         cached_o_uri = strdup(*o_uri);
-        if (MTR) real_printf("-> edata_with_file_ext() cached_o_uri STRDUP %p %d<%s>\n", cached_o_uri, strlen(cached_o_uri), cached_o_uri);
+        web_prf("-> ASPRINTF STRDUP edata_with_file_ext() cached_o_uri %p %d<%s>\n", cached_o_uri, strlen(cached_o_uri), cached_o_uri);
         cached_edata_data = edata_data;
         cached_size = *size;
         cached_mtime = *mtime;
@@ -407,7 +414,7 @@ static const char* edata_with_file_ext(char **o_uri, bool free_o_uri, bool *free
     }
 
     if (free_o_uri) {
-        if (MTR) real_printf("-> edata_with_file_ext() o_uri FREE %p %d<%s>\n", *o_uri, strlen(*o_uri), *o_uri);
+        web_prf("-> FREE edata_with_file_ext() o_uri %p %d<%s>\n", *o_uri, strlen(*o_uri), *o_uri);
         kiwi_asfree(*o_uri);
     }
     *o_uri = uri;   // final uri considered with corresponding *free_uri = TRUE
@@ -419,25 +426,37 @@ typedef struct {
 	char *id, *encoded, *decoded;
 } iparams_t;
 
-#define	N_IPARAMS	256
+#define	N_IPARAMS	32
 static iparams_t iparams[N_IPARAMS];
 static int n_iparams;
 
 void iparams_add(const char *id, char *encoded)
 {
-    // Save encoded in case it's a string. This is needed for
-    // substitution in .js files and decoded is needed for substitution in HTML files.
+    // Save encoded in case it's a string.
+    // Encoded is needed for substitution in .js files (not currently used).
+    // And decoded is needed for substitution in HTML files.
 	iparams_t *ip = &iparams[n_iparams];
-	asprintf(&ip->id, "%s", (char *) id);
-	asprintf(&ip->encoded, "%s", encoded);
+	//if (n_iparams == 0) printf(RED "iparams_add: n_iparams==0 %p %p" NONL, ip->id, ip->decoded);
+	
+	// free previous before reusing
+	kiwi_asfree(ip->id);
+	kiwi_asfree(ip->encoded);
+	kiwi_ifree(ip->decoded, "iparams_add");
+	
+	// id and/or encoded can be const, so malloc a copy which is freed above if we're called again
+	ip->id = strdup((char *) id);
+	ip->encoded = strdup(encoded);
 	int n = strlen(encoded);
     ip->decoded = (char *) kiwi_imalloc("iparams_add", n + SPACE_FOR_NULL);
     mg_url_decode(ip->encoded, n, ip->decoded, n + SPACE_FOR_NULL, 0);
-    //printf("iparams_add: %d %s DEC:%d<%s> ENC:%d<%s>\n", n_iparams, ip->id, strlen(ip->decoded), ip->decoded, n, ip->encoded);
+	if (strcmp(id, "USER_LOGIN") == 0 || strcmp(id, "HTML_HEAD") == 0)
+	    ip->decoded = kiwi_json_to_html(ip->decoded);
+    //printf("iparams_add: %d %s DEC:%d<%s>\n", n_iparams, ip->id, strlen(ip->decoded), ip->decoded);
+    //printf("iparams_add: %d %s ENC:%d<%s>\n", n_iparams, ip->id, n, ip->encoded);
 	n_iparams++;
 }
 
-bool index_params_cb(cfg_t *cfg, void *param1, void *param2, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
+static bool index_params_cb(cfg_t *cfg, void *param1, void *param2, jsmntok_t *jt, int seq, int hit, int lvl, int rem, void **rval)
 {
 	char *json = cfg_get_json(NULL);
 	if (json == NULL || rem == 0)
@@ -470,8 +489,6 @@ void reload_index_params()
 	int i;
 	char *sb, *sb2;
 	
-	// don't free previous on reload because not all were kiwi_imalloc()'d
-	// (the memory loss is very small)
 	n_iparams = 0;
 	//cfg_walk("index_html_params", cfg_print_tok, NULL, NULL);
 	cfg_walk("index_html_params", index_params_cb, NULL, NULL);
@@ -479,18 +496,20 @@ void reload_index_params()
 	
 	// To aid development, only use packages when running in embedded mode (i.e. background mode),
 	// or in development mode when "-fopt" argument is used.
-	// Otherwise javascript errors would give line numbers in the optimized files which are
-	// useless for debugging.
+	// Otherwise javascript errors would give line numbers in the optimized files
+	// which are useless for debugging.
 	// Currently this only applies to the kiwisdr.min.{js,css} package.
 	int embed = bg? 1 : (use_foptim? 1:0);
 
-	const char *gen_list_css[2][7] = {
+	const char *gen_list_css[2][8] = {
 	    {
+	        // order is very important here
 		    "pkgs/font-awesome-4.6.3/css/font-awesome.min.css",
 		    "pkgs/text-security/text-security-disc.css",
 		    "pkgs/w3.css",
 		    "kiwi/w3_ext.css",
 		    "openwebrx/openwebrx.css",
+		    "pkgs/js/coloris/coloris.css",
 		    "kiwi/kiwi.css",
 		    NULL
 		}, {
@@ -502,17 +521,22 @@ void reload_index_params()
 	sb = NULL;
 	for (i=0; gen_list_css[embed][i] != NULL; i++) {
 		sb = kstr_asprintf(sb, "<link rel=\"stylesheet\" type=\"text/css\" href=\"%s\" />\n", gen_list_css[embed][i]);
+        web_prf("-> ASPRINTF reload_index_params() LINK %p %d<%s>\n", kstr_sp(sb), strlen(kstr_sp(sb)), kstr_sp(sb));
 	}
 	iparams_add("GEN_LIST_CSS", kstr_sp(sb));
 	kstr_free(sb);
 	
-	const char *gen_list_js[2][14] = {
+	const char *gen_list_js[2][16] = {
 	    {
 		    "kiwi/kiwi_util.js",
 		    "kiwi/kiwi.js",
 		    "kiwi/kiwi_ui.js",
 		    "kiwi/kiwi_map.js",
+		    "kiwi/ant_switch.js",
+		    "kiwi/noise_blank.js",
+		    "kiwi/noise_filter.js",
 		    "kiwi/w3_util.js",
+		    "kiwi/waterfall.js",
 		    "pkgs/w3color.js",
 		    "kiwi/monitor.js",
 		    "openwebrx.js",
@@ -531,6 +555,7 @@ void reload_index_params()
 	sb = NULL;
 	for (i=0; gen_list_js[embed][i] != NULL; i++) {
 		sb = kstr_asprintf(sb, "<script src=\"%s\"></script>\n", gen_list_js[embed][i]);
+        web_prf("-> ASPRINTF reload_index_params() SCRIPT %p %d<%s>\n", kstr_sp(sb), strlen(kstr_sp(sb)), kstr_sp(sb));
 	}
 	iparams_add("GEN_LIST_JS", kstr_sp(sb));
 	kstr_free(sb);
@@ -798,10 +823,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     }
 
     while (*o_uri == '/') o_uri++;
-    //bool isIndex = false;
+    bool isIndex = false;
     if (*o_uri == '\0' || strcmp(o_uri, "index") == 0 || strcmp(o_uri, "index.html") == 0 || strcmp(o_uri, "index.htm") == 0) {
         o_uri = (char *) "index.html";
-        //isIndex = true;
+        isIndex = true;
 
         // Kiwi URL redirection
         // don't redirect if camp specified in URL
@@ -870,31 +895,31 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     } else
     if (strncmp(o_uri, "config/", 7) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[7]);
-        if (MTR) real_printf("-> uri-1 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
+        web_prf("-> ASPRINTF uri-1 %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
     } else
     if (strncmp(o_uri, "kiwi.config/", 12) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, &o_uri[12]);
-        if (MTR) real_printf("-> uri-2 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
+        web_prf("-> ASPRINTF uri-2 %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
     } else
     if (strncmp(o_uri, "kiwi.data/", 10) == 0) {
         asprintf(&uri, "%s/%s", DIR_DATA, &o_uri[10]);
-        if (MTR) real_printf("-> uri-3 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
+        web_prf("-> ASPRINTF uri-3 %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
         has_prefix = TRUE;
     } else
     // handle HTTP-01 authenticator challenges for ACME clients like certbot
     if (strncmp(o_uri, ".well-known/", 12) == 0) {
         asprintf(&uri, "%s/%s", DIR_CFG, o_uri);
-        if (MTR) real_printf("-> ACME <%s>\n", uri);
+        web_prf("-> ASPRINTF ACME <%s>\n", uri);
         free_uri = TRUE;
         has_prefix = TRUE;
     } else {
         asprintf(&uri, "openwebrx/%s", o_uri);
-        if (MTR) real_printf("-> uri-4 ASPR %p %d<%s>\n", uri, strlen(uri), uri);
+        web_prf("-> ASPRINTF uri-4 %p %d<%s>\n", uri, strlen(uri), uri);
         free_uri = TRUE;
     }
     //printf("---- HTTP: uri %s (orig %s)\n", uri, o_uri);
@@ -915,7 +940,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // try looking in "kiwi" subdir as a default if no prefix was used (or only ui subdir as prefix)
     if (!edata_data && !has_prefix) {
         if (free_uri) {
-            if (MTR) real_printf("-> uri-!edata_data-&&-!has_prefix FREE %p %d<%s>\n", uri, strlen(uri), uri);
+            web_prf("-> FREE uri-!edata_data-&&-!has_prefix %p %d<%s>\n", uri, strlen(uri), uri);
             kiwi_asfree(uri);
         }
         uri = o_uri;
@@ -966,7 +991,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     // "o_uri" has been previously protected against "../" directory escape.
     if (!edata_data && is_extension) {
         if (free_uri) {
-            if (MTR) real_printf("-> uri-is_extension FREE %p %d<%s>\n", uri, strlen(uri), uri);
+            web_prf("-> FREE uri-is_extension %p %d<%s>\n", uri, strlen(uri), uri);
             kiwi_asfree(uri);
             uri = NULL;
         }
@@ -994,7 +1019,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         // don't try AJAX during the MG_CACHE_INFO pass
         if (evt == MG_CACHE_INFO) {
             if (free_uri) {
-                if (MTR) real_printf("-> uri-MG_CACHE_INFO FREE %p %d<%s>\n", uri, strlen(uri), uri);
+                web_prf("-> FREE uri-MG_CACHE_INFO %p %d<%s>\n", uri, strlen(uri), uri);
                 kiwi_asfree(uri);
             }
             evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "skip AJAX MG_CACHE_INFO");
@@ -1007,7 +1032,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         if (ajax_data) {
             if (FROM_VOID_PARAM(ajax_data) == -1) {
                 if (free_uri) {
-                    if (MTR) real_printf("-> uri-ajax FREE %p %d<%s>\n", uri, strlen(uri), uri);
+                    web_prf("-> FREE uri-ajax %p %d<%s>\n", uri, strlen(uri), uri);
                     kiwi_asfree(uri);
                 }
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "NO-REPLY");
@@ -1026,7 +1051,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
         //printf("unknown URL: %s (%s) query=<%s> from %s\n", o_uri, uri, mc->query_string, ip_forwarded);
         web_printf_sent("%-16s %50s %15s %s\n", "webserver:", "NOT FOUND", ip_forwarded, isAJAX? mc->uri : uri);
         if (free_uri) {
-            if (MTR) real_printf("-> uri-give-up FREE %p %d<%s>\n", uri, strlen(uri), uri);
+            web_prf("-> FREE uri-give-up %p %d<%s>\n", uri, strlen(uri), uri);
             kiwi_asfree(uri);
         }
         evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "GIVE UP");
@@ -1096,7 +1121,7 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
     bool isJS = (suffix && strcmp(suffix, ".js") == 0);
     if (!isAJAX && isJS) {
         asprintf(&ver, "kiwi_check_js_version.push({ VERSION_MAJ:%d, VERSION_MIN:%d, file:'%s' });\n", version_maj, version_min, uri);
-        if (MTR) real_printf("-> ver ASPR %p %d<%s>\n", ver, strlen(ver), ver);
+        web_prf("-> ASPRINTF ver %p %d<%s>\n", ver, strlen(ver), ver);
         ver_size = strlen(ver);
     }
 
@@ -1191,22 +1216,24 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
             mg_send_data(mc, ver, ver_size);
         }
         
-        /*
+        #if 0
             if (isIndex) {
-                const char *ua = mg_get_header(mc, "User-Agent");
-                printf("UA <%s>\n", ua);
+                //const char *ua = mg_get_header(mc, "User-Agent");
+                //printf("UA <%s>\n", ua);
+                const char *cookie = mg_get_header(mc, "Cookie");
+                real_printf("COOKIE %s\n", cookie);
             }
-        */
+        #endif
     }
     
     if (ver != NULL) {
-        if (MTR) real_printf("-> ver FREE %p %d<%s>\n", ver, strlen(ver), ver);
+        web_prf("-> FREE ver %p %d<%s>\n", ver, strlen(ver), ver);
         kiwi_asfree(ver);
     }
     if (free_html_data) kiwi_ifree((void *) html_data, "html_data");
     if (free_ajax_data) kstr_free((char *) ajax_data);
     if (free_uri) {
-        if (MTR) real_printf("-> uri-bottom FREE %p %d<%s>\n", uri, strlen(uri), uri);
+        web_prf("-> FREE uri-bottom %p %d<%s>\n", uri, strlen(uri), uri);
         kiwi_asfree(uri);
     }
     

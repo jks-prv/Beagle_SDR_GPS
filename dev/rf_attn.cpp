@@ -20,8 +20,9 @@ Boston, MA  02110-1301, USA.
 #include "types.h"
 #include "kiwi.h"
 #include "config.h"
+#include "cfg.h"
 #include "fpga.h"
-#include "support/printf.h"
+#include "printf.h"
 
 //#define RF_ATTN_DBG
 #ifdef RF_ATTN_DBG
@@ -31,10 +32,17 @@ Boston, MA  02110-1301, USA.
 	#define prf(fmt, ...)
 #endif
 
+float rf_attn_validate(float attn_dB)
+{
+    return CLAMP(attn_dB, 0, 31.5);
+}
+
 void rf_attn_set(float attn_dB)
 {
-    bool debug = false;
     if (kiwi.model == KiwiSDR_1) return;
+    attn_dB = rf_attn_validate(attn_dB);
+    lprintf("rf_attn %.1f\n", attn_dB);
+    bool debug = false;
     
     #define CTRL_ATTN_CLK   CTRL_SER_CLK
     #define CTRL_ATTN_LE    CTRL_SER_LE_CSN
@@ -59,4 +67,14 @@ void rf_attn_set(float attn_dB)
             //debug = true;
         } while (debug);
     ctrl_clr_ser_dev();
+}
+
+void rf_attn_init()
+{
+    //printf_highlight(1, "rf_attn");
+    float attn_dB = cfg_float("init.rf_attn", NULL, CFG_REQUIRED);
+    attn_dB = rf_attn_validate(attn_dB);
+    lprintf("rf_attn INIT %.1f\n", attn_dB);
+    rf_attn_set(attn_dB);
+    kiwi.rf_attn_dB = attn_dB;
 }

@@ -1,0 +1,9 @@
+Backend to KMTronic LAN Ethernet IP 8 channels WEB Relay.
+
+https://info.kmtronic.com/kmtronic-lan-ethernet-ip-8-channels-web-relay-board.html
+
+If your antenna switch URL is something other than http://192.168.1.199:80
+then you have to create the configuration file /etc/default/kmtronic with the following:
+
+# URL to KMTronic WEB Relay
+KMTRONIC_URL="http://192.168.1.199:80"

@@ -25,6 +25,51 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "ip_blacklist.h"
 
+void ip_blacklist_system(const char *cmd)
+{
+    ipbl_prf("ip_blacklist <%s>\n", cmd);
+    system(cmd);
+}
+
+static void ip_blacklist_ipset_open()
+{
+    ipbl_prf("ip_blacklist_ipset_open\n");
+    net.isf = fopen("/tmp/ipset-kiwi-new", "w");
+    if (net.isf == NULL) panic("fopen ipset-kiwi-new");
+    fprintf(net.isf, "create ipset-kiwi-new hash:net%s family inet hashsize 1024 maxelem 65536\n",
+        (net.ip_blacklist_port_only != BL_PORT_NO)? ",port" : "");
+}
+
+static void ip_blacklist_ipset_close()
+{
+    ipbl_prf("ip_blacklist_ipset_close\n");
+    fclose(net.isf);
+    ip_blacklist_system("ipset destroy ipset-kiwi-new");
+    ip_blacklist_system("ipset restore -file /tmp/ipset-kiwi-new");
+    //ip_blacklist_system("ipset list");
+    
+    // use swap because of timing problems when we tried to delete a set that was still busy
+    // even after the iptables reference was removed.
+    ip_blacklist_system("ipset swap ipset-kiwi-new ipset-kiwi");
+}
+
+void ip_blacklist_disable()
+{
+    ip_blacklist_ipset_open();
+}
+
+void ip_blacklist_enable()
+{
+    #ifdef USE_IPSET
+        ip_blacklist_ipset_close();
+    #endif
+    ip_blacklist_system("iptables -A KIWI -j RETURN");
+    #ifdef USE_IPSET
+        ip_blacklist_system("iptables -I KIWI -m set --match-set ipset-kiwi src -j DROP");
+    #endif
+    ip_blacklist_system("iptables -A INPUT -j KIWI");
+}
+
 // updates net.ip_blacklist
 static int ip_blacklist_add(char *ips, bool *whitelist)
 {
@@ -47,7 +92,7 @@ static int ip_blacklist_add(char *ips, bool *whitelist)
     ip &= nm;       // make consistent with netmask
     
     if (ip == (net.ips_kiwisdr_com.ip[0] & nm)) {
-        lprintf("DANGER: blacklist entry %s would contain kiwisdr.com ip of %s, IGNORED!!!\n", ips, net.ips_kiwisdr_com.ip_list[0]);
+        lprintf("ip_blacklist DANGER: blacklist entry %s would contain kiwisdr.com ip of %s, IGNORED!!!\n", ips, net.ips_kiwisdr_com.ip_list[0]);
         return -1;
     }
     
@@ -67,7 +112,7 @@ static int ip_blacklist_add(char *ips, bool *whitelist)
     bl->nm = nm;
     bl->whitelist = *whitelist;
     bl->dropped = bl->last_dropped = 0;
-    //printf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips, bl->a, bl->b, bl->c, bl->d, bl->nm);
+    //ipbl_prf("ip_blacklist_add[%d] %s %d.%d.%d.%d 0x%08x\n", net.ip_blacklist_len, ips, bl->a, bl->b, bl->c, bl->d, bl->nm);
     net.ip_blacklist_len++;
     
     return 0;
@@ -75,7 +120,7 @@ static int ip_blacklist_add(char *ips, bool *whitelist)
 
 // updates net.ip_blacklist (proxied Kiwis) and Linux iptables (non-proxied Kiwis)
 // called here and from admin "SET network_ip_blacklist="
-int ip_blacklist_add_iptables(char *ip_s)
+int ip_blacklist_add_iptables(char *ip_s, bool use_iptables)
 {
     int rv;
     //real_printf("    \"%s\",\n", ip_s);
@@ -92,17 +137,33 @@ int ip_blacklist_add_iptables(char *ip_s)
     bool whitelist;
     if ((rv = ip_blacklist_add(ip_s, &whitelist)) != 0) return rv;
 
-    char *cmd_p;
-    // NB: insert (-I) NOT append (-A) because we may be incrementally adding after RETURN rule (last) exists
-    if (net.ip_blacklist_port_only != BL_PORT_NO)
-        asprintf(&cmd_p, "iptables -I KIWI -s %s -p tcp --dport %d -j %s", ip_s, net.port, whitelist? "RETURN" : "DROP");
-    else
-        asprintf(&cmd_p, "iptables -I KIWI -s %s -j %s", ip_s, whitelist? "RETURN" : "DROP");
-
-    rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
-    rv = WEXITSTATUS(rv);
-    lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
-    kiwi_asfree(cmd_p);
+    #ifdef USE_IPSET
+    #else
+        use_iptables = true;
+    #endif
+    
+    if (use_iptables) {
+        char *cmd_p;
+        // NB: insert (-I) NOT append (-A) because we may be incrementally adding after RETURN rule (last) exists
+        if (net.ip_blacklist_port_only != BL_PORT_NO)
+            asprintf(&cmd_p, "iptables -I KIWI -s %s -p tcp --dport %d -j %s", ip_s, net.port, whitelist? "RETURN" : "DROP");
+        else
+            asprintf(&cmd_p, "iptables -I KIWI -s %s -j %s", ip_s, whitelist? "RETURN" : "DROP");
+        rv = non_blocking_cmd_system_child("kiwi.iptables", cmd_p, POLL_MSEC(200));
+        rv = WEXITSTATUS(rv);
+        lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
+        kiwi_asfree(cmd_p);
+    } else {
+        char *ip = whitelist? &ip_s[1] : ip_s;      // skip leading '+' of whitelist entry
+        if (net.ip_blacklist_port_only != BL_PORT_NO)
+            fprintf(net.isf, "add ipset-kiwi-new %s%s %s\n", ip,
+            (net.ip_blacklist_port_only != BL_PORT_NO)? stprintf(",%d", net.port): "",
+            whitelist? "nomatch" : "");
+        else
+            fprintf(net.isf, "add ipset-kiwi-new %s %s\n", ip, whitelist? "nomatch" : "");
+        rv = 0;
+    }
+    
     return rv;
 }
 
@@ -114,7 +175,7 @@ static void ip_blacklist_init_list(const char *list)
     char *r_buf;
     str_split_t ips[N_IP_BLACKLIST+1];
     int n = kiwi_split((char *) bl_s, &r_buf, " ", ips, N_IP_BLACKLIST);
-    //printf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
+    //ipbl_prf("ip_blacklist_init n=%d bl_s=\"%s\"\n", n, bl_s);
     lprintf("ip_blacklist_init_list: %d entries: %s\n", n, list);
     
     for (int i=0; i < n; i++) {
@@ -127,12 +188,22 @@ static void ip_blacklist_init_list(const char *list)
 
 void ip_blacklist_init()
 {
+    #ifdef IP_BL_DBG
+        printf_highlight(1, "ip_blacklist");
+    #endif
     net.ip_blacklist_len = 0;
     // clean out old KIWI table first (if any)
-    system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
+    ip_blacklist_system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
+    #ifdef USE_IPSET
+        ip_blacklist_system("ipset destroy ipset-kiwi-new");
+        ip_blacklist_system("ipset destroy ipset-kiwi");
+        ip_blacklist_system(stprintf("ipset create ipset-kiwi hash:net%s",
+                (net.ip_blacklist_port_only != BL_PORT_NO)? ",port" : ""));
+        ip_blacklist_ipset_open();
+    #endif
     ip_blacklist_init_list("ip_blacklist");
     ip_blacklist_init_list("ip_blacklist_local");
-    system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+    ip_blacklist_enable();
 }
 
 // check internal blacklist for proxied Kiwis (iptables can't be used)
@@ -282,7 +353,11 @@ bool ip_blacklist_get(bool download_diff_restart)
             // reload iptables
             lprintf("ip_blacklist_get: using DOWNLOADED blacklist from %s/%s\n", kiwisdr_com, BLACKLIST_FILE);
             net.ip_blacklist_len = 0;
-            system("iptables -D INPUT -j KIWI; iptables -N KIWI; iptables -F KIWI");
+            ip_blacklist_system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
+            #ifdef USE_IPSET
+                ip_blacklist_ipset_open();
+            #endif
+            
             for (jt = bl_json.tokens + 1; jt != end_tok; jt++) {
                 const char *ip_s;
                 if (_cfg_type_json(&bl_json, JSMN_STRING, jt, &ip_s)) {
@@ -292,7 +367,15 @@ bool ip_blacklist_get(bool download_diff_restart)
             }
 
             ip_blacklist_init_list("ip_blacklist_local");
-            system("iptables -A KIWI -j RETURN; iptables -A INPUT -j KIWI");
+            
+            #ifdef USE_IPSET
+                ip_blacklist_ipset_close();
+            #endif
+            ip_blacklist_system("iptables -A KIWI -j RETURN");
+            #ifdef USE_IPSET
+                ip_blacklist_system("iptables -I KIWI -m set --match-set ipset-kiwi src -j DROP");
+            #endif
+            ip_blacklist_system("iptables -A INPUT -j KIWI");
         } else {
             lprintf("ip_blacklist_get: using STORED blacklist\n");
             failed = false;
