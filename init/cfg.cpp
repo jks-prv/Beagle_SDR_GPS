@@ -62,7 +62,7 @@ Boston, MA  02110-1301, USA.
 #define FL_PANIC    1
 static bool _cfg_parse_json(cfg_t *cfg, u4_t flags = 0);
 
-#define CFG_PRF_SAVE
+//#define CFG_PRF_SAVE
 #ifdef CFG_PRF_SAVE
     #define cfg_printf(fmt, ...) \
         printf(fmt, ## __VA_ARGS__)
