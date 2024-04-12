@@ -1403,7 +1403,7 @@ function users_list_cb(s)
    if (o.end) {
       if (!isArg(admin.users_new)) admin.users_new = [];
       admin.users_list = admin.users_new;
-      //console.log('users_sort='+ admin.users_sort);
+      console.log('users_list: n='+ admin.users_list.length +' sort='+ admin.users_sort);
       if (admin.users_sort) admin.users_list.sort(users_sort);
       users_list(admin.users_list);
    } else {
