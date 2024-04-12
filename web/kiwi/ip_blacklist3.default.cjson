@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+// 11 Apr 24 80.87.192.0/23 (192.0:193.255) Khimki, Russia datacenter (80.87.192.7 per email, forum; NB Yuri's whitelist entry)
 // 10 Apr 24 45.79.58.146 linode/akamai hacker per email
 //  9 Apr 24 207.148.0.0/19 (0.0:31.255) constant/vultr/choopa
 //  3 Mar 24 104.152.52.0/22 (52.0:55.255) Rethem Hosting per Jim email
@@ -115,6 +116,11 @@
     "70.34.192.0/19",
     "70.34.240.0/20",
     "78.129.128.0/17",
+
+    "80.87.192.0/23",
+// whitelist Yuri's VPS from this hosting provider (see email)
+    "+80.87.193.248",
+
     "83.8.190.0/24",
     "92.38.0.0/16",
     "92.118.45.78/32",
