@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.666  April 12, 2024
+v1.666,667  April 12, 2024
     Extensions moved to main control panel so they can be used while another extension is in use:
         Antenna Switch extension => RF tab
         Waterfall extension => WF tab
