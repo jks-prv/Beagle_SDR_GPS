@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.666  April 12, 2024
+v1.666,667  April 12, 2024
     Extensions moved to main control panel so they can be used while another extension is in use:
         Antenna Switch extension => RF tab
         Waterfall extension => WF tab
@@ -135,6 +135,7 @@ v1.666  April 12, 2024
     Bugs fixed:
         Owner/Admin email link no longer closes browser connection.
         Fixed bug in DX label CSV import relating to start/stop schedule times.
+        Fixes bug where setting static IP with blank DNS entries disables Ethernet on Debian 11.
         Some minor memory leaks were fixed.
 
 v1.665  March 11, 2024
