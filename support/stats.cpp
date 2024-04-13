@@ -447,7 +447,7 @@ void user_arrive(conn_t *c)
     if (c->internal_connection || (init && !user_base)) return;
     
     if (!init) {
-        printf_highlight(0, "user");
+        //printf_highlight(0, "user");
         user_base = list_init("user_base", sizeof(user_log_t), N_USER_LOG_ALLOC);
         init = true;
     }
@@ -473,7 +473,10 @@ void user_arrive(conn_t *c)
 
     bool err;
     u4_t ip4 = inet4_d2h(c->remote_ip, &err);
-    if (err) panic("inet4_d2h");
+    if (err) {
+        printf("user_arrive NOT IPv4 <%s>\n", c->remote_ip);
+        ip4 = 0;
+    }
     list_t *entry_base = ul->entry_base;
     
     j = item_find_grow(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &isNew);
@@ -508,7 +511,10 @@ void user_leaving(conn_t *c, u4_t connected_secs)
 
     bool err;
     u4_t ip4 = inet4_d2h(c->remote_ip, &err);
-    if (err) panic("inet4_d2h");
+    if (err) {
+        printf("user_leaving NOT IPv4 <%s>\n", c->remote_ip);
+        ip4 = 0;
+    }
     int j = item_find(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &found);
     
     if (found) {
