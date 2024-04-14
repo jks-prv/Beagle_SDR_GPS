@@ -561,7 +561,7 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
         kiwi_str_decode_selective_inplace(sp);
 
         switch (key) {
-            case CMD_SAVE_CFG:   printf("_cfg_save_json save_config:CMD_SAVE_CFG\n"); cfg_save_json(sp); break;
+            case CMD_SAVE_CFG:   /* printf("_cfg_save_json save_config:CMD_SAVE_CFG\n"); */ cfg_save_json(sp); break;
             case CMD_SAVE_DXCFG: dxcfg_save_json(sp); break;
             case CMD_SAVE_ADM:   admcfg_save_json(sp); break;
             default: panic("save_config"); break;

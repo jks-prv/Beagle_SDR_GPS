@@ -390,16 +390,20 @@ typedef struct {
 	list_t *entry_base;
 	u4_t total_time;
 } user_log_t;
+
 #define N_USER_LOG_ALLOC 8
 static list_t *user_base;
+u4_t user_tx_idx;
 
 typedef struct {
     u2_t flags;
     u2_t connected;
-    u4_t ip4;
+    //u4_t ip4;
+	char *ip;
 	char *geoloc;
 	u4_t connect_time;
 } user_entry_t;
+
 #define N_USER_ENTRY_ALLOC 1
 
 bool user_ident_cmp(const void *elem1, void *elem2)
@@ -410,12 +414,22 @@ bool user_ident_cmp(const void *elem1, void *elem2)
 	return (strcmp(s1, ul->ident) == 0);
 }
 
-bool user_ip_cmp(const void *elem1, void *elem2)
+/*
+bool user_ip4_cmp(const void *elem1, void *elem2)
 {
 	u4_t ip4_1 = (u4_t) FROM_VOID_PARAM(elem1);
 	user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(elem2);
-    //real_printf("user_ip_cmp %s %s ", inet4_h2s(ip4_1, 0), inet4_h2s(entry->ip4, 1));
+    //real_printf("user_ip4_cmp %s %s ", inet4_h2s(ip4_1, 0), inet4_h2s(entry->ip4, 1));
 	return (ip4_1 == entry->ip4);
+}
+*/
+
+bool user_ip_cmp(const void *elem1, void *elem2)
+{
+	const char *ip_1 = (const char *) elem1;
+	user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(elem2);
+    //real_printf("user_ip_cmp %s %s ", ip_1, entry->ip);
+	return (strcmp(ip_1, entry->ip) == 0);
 }
 
 void user_list_clear()
@@ -431,6 +445,7 @@ void user_list_clear()
         list_t *entry_base = ul->entry_base;
         for (j = 0; j < entry_base->n_items; j++) {
             user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
+            kiwi_ifree(entry->ip, "user_list_clear");
             kiwi_ifree(entry->geoloc, "user_list_clear");
         }
         list_free(entry_base);
@@ -450,6 +465,18 @@ void user_arrive(conn_t *c)
         //printf_highlight(0, "user");
         user_base = list_init("user_base", sizeof(user_log_t), N_USER_LOG_ALLOC);
         init = true;
+        #if 0
+            conn_t cx;
+            memset(&cx, 0, sizeof(conn_t));
+            for (i = 0; i < 128; i++) {
+                asprintf(&(cx.ident_user), "ident_%d", i);
+                kiwi_snprintf_buf(cx.remote_ip, "%d.%d.%d.%d", i, i+1, i+2, i>>1);
+                asprintf(&(cx.geo), "geo_%d", i);
+                user_arrive(&cx);
+                kiwi_asfree(cx.ident_user);
+                kiwi_asfree(cx.geo);
+            }
+        #endif
     }
     
     const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
@@ -470,23 +497,28 @@ void user_arrive(conn_t *c)
     }
     ul->connected++;
     //real_printf("user %s #%d %s <%s>\n", isNew? "NEW" : "EXISTING", i, c->remote_ip, ul->ident);
-
-    bool err;
-    u4_t ip4 = inet4_d2h(c->remote_ip, &err);
-    if (err) {
-        printf("user_arrive NOT IPv4 <%s>\n", c->remote_ip);
-        ip4 = 0;
-    }
     list_t *entry_base = ul->entry_base;
+
+    #if 0
+        bool err;
+        u4_t ip4 = inet4_d2h(c->remote_ip, &err);
+        if (err) {
+            printf("user_arrive NOT IPv4 <%s>\n", c->remote_ip);
+            ip4 = 0;
+        }
     
-    j = item_find_grow(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &isNew);
+        j = item_find_grow(entry_base, TO_VOID_PARAM(ip4), user_ip4_cmp, &isNew);
+    #else
+        j = item_find_grow(entry_base, TO_VOID_PARAM(c->remote_ip), user_ip_cmp, &isNew);
+    #endif
     
     user_entry_t *entry;
     if (isNew) {
         // new entry
         entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
-        entry->ip4 = ip4;
-        entry->geoloc = strdup(c->geo? c->geo:"");
+        //entry->ip4 = ip4;
+        entry->ip = strdup(c->remote_ip);
+        entry->geoloc = strdup(c->geo? c->geo : "");
     } else {
         // existing entry
         //entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
@@ -509,13 +541,17 @@ void user_leaving(conn_t *c, u4_t connected_secs)
     list_t *entry_base = ul->entry_base;
     ul->total_time += connected_secs;
 
-    bool err;
-    u4_t ip4 = inet4_d2h(c->remote_ip, &err);
-    if (err) {
-        printf("user_leaving NOT IPv4 <%s>\n", c->remote_ip);
-        ip4 = 0;
-    }
-    int j = item_find(entry_base, TO_VOID_PARAM(ip4), user_ip_cmp, &found);
+    #if 0
+        bool err;
+        u4_t ip4 = inet4_d2h(c->remote_ip, &err);
+        if (err) {
+            printf("user_leaving NOT IPv4 <%s>\n", c->remote_ip);
+            ip4 = 0;
+        }
+        int j = item_find(entry_base, TO_VOID_PARAM(ip4), user_ip4_cmp, &found);
+    #else
+        int j = item_find(entry_base, TO_VOID_PARAM(c->remote_ip), user_ip_cmp, &found);
+    #endif
     
     if (found) {
         user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
@@ -525,28 +561,43 @@ void user_leaving(conn_t *c, u4_t connected_secs)
     //real_printf("user LEAVING #%d %d|%d secs %s\n", i, connected_secs, ul->total_time, ul->ident);
 }
 
-kstr_t *user_list(int idx)
+kstr_t *user_list()
 {
-    int j;
+    int idx, j;
 
     kstr_t *sb = NULL;
+    user_log_t *ul;
     bool comma = false;
-    user_log_t *ul = user_base? ((user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, idx))) : NULL;
 
-    if (ul) {
-        sb = kstr_asprintf(sb, "{\"s\":%d,\"i\":\"%s\",\"t\":%d,\"a\":[", idx, ul->ident, ul->total_time);
+    //real_printf("START idx=%d\n", user_tx_idx);
+    sb = (kstr_t *) "[";
+    for (idx = user_tx_idx; kstr_len(sb) <= 1024; idx++) {
+        ul = user_base? ((user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, idx))) : NULL;
+        if (ul == NULL)
+            break;
+        sb = kstr_asprintf(sb, "%s{\"s\":%d,\"i\":\"%s\",\"t\":%d,\"a\":[", comma? ",":"",
+            idx, ul->ident, ul->total_time);
             bool comma2 = false;
             list_t *entry_base = ul->entry_base;
             for (j = 0; j < entry_base->n_items; j++) {
                 user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
                 sb = kstr_asprintf(sb, "%s{\"ip\":\"%s\",\"g\":\"%s\",\"t\":%d}", comma2? ",":"",
-                    inet4_h2s(entry->ip4), entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+                    //inet4_h2s(entry->ip4), entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+                    entry->ip, entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
                 comma2 = true;
             }
         sb = kstr_cat(sb, "]}");
-    } else {
-        sb = (kstr_t *) "{\"end\":1}";
+        comma = true;
     }
+    if (ul == NULL) {
+        sb = kstr_asprintf(sb, "%s{\"end\":1}", comma? ",":"");
+        user_tx_idx = 0;
+        //real_printf("DONE idx=%d\n", idx);
+    } else {
+        user_tx_idx = idx;
+        //real_printf("BUFFER FULL idx=%d\n", idx);
+    }
+    sb = kstr_cat(sb, "]");
     //real_printf("%s\n", kstr_sp(sb));
     return sb;
 }
@@ -563,8 +614,9 @@ void user_dump()
         list_t *entry_base = ul->entry_base;
         for (j = 0; j < entry_base->n_items; j++) {
             user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
-            real_printf("   %s %s %d secs\n", inet4_h2s(entry->ip4),
-            entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+            real_printf("   %s %s %d secs\n",
+            //inet4_h2s(entry->ip4), entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+            entry->ip, entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
         }
     }
 }

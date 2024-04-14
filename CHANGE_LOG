@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.668  April 15, 2024
+    KiwiSDR Android app now working again.
+    
+    In sig gen extension self-test mode always switch to CW mode so self-test carrier is
+        being accurately measured by the S-meter.
+
+    Admin "users" tab should now display IPv6 addresses and also load somewhat faster.
+    
+    DX labels with embedded newlines ('\n') should now display correctly.
+    
+    Shift/Ctrl/Alt-click of zoom in/out and page up/down icons work again in audio FFT mode
+        (bandwidth adjust and jump-to-nearest-label functions).
+
 v1.666,667  April 12, 2024
     Extensions moved to main control panel so they can be used while another extension is in use:
         Antenna Switch extension => RF tab

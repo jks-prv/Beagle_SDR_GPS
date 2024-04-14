@@ -283,9 +283,14 @@ function w3_json_to_html(id, s)
    s = kiwi_decodeURIComponent(id, s);
    //console.log('1> '+ kiwi_string_to_hex(s, '-'));
    //console.log('1> '+ JSON.stringify(s));
-   s = s.replace(/\n/g, '<br>').replace(/\\"/g, '"');
+   s = s.replace(/\\n/g, '<br>').replace(/\n/g, '<br>').replace(/\\"/g, '"');
    //console.log('2> '+ JSON.stringify(s));
    return s;
+}
+
+function w3_html_to_nl(s)
+{
+   return s.replace(/<br>/g, '\n').replace(/\\n/g, '\n')
 }
 
 function w3_strip_quotes(s)

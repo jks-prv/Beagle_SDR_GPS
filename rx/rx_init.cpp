@@ -542,7 +542,7 @@ void update_vars_from_config(bool called_at_init)
 	}
 
 	if (update_cfg) {
-        printf("_cfg_save_json update_cfg\n");
+        //printf("_cfg_save_json update_cfg\n");
 		cfg_save_json(cfg_cfg.json);    // during init doesn't conflict with admin cfg
 	}
 

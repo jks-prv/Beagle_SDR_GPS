@@ -172,6 +172,7 @@ function ant_switch_buttons_setup()
    var n_ant = 0;
    var backend = (cfg.ant_switch && isNonEmptyString(cfg.ant_switch.backend))? cfg.ant_switch.backend : '';
    if (backend != '') {
+      console.log('ant_switch: backend='+ backend);
       for (i = 1; i <= ant_sw.n_ant; i++) {
          // don't show antenna buttons without descriptions (i.e. configured)
          var s = antdesc[i]? antdesc[i] : '';
@@ -508,8 +509,12 @@ function ant_switch_admin_msg(param)
          
          // if value is 'No' from backend not being setup then there will be no match
          // and menu will show read-only 'select' value
-         if (isNonEmptyString(ant_sw.backend_s))
-            w3_select_set_if_includes('ant_sw.backend', ant_sw.backend_s);
+         if (isNonEmptyString(ant_sw.backend_s)) {
+            if (w3_select_set_if_includes('ant_sw.backend', ant_sw.backend_s)) {
+               ext_set_cfg_param('ant_switch.backend', ant_sw.backend_s, EXT_SAVE);
+               console.log('cfg.ant_switch.backend='+ ant_sw.backend_s);
+            }
+         }
          ant_switch_users_notify_change();
          return true;
       
