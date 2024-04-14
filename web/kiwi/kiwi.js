@@ -23,6 +23,8 @@ var kiwi = {
    test_cfg_save_seq: false,
    log_cfg_save_seq: false,
    
+   noLocalStorage: false,
+   
    // NB: must match rx_cmd.h
    BADP_OK:                            0,
    BADP_TRY_AGAIN:                     1,
@@ -2897,10 +2899,10 @@ function kiwi_init_cfg(stream_name)
    if (page_title == '') page_title = 'KiwiSDR';
    w3_innerHTML('id-page-title', ((stream_name == 'admin')? 'Admin ':'') + page_title);
 
-   w3_innerHTML('id-rx-photo-title', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_TITLE'));
-   w3_innerHTML('id-rx-photo-desc', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_DESC'));
-   w3_innerHTML('id-rx-title', ext_get_cfg_param_string('cfg.index_html_params.RX_TITLE'));
-   w3_innerHTML('id-owner-info', ext_get_cfg_param_string('cfg.owner_info'));
+   w3_innerHTML('id-rx-photo-title', w3_json_to_html('kiwi_init_cfg', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_TITLE')));
+   w3_innerHTML('id-rx-photo-desc', w3_json_to_html('kiwi_init_cfg', ext_get_cfg_param_string('cfg.index_html_params.RX_PHOTO_DESC')));
+   w3_innerHTML('id-rx-title', w3_json_to_html('kiwi_init_cfg', ext_get_cfg_param_string('cfg.index_html_params.RX_TITLE')));
+   w3_innerHTML('id-owner-info', w3_json_to_html('kiwi_init_cfg', ext_get_cfg_param_string('cfg.owner_info')));
 }
 
 function kiwi_snr_stats(all, hf)
