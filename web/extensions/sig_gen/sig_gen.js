@@ -214,6 +214,11 @@ function gen_mode_cb(path, idx, first)
 	if (!gen.rf_enable && gen.sweeping) gen_sweep_cancel();
 	gen_attn_cb('gen.attn_dB', gen.attn_dB, true);     // add/remove gen.attn_offset_val depending on mode setting
 	gen_set(gen.rf_enable? gen.freq : 0, gen.attn_ampl, true);
+
+   // force CW mode in self-test so S-meter measures self-test carrier!
+	if (gen.mode == gen.SELF_TEST)
+	   ext_set_mode('cw');
+
    colormap_update();
    gen_run();
 }
@@ -374,7 +379,7 @@ function sig_gen_help(show)
 
 function self_test_cb()
 {
-   kiwi_open_or_reload_page({ qs:'f=10Mcwz0&mute&ext=sig,mode:3', tab:true });
+   kiwi_open_or_reload_page({ qs:'f=10Mcwz0&ext=sig,mode:3', tab:true });
 }
 
 // called to display HTML for configuration parameters in admin interface
