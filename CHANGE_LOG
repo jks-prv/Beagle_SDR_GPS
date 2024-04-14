@@ -14,6 +14,8 @@ v1.668  April 15, 2024
     
     Shift/Ctrl/Alt-click of zoom in/out and page up/down icons work again in audio FFT mode
         (bandwidth adjust and jump-to-nearest-label functions).
+    
+    Don't enable the admin "require name/callsign" option by default.
 
 v1.666,667  April 12, 2024
     Extensions moved to main control panel so they can be used while another extension is in use:

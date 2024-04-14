@@ -342,7 +342,6 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_bool("show_geo_city", true, &up_cfg);
     cfg_default_bool("show_1Hz", false, &up_cfg);
     cfg_default_int("dx_default_db", 0, &up_cfg);
-    kiwi.require_id = cfg_default_bool("require_id", true, &up_cfg);
 
     cfg_default_object("init", "{}", &up_cfg);
     cfg_default_int("init.cw_offset", 500, &up_cfg);
@@ -390,6 +389,14 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("nr_specGain", 0, &up_cfg);
     cfg_default_float("nr_specAlpha", 0.95, &up_cfg);
     cfg_default_int("nr_specSNR", 30, &up_cfg);
+
+    // Change default to false. Only do this once.
+    if (!cfg_true("require_id_setup")) {
+        kiwi.require_id = cfg_set_bool("require_id", false);
+        cfg_set_bool("require_id_setup", true);
+    } else {
+        kiwi.require_id = cfg_default_bool("require_id", false, &up_cfg);
+    }
 
     // Only handle forced speed changes here as ESPEED_AUTO is always in effect after a reboot.
     // ethtool doesn't seem to have a way to go back to auto speed once a forced speed is set?
