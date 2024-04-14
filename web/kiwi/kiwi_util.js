@@ -123,6 +123,7 @@ document.onreadystatechange = function() {
 		if (!website) console.log('Safari='+ kiwi_isSafari() + ' Firefox='+ kiwi_isFirefox() + ' Chrome='+ kiwi_isChrome() + ' Opera='+ kiwi_isOpera());
 
       // packages to load early on
+      kiwi.noLocalStorage = (isUndefined(localStorage) || localStorage == null)? true:false;
       if (!website) {
          migrateCookies();
          
@@ -1453,8 +1454,10 @@ function kiwi_storeRead(k, def)
    var rv;
    if (isNoArg(k)) return null;
 
-   if (localStorage == null) {
-      return readCookie(v, def);
+   if (kiwi.noLocalStorage) {
+      var rv = readCookie(k, def);
+      //alert('sRd k='+ k +' d='+ def +' r='+ rv);
+      return rv;
    }
 
 	try {
@@ -1477,8 +1480,10 @@ function kiwi_storeInit(k, init)
    var rv;
    if (isNoArg(k)) return null;
 
-   if (localStorage == null) {
-      return initCookie(v, init);
+   if (kiwi.noLocalStorage) {
+      var rv = initCookie(k, init);
+      //alert('sIn k='+ k +' i='+ init +' r='+ rv);
+      return rv;
    }
 
 	try {
@@ -1501,8 +1506,10 @@ function kiwi_storeWrite(k, v)
 {
    if (isNoArg(k)) return null;
 
-   if (localStorage == null) {
-      return writeCookie(k, v);
+   if (kiwi.noLocalStorage) {
+      var rv = writeCookie(k, v);
+      //alert('sWr k='+ k +' v='+ v +' r='+ rv);
+      return rv;
    }
 	   
 	try {
@@ -1521,8 +1528,10 @@ function kiwi_storeDelete(k)
 {
    if (isNoArg(k)) return null;
    
-   if (localStorage == null) {
-      return deleteCookie(k);
+   if (kiwi.noLocalStorage) {
+      var rv = deleteCookie(k);
+      //alert('sDel k='+ k +' r='+ rv);
+      return rv;
    }
 	   
 	try {
@@ -1535,23 +1544,27 @@ function kiwi_storeDelete(k)
 }
 
 function migrateCookies() {
-   if (!isArg(document.cookie)) return;
+   if (kiwi.noLocalStorage || !isArg(document.cookie)) return;
 	var ca = document.cookie.split(';');
 	var len = ca.length;
-	if (len == 0 || (len == 1 && ca[0] == '')) return;
+	if (len == 0 || (len == 1 && isEmptyString(ca))) return;
 	for (var i = 0; i < len; i++) {
 		var c = ca[i].trim();
 		var a = c.split('=');
 		var k = a[0];
 		var v = a[1];
-		console.log('$>migrateCookies k='+ k +' v='+ sq(v) +' '+ typeof(v));
-		var rv = kiwi_storeRead(k);
-		if (isArg(rv)) {
-		   console.log('$>migrateCookies WARNING key already exists in new storage? k='+ k +' v='+ sq(rv));
+		if (kiwi.noLocalStorage) {
+		   alert(k +'='+ v);
 		} else {
-		   kiwi_storeWrite(k, v);
-		}
-		deleteCookie(k);
+         console.log('$>migrateCookies k='+ k +' v='+ sq(v) +' '+ typeof(v));
+         var rv = kiwi_storeRead(k);
+         if (isArg(rv)) {
+            console.log('$>migrateCookies WARNING key already exists in new storage? k='+ k +' v='+ sq(rv));
+         } else {
+            kiwi_storeWrite(k, v);
+         }
+         deleteCookie(k);
+      }
 	}
    console.log('$>migrateCookies #'+ len);
 }
