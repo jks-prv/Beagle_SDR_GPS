@@ -1525,7 +1525,7 @@ void _cfg_save_json(cfg_t *cfg, char *json)
 {
     int jsl = strlen(json);
     if (cfg == &cfg_cfg) {
-        printf("_cfg_save_json CFG size %d\n", jsl);
+        cfg_printf("_cfg_save_json CFG size %d\n", jsl);
         if (jsl < 32)
             panic("_cfg_save_json too small?");
     }
