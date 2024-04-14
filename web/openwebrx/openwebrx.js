@@ -119,9 +119,11 @@ var owrx = {
    },
    
    zoom_titles: [
-      [ 'passband narrow', 'passband widen' ],
-      [ 'passband right edge', 'passband right edge' ],
-      [ 'passband left edge', 'passband left edge' ]
+      // zout                   zin
+      [ 'zoom out',            'zoom in' ],              // NO_MODIFIER
+      [ 'passband narrow',     'passband widen' ],       // SHIFT
+      [ 'passband right edge', 'passband right edge' ],  // CTL_ALT
+      [ 'passband left edge',  'passband left edge' ]    // SHIFT_PLUS_CTL_ALT
    ],
    
    __last: 0
@@ -726,7 +728,7 @@ function init_rx_photo()
    var el = w3_el('id-top-photo');
    var img = w3_el('id-top-photo-img');
    img.src = w3_json_to_string('RX_PHOTO_FILE', cfg.index_html_params.RX_PHOTO_FILE);
-   img.alt = img.title = w3_json_to_html('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC);
+   img.alt = img.title = w3_html_to_nl(w3_json_to_html('RX_PHOTO_DESC', cfg.index_html_params.RX_PHOTO_DESC));
    var centered = cfg.index_html_params.RX_PHOTO_CENTERED;
    var left = cfg.index_html_params.RX_PHOTO_LEFT_MARGIN;
 
@@ -3621,25 +3623,23 @@ function zoom_click(evt, dir, arg2)
 
 function zoom_over(evt)
 {
-	// currentTarget.parent=<span> currentTarget=<div> target=<img>
-	if (evt.target.nodeName != 'IMG') return;
-	var img = evt.target;
-	var div = evt.currentTarget;
-	//console.log(div);
-	//var parent = div.parentNode;
-	//console.log(parent);
+	// not w3-disabled:  target=<img>       currentTarget=<div id-zoom-*>
+	// w3-disabled:      target=<id-zoom-*> currentTarget=<div id-zoom-*>
+   //event_dump(evt, 'MAG');
+	var div = evt.currentTarget, el, disabled = false;
+	if (w3_contains(div, 'w3-disabled')) {
+	   el = div;
+	   disabled = true;
+	} else {
+	   el = evt.target;
+	}
 	
 	var zin = w3_contains(div, 'id-zoom-in');
-	
-	// apply shift-key title to inner IMG element so when removed the default of the parent div applies
    var key_mod = shortcut_key_mod(evt);
-	if (key_mod != shortcut.NO_MODIFIER) {
-		//img.title = zin? 'passband widen' : 'passband narrow';
-		key_mod = (key_mod == shortcut.SHIFT)? 0 : ((key_mod == shortcut.CTL_ALT)? 1 : 2);
-		img.title = owrx.zoom_titles[key_mod][zin];
-	} else {
-		img.removeAttribute('title');
-	}
+   var title = owrx.zoom_titles[key_mod][zin];
+   if (disabled && key_mod == shortcut.NO_MODIFIER) title = '';
+   console.log('zoom_over key_mod='+ key_mod +' zin='+ zin +' title='+ title);
+   el.title = title;
 }
 
 
@@ -8280,9 +8280,8 @@ function dx_label_render_cb(arr)
          var title = kiwi_decodeURIComponent('dx_notes', notes);
          
          // NB: this replaces the two literal characters '\' and 'n' that occur when '\n' is entered into
-         // the notes field with a proper newline escape '\n' so the text correctly spans multiple lines
-	      title = title.replace(/<br>/g, '\n');
-	      title = title.replace(/\\n/g, '\n');
+         // the notes field with a proper single-character escaped newline '\n' so the text correctly spans multiple lines
+         title = w3_html_to_nl(title);
 	      /*
 	      if (stored) title = w3_nl(title) +'shift-click to edit label\nshift-option-click to toggle active';
 	      if (w3_contains(el, 'dx-has-ext'))
@@ -10220,32 +10219,41 @@ function panels_setup()
 	   });
 	w3_el("id-control-mode").innerHTML = w3_inline('w3-halign-space-between/', s);
 
-   var afd = wf.audioFFT_active? ' w3-disabled||onclick="freqset_select()" disabled=""' : '';
+   var afd1 = wf.audioFFT_active? ' w3-disabled||onclick="freqset_select()" disabled=""' : '';
+   var afd2 = wf.audioFFT_active? ' w3-disabled||disabled="" ' : '||';
 
 	w3_el("id-control-zoom").innerHTML =
 	   w3_inline('w3-halign-space-between/',
-         w3_div('id-zoom-in class-icon'+ afd +'||onclick="zoom_click(event,1)" onmouseover="zoom_over(event)" title="zoom in"', '<img src="icons/zoomin.png" width="32" height="32" />'),
-         w3_div('id-zoom-out class-icon'+ afd +'||onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)" title="zoom out"', '<img src="icons/zoomout.png" width="32" height="32" />'),
-         w3_div('id-maxin'+ afd,
+         w3_div('id-zoom-in class-icon'+  afd2 +'onclick="zoom_click(event, 1)" onmouseover="zoom_over(event)"',
+            '<img src="icons/zoomin.png" width="32" height="32" />'
+         ),
+         w3_div('id-zoom-out class-icon'+ afd2 +'onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)"',
+            '<img src="icons/zoomout.png" width="32" height="32" />'
+         ),
+         w3_div('id-maxin'+ afd1,
             w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.png" width="32" height="32" />')
          ),
-         w3_div('id-maxin-nom w3-hide'+ afd,
+         w3_div('id-maxin-nom w3-hide'+ afd1,
             w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.nom.png" width="32" height="32" />')
          ),
-         w3_div('id-maxin-max w3-hide'+ afd,
+         w3_div('id-maxin-max w3-hide'+ afd1,
             w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.max.png" width="32" height="32" />')
          ),
-         w3_div('id-maxout'+ afd,
+         w3_div('id-maxout'+ afd1,
             w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.png" width="32" height="32" />')
          ),
-         w3_div('id-maxout-max w3-hide'+ afd,
+         w3_div('id-maxout-max w3-hide'+ afd1,
             w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.max.png" width="32" height="32" />')
          ),
-         w3_div('class-icon'+ afd +'||onclick="zoom_click(event,0)" title="zoom to band"',
+         w3_div('class-icon'+ afd1 +'||onclick="zoom_click(event,0)" title="zoom to band"',
             '<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>'
          ),
-         w3_div('class-icon'+ afd +'||onclick="page_scroll_icon_click(event,'+ -page_scroll_amount +')" title="page down\nalt: label step"', '<img src="icons/pageleft.png" width="32" height="32" />'),
-         w3_div('class-icon'+ afd +'||onclick="page_scroll_icon_click(event,'+ page_scroll_amount +')" title="page up\nalt: label step"', '<img src="icons/pageright.png" width="32" height="32" />')
+         w3_div('class-icon'+ afd2 +'onclick="page_scroll_icon_click(event,-page_scroll_amount)" title="page down\nalt: label step"',
+            '<img src="icons/pageleft.png" width="32" height="32" />'
+         ),
+         w3_div('class-icon'+ afd2 +'onclick="page_scroll_icon_click(event,+page_scroll_amount)" title="page up\nalt: label step"',
+            '<img src="icons/pageright.png" width="32" height="32" />'
+         )
 		);
 
 
@@ -10378,7 +10386,7 @@ function panels_setup()
             
             w3_col_percent('w3-valign/class-slider',
                w3_text('w3-text-css-orange', 'WF rate'), 19,
-               w3_slider('id-slider-rate w3-wheel-shift'+ afd, '', '', wf_speed, 0, 4, 1, 'setwfspeed_cb'), 60,
+               w3_slider('id-slider-rate w3-wheel-shift'+ afd1, '', '', wf_speed, 0, 4, 1, 'setwfspeed_cb'), 60,
                w3_div('slider-rate-field class-slider'), 19
             ),
 
