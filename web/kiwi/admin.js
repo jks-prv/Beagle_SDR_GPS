@@ -1259,7 +1259,7 @@ function users_focus()
 {
 	admin.users_interval = kiwi_setInterval(
 	   function() {
-	      users_get_list(0);
+	      users_get_list();
 	   }, 30000
 	);
 }
@@ -1269,10 +1269,9 @@ function users_blur()
 	kiwi_clearInterval(admin.users_interval);
 }
 
-function users_get_list(i)
+function users_get_list()
 {
-   //if (i == 0) console.log('users_get_list(0)');
-   ext_send("SET get_user_list="+ i);
+   ext_send("SET get_user_list");
 }
 
 function users_clear_cb(path, idx)
@@ -1292,6 +1291,7 @@ function users_expand_cb(path, idx)
    w3_els('id-users-'+ i, function(el, i) { w3_hide2(el, !vis); } );
 }
 
+/*
 function users_sort_ip4(a, b)
 {
    a = a.split('.');
@@ -1300,11 +1300,12 @@ function users_sort_ip4(a, b)
    if (b.length < 4) return 0;
    
    for (var i = 0; i < 4; i++) {
-      if (a[i] < b[i]) return -1;
-      if (a[i] > b[i]) return +1;
+      if (+a[i] < +b[i]) return -1;
+      if (+a[i] > +b[i]) return +1;
    }
    return 0;
 }
+*/
 
 function users_sort_cb(path, idx)
 {
@@ -1322,8 +1323,10 @@ function users_sort(a, b)
       case 1: return kiwi_sort_ignore_case(a.i, b.i); break;
       case 2: return kiwi_sort_ignore_case(b.i, a.i); break;
 
-      case 3: return users_sort_ip4(a.a[0].ip, b.a[0].ip); break;
-      case 4: return users_sort_ip4(b.a[0].ip, a.a[0].ip); break;
+      //case 3: return users_sort_ip4(a.a[0].ip, b.a[0].ip); break;
+      //case 4: return users_sort_ip4(b.a[0].ip, a.a[0].ip); break;
+      case 3: return kiwi_sort_ignore_case(a.a[0].ip, b.a[0].ip); break;
+      case 4: return kiwi_sort_ignore_case(b.a[0].ip, a.a[0].ip); break;
 
       case 5: return kiwi_sort_ignore_case(a.a[0].g, b.a[0].g); break;
       case 6: return kiwi_sort_ignore_case(b.a[0].g, a.a[0].g); break;
@@ -1400,19 +1403,24 @@ function users_list_cb(s)
       return;
    }
    //console.log(o);
-   if (o.end) {
-      if (!isArg(admin.users_new)) admin.users_new = [];
-      admin.users_list = admin.users_new;
-      console.log('users_list: n='+ admin.users_list.length +' sort='+ admin.users_sort);
-      if (admin.users_sort) admin.users_list.sort(users_sort);
-      users_list(admin.users_list);
-   } else {
-      var idx = +o.s;
-      if (idx == 0)
-         admin.users_new = [];
-      admin.users_new[idx] = o;
-      users_get_list(idx + 1);
-   }
+   var isEnd = false;
+   o.forEach(
+      function(a,i) {
+         if (isDefined(a.end)) {
+            if (!isArg(admin.users_new)) admin.users_new = [];
+            admin.users_list = admin.users_new;
+            console.log('users_list: n='+ admin.users_list.length +' sort='+ admin.users_sort);
+            if (admin.users_sort) admin.users_list.sort(users_sort);
+            users_list(admin.users_list);
+            isEnd = true;
+         } else {
+            //console.log(a);
+            if (+a.s == 0) admin.users_new = [];
+            admin.users_new.push(a);
+         }
+      }
+   );
+   if (!isEnd) users_get_list();
 }
 
 
