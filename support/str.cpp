@@ -445,12 +445,12 @@ void kiwi_str_unescape_quotes(char *str)
 	*o = '\0';
 }
 
-char *kiwi_json_to_html(char *str)
+char *kiwi_json_to_html(char *str, bool doBR)
 {
 	char *ostr, *s, *o;
 	int sl = strlen(str);
 	int n = sl;
-	bool doFree;
+	bool doFree, mustCopy = false;
 	
 	for (s = str; *s != '\0';) {
 		if (*s == '\\' && *(s+1) == '"') {
@@ -458,13 +458,20 @@ char *kiwi_json_to_html(char *str)
 			s++;
 		} else
 		if (*s == '\\' && *(s+1) == 'n') {
-		    n += 2;     // \n => <br>
-			s++;
+		    if (doBR) {
+                n += 2;     // \n => <br>
+                s++;
+                // because larger output would overwrite input (they're same buffer otherwise)
+                mustCopy = true;
+            } else {
+                n -= 2;     // \n => (removed)
+                s++;
+            }
 		}
 		s++;
 	}
 	
-	if (n > sl) {
+	if (n > sl || mustCopy) {
         o = ostr = (char *) kiwi_imalloc("kiwi_json_to_html", n + SPACE_FOR_NULL);
         doFree = true;
 	} else {
@@ -478,9 +485,13 @@ char *kiwi_json_to_html(char *str)
 			s += 2;
 		} else
 		if (*s == '\\' && *(s+1) == 'n') {
-		    strncpy(o, "<br>", 4);
-		    o += 4;         // \n => <br>
-			s += 2;
+		    if (doBR) {
+                strncpy(o, "<br>", 4);
+                o += 4;         // \n => <br>
+                s += 2;
+            } else {
+                s += 2;
+            }
 		} else {
 			*o++ = *s++;
 		}

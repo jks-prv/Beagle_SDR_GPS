@@ -46,7 +46,7 @@ void kiwi_get_chars(char *field, char *value, size_t size);
 void kiwi_set_chars(char *field, const char *value, const char fill, size_t size);
 char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free DEF_NULL);
 void kiwi_str_unescape_quotes(char *str);
-char *kiwi_json_to_html(char *str);
+char *kiwi_json_to_html(char *str, bool doBR DEF_TRUE);
 char *kiwi_json_to_string(char *str);
 void kiwi_remove_unprintable_chars_inplace(char *str, int *printable DEF_NULL, int *UTF DEF_NULL);
 char *kiwi_str_escape_HTML(char *str, int *printable DEF_NULL, int *UTF DEF_NULL);
