@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.668  April 15, 2024
+v1.668,669  April 15, 2024
     KiwiSDR Android app now working again.
     
     In sig gen extension self-test mode always switch to CW mode so self-test carrier is
