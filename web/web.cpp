@@ -447,12 +447,16 @@ void iparams_add(const char *id, char *encoded)
 	ip->id = strdup((char *) id);
 	ip->encoded = strdup(encoded);
 	int n = strlen(encoded);
+    //real_printf("iparams_add: %d %s ENC:%d<%s>\n", n_iparams, ip->id, n, ip->encoded);
+
     ip->decoded = (char *) kiwi_imalloc("iparams_add", n + SPACE_FOR_NULL);
     mg_url_decode(ip->encoded, n, ip->decoded, n + SPACE_FOR_NULL, 0);
-	if (strcmp(id, "USER_LOGIN") == 0 || strcmp(id, "HTML_HEAD") == 0)
-	    ip->decoded = kiwi_json_to_html(ip->decoded);
-    //printf("iparams_add: %d %s DEC:%d<%s>\n", n_iparams, ip->id, strlen(ip->decoded), ip->decoded);
-    //printf("iparams_add: %d %s ENC:%d<%s>\n", n_iparams, ip->id, n, ip->encoded);
+    //real_printf("iparams_add: %d %s DEC1:%d<%s>\n", n_iparams, ip->id, strlen(ip->decoded), ip->decoded);
+
+    bool html_head = (strcmp(id, "HTML_HEAD") == 0);
+	if (strcmp(id, "USER_LOGIN") == 0 || html_head)
+	    ip->decoded = kiwi_json_to_html(ip->decoded, /* doBR */ !html_head);
+    //real_printf("iparams_add: %d %s html_head=%d DEC2:%d<%s>\n", n_iparams, ip->id, html_head, strlen(ip->decoded), ip->decoded);
 	n_iparams++;
 }
 
@@ -471,11 +475,11 @@ static bool index_params_cb(cfg_t *cfg, void *param1, void *param2, jsmntok_t *j
 	if (JSMN_IS_ID(jt)) {
 		id_last = (char *) kiwi_imalloc("index_params_cb", n + SPACE_FOR_NULL);
 		mg_url_decode(s, n, id_last, n + SPACE_FOR_NULL, 0);
-		//printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, id_last);
+		//real_printf("index_params_cb: %d %d/%d/%d/%d ID %d <%s>\n", n_iparams, seq, hit, lvl, rem, n, id_last);
 	} else {
 		char *encoded = (char *) kiwi_imalloc("index_params_cb", n + SPACE_FOR_NULL);
 		kiwi_strncpy(encoded, s, n + SPACE_FOR_NULL);
-		//printf("index_params_cb: %d %d/%d/%d/%d VAL %s: <%s>\n", n_iparams, seq, hit, lvl, rem, id_last, encoded);
+		//real_printf("index_params_cb: %d %d/%d/%d/%d VAL %s: <%s>\n", n_iparams, seq, hit, lvl, rem, id_last, encoded);
 		iparams_add(id_last, encoded);
 		kiwi_ifree(id_last, "id_last");
 		kiwi_ifree(encoded, "encoded");
