@@ -1556,17 +1556,22 @@ function migrateCookies() {
 		if (kiwi.noLocalStorage) {
 		   alert(k +'='+ v);
 		} else {
-         console.log('$>migrateCookies k='+ k +' v='+ sq(v) +' '+ typeof(v));
+         console.log('migrateCookies k='+ k +' v='+ sq(v) +' '+ typeof(v));
          var rv = kiwi_storeRead(k);
-         if (isArg(rv)) {
-            console.log('$>migrateCookies WARNING key already exists in new storage? k='+ k +' v='+ sq(rv));
+         if (0) {
+            if (isArg(rv)) {
+               console.log('migrateCookies WARNING key already exists in new storage? k='+ k +' v='+ sq(rv));
+            } else {
+               kiwi_storeWrite(k, v);
+            }
          } else {
+            // compatibility with HTML_HEAD <script> that does: document.cookie = "key = val";
             kiwi_storeWrite(k, v);
          }
          deleteCookie(k);
       }
 	}
-   console.log('$>migrateCookies #'+ len);
+   console.log('migrateCookies #'+ len);
 }
 
 // from http://www.quirksmode.org/js/cookies.html
