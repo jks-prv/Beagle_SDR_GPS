@@ -2,12 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.670  April 16, 2024
+v1.670,671  April 16, 2024
     Fixed various problems with the new scheme of storing configuration information in JSON instead
         of via URL encoding.
     
-    Due to community pushback no longer default enable the new name/callsign entry panel shown on
-        user connection. If you want it then enable it via the checkbox on the admin control tab.
+    Due to community pushback, no longer enabling the new name/callsign entry panel by default.
+        If you want it then enable it via the checkbox on the admin control tab.
 
     Admin console tab: added "clean logs" button you can use in case the updates are failing due
         to lack of filesystem free space. If there is important info in the logs you want to keep
