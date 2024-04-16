@@ -1020,6 +1020,7 @@ function kiwi_UTCdoyToDate(doy, year, hour, min, sec)
 
 function kiwi_decodeURIComponent(id, uri)
 {
+   var i, j, k;
    var obj = null, double_fail = false;
    
    if (dbgUs && arguments.length != 2) {
@@ -1032,7 +1033,7 @@ function kiwi_decodeURIComponent(id, uri)
       try {
          obj = decodeURIComponent(uri);
       } catch(ex) {
-         console.log('$kiwi_decodeURIComponent('+ id +'): decode fail');
+         console.log('kiwi_decodeURIComponent('+ id +'): decode fail');
          console.log(uri);
          console.log(ex);
       
@@ -1042,6 +1043,7 @@ function kiwi_decodeURIComponent(id, uri)
             console.log(ex);
             return null;
          }
+         double_fail = true;
 
          // v1.464
          // Recover from broken UTF-8 sequences stored in cfg.
@@ -1052,27 +1054,38 @@ function kiwi_decodeURIComponent(id, uri)
          // and this code will not be triggered. That way corrections made to broken fields will persist in the cfg.
          // This is why bulk removal of >= %80 sequences cannot be done in _cfg_load_json() on the server side.
          // Doing that would always eliminate *any* UTF-8 sequence. Even valid ones.
-         var i, j, k;
+
          for (i = 0; i < uri.length - 2; i++) {
-            var c1 = uri.charAt(i+1);
-            var c2 = uri.charAt(i+2);
-            if (uri.charAt(i) == '%' && isHexDigit(c1) && isHexDigit(c2)) {
-               //console.log(c1 +' '+ ((c1 >= '8')? 'T':'F'));
-               if (c1 >= '8') {
-                  //var x0 = uri.charAt(i-1);
-                  //x0 = x0.charCodeAt(0);
-                  j = Math.max(i-5, 0); k = Math.min(i+6, uri.length);
-                  console.log('BAD @'+ i +' '+ uri.slice(j,k));
-                  uri = uri.substr(0,i) + uri.substr(i+3);
-                  i = 0;
-                  //console.log('FIX <'+ uri +'>');
-                  double_fail = true;
+            if (uri.charAt(i) == '%') {
+               var c1 = uri.charAt(i+1);
+               var c2 = uri.charAt(i+2);
+               if (isHexDigit(c1) && isHexDigit(c2)) {
+                  //console.log(c1 +' '+ ((c1 >= '8')? 'T':'F'));
+                  if (c1 >= '8') {
+                     //var x0 = uri.charAt(i-1);
+                     //x0 = x0.charCodeAt(0);
+                     j = Math.max(i-5, 0); k = Math.min(i+6, uri.length);
+                     console.log('BAD @'+ i +' <'+ uri.slice(j,k) +'>');
+                     uri = uri.substr(0,i) + uri.substr(i+3);
+                     i = 0;   // NB: this makes the for loop start over!
+                     //console.log('FIX <'+ uri +'>');
+                  }
+               } else {
+                  // % => %25
+                  uri = uri.substr(0,i) +'%25'+ uri.substr(i+1);
+                  // NB: Okay to just let the loop proceed here since index i++ now
+                  // points to the '2' of the '%25' we just inserted.
                }
             }
          }
-         //console.log(s);
-         console.log('FINAL FIX <'+ uri +'>');
+         
+         // Must check for two cases of '%' in the last two locations in the string (not caught by above code).
+         i = uri.length - 2;
+         if (uri.charAt(i) == '%') uri = uri.substr(0,i) +'%25'+ uri.substr(i+1);
+         i = uri.length - 1;
+         if (uri.charAt(i) == '%') uri = uri.substr(0,i) +'%25';
 
+         console.log('kiwi_decodeURIComponent FINAL FIX <'+ uri +'>');
          obj = null;
       }
    }
