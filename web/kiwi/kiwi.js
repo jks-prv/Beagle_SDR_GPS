@@ -3192,7 +3192,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case "status_msg_html":
-		   var s = w3_json_to_html_no_decode('status_msg_html', param[1]);
+		   var s = w3_json_to_html('status_msg_html', param[1]);
 		   //console.log('status_msg_html: <'+ s +'>');
 			w3_innerHTML('id-status-msg', s);		// overwrites last status msg
 			w3_innerHTML('id-msg-status', s);		// overwrites last status msg
@@ -3261,7 +3261,7 @@ function kiwi_msg(param, ws)
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
 			reason_disabled = 'User connections disabled.'+
-			   ((param[1] != '')? (' Reason: '+ w3_json_to_html_no_decode('reason_disabled', param[1])) : '');
+			   ((param[1] != '')? (' Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
 			break;
 		
 		case "sample_rate":
@@ -3283,7 +3283,7 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'notify_msg':
-		   var s = w3_json_to_html_no_decode('notify_msg', param[1]);
+		   var s = w3_json_to_html('notify_msg', param[1]);
 			console.log('notify_msg: '+ s);
 			if (confirmation.displayed) break;
          s = w3_div('', s);
