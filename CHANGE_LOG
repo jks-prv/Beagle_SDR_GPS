@@ -2,6 +2,19 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.670  April 16, 2024
+    Fixed various problems with the new scheme of storing configuration information in JSON instead
+        of via URL encoding.
+    
+    Due to community pushback no longer default enable the new name/callsign entry panel shown on
+        user connection. If you want it then enable it via the checkbox on the admin control tab.
+
+    Admin console tab: added "clean logs" button you can use in case the updates are failing due
+        to lack of filesystem free space. If there is important info in the logs you want to keep
+        (e.g. WSPR/FT8 spots) please backup the log files before cleaning them.
+        Use the "disk free" button to see how much available filesystem space there is.
+        You need maybe 400 MB free to do an update.
+
 v1.668,669  April 15, 2024
     KiwiSDR Android app now working again.
     
