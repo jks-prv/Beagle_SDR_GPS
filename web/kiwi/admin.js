@@ -3408,9 +3408,14 @@ function console_html()
                w3_button('w3-green|margin-left:32px', 'monitor build progress', 'console_cmd_cb',
                   'console_input_cb|tail -fn 500 /root/build.log'),
 
-            w3_button('w3-aqua|margin-left:16px', 'htop', 'console_cmd_cb', 'console_input_cb|htop'),
+            w3_button('w3-aqua|margin-left:16px|title="Type \'q\' to stop htop"',
+               'htop', 'console_cmd_cb', 'console_input_cb|htop'),
             
-            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df .'),
+            w3_button('w3-yellow|margin-left:16px', 'disk free', 'console_cmd_cb', 'console_input_cb|df -h .'),
+
+            w3_button('w3-red|margin-left:16px|' +
+               'title="CAUTION: This will delete all but\n10 MB of your system log file"',
+               'clean logs', 'console_cmd_cb', 'console_input_cb|df -h .; journalctl --vacuum-size=10M; df -h .'),
 
             (dbg)?
                w3_button('w3-aqua|margin-left:16px', 'nano j', 'console_cmd_cb', 'console_input_cb|nano j')

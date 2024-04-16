@@ -271,21 +271,31 @@ function w3int_console_replacer(k, v)
    return '<'+ v.toString() +'>';
 }
 
+function w3_json_to_string_no_decode(id, s)
+{
+   s = s.replace(/\\"/g, '"');
+   return s;
+}
+
 function w3_json_to_string(id, s)
 {
    s = kiwi_decodeURIComponent(id, s);
-   s = s.replace(/\\"/g, '"');
+   return w3_json_to_string_no_decode(id, s);
+}
+
+function w3_json_to_html_no_decode(id, s)
+{
+   //console.log('1> '+ kiwi_string_to_hex(s, '-'));
+   //console.log('1> '+ JSON.stringify(s));
+   s = s.replace(/\\n/g, '<br>').replace(/\n/g, '<br>').replace(/\\"/g, '"');
+   //console.log('2> '+ JSON.stringify(s));
    return s;
 }
 
 function w3_json_to_html(id, s)
 {
    s = kiwi_decodeURIComponent(id, s);
-   //console.log('1> '+ kiwi_string_to_hex(s, '-'));
-   //console.log('1> '+ JSON.stringify(s));
-   s = s.replace(/\\n/g, '<br>').replace(/\n/g, '<br>').replace(/\\"/g, '"');
-   //console.log('2> '+ JSON.stringify(s));
-   return s;
+   return w3_json_to_html_no_decode(id, s);
 }
 
 function w3_html_to_nl(s)
