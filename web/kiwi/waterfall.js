@@ -84,7 +84,7 @@ function waterfall_controls_setup()
                w3_input('id-wfext-tstamp-custom w3-ext-retain-input-focus|padding:0;width:auto|size=4',
                   '', 'wfext.tstamp_f', wfext.tstamp_f, 'wfext_tstamp_custom_cb'),
                w3_select(wfext.sfmt, '', '', 'wf.ts_tz', wf.ts_tz, wfext.tstamp_tz_s, 'w3_num_cb'),
-				   w3_button('w3-padding-smaller w3-aqua', 'Save WF as JPG', 'export_waterfall'),
+				   w3_button('w3-padding-smaller w3-aqua', 'Save WF as JPG', 'export_waterfall')
             )
          ),
          
