@@ -25,7 +25,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION=0.2
+N_CH=8
+VERSION=2.0
 ADDR_FILE="/etc/default/netshield"
 
 if [ -e $ADDR_FILE ]; then
@@ -58,7 +59,7 @@ AntSW_SetAddress() {
 AntSW_Initialize() {
   	ARDUINOURL="http://"$NETSHIELD_IP
 	CURLEXEC=`which curl`
-	CURLOPTS=" --silent --connect-timeout 1"
+	CURLOPTS=" --silent --connect-timeout 2"
 }
 
 AntSW_GroundAll() {
@@ -78,6 +79,10 @@ AntSW_ToggleAntenna() {
 }
 
 AntSW_ShowSelected() {
+    AntSW_ReportSelected
+}
+
+AntSW_ReportSelected() {
 	selectedantennas=`$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=q`
     echo -n "Selected antennas: "
 	echo $selectedantennas

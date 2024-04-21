@@ -25,7 +25,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION=0.2
+N_CH=8
+VERSION=2.0
 ADDR_FILE="/etc/default/kmtronic-udp"
 
 if [ -e $ADDR_FILE ]; then
@@ -41,6 +42,10 @@ NETCAT_OPTS="-u -n"
 AntSW_ShowBackend() {
     echo "kmtronic-udp v$VERSION 8ch" ${KMTRONIC_UDP_HOST_PORT// /:}
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-kmtronic-udp.txt"
+}
+
+AntSW_GetAddress() {
+    echo ${KMTRONIC_UDP_HOST_PORT// /:}
 }
 
 AntSW_SetAddress() {
@@ -67,7 +72,7 @@ AntSW_GroundAll() {
     echo FFE000 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT > /dev/null 2>&1
 }
 
-AntSW_SelectAntenna() {
+function set_antenna() {
     # This function selects antenna (turn on)
     # Only one antenna
     # Antenna to select is on variable $1
@@ -75,7 +80,16 @@ AntSW_SelectAntenna() {
     echo FF0${1}01 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT > /dev/null 2>&1
 }
 
-AntSW_DeSelectAntenna() {
+AntSW_SelectAntenna() {
+    AntSW_GroundAll         # deselect all before setting a single antenna
+    set_antenna
+}
+
+AntSW_AddAntenna() {
+    set_antenna
+}
+
+AntSW_RemoveAntenna() {
     # This function deselects antenna (turn off)
     # Antenna to deleselct is on variable $1
     # Only one antenna
@@ -89,13 +103,17 @@ AntSW_ToggleAntenna() {
     digits=`echo FF0000 | $NETCAT_EXEC $NETCAT_OPTS $KMTRONIC_UDP_HOST_PORT`
     thisbits=${digits:$ANT:1}
 	if [ "x$thisbits" == "x0" ]; then
-		AntSW_SelectAntenna $1
+		AntSW_AddAntenna $1
 	else
-		AntSW_DeSelectAntenna $1 
+		AntSW_RemoveAntenna $1 
 	fi
 }
 
 AntSW_ShowSelected() {
+    AntSW_ReportSelected
+}
+
+AntSW_ReportSelected() {
     # This function show relected antennas
     # returns a string
     # Selected antennas: 1

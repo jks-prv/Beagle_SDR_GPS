@@ -40,8 +40,9 @@
 # P8 pin 19 - Antenna 9
 # P8 pin 26 - Antenna 10
 #
-VERSION=0.6
+
 N_CH=10
+VERSION=2.0
 
 AntSW_Platform() {
     MODEL=`/usr/bin/tr < /proc/device-tree/model -d '\000'`
@@ -64,6 +65,10 @@ AntSW_ShowBackend() {
     AntSW_Platform
     echo "beagle-gpio v$VERSION 10ch not-applicable"
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-beagle-gpio.txt"
+}
+
+AntSW_GetAddress() {
+    echo "not applicable"
 }
 
 AntSW_SetAddress() {
@@ -102,19 +107,28 @@ AntSW_Initialize() {
 
 AntSW_GroundAll() {
 	for s in 1 2 3 4 5 6 7 8 9 10; do
-		AntSW_DeSelectAntenna $s
+		AntSW_RemoveAntenna $s
 	done
 }
 
-AntSW_SelectAntenna() {
+function set_antenna() {
 	IDX=$(($1-1))
-	#echo "select IDX=$IDX"
+	#echo "SetAntenna IDX=$IDX"
 	ANT=${SAFEGPIOS[$IDX]}
 	echo 1 > /sys/class/gpio/gpio${ANT}/value
     #echo W$1 ${ANT}=1
 }
 
-AntSW_DeSelectAntenna() {
+AntSW_SelectAntenna() {
+    AntSW_GroundAll         # deselect all before setting a single antenna
+    set_antenna $1
+}
+
+AntSW_AddAntenna() {
+    set_antenna $1
+}
+
+AntSW_RemoveAntenna() {
     IDX=$(($1-1)) 
     ANT=${SAFEGPIOS[$IDX]}
     echo 0 > /sys/class/gpio/gpio${ANT}/value 
@@ -128,13 +142,17 @@ AntSW_ToggleAntenna() {
 	# Read antenna status
 	VAL=`cat /sys/class/gpio/gpio${ANT}/value`
 	if [ "x$VAL" == "x0" ]; then
-		AntSW_SelectAntenna $1
+		AntSW_AddAntenna $1
 	else
-		AntSW_DeSelectAntenna $1 
+		AntSW_RemoveAntenna $1 
 	fi
 }
 
 AntSW_ShowSelected() {
+    AntSW_ReportSelected
+}
+
+AntSW_ReportSelected() {
 	# Read antenna status
 	selectedantennas=''
 	antennafound=0

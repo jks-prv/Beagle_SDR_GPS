@@ -110,6 +110,8 @@ typedef struct {
     #define WF_SHMEM_DISABLE
 #endif
 
+const char * const shmem_status_s[] = { "idle", "start", "busy", "done", "error" };
+
 typedef struct {
     net_t net_shmem;
     int CAT_last_freqHz;

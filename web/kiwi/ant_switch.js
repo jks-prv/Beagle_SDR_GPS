@@ -205,7 +205,9 @@ function ant_switch_user_refresh()
    if (!ant_sw.running) return;
    console.log('ant_switch_user_refresh');
    //ant_switch_buttons_setup();
-   ant_switch_prompt_query();
+   if (!ant_sw.isConfigured) {
+      ant_switch_prompt_query();
+   }
    //ext_send('ADM antsw_notify_users');
 }
 
@@ -271,7 +273,8 @@ function ant_switch_select_antenna(ant) {
    ext_send('SET antsw_SetAntenna='+ ant);
    
    // race between toggling antennas and getting correct antenna selection status, so delay
-   setTimeout(function() { ant_switch_prompt_query(); }, 1000);
+   //jksx-new
+   //setTimeout(function() { ant_switch_prompt_query(); }, 1000);
 }
 
 function ant_switch_select_antenna_cb(path, val) { ant_switch_select_antenna(val); }

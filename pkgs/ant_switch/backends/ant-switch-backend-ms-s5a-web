@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # The MIT License (MIT)
 #
-# ant-switch-backend-ms-s4a-web - MS-S4A-WEB backend script
+# ant-switch-backend-ms-s5a-web - MS-S5A-WEB backend script
 #
 # This is part of KiwiSDR antenna switch extension
 #
 # Copyright (c) 2019 Kari Karvonen, DK9SAS
 #
-# MS-S4A-WEB by ripperfox
+# MS-S5A-WEB by ripperfox
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -27,5 +27,5 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-N_CH=4
+N_CH=5
 . $BACKEND_DIR/common/ant-switch-backend-ms-sNa-web

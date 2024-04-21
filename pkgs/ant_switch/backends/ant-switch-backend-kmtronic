@@ -25,7 +25,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION=0.2
+N_CH=8
+VERSION=2.0
 ADDR_FILE="/etc/default/kmtronic"
 
 if [ -e $ADDR_FILE ]; then
@@ -36,11 +37,15 @@ fi
 
 CURLEXEC=/usr/bin/curl
 # no switch auth currently
-CURLOPTS=" --silent --connect-timeout 1 --max-time 1 "
+CURLOPTS=" --silent --connect-timeout 1 --max-time 2 "
 
 AntSW_ShowBackend() {
     echo "kmtronic v$VERSION 8ch $KMTRONIC_URL"
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-kmtronic.txt"
+}
+
+AntSW_GetAddress() {
+    echo $KMTRONIC_URL
 }
 
 AntSW_SetAddress() {
@@ -66,7 +71,7 @@ AntSW_GroundAll() {
     $CURLEXEC $CURLOPTS $KMTRONIC_URL/FFE000 > /dev/null 2>&1
 }
 
-AntSW_SelectAntenna() {
+function set_antenna() {
     # This function selects antenna (turn on)
     # Only one antenna
     # Antenna to select is on variable $1
@@ -74,7 +79,16 @@ AntSW_SelectAntenna() {
     $CURLEXEC $CURLOPTS $KMTRONIC_URL/FF0${1}01 > /dev/null 2>&1
 }
 
-AntSW_DeSelectAntenna() {
+AntSW_SelectAntenna() {
+    AntSW_GroundAll         # deselect all before setting a single antenna
+    set_antenna
+}
+
+AntSW_AddAntenna() {
+    set_antenna
+}
+
+AntSW_RemoveAntenna() {
     # This function deselects antenna (turn off)
     # Antenna to deleselct is on variable $1
     # Only one antenna
@@ -93,6 +107,10 @@ AntSW_ToggleAntenna() {
 }
 
 AntSW_ShowSelected() {
+    AntSW_ReportSelected
+}
+
+AntSW_ReportSelected() {
     # This function show relected antennas
     # returns a string
     # Selected antennas: 1

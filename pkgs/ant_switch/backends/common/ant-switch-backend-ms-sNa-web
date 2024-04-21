@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # The MIT License (MIT)
 #
-# ant-switch-backend-ms-s7-web - MS-S7-WEB backend script
+# ant-switch-backend-ms-sNa-web - MS-SNA-WEB backend script
 #
 # This is part of KiwiSDR antenna switch extension
 #
 # Copyright (c) 2019 Kari Karvonen, DK9SAS
+#
+# MS-SNA-WEB by ripperfox
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -25,18 +27,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-N_CH=7
-IPADDRESS=192.168.11.100
+IPADDRESS=192.168.1.234
 VERSION=2.0
 CURLEXEC=/usr/bin/curl
 CURLOPTS=" --silent --connect-timeout 2"
 
-CONFFILE=/etc/default/ms-s7-web
+CONFFILE="/etc/default/ms-s"$N_CH"a-web"
 [ -r $CONFFILE ] && . $CONFFILE
 
 AntSW_ShowBackend() {
-    echo "ms-s7-web v$VERSION 7ch $IPADDRESS"
-	echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-ms-s7-web.txt"
+    echo "ms-s"$N_CH"a-web v$VERSION "$N_CH"ch $IPADDRESS"
+    echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-ms-s"$N_CH"a-web.txt"
 }
 
 AntSW_GetAddress() {
@@ -56,7 +57,7 @@ AntSW_SetAddress() {
 }
 
 AntSW_Get() {
-	if [ -z "$1" ]
+    if [ -z "$1" ]
 	then
 		# zero length
 		sleep 1
@@ -64,110 +65,95 @@ AntSW_Get() {
 		REPLY=`$CURLEXEC $CURLOPTS $1`
 		if [ "x$REPLY" == "x" ]; then
 			# failed. Let's try again.
+            echo -n "retry-1 "
 			REPLY=`$CURLEXEC $CURLOPTS $1`
 		fi
 		if [ "x$REPLY" == "x" ]; then
 			# failed again. One more shot.
+            echo -n "retry-2 "
 			REPLY=`$CURLEXEC $CURLOPTS $1`
 		fi
 	fi
 }
 
-AntSW_Post () {
-	if [ -z "$1" ]
-	then
-		# zero length
-		sleep 1
-	else
-		REPLY=`$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' $1`
-		if [ "x$REPLY" == "x" ]; then
-			# failed, let's try again
-			REPLY=`$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' $1`
-		fi
-		if [ "x$REPLY" == "x" ]; then
-			# failed again, one more shot
-			REPLY=`$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' $1`
-		fi
-	fi
+AntSW_GroundAll() {
+    AntSW_SelectAntenna 0
 }
 
 AntSW_Initialize() {
-	# Test connectivity to MS-S7-WEB otherwise log timeouts
-	AntSW_Get "http://$IPADDRESS/widget.cgi"
-	if [ "x$REPLY" == "x" ]; then
-		echo "Unable to connect MS-S7-WEB at $IPADDRESS"
-		echo "Please check network connectivity."
-		exit 1
-	fi
-}
-
-AntSW_GroundAll() {
-	for s in 0 1 2 3 4 5 6; do
-		AntSW_Post "-d pin=$s -d val=1 http://$IPADDRESS/dout.cgi"
-		#$CURLEXEC $CURLOPTS --header 'Content-Type: application/x-www-form-urlencoded' -d pin=$s -d val=1 http://$IPADDRESS/dout.cgi > /dev/null
-	done
-}
-
-function set_antenna() {
-	ANT=$(($1-1))
-	AntSW_Post "-d pin=$ANT -d val=0 http://$IPADDRESS/dout.cgi"
+    :
+# Test connectivity to MS-SNA-WEB otherwise log timeouts
+#    AntSW_Get "http://$IPADDRESS/"
+#    if [ "x$REPLY" == "x" ]; then
+#        echo "Unable to connect MS-SNA-WEB at $IPADDRESS"
+#        echo "Please check network connectivity."
+#        exit 1
+#    fi
 }
 
 AntSW_SelectAntenna() {
-    AntSW_GroundAll         # deselect all before setting a single antenna
-    set_antenna $1
+    # no need to do a AntSW_GroundAll first
+    
+    ANT=$1
+
+    if [[ "$ANT" =~ ^([0-$N_CH])$ ]]; then
+
+        getselected
+
+        steps=$(($selectedantenna-$ANT))
+
+        if (( $steps > $(($N_CH/2)) )); then
+            steps=$(( $steps-$N_CH-1 ))
+        fi
+
+        if (( $steps < $((-1*$N_CH/2)) )); then
+            steps=$(( $steps+$N_CH+1 ))
+        fi
+
+        if (( $steps < 0 )); then
+            for (( 0; $steps<0; steps++))  do
+                AntSW_Get "http://$IPADDRESS/5/on"
+            done
+        fi
+
+        if (( $steps > 0 )); then
+            for (( 0; $steps>0; steps--))  do
+                AntSW_Get "http://$IPADDRESS/4/on"
+            done
+        fi
+    else
+        :
+        #echo "$ANT is not a valid selection (0-$N_CH)"
+        #exit 1
+    fi
 }
 
 AntSW_AddAntenna() {
-    set_antenna $1
+    :
 }
 
 AntSW_RemoveAntenna() {
-	ANT=$(($1-1))
-	AntSW_Post "-d pin=$ANT -d val=1 http://$IPADDRESS/dout.cgi"
+    :
 }
 
 AntSW_ToggleAntenna() {
-	ANT=$(($1-1))
-	# Read antenna status
-    AntSW_Get "http://$IPADDRESS/io.cgi"
-    digits=`echo $REPLY | sed 's/[^0-9]*//g'`
-    thisbits=${digits:$ANT:1}
-	if [ "x$thisbits" == "x0" ]; then
-		AntSW_AddAntenna $1
-	else
-		AntSW_RemoveAntenna $1 
-	fi
+    :
 }
 
 AntSW_ShowSelected() {
+    getselected
     AntSW_ReportSelected
 }
 
 AntSW_ReportSelected() {
-	# Read antenna status
-	AntSW_Get "http://$IPADDRESS/io.cgi"
-	digits=`echo $REPLY | sed 's/[^0-9]*//g'`
+    echo -n "Selected antennas: "
+    echo $selectedantenna
+}
 
-	antennafound=0
-	selectedantennas=''
-	for s in 0 1 2 3 4 5 6; do
-		thisbit=${digits:${s}:1}
-		if [ "x$thisbit" == "x1" ]; then
-			selectedantennas="${selectedantennas}$(($s+1)),"
-			antennafound=$(($antennafound+1))
-		fi
-	done
-	thisbits=${digits:0:7}
-	if [ "x$thisbits" == "x0000000" ]; then
-		# All antenna inputs are grounded
-		antennafound=1
-		selectedantennas="g,"
-	fi
-	selectedantennas=${selectedantennas::-1}
-
-	echo -n "Selected antennas: "
-	echo $selectedantennas
+function getselected() {
+    # Read antenna status
+    AntSW_Get "http://$IPADDRESS/"
+    selectedantenna=`echo $REPLY | grep -Po '[1-7](?=<p>)|GROUND' | sed s/GROUND/0/g `
 }
 
 AntSW_Configure() {
@@ -176,7 +162,7 @@ AntSW_Configure() {
 	read IPADDRESS
 	if valid_ip $IPADDRESS; then 
 		AntSW_VerifyConnectivity
-		echo "# KiwiSDR MS-S7-WEB ant_switch extension" > $CONFFILE
+		echo "# KiwiSDR MS-S"$N_CH"A-WEB ant_switch extension" > $CONFFILE
 		echo "IPADDRESS=$IPADDRESS" >> $CONFFILE
 		if [ -r $CONFFILE ]; then
 			echo "Created configuration file $CONFFILE"

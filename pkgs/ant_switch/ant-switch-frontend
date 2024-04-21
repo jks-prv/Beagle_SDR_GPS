@@ -25,7 +25,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION=1.1
+VERSION=2.0
 BACKEND_FILE=/root/kiwi.config/ant-switch-backend
 BACKEND_DIR=/root/Beagle_SDR_GPS/pkgs/ant_switch/backends
 BACKEND_PREFIX=${BACKEND_DIR}/ant-switch-backend-
@@ -145,6 +145,7 @@ AntSW_ShowUsage() {
 	echo "bi = Backend information. Show selected backend"
 	echo "     and it's configuration / help"
 	echo "sa = Set antenna switch address, IP or URL (if applicable)."
+	echo "ga = Get antenna switch address."
 	echo "h = help"
 }
 
@@ -160,22 +161,24 @@ case $1 in
         AntSW_LoadBackend
 		AntSW_Validate $1
 		AntSW_Initialize
-        AntSW_GroundAll
 		AntSW_SelectAntenna $1
+		AntSW_ReportSelected
 		;;
 	+1|+2|+3|+4|+5|+6|+7|+8|+9|+10)
         AntSW_LoadBackend
 		AntSW_Validate $1
 		AntSW_Initialize
 		antadd=${1//+} 
-		AntSW_SelectAntenna $antadd
+		AntSW_AddAntenna $antadd
+		AntSW_ReportSelected
 		;;
 	-1|-2|-3|-4|-5|-6|-7|-8|-9|-10)
         AntSW_LoadBackend
 		AntSW_Validate $1
 		AntSW_Initialize
 		antremove=${1//-} 
-		AntSW_DeSelectAntenna $antremove
+		AntSW_RemoveAntenna $antremove
+		AntSW_ReportSelected
 		;;
 	t1|t2|t3|t4|t5|t6|t7|t8|t9|t10)
         AntSW_LoadBackend
@@ -183,11 +186,13 @@ case $1 in
 		AntSW_Initialize
         anttoggle=${1//t}
 		AntSW_ToggleAntenna $anttoggle
+		AntSW_ReportSelected
 		;;
 	tg|g)
         AntSW_LoadBackend
 		AntSW_Initialize
 		AntSW_GroundAll
+		AntSW_ReportSelected
 		;;
 	s|q)
         AntSW_LoadBackend
