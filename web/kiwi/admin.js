@@ -629,7 +629,7 @@ function connect_html()
 					)
 				), 20,
 				
-				w3_input_get('', 'Host', 'adm.duc_host', 'connect_DUC_host_cb', '', 'required'), 50
+				w3_input_get('', 'Host (e.g. xyz.ddns.net)', 'adm.duc_host', 'connect_DUC_host_cb', '', 'required'), 50
 			),
 			
 			w3_div('w3-container',
@@ -1360,8 +1360,9 @@ function users_list(ar)
    var s =
       w3_table_row('',
          w3_table_heads('',
-            w3_button('w3-padding-tiny||title="sort in order\nof connection"',
-               w3_icon('', 'fa-bars', 20, 'blue'), 'users_sort_cb', 0),
+            w3_button('w3-padding-tiny||title="sort in order of\nconnection time"',
+               w3_icon('', 'fa-clock-o', 20, 'blue') + w3_icon('w3-margin-L-4', 'fa-caret-down', 20, 'blue'),
+               'users_sort_cb', 0),
             ud('name/callsign'), ud('IP address'), ud('location'), ud('connect time'), 'notes'
          )
       );

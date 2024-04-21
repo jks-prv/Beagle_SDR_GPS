@@ -287,7 +287,7 @@ void update_vars_from_config(bool called_at_init)
     // pcb.jpg => pcb.png since new pcb photo has alpha channel that only .png supports.
     // Won't disturb an RX_PHOTO_FILE set to kiwi.config/photo.upload by admin photo upload process.
 	if ((s = cfg_string("index_html_params.RX_PHOTO_FILE", NULL, CFG_OPTIONAL)) != NULL) {
-	    if (strcmp(s, "kiwi/pcb.png") == 0) {
+	    if (strcmp(s, "kiwi/pcb.jpg") == 0) {
 		    cfg_set_string("index_html_params.RX_PHOTO_FILE", "kiwi/pcb.png");
 	        update_cfg = cfg_gdb_break(true);
 	    }
@@ -510,6 +510,12 @@ void update_vars_from_config(bool called_at_init)
 	    cfg_set_string("status_msg", nsm);
 	    if (caller_must_free) kiwi_ifree(nsm, "update_vars_from_config nsm");
 	    update_cfg = cfg_gdb_break(true);
+    } else {
+        // convert from old URL
+        if (strcmp(status_msg, "Try other KiwiSDRs world-wide at <a href='http://kiwisdr.com/public/' target='_blank'>http://kiwisdr.com/public/</a>") == 0) {
+            cfg_set_string("status_msg", "Try other KiwiSDRs world-wide at <a href='http://rx.kiwisdr.com' target='_blank'>rx.kiwisdr.com</a>");
+            update_cfg = cfg_gdb_break(true);
+        }
     }
     cfg_string_free(status_msg); status_msg = NULL;
 

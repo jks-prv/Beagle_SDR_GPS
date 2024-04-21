@@ -249,7 +249,7 @@ function config_html()
                )
             ),
          
-            w3_divs('w3-restart/w3-center w3-tspace-8',
+            w3_divs('/w3-center w3-tspace-8',
                w3_select_get_param('w3-width-auto', 'Allow RF attenuator switching by:', '',
                   'cfg.rf_attn_allow', admin_sdr.rf_attn_allow_s, 'admin_select_cb', 0
                ),
