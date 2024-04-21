@@ -112,6 +112,7 @@ typedef struct {
     u4_t cmd_recv;
 	int tr_cmds;
 	bool change_LPF, change_freq_mode, restart;
+	bool check_masked;
 	int compression;
 	bool little_endian;
 	int mute_overload;      // activate the muting when overloaded

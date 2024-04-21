@@ -283,7 +283,7 @@ void c2s_sound(void *param)
     #endif
 	
 	u4_t dx_update_seq = 0;
-	bool masked = false, masked_area = false, check_masked = false;
+	bool masked = false, masked_area = false;
 	bool allow_gps_tstamp = admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED);	
 	int noise_pulse_last = 0;
 
@@ -445,7 +445,7 @@ void c2s_sound(void *param)
             rx_server_send_config(conn);
         }
 
-		if (s->change_freq_mode || dx_update_seq != dx.update_seq) {
+		if (s->check_masked || dx_update_seq != dx.update_seq) {
 
             // apply masked frequencies
             masked = masked_area = false;
@@ -465,6 +465,7 @@ void c2s_sound(void *param)
                 }
                 //printf("\n");
             }
+            s->check_masked = false;
 		    dx_update_seq = dx.update_seq;
         }
 

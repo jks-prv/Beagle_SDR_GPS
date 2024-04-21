@@ -179,7 +179,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                 }
                 s->cmd_recv |= CMD_FREQ;
                 new_freq = true;
-                s->change_freq_mode = true;
+                s->change_freq_mode = s->check_masked = true;
             }
         
             bool no_mode_change = (strcmp(mode_m, "x") == 0);
@@ -190,7 +190,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                 if (_mode == NOT_FOUND) {
                     clprintf(conn, "SND bad mode <%s>\n", mode_m);
                     _mode = MODE_AM;
-                    s->change_freq_mode = true;
+                    s->change_freq_mode = s->check_masked = true;
                 }
             
                 if (_mode == MODE_DRM && !DRM_enable && !conn->isLocal) {
@@ -230,7 +230,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                     s->mode = _mode;
                     if (mode_flags[s->mode] & IS_NBFM)
                         new_nbfm = true;
-                    s->change_freq_mode = true;
+                    s->change_freq_mode = s->check_masked = true;
                     //cprintf(conn, "SND mode %s\n", mode_m);
                 }
 
@@ -282,7 +282,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
                 m_AM_FIR[rx_chan].InitLPFilter(0, 1.0, 50.0, hbw, stop, frate);
                 s->cmd_recv |= CMD_PASSBAND;
             
-                s->change_LPF = true;
+                s->change_LPF = s->check_masked = true;
             }
         
             double nomfreq = s->freq;
