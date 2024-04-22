@@ -1476,7 +1476,6 @@ function w3_check_cfg_reload(el_id)
    w3int.reload_timeout = setTimeout(
       function() {
          w3int.update_seq++;
-         //ext_set_cfg_param('ant_switch.update_seq', ant_sw.update_seq, EXT_SAVE);
          ext_send('ADM reload_cfg');
          console.log('w3 reload_cfg');
          
@@ -3291,7 +3290,7 @@ function w3_select_value(path, idx, opt)
    }
 }
 
-function w3_select_set_if_includes(path, s)
+function w3_select_set_if_includes(path, s, opt)
 {
    var found = false;
    var re = RegExp(s);
@@ -3300,7 +3299,10 @@ function w3_select_set_if_includes(path, s)
       if (re.test(option.innerHTML)) {
          if (!found) {
             w3_select_value(path, option.value);
-            //console.log('w3_select_set_if_includes TRUE');
+            if (w3_opt(opt, 'cb')) {
+               w3_call(opt.cb, path, option.value);
+            }
+            //console.log('w3_select_set_if_includes TRUE value='+ option.value);
             found = true;
          }
       }
