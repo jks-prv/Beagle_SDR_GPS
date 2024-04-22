@@ -283,7 +283,7 @@ function wfext_winf_cb(path, idx, first)
 {
    //if (first) return;    // NB: commented out so default from wfext.winf_i will be sent to server
    w3_num_cb(path, idx, first);
-	wf_send('SET window_func='+ +idx);
+	wf_send('SET window_func='+ (+idx));
 }
 
 function wfext_interp_cb(path, idx, first)

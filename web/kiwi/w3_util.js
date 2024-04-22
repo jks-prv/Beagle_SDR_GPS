@@ -300,7 +300,7 @@ function w3_json_to_html(id, s)
 
 function w3_html_to_nl(s)
 {
-   return s.replace(/<br>/g, '\n').replace(/\\n/g, '\n')
+   return s.replace(/<br>/g, '\n').replace(/\\n/g, '\n');
 }
 
 function w3_strip_quotes(s)
@@ -1089,7 +1089,7 @@ function w3_attribute(el_id, name, val, cond)
 	var el = w3_el(el_id);
 	if (el == null) return null;
 	if (isUndefined(cond) || cond == true)
-	   el.setAttribute(name, val)    // repeated sets only update (i.e. don't create duplicate attrs)
+	   el.setAttribute(name, val);   // repeated sets only update (i.e. don't create duplicate attrs)
 	else
 	   el.removeAttribute(name);
 }
@@ -1432,7 +1432,7 @@ function w3_fillText_shadow(canvas, text, x, y, font, fontSize, color, opts) {
    ctx.fillStyle = color;
    ctx.lineWidth = 1;
    ctx.fillText(text, x, y);
-};
+}
 
 function w3_fillText(ctx, x, y, text, color, opts)
 {
@@ -1721,7 +1721,7 @@ function w3_isScrolling(id)
 {
    var el = w3_el(id);
    if (!el) return null;
-   return (el.scrollHeight > el.clientHeight)
+   return (el.scrollHeight > el.clientHeight);
 }
 
 // see: developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight#determine_if_an_element_has_been_totally_scrolled
@@ -1729,7 +1729,7 @@ function w3_isScrolledDown(id)
 {
    var el = w3_el(id);
    if (!el) return null;
-   return (Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) < 1)
+   return (Math.abs(el.scrollHeight - el.clientHeight - el.scrollTop) < 1);
 }
 
 // returns 0 to 1.0 (-1 on error)
@@ -2425,7 +2425,7 @@ function w3int_button(psa, path, text, cb, cb_param)
    var custom_events = psa.includes('w3-custom-events');
 
 	cb_param = w3_cb_param_encode(cb_param);
-	var ev_cb = function(cbp) { return sprintf('"w3int_btn_evt(event,%s,%s,%s);"', sq(path), sq(cb), sq(cbp)); }
+	var ev_cb = function(cbp) { return sprintf('"w3int_btn_evt(event,%s,%s,%s);"', sq(path), sq(cb), sq(cbp)); };
 	var onclick = cb? ('onclick='+ ev_cb(cb_param)) : '';
 	if (cb && momentary && !hold && !custom_events) {
 	   onclick += ' onmousedown='+ ev_cb(0);
@@ -2524,7 +2524,7 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
    if (c.length >= 2 && c[1] != '') color += ' background-color:'+ c[1] +';';
 
 	cb_param = w3_cb_param_encode(cb_param);
-	var ev_cb = function(cbp) { return sprintf('"w3int_btn_evt(event, %s, %s, %s)"', sq(path), sq(cb), sq(cbp)); }
+	var ev_cb = function(cbp) { return sprintf('"w3int_btn_evt(event, %s, %s, %s)"', sq(path), sq(cb), sq(cbp)); };
 	var onclick = cb? ('onclick='+ ev_cb(cb_param)) : '';
 	if (cb && (momentary || hold) && !custom_events) {
 	   if (momentary) cb_param = 0;
@@ -2756,7 +2756,7 @@ function w3int_input_up_down_cb(path, cb_param, first, ev)
    var cb_s = cb_a[2];
    var val = +w3_el(id_s).value + delta;
    //console_nv('w3int_input_up_down_cb', {cb_param}, {ev});
-   w3_input_force(id_s, cb_s, val.toFixed(0))
+   w3_input_force(id_s, cb_s, val.toFixed(0));
 }
 
 // No cb_param here because w3_input_change() passes the input value as the callback parameter.
