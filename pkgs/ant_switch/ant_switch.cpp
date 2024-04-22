@@ -42,11 +42,20 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+//#define ANTSW_PRF
+#ifdef ANTSW_PRF
+    #define antsw_printf(fmt, ...) printf(fmt, ## __VA_ARGS__)
+    #define antsw_rcprintf(rx_chan, fmt, ...) rcprintf(rx_chan, fmt, ## __VA_ARGS__)
+#else
+    #define antsw_printf(fmt, ...)
+    #define antsw_rcprintf(rx_chan, fmt, ...)
+#endif
+
 //#define ANT_SWITCH_DEBUG_MSG	true
 #define ANT_SWITCH_DEBUG_MSG	false
 
 antsw_t antsw;
-static bool using_defaults;
+static bool using_default;
 static const int poll_msec = 100;
 
 #define ANTSW_SHMEM_STATUS shmem->status_u4[N_SHMEM_STATUS_ANT_SW][0]
@@ -59,26 +68,26 @@ void ant_switch_task_start(const char *cmd)
         ANTSW_SHMEM_STATUS = SHMEM_STATUS_START;
         TaskWakeupF(antsw.task_tid, TWF_CANCEL_DEADLINE);
     } else {
-        printf("ant_switch_task_start FAIL: cmd=<%s> ANTSW_SHMEM_STATUS=%s\n",
-            cmd, shmem_status_s[ANTSW_SHMEM_STATUS]);
+        antsw_printf("ant_switch_task_start EXPECTED-IDLE: ANTSW_SHMEM_STATUS=%s cmd=<%s>\n",
+            shmem_status_s[ANTSW_SHMEM_STATUS], cmd);
     }
 }
 
 int ant_switch_setantenna(char *antenna) {      // "1" .. "10", "g"
-    printf("ant_switch_setantenna: %s\n", antenna);
+    antsw_printf("ant_switch_setantenna: START %s\n", antenna);
     //non_blocking_cmd_system_child("ant_switch", antenna);
     ant_switch_task_start(antenna);
-    printf("ant_switch_setantenna DONE: %s\n", antenna);
+    antsw_printf("ant_switch_setantenna DONE: %s\n", antenna);
 	return 0;
 }
 
 int ant_switch_toggleantenna(char *antenna) {   // "t1" .. "t10", "tg"
     char *cmd;
     asprintf(&cmd, "t%s", antenna);
-    printf("ant_switch_toggleantenna: %s\n", cmd);
+    antsw_printf("ant_switch_toggleantenna: %s\n", cmd);
     //non_blocking_cmd_system_child("ant_switch", cmd);
     ant_switch_task_start(cmd);
-    printf("ant_switch_toggleantenna DONE: %s\n", cmd);
+    antsw_printf("ant_switch_toggleantenna DONE: %s\n", cmd);
     kiwi_asfree(cmd);
 	return 0;
 }
@@ -102,7 +111,7 @@ bool ant_switch_read_denyswitching(int rx_chan) {
     ext_auth_e auth = ext_auth(rx_chan);    // AUTH_USER, AUTH_LOCAL, AUTH_PASSWORD
     if (allow == ALLOW_LOCAL_ONLY && auth != AUTH_LOCAL) deny = true;
     if (allow == ALLOW_LOCAL_OR_PASSWORD_ONLY && auth == AUTH_USER) deny = true;
-    //rcprintf(rx_chan, "ant_switch: allow=%d auth=%d => deny=%d\n", allow, auth, deny);
+    //antsw_rcprintf(rx_chan, "ant_switch: allow=%d auth=%d => deny=%d\n", allow, auth, deny);
     
     return (deny)? true : false;
 }
@@ -115,7 +124,7 @@ bool ant_switch_read_denymultiuser(int rx_chan) {
     bool deny_multi = cfg_true("ant_switch.denymultiuser");
     if (ext_auth(rx_chan) == AUTH_LOCAL) deny_multi = false;    // don't apply to local connections
     bool result = (deny_multi && kiwi.current_nusers > 1);
-    //rcprintf(rx_chan, "ant_switch_read_denymultiuser deny_multi=%d current_nusers=%d result=%d\n",
+    //antsw_rcprintf(rx_chan, "ant_switch_read_denymultiuser deny_multi=%d current_nusers=%d result=%d\n",
     //    deny_multi, kiwi.current_nusers, result);
     return result? true : false;
 }
@@ -129,7 +138,7 @@ void ant_switch_check_isConfigured()
             asprintf(&ant, "%d", i);
             const char *desc = cfg_string(stprintf("ant_switch.ant%sdesc", ant), NULL, CFG_OPTIONAL);
             if (desc != NULL && *desc != '\0') {
-                printf("ant_switch is configured\n");
+                antsw_printf("ant_switch is configured\n");
                 antsw.isConfigured = true;
             }
             cfg_string_free(desc);
@@ -152,27 +161,22 @@ bool ant_switch_check_deny(int rx_chan)
     return (deny_reason != DENY_NONE);
 }
 
-void ant_switch_select_default_antennas()
+void ant_switch_select_default_antenna()
 {
-	int i, j;
-	bool deny = false;
-	for (i = j = 1; i <= antsw.n_ch && !deny; i++) {
+	int i;
+	for (i = 1; i <= antsw.n_ch; i++) {
 	    char *ant;
 	    asprintf(&ant, "%d", i);
 	    bool isDefault = cfg_true(stprintf("ant_switch.ant%sdefault", ant));
 	    if (isDefault) {
-	        printf("ant_switch_select_default_antennas <%s>\n", ant);
-	        if (j == 1) {
-	            ant_switch_setantenna(ant);
-	            deny = ant_switch_read_denymixing();
-	        } else {
-	            ant_switch_toggleantenna(ant);
-	        }
-	        j++;
+	        antsw_printf("ant_switch_select_default_antenna <%s>\n", ant);
+	        ant_switch_setantenna(ant);
+	        kiwi_asfree(ant);
+            using_default = true;
+	        break;
 	    }
 	    kiwi_asfree(ant);
 	}
-    using_defaults = true;
 }
 
 void ant_switch_ReportAntenna(conn_t *conn)
@@ -187,20 +191,19 @@ void ant_switch_ReportAntenna(conn_t *conn)
         // also ground antenna if not grounded (do only once per transition)
         if (!antsw.thunderstorm_mode) {
             antsw.thunderstorm_mode = true;
-            rcprintf(rx_chan, "ant_switch rx%d PRE TSTORM-ON prev_selected_antennas=%s\n", rx_chan, selected_antennas);
+            antsw_rcprintf(rx_chan, "ant_switch rx%d PRE TSTORM-ON prev_selected_antennas=%s\n", rx_chan, selected_antennas);
             kiwi_strncpy(antsw.last_ant, selected_antennas, N_ANT);
             ant_switch_setantenna((char *) "g");
-            rcprintf(rx_chan, "ant_switch rx%d POST TSTORM-ON cur_selected_antennas=%s\n", rx_chan, selected_antennas);
+            antsw_rcprintf(rx_chan, "ant_switch rx%d POST TSTORM-ON cur_selected_antennas=%s\n", rx_chan, selected_antennas);
             NextTask("ant_switch_ReportAntenna tstorm");
         }
     } else {
         if (antsw.thunderstorm_mode) {
             antsw.thunderstorm_mode = false;
-            kiwi_strncpy(selected_antennas, antsw.last_ant, N_ANT);
-            ant_switch_setantenna(selected_antennas);
+            ant_switch_setantenna(antsw.last_ant);
         }
         send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=0");
-        rcprintf(rx_chan, "ant_switch rx%d antsw_AntennasAre=%s\n", rx_chan, selected_antennas);
+        antsw_rcprintf(rx_chan, "ant_switch rx%d antsw_AntennasAre=%s\n", rx_chan, selected_antennas);
         send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennasAre=%s", selected_antennas);
     }
 
@@ -213,7 +216,7 @@ void ant_switch_ReportAntenna(conn_t *conn)
         else
             s = stprintf("Selected antennas are now: %s", selected_antennas);
         static u4_t seq;
-        printf("ant_switch ext_notify_connected notify_rx_chan=%d seq=%d %s\n", antsw.notify_rx_chan, seq, s);
+        antsw_printf("ant_switch ext_notify_connected notify_rx_chan=%d seq=%d %s\n", antsw.notify_rx_chan, seq, s);
         ext_notify_connected(antsw.notify_rx_chan, seq++, s);
         kiwi_strncpy(last_selected_antennas, selected_antennas, N_ANT);
         NextTask("ant_switch_ReportAntenna ant chg");
@@ -230,11 +233,11 @@ void ant_switch_poll()
     ant_switch_check_isConfigured();
     
     bool no_users = (kiwi.current_nusers == 0);
-    //printf("ant_switch_poll using_defaults=%d current_nusers=%d %s\n", using_defaults, kiwi.current_nusers, no_users? "NO USERS" : "");
-    if (using_defaults) return;
+    antsw_printf("ant_switch_poll using_default=%d current_nusers=%d %s\n", using_default, kiwi.current_nusers, no_users? "NO USERS" : "");
+    if (using_default) return;
     if (no_users && cfg_true("ant_switch.default_when_no_users")) {
-        printf("ant_switch_poll SET DEFAULT ANTENNAS\n");
-        ant_switch_select_default_antennas();
+        antsw_printf("ant_switch_poll SET DEFAULT ANTENNA\n");
+        ant_switch_select_default_antenna();
     }
 }
 
@@ -244,9 +247,9 @@ static int _GetAntenna_shmem_func(void *param)
 	//args->func_param;
 	char *reply = args->kstr;
     if (reply == NULL) return 0;
-	char *sp = kstr_sp(reply);
+	char *sp = kstr_sp_less_trailing_nl(reply);
     char *s = NULL;
-    printf("ant_switch _GetAntenna_shmem_func sp=<%s>\n", sp);
+    antsw_printf("ant_switch _GetAntenna_shmem_func sp=<%s>\n", sp);
     int n = sscanf(sp, "Selected antennas: %15ms", &s);
     if (n == 1) {
         kiwi_strncpy(ANTSW_SHMEM_ANTS, s, N_ANT);
@@ -255,7 +258,7 @@ static int _GetAntenna_shmem_func(void *param)
         ANTSW_SHMEM_STATUS = SHMEM_STATUS_ERROR;
     }
     kiwi_asfree(s);
-    printf("ant_switch _GetAntenna_shmem_func status=%s reply=<%s>\n",
+    antsw_printf("ant_switch _GetAntenna_shmem_func status=%s reply=<%s>\n",
         shmem_status_s[ANTSW_SHMEM_STATUS], sp);
     // kstr_free(args->kstr) done by caller after return
     return 0;
@@ -278,20 +281,20 @@ void ant_sw(void *param)    // task
         bool regular_wakeup = (bool) FROM_VOID_PARAM(TaskSleepSec(1));
 
         u4_t status = ANTSW_SHMEM_STATUS;
-        //printf("ant_switch ant_sw TASK WAKEUP regular_wakeup=%d status=%s\n", regular_wakeup, shmem_status_s[status]);
+        //antsw_printf("ant_switch ant_sw TASK WAKEUP regular_wakeup=%d status=%s\n", regular_wakeup, shmem_status_s[status]);
 
         if (status == SHMEM_STATUS_START) {
             ANTSW_SHMEM_STATUS = SHMEM_STATUS_BUSY;
             char *cmd;
             asprintf(&cmd, "%s %s", FRONTEND, ANTSW_SHMEM_ANTS);
-            printf("ant_switch TASK BUSY cmd=<%s>\n", cmd);
+            antsw_printf("ant_switch TASK BUSY cmd=<%s>\n", cmd);
             non_blocking_cmd_func_forall("ant_switch", cmd, _GetAntenna_shmem_func, NO_WAIT);
             // doesn't block, but _GetAntenna_shmem_func() called when all cmd output available
             kiwi_asfree(cmd);
         } else
         if (status == SHMEM_STATUS_DONE || status == SHMEM_STATUS_ERROR) {
             ant_switch_notify_users();
-            printf("ant_switch TASK DONE status=%s result=<%s>\n",
+            antsw_printf("ant_switch TASK DONE status=%s result=<%s>\n",
                 shmem_status_s[status], ANTSW_SHMEM_ANTS);
             ANTSW_SHMEM_STATUS = SHMEM_STATUS_IDLE;
         }
@@ -303,7 +306,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
 {
 	int n = 0;
 
-	rcprintf(rx_chan, "ant_switch_msgs rx=%d <%s>\n", rx_chan, msg);
+	antsw_rcprintf(rx_chan, "ant_switch_msgs rx=%d <%s>\n", rx_chan, msg);
 	
     if (strcmp(msg, "SET antsw_GetAntenna") == 0) {
         ant_switch_task_start("s");
@@ -313,7 +316,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
 	char *antenna;
     n = sscanf(msg, "SET antsw_SetAntenna=%15ms", &antenna);
     if (n == 1) {
-        //rcprintf(rx_chan, "ant_switch: %s\n", msg);
+        //antsw_rcprintf(rx_chan, "ant_switch: %s\n", msg);
         antsw.notify_rx_chan = rx_chan;     // notifier is current rx_chan
         if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
             if (ant_switch_validate_cmd(antenna)) {
@@ -322,9 +325,9 @@ bool ant_switch_msgs(char *msg, int rx_chan)
                 } else {
                     ant_switch_toggleantenna(antenna);
                 }
-                using_defaults = false;
+                using_default = false;
             } else {
-                rcprintf(rx_chan, "ant_switch: Command not valid SET Antenna=%s\n", antenna);   
+                antsw_rcprintf(rx_chan, "ant_switch: Command not valid SET Antenna=%s\n", antenna);   
             }
         }
         kiwi_asfree(antenna);
@@ -334,7 +337,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     int freq_offset_ant;
     n = sscanf(msg, "SET antsw_freq_offset=%d", &freq_offset_ant);
     if (n == 1) {
-        //rcprintf(rx_chan, "ant_switch: freq_offset %d\n", freq_offset_ant);
+        //antsw_rcprintf(rx_chan, "ant_switch: freq_offset %d\n", freq_offset_ant);
         if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
             cfg_set_float_save("freq_offset", (double) freq_offset_ant);
             freq_offset = freq_offset_ant;
@@ -345,7 +348,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     int high_side_ant;
     n = sscanf(msg, "SET antsw_high_side=%d", &high_side_ant);
     if (n == 1) {
-        //rcprintf(rx_chan, "ant_switch: high_side %d\n", high_side_ant);
+        //antsw_rcprintf(rx_chan, "ant_switch: high_side %d\n", high_side_ant);
         if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
             // if antenna switch extension is active override current inversion setting
             // and lockout the admin config page setting until a restart
@@ -370,12 +373,13 @@ void ant_switch_get_backend_info()
 	char *reply = non_blocking_cmd(FRONTEND " bi", NULL, poll_msec);
 	if (reply) {
         kiwi_asfree(antsw.backend_s);
+        kiwi_asfree(antsw.mix);
         kiwi_asfree(antsw.ip_or_url);
         char *sp = kstr_sp(reply);
-        int n = sscanf(sp, "%63ms v%d.%d %dch %63ms",
-            &antsw.backend_s, &antsw.ver_maj, &antsw.ver_min, &antsw.n_ch, &antsw.ip_or_url);
-        printf("ant_switch GET backend info: n=%d %s version=%d.%d channels=%d ip_url=%s\n",
-            n, antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.ip_or_url);
+        int n = sscanf(sp, "%63ms v%d.%d %dch %7ms %63ms",
+            &antsw.backend_s, &antsw.ver_maj, &antsw.ver_min, &antsw.n_ch, &antsw.mix, &antsw.ip_or_url);
+        printf("ant_switch GET backend info: n=%d %s version=%d.%d channels=%d mix=%s ip_url=%s\n",
+            n, antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.mix, antsw.ip_or_url);
         }
 	kstr_free(reply);
 }
@@ -394,7 +398,9 @@ void ant_switch_init()
 	GPIO_OUTPUT(P819); GPIO_WRITE_BIT(P819, 0);
 	GPIO_OUTPUT(P826); GPIO_WRITE_BIT(P826, 0);
 	
-    printf_highlight(0, "ant_switch");
+	#ifdef ANTSW_PRF
+        printf_highlight(0, "ant_switch");
+    #endif
 
 	// migrate from prior ant switch extension backend selection
 	char path[256];
@@ -413,7 +419,7 @@ void ant_switch_init()
 
     ant_switch_get_backend_info();
     ant_switch_check_isConfigured();
-	ant_switch_select_default_antennas();
+	ant_switch_select_default_antenna();
 	antsw.task_tid = CreateTask(ant_sw, 0, SERVICES_PRIORITY);
 }
 
@@ -426,7 +432,7 @@ void ant_switch_init()
 bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
 {
     int n;
-    printf("ant_switch_admin_msgs: <%s>\n", cmd);
+    antsw_printf("ant_switch_admin_msgs: <%s>\n", cmd);
 
     if (strcmp(cmd, "ADM antsw_GetBackends") == 0) {
         char *reply = non_blocking_cmd(FRONTEND " be", NULL, poll_msec);
@@ -439,7 +445,7 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
     }
 
     if (strcmp(cmd, "ADM antsw_notify_users") == 0) {
-        printf("ant_switch ADM antsw_notify_users\n");
+        antsw_printf("ant_switch ADM antsw_notify_users\n");
         cfg_cfg.update_seq++;   // cause cfg to be reloaded by all active user connections
         ant_switch_notify_users();
         return true;
@@ -447,8 +453,8 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
     
     if (strcmp(cmd, "ADM antsw_GetInfo") == 0) {
         printf("ant_switch ADM antsw_GetInfo antsw.backend_s=%s\n", antsw.backend_s);
-        send_msg(conn, SM_NO_DEBUG, "ADM antsw_backend=%s antsw_ver=%d.%d antsw_nch=%d antsw_ip_or_url=%s",
-            antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.ip_or_url);
+        send_msg(conn, SM_NO_DEBUG, "ADM antsw_backend=%s antsw_ver=%d.%d antsw_nch=%d antsw_mix=%s antsw_ip_or_url=%s",
+            antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.mix, antsw.ip_or_url);
         return true;
     }
 

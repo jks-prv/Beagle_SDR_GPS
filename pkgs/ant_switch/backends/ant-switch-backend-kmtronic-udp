@@ -40,7 +40,7 @@ NETCAT_EXEC="timeout 0.2 nc"
 NETCAT_OPTS="-u -n"
 
 AntSW_ShowBackend() {
-    echo "kmtronic-udp v$VERSION 8ch" ${KMTRONIC_UDP_HOST_PORT// /:}
+    echo "kmtronic-udp v$VERSION 8ch" mix ${KMTRONIC_UDP_HOST_PORT// /:}
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-kmtronic-udp.txt"
 }
 

@@ -35,7 +35,7 @@ CONFFILE=/etc/default/ms-s7-web
 [ -r $CONFFILE ] && . $CONFFILE
 
 AntSW_ShowBackend() {
-    echo "ms-s7-web v$VERSION 7ch $IPADDRESS"
+    echo "ms-s7-web v$VERSION 7ch mix $IPADDRESS"
 	echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-ms-s7-web.txt"
 }
 

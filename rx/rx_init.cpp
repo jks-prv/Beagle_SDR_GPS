@@ -177,7 +177,6 @@ void update_vars_from_config(bool called_at_init)
     
 	double prev_freq_offset_kHz = freq_offset_kHz;
     update_freqs(&up_cfg);
-    if (up_cfg) update_cfg = cfg_gdb_break(true);
 	if (freq_offset_kHz != prev_freq_offset_kHz) {
 	    update_masked_freqs();
 	}
@@ -350,7 +349,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_float("init.rf_attn", 0, &up_cfg);
 
     cfg_default_object("ant_switch", "{}", &up_cfg);
-    cfg_default_int("ant_switch.update_seq", 0, &up_cfg);
+    cfg_default_bool("ant_switch.enable", false, &up_cfg);
 
     bool want_inv = cfg_default_bool("spectral_inversion", false, &up_cfg);
     if (called_at_init || !kiwi.spectral_inversion_lockout)
@@ -554,6 +553,7 @@ void update_vars_from_config(bool called_at_init)
 	    update_cfg = cfg_gdb_break(true);
 	}
 
+    if (up_cfg) update_cfg = cfg_gdb_break(true);
 	if (update_cfg) {
         //printf("_cfg_save_json update_cfg\n");
 		cfg_save_json(cfg_cfg.json);    // during init doesn't conflict with admin cfg

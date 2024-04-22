@@ -36,7 +36,7 @@ else
 fi
 
 AntSW_ShowBackend() {
-    echo "arduino-netshield v$VERSION 8ch $NETSHIELD_IP"
+    echo "arduino-netshield v$VERSION 8ch mix $NETSHIELD_IP"
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-arduino-netshield.txt"
 }
 

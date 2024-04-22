@@ -39,7 +39,7 @@ CURLEXEC=/usr/bin/curl
 CURLOPTS=" --silent --connect-timeout 1 --max-time 2 "
 
 AntSW_ShowBackend() {
-    echo "snaptekk v$VERSION 8ch $SNAPTEKK_URL"
+    echo "snaptekk v$VERSION 8ch mix $SNAPTEKK_URL"
 	echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-snaptekk.txt"
 }
 

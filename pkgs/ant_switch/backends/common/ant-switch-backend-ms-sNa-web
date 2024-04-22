@@ -36,7 +36,7 @@ CONFFILE="/etc/default/ms-s"$N_CH"a-web"
 [ -r $CONFFILE ] && . $CONFFILE
 
 AntSW_ShowBackend() {
-    echo "ms-s"$N_CH"a-web v$VERSION "$N_CH"ch $IPADDRESS"
+    echo "ms-s"$N_CH"a-web v$VERSION "$N_CH"ch nomix $IPADDRESS"
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-ms-s"$N_CH"a-web.txt"
 }
 
@@ -121,6 +121,8 @@ AntSW_SelectAntenna() {
                 AntSW_Get "http://$IPADDRESS/4/on"
             done
         fi
+
+        selectedantenna=$ANT
     else
         :
         #echo "$ANT is not a valid selection (0-$N_CH)"

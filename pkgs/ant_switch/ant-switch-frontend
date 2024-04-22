@@ -114,7 +114,7 @@ AntSW_SelectBackendNumber() {
 
 AntSW_EnumerateBackends() {
     cd $BACKEND_DIR
-    echo `echo * | sed 's/ant-switch-backend-//g'`
+    echo `echo * | sed 's/ant-switch-backend-//g' | sed 's/common//g'`
 }
 
 AntSW_ShowUsage() {

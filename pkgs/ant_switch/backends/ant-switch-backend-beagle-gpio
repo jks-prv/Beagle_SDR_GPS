@@ -63,7 +63,7 @@ AntSW_Platform() {
 
 AntSW_ShowBackend() {
     AntSW_Platform
-    echo "beagle-gpio v$VERSION 10ch not-applicable"
+    echo "beagle-gpio v$VERSION 10ch mix not-applicable"
     echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-beagle-gpio.txt"
 }
 
