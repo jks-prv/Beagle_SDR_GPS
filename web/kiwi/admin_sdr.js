@@ -87,7 +87,6 @@ function config_html()
 	var init_rf_attn = ext_get_cfg_param('init.rf_attn', 0);
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
-	var max_freq = ext_get_cfg_param('max_freq', 0);
 
 	var s1 =
 		'<hr>' +
@@ -249,7 +248,7 @@ function config_html()
                )
             ),
          
-            w3_divs('w3-restart/w3-center w3-tspace-8',
+            w3_divs('/w3-center w3-tspace-8',
                w3_select_get_param('w3-width-auto', 'Allow RF attenuator switching by:', '',
                   'cfg.rf_attn_allow', admin_sdr.rf_attn_allow_s, 'admin_select_cb', 0
                ),
@@ -258,7 +257,7 @@ function config_html()
                   'Password is the time limit exemption password on the <br>' +
                   'admin page control tab, not the user login password. <br>'
                )
-            ),
+            )
          )
 		);
 
@@ -712,7 +711,7 @@ function overload_mute_cb(path, val, complete, first)
    val = +val;
 	admin_int_cb(path, val, first);
 	var s = 'Passband overload mute '+ val +' dBm';
-	if (val >= -73) s += ' (S9+'+ (val - -73) +')';
+	if (val >= -73) s += ' (S9+'+ (val - (-73)) +')';
 	w3_set_label(s, path);
 }
 
@@ -1873,15 +1872,15 @@ function dx_render(obj)
       var mode_menu_idx;
    
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return (i == dx.LEGEND)? 'w3-margin-L-16/w3-padding-small/w3-hide' : ('w3-margin-L-16//'+ psa); }
-      var l = function(label) { return (i == dx.LEGEND)? label : ''; }
+      var h = function(psa) { return (i == dx.LEGEND)? 'w3-margin-L-16/w3-padding-small/w3-hide' : ('w3-margin-L-16//'+ psa); };
+      var l = function(label) { return (i == dx.LEGEND)? label : ''; };
 
       if (i != dx.LEGEND) {
          d = obj[j];
          freq = d.f;
          mo = dx_decode_mode(d.fl);
          // convert from dx mode order to mode menu order
-         mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[mo])
+         mode_menu_idx = w3_array_el_seq(kiwi.mode_menu, kiwi.modes_uc[mo]);
          ty = (d.fl & dx.DX_TYPE) >> dx.DX_TYPE_SFT;
          id = kiwi_decodeURIComponent('dx_id', d.i);
          if (d.n) no = kiwi_decodeURIComponent('dx_no', d.n);
@@ -1904,7 +1903,8 @@ function dx_render(obj)
          if (dow == 0) dow = dx.DX_DOW_BASE;
          dx.o.last_fd[i] = dow;
 
-         begin = +(d.b), end = +(d.e);
+         begin = +(d.b);
+         end = +(d.e);
          if (begin == 0 && end == 2400) end = 0;
 
          if (dow != dx.DX_DOW_BASE || begin != 0 || end != 0)
@@ -2454,6 +2454,7 @@ function dx_file_uploaded(o)
          break;
       case 23:
          e = csv_line +'expected end time number in field 12';
+         break;
       case 24:
          e = csv_line +'expected signal bandwidth number in field 13';
          break;
@@ -2495,8 +2496,8 @@ function dx_type_render()
       type = legend? {} : dxcfg.dx_type[i];
 
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return legend? 'w3-hide' : psa; }
-      var l = function(label) { return legend? label : ''; }
+      var h = function(psa) { return legend? 'w3-hide' : psa; };
+      var l = function(label) { return legend? label : ''; };
       var i_s = legend? w3_label(i_psa, type_l) : w3_div(i_psa, 'T'+ i.toFixed(0));
       var masked = (i == dxcfg.dx_type.length - 1);
       var input_psa = w3_psa_mix('w3-padding-small||size=8', masked? 'w3-cursor-not-allowed':'', '', masked? 'disabled':'');
@@ -2611,8 +2612,8 @@ function band_bar_render()
       b1 = (i != dx.LEGEND)? dxcfg.bands[i] : {};
 
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; }
-      var l = function(label) { return (i == dx.LEGEND)? label : ''; }
+      var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; };
+      var l = function(label) { return (i == dx.LEGEND)? label : ''; };
       
       var svc;
       if (i == dx.LEGEND) {
@@ -2688,7 +2689,7 @@ function band_bar_float_cb(path, val, first, a_cb)
    if (first) return;
    var i = parseInt(path);
    if (i < 0 || i >= dxcfg.bands.length) return;
-   var which = +(a_cb[1])
+   var which = +(a_cb[1]);
    var prior = dxcfg.bands[i][admin_sdr.cfg_fields[which]];
 
    val = parseFloat(val);
@@ -2719,7 +2720,7 @@ function band_bar_field_cb(path, val, first, a_cb)
    var i = parseInt(path);
    console.log('band_bar_field_cb path='+ path +' val='+ val +' i='+ i);
    if (i < 0 || i >= dxcfg.bands.length) return;
-   var which = +(a_cb[1])
+   var which = +(a_cb[1]);
    if (which == 0 && val == '') {      // prevent blank menu entries
       val = '(blank)';
       w3_set_value(path, val);
@@ -2772,8 +2773,8 @@ function band_svc_render()
       svc = (i != dx.LEGEND)? dxcfg.band_svc[i] : {};
 
       // done this way so all the s_new code can be reused to construct the legend
-      var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; }
-      var l = function(label) { return (i == dx.LEGEND)? label : ''; }
+      var h = function(psa) { return (i == dx.LEGEND)? 'w3-hide' : psa; };
+      var l = function(label) { return (i == dx.LEGEND)? label : ''; };
    
       var s_new =
          w3_inline_percent('w3-valign w3-text-black/w3-margin-T-8 w3-hspace-16 w3-margin-RE-16',
@@ -2936,7 +2937,7 @@ function extensions_focus()
       },
       function() {
          var ext_tab = kiwi_url_param(0);
-         if (ext_tab) ext_tab = ext_tab.split(',')[1]
+         if (ext_tab) ext_tab = ext_tab.split(',')[1];
          if (isNonEmptyString(ext_tab)) {
             kiwi_storeWrite('last_admin_ext_nav', ext_tab);
          }

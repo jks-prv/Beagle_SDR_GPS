@@ -9108,7 +9108,7 @@ function dx_click(ev, gid)
 	   dx_sig_bw(gid);
 	   
 	   // allow anchor links within the ident to be clicked
-	   if (ev.target.nodeName == 'A') {
+	   if (ev.target && ev.target.nodeName == 'A') {
 	      console.log('dx_click: link within label');
 		   dx.ctrl_click = false;
 		   return ev;     // let click to through to anchor element

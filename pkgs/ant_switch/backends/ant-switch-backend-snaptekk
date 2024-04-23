@@ -25,7 +25,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-VERSION=0.4
+N_CH=8
+VERSION=2.0
 ADDR_FILE="/etc/default/snaptekk"
 
 if [ -e $ADDR_FILE ]; then
@@ -35,11 +36,15 @@ else
 fi
 
 CURLEXEC=/usr/bin/curl
-CURLOPTS=" --silent --connect-timeout 1 --max-time 1 "
+CURLOPTS=" --silent --connect-timeout 1 --max-time 2 "
 
 AntSW_ShowBackend() {
-    echo "snaptekk v$VERSION 8ch $SNAPTEKK_URL"
+    echo "snaptekk v$VERSION 8ch mix $SNAPTEKK_URL"
 	echo "More info: https://github.com/OH1KK/KiwiSDR-antenna-switch-extension/blob/master/docs/ant-switch-backend-snaptekk.txt"
+}
+
+AntSW_GetAddress() {
+    echo $SNAPTEKK_URL
 }
 
 AntSW_SetAddress() {
@@ -50,7 +55,7 @@ AntSW_SetAddress() {
         url=$1
     fi
     if [ "x$url" != "x" ]; then
-        echo "SNAPTEKK_URL=\"$url\""
+        echo "SNAPTEKK_URL=\"$url\"" >$ADDR_FILE
     fi
 }
 
@@ -65,7 +70,7 @@ AntSW_GroundAll() {
 	$CURLEXEC $CURLOPTS $SNAPTEKK_URL/switch/g > /dev/null 2>&1
 }
 
-AntSW_SelectAntenna() {
+function set_antenna() {
 	# This function selects antenna (turn on)
 	# Only one antenna
 	# Antenna to select is on variable $1
@@ -73,7 +78,16 @@ AntSW_SelectAntenna() {
 	$CURLEXEC $CURLOPTS $SNAPTEKK_URL/switch/+$1 > /dev/null 2>&1
 }
 
-AntSW_DeSelectAntenna() {
+AntSW_SelectAntenna() {
+    AntSW_GroundAll         # deselect all before setting a single antenna
+    set_antenna $1
+}
+
+AntSW_AddAntenna() {
+    set_antenna $1
+}
+
+AntSW_RemoveAntenna() {
     # This function deselects antenna (turn off)
 	# Antenna to deleselct is on variable $1
     # Only one antenna
@@ -92,6 +106,10 @@ AntSW_ToggleAntenna() {
 }
 
 AntSW_ShowSelected() {
+    AntSW_ReportSelected
+}
+
+AntSW_ReportSelected() {
     # This function show relected antennas
     # returns a string
  	# Selected antennas: 1

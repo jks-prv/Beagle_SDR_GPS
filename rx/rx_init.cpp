@@ -177,7 +177,6 @@ void update_vars_from_config(bool called_at_init)
     
 	double prev_freq_offset_kHz = freq_offset_kHz;
     update_freqs(&up_cfg);
-    if (up_cfg) update_cfg = cfg_gdb_break(true);
 	if (freq_offset_kHz != prev_freq_offset_kHz) {
 	    update_masked_freqs();
 	}
@@ -287,7 +286,7 @@ void update_vars_from_config(bool called_at_init)
     // pcb.jpg => pcb.png since new pcb photo has alpha channel that only .png supports.
     // Won't disturb an RX_PHOTO_FILE set to kiwi.config/photo.upload by admin photo upload process.
 	if ((s = cfg_string("index_html_params.RX_PHOTO_FILE", NULL, CFG_OPTIONAL)) != NULL) {
-	    if (strcmp(s, "kiwi/pcb.png") == 0) {
+	    if (strcmp(s, "kiwi/pcb.jpg") == 0) {
 		    cfg_set_string("index_html_params.RX_PHOTO_FILE", "kiwi/pcb.png");
 	        update_cfg = cfg_gdb_break(true);
 	    }
@@ -350,7 +349,10 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_float("init.rf_attn", 0, &up_cfg);
 
     cfg_default_object("ant_switch", "{}", &up_cfg);
-    cfg_default_int("ant_switch.update_seq", 0, &up_cfg);
+    s = cfg_string("ant_switch.backend", NULL, CFG_OPTIONAL);
+        bool enable = (s != NULL && s[0] != '\0')? true : false;
+        cfg_default_bool("ant_switch.enable", enable, &up_cfg);
+    cfg_string_free(s);
 
     bool want_inv = cfg_default_bool("spectral_inversion", false, &up_cfg);
     if (called_at_init || !kiwi.spectral_inversion_lockout)
@@ -510,6 +512,12 @@ void update_vars_from_config(bool called_at_init)
 	    cfg_set_string("status_msg", nsm);
 	    if (caller_must_free) kiwi_ifree(nsm, "update_vars_from_config nsm");
 	    update_cfg = cfg_gdb_break(true);
+    } else {
+        // convert from old URL
+        if (strcmp(status_msg, "Try other KiwiSDRs world-wide at <a href='http://kiwisdr.com/public/' target='_blank'>http://kiwisdr.com/public/</a>") == 0) {
+            cfg_set_string("status_msg", "Try other KiwiSDRs world-wide at <a href='http://rx.kiwisdr.com' target='_blank'>rx.kiwisdr.com</a>");
+            update_cfg = cfg_gdb_break(true);
+        }
     }
     cfg_string_free(status_msg); status_msg = NULL;
 
@@ -548,6 +556,7 @@ void update_vars_from_config(bool called_at_init)
 	    update_cfg = cfg_gdb_break(true);
 	}
 
+    if (up_cfg) update_cfg = cfg_gdb_break(true);
 	if (update_cfg) {
         //printf("_cfg_save_json update_cfg\n");
 		cfg_save_json(cfg_cfg.json);    // during init doesn't conflict with admin cfg

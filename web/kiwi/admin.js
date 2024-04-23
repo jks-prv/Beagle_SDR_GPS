@@ -629,7 +629,7 @@ function connect_html()
 					)
 				), 20,
 				
-				w3_input_get('', 'Host', 'adm.duc_host', 'connect_DUC_host_cb', '', 'required'), 50
+				w3_input_get('', 'Host (e.g. xyz.ddns.net)', 'adm.duc_host', 'connect_DUC_host_cb', '', 'required'), 50
 			),
 			
 			w3_div('w3-container',
@@ -651,7 +651,7 @@ function connect_html()
                   'number as the host name. Set to <x1>No</x1> to <br>' +
                   'choose your own host name.'
                   )
-            )
+            );
       } else {
          auto_s = 'The automatic proxy configuration for this Kiwi seems to be missing. ' +
             'Please contact support@kiwisdr.com <br><br> Manual proxy setup is shown.';
@@ -744,8 +744,7 @@ function connect_html()
                )
             )
 			)
-
-		)
+		);
 
 	return w3_div('id-connect w3-text-teal w3-hide', s1 + proxy_s + s2 + s3);
 }
@@ -1318,23 +1317,23 @@ function users_sort_cb(path, idx)
 function users_sort(a, b)
 {
    switch (admin.users_sort) {
-      case 0: return kiwi_sort_numeric(a.s, b.s); break;
+      case 0: return kiwi_sort_numeric(a.s, b.s);
 
-      case 1: return kiwi_sort_ignore_case(a.i, b.i); break;
-      case 2: return kiwi_sort_ignore_case(b.i, a.i); break;
+      case 1: return kiwi_sort_ignore_case(a.i, b.i);
+      case 2: return kiwi_sort_ignore_case(b.i, a.i);
 
-      //case 3: return users_sort_ip4(a.a[0].ip, b.a[0].ip); break;
-      //case 4: return users_sort_ip4(b.a[0].ip, a.a[0].ip); break;
-      case 3: return kiwi_sort_ignore_case(a.a[0].ip, b.a[0].ip); break;
-      case 4: return kiwi_sort_ignore_case(b.a[0].ip, a.a[0].ip); break;
+      //case 3: return users_sort_ip4(a.a[0].ip, b.a[0].ip);
+      //case 4: return users_sort_ip4(b.a[0].ip, a.a[0].ip);
+      case 3: return kiwi_sort_ignore_case(a.a[0].ip, b.a[0].ip);
+      case 4: return kiwi_sort_ignore_case(b.a[0].ip, a.a[0].ip);
 
-      case 5: return kiwi_sort_ignore_case(a.a[0].g, b.a[0].g); break;
-      case 6: return kiwi_sort_ignore_case(b.a[0].g, a.a[0].g); break;
+      case 5: return kiwi_sort_ignore_case(a.a[0].g, b.a[0].g);
+      case 6: return kiwi_sort_ignore_case(b.a[0].g, a.a[0].g);
 
-      case 7: return kiwi_sort_numeric(a.t, b.t); break;
-      case 8: return kiwi_sort_numeric(b.t, a.t); break;
+      case 7: return kiwi_sort_numeric(a.t, b.t);
+      case 8: return kiwi_sort_numeric(b.t, a.t);
 
-      default: return 0; break;
+      default: return 0;
    }
 }
 
@@ -1360,8 +1359,9 @@ function users_list(ar)
    var s =
       w3_table_row('',
          w3_table_heads('',
-            w3_button('w3-padding-tiny||title="sort in order\nof connection"',
-               w3_icon('', 'fa-bars', 20, 'blue'), 'users_sort_cb', 0),
+            w3_button('w3-padding-tiny||title="sort in order of\nconnection time"',
+               w3_icon('', 'fa-clock-o', 20, 'blue') + w3_icon('w3-margin-L-4', 'fa-caret-down', 20, 'blue'),
+               'users_sort_cb', 0),
             ud('name/callsign'), ud('IP address'), ud('location'), ud('connect time'), 'notes'
          )
       );
@@ -1620,7 +1620,7 @@ function network_html()
    
    // if commit value differs from current setting the update must have failed -- fix it
    if (adm.ip_address.use_static != commit_use_static) {
-      ext_set_cfg_param('adm.ip_address.use_static', commit_use_static, EXT_SAVE)
+      ext_set_cfg_param('adm.ip_address.use_static', commit_use_static, EXT_SAVE);
       w3_switch_set_value('adm.ip_address.use_static', w3_switch_idx(!commit_use_static));
    }
    
@@ -1770,8 +1770,7 @@ function network_html()
                         w3_button('id-ip-blacklist-download w3-aqua', 'Download', 'network_download_button_cb'),
                         w3_button('w3-aqua', 'Clear', 'network_download_clear_cb')
                      )
-                  )
-               ,
+                  ),
                w3_text('w3-text-black w3-center',
                   'Downloads a standard blacklist definition from<br>' +
                   w3_link('w3-link-darker-color', network.ip_blacklist_file, 'kiwisdr.com') +
@@ -2126,7 +2125,7 @@ function network_ethernet_speed(path, idx, first)
    idx = +idx;
 	//console.log('network_ethernet_speed path='+ path +' idx='+ idx +' first='+ first);
    if (first) return;
-   admin_select_cb(path, idx, first)
+   admin_select_cb(path, idx, first);
 }
 
 function network_ethernet_mtu(path, idx, first)
@@ -2134,7 +2133,7 @@ function network_ethernet_mtu(path, idx, first)
    idx = +idx;
 	//console.log('network_ethernet_mtu path='+ path +' idx='+ idx +' first='+ first);
    if (first) return;
-   admin_select_cb(path, idx, first)
+   admin_select_cb(path, idx, first);
 }
 
 function network_port_open_init()
@@ -2235,7 +2234,7 @@ function network_dhcp_static_update_cb(path, idx)
 		ext_send('SET use_DHCP');
 	}
 
-   ext_set_cfg_param('adm.ip_address.commit_use_static', use_static, EXT_SAVE)
+   ext_set_cfg_param('adm.ip_address.commit_use_static', use_static, EXT_SAVE);
    w3_hide('id-net-need-update');
    
    if (debian_ver <= 9)
@@ -2881,7 +2880,7 @@ function gps_update_admin_cb()
                      accessToken: 'not-needed',
                      style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ _gps.a
                   });
-               }
+               };
             }
 
             // MapTiler 512/256 px raster tiles
@@ -2898,7 +2897,7 @@ function gps_update_admin_cb()
                      attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                      crossOrigin: true
                   });
-               }
+               };
             }
 
             // OSM raster tiles
@@ -2912,7 +2911,7 @@ function gps_update_admin_cb()
                      attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                      crossOrigin: true
                   });
-               }
+               };
             }
 
             var sat_map = map_tiles('hybrid');
@@ -3765,8 +3764,8 @@ function console_resize()
 {
 	var el = w3_el('id-console-msg');
 	if (!el) return;
-	var console_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight
-	   - (admin.console.always_char_oriented? 110 : (admin.console.isMobile? 120 : 150));
+	var console_height = window.innerHeight - w3_el("id-admin-header-container").clientHeight -
+	   (admin.console.always_char_oriented? 110 : (admin.console.isMobile? 120 : 150));
 	el.style.height = px(console_height);
 	var console_width = window.innerWidth - 65;
 	el.style.width = px(console_width);
@@ -4133,7 +4132,7 @@ function admin_draw(sdr_mode)
 	
 	admin.init = true;
 	   var tab = kiwi_url_param(0, null);
-	   if (tab) tab = tab.split(',')[0]
+	   if (tab) tab = tab.split(',')[0];
 	   if (isNonEmptyString(tab) && tab != 'nolocal') {
 	      kiwi_storeWrite('last_admin_navbar', tab);
 	   }
@@ -4394,7 +4393,7 @@ function admin_recv(data)
 				log_msg_not_shown = parseInt(param[1]);
 				if (log_msg_not_shown) {
 					var el = w3_el('id-log-not-shown');
-					el.innerHTML = '---- '+ log_msg_not_shown.toString() +' lines not shown ----\n'
+					el.innerHTML = '---- '+ log_msg_not_shown.toString() +' lines not shown ----\n';
 				}
 				break;
 
@@ -4455,7 +4454,7 @@ function admin_recv(data)
 				break;
 				
 			case "network_ip_blacklist_status":
-			   p = decodeURIComponent(param[1]).split(',')
+			   p = decodeURIComponent(param[1]).split(',');
 				network_ip_blacklist_status(parseInt(p[0]), p[1]);
 				break;
 				

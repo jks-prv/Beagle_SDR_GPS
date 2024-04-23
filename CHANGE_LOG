@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.672  April 23, 2024
+    Integrated antenna switch fixes/improvements:
+        API changes for antenna switch backend scripts. If you have a private script please review
+            the scripts in Beagle_SDR_GPS/pkgs/ant_switch/backends to see the changes.
+        Lower switching latency for MS-SnA-WEB switches as a result of API changes.
+        Added support for LZ2RR MS-S5A-WEB and MS-S6A-WEB switches.
+        New setting "disable" for switch device.
+        Fixed problems with default antenna selection when no users connected.
+        Backend scripts can indicate that antenna mixing is not supported (e.g. MS-SnA-WEB switches)
+        Removed debugging prints. No longer appear in log.
+
 v1.670,671  April 16, 2024
     Fixed various problems with the new scheme of storing configuration information in JSON instead
         of via URL encoding.

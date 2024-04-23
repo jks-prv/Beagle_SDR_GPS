@@ -61,6 +61,11 @@ fi
 export COLOR='--color=auto'
 export LS_OPTIONS='--color=auto'
 
+# prevent gclone curl from timing out on slow Internet connections
+# see: git-scm.com/docs/git-config
+export GIT_HTTP_LOW_SPEED_LIMIT=1000
+export GIT_HTTP_LOW_SPEED_TIME=1000
+
 _our_ip="$(/sbin/ip addr list eth0 |grep 'inet ' |cut -d' ' -f6|cut -d/ -f1)"
 
 alias bargs="function _bargs () { echo arg_one \$1 ; echo arg_two \$2 ; echo all_args \$* ; echo files_dirs * ; } ; _bargs"
@@ -133,6 +138,29 @@ alias keys2="cp authorized_keys authorized_keys2"
 # debian acct
 alias chod="chown debian:debian"
 alias modn="stat -c '%a %n'"
+
+# antenna switch
+alias cda="cd ~/Beagle_SDR_GPS/pkgs/ant_switch"
+alias ant="./ant-switch-frontend"
+alias ah="./ant-switch-frontend h"
+alias abs="./ant-switch-frontend bs"
+alias abi="./ant-switch-frontend bi"
+alias as="./ant-switch-frontend s"
+alias asa="./ant-switch-frontend sa"
+alias aga="./ant-switch-frontend ga"
+alias ag="./ant-switch-frontend g"
+alias a1="./ant-switch-frontend 1"
+alias a2="./ant-switch-frontend 2"
+alias a3="./ant-switch-frontend 3"
+alias a4="./ant-switch-frontend 4"
+alias a5="./ant-switch-frontend 5"
+alias a6="./ant-switch-frontend 6"
+alias a7="./ant-switch-frontend 7"
+alias a8="./ant-switch-frontend 8"
+alias a9="./ant-switch-frontend 9"
+alias aa="function _aa () { ./ant-switch-frontend +\$1 ; } ; _aa"
+alias ar="function _ar () { ./ant-switch-frontend -\$1 ; } ; _ar"
+alias at="function _at () { ./ant-switch-frontend t\$1 ; } ; _at"
 
 # pki colordiff
 p_diff_exclude="--exclude=.DS_Store --exclude=.git --exclude=.svn ${no_diff}"
@@ -268,6 +296,7 @@ alias gco="git checkout"
 alias gcomast="git checkout master"
 alias gcodevl="git checkout develop"
 alias gpu="git pull -v"
+alias gpuff="git pull -v --ff-only"
 alias gup="gcl; gco .; gpu"
 alias gdi="git diff"
 alias gst="git status"

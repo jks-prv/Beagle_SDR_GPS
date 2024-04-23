@@ -69,6 +69,7 @@ typedef struct {
     char *backend_s;
     int ver_maj, ver_min;
 	int n_ch;
+	char *mix;
 	char *ip_or_url;
 	bool isConfigured;
 	tid_t task_tid;
