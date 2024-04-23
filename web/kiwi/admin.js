@@ -4122,6 +4122,7 @@ function admin_draw(sdr_mode)
 
 	if (sdr_mode) {
 	   users_init( { admin:1 } );
+	   config_init();
 	   //gps_focus();
 	} else {
 	   gps_focus();

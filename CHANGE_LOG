@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.672  April 23, 2024
+v1.672,673  April 23, 2024
     Integrated antenna switch fixes/improvements:
         API changes for antenna switch backend scripts. If you have a private script please review
             the scripts in Beagle_SDR_GPS/pkgs/ant_switch/backends to see the changes.
