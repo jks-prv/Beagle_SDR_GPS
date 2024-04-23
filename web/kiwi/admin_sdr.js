@@ -73,6 +73,14 @@ var led_brightness_i = [ 'brighest', 'medium', 'dimmer', 'dimmest', 'off' ];
 var clone_host = '', clone_pwd = '';
 var clone_files_s = [ 'complete config', 'dx label config only' ];
 
+function config_init()
+{
+   if (kiwi.model == kiwi.KiwiSDR_1) {
+      w3_disable('id-rf-attn', true);
+      w3_title('id-rf-attn', 'no RF attenuator on KiwiSDR 1');
+   }
+}
+
 function config_html()
 {
 	kiwi_get_init_settings();		// make sure defaults exist
@@ -84,7 +92,7 @@ function config_html()
 	var init_colormap = ext_get_cfg_param('init.colormap', 0);
 	var init_aperture = ext_get_cfg_param('init.aperture', 1);
 	var init_AM_BCB_chan = ext_get_cfg_param('init.AM_BCB_chan', 0);
-	var init_rf_attn = ext_get_cfg_param('init.rf_attn', 0);
+	var init_rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : ext_get_cfg_param('init.rf_attn', 0);
 	var init_ITU_region = ext_get_cfg_param('init.ITU_region', 0);
 	var max_freq = ext_get_cfg_param('max_freq', 0);
 
@@ -101,7 +109,7 @@ function config_html()
                w3_select('w3-width-auto', 'MW chan', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
             )
          ),
-         w3_slider('id-rf-attn', 'RF Attn (default value at restart)', 'init.rf_attn', init_rf_attn,
+         w3_slider('id-rf-attn//', 'RF Attn (default value at restart)', 'init.rf_attn', init_rf_attn,
             0, 31.5, 0.5, 'config_rf_attn_cb')
 		) +
 
