@@ -411,8 +411,9 @@ void ant_switch_init()
 	    if (s) {
 	        s += strlen("ant-switch-backend-");
 	        cfg_set_string_save("ant_switch.backend", s);
-	        //unlink(OLD_BACKEND);
-	        link(stprintf(BACKEND_PREFIX "%s", s), BACKEND_FILE);
+	        system("rm -f " BACKEND_FILE);
+	        symlink(stprintf(BACKEND_PREFIX "%s", s), BACKEND_FILE);
+	        unlink(OLD_BACKEND);
 	        printf("ant_switch: MIGRATE backend %s\n", s);
 	    }
 	}
