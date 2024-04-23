@@ -186,7 +186,7 @@ function ant_switch_buttons_setup()
             var locked = ant_sw.buttons_locked? ' w3-disabled' : '';
             var highlight = ant_sw.buttons_selected[i]? ' w3-selection-green' : '';
             buttons_html += w3_div('w3-valign w3-margin-T-8',
-               w3_button('id-antsw-btn w3-padding-smaller w3-round-6px'+ locked + highlight,
+               w3_button('id-antsw-btn w3-flex-noshrink w3-padding-smaller w3-round-6px'+ locked + highlight,
                   'Antenna '+ i, 'ant_switch_select_antenna_cb', i),
                w3_div('w3-margin-L-8', s)
             );
