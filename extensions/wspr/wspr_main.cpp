@@ -512,8 +512,10 @@ void WSPR_Deco(void *param)
         // upload spots at the end of the decoding when there is less load on wsprnet.org
         // extension: spots uploaded via javascript (see ext_send_msg_encoded() below)
         // autorun: spots uploaded below via curl
+        #define CURL_UPLOADS
         //#define TEST_UPLOADS
-        #define WSPR_SPOT "curl -s 'http://wsprnet.org/post?function=wspr&" \
+        
+        #define WSPR_SPOT "curl -sL 'http://wsprnet.org/post?function=wspr&" \
             "rcall=%s&rgrid=%s&rqrg=%.6f&date=%02d%02d%02d&time=%02d%02d&sig=%.0f&" \
             "dt=%.1f&drift=%d&tqrg=%.6f&tcall=%s&tgrid=%s&dbm=%s&version=1.4A+Kiwi'%s"
         int year, month, day; utc_year_month_day(&year, &month, &day);
@@ -537,7 +539,10 @@ void WSPR_Deco(void *param)
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
                         int n, added, total;
                         n = sscanf(w->spot_log, "%*s%*s%d out of %d", &added, &total);
-                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                        if (n == 2)
+                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                        else
+                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%s\"\n", w->iwbp? "IWBP" : "WSPR", w->spot_log);
                     } else {
                         non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }
@@ -545,12 +550,14 @@ void WSPR_Deco(void *param)
                 kiwi_asfree(cmd);
                 w->arun_decoded++;
             } else {
-                #ifdef TEST_UPLOADS
+                #ifdef CURL_UPLOADS
                     wspr_printf("WSPR UPLOAD %02d%02d %3.0f %4.1f %9.6f %2d %s\n",
                         dp->hour, dp->min, dp->snr, dp->dt_print, dp->freq_print, (int) dp->drift1, dp->c_l_p);
 
                     // make the dp->call field invalid so wsprnet.org rejects the upload
-                    strcpy(dp->call, "...");
+                    #ifdef TEST_UPLOADS
+                        strcpy(dp->call, "...");
+                    #endif
                     asprintf(&cmd, WSPR_SPOT, wspr_c.rcall, wspr_c.rgrid, rqrg, year%100, month, day,
                         dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr,
                         wspr_c.spot_log? "" : " >/dev/null 2>&1");
@@ -559,7 +566,10 @@ void WSPR_Deco(void *param)
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
                         int n, added, total;
                         n = sscanf(w->spot_log, "%*s%*s%d out of %d", &added, &total);
-                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                        if (n == 2)
+                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                        else
+                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%s\"\n", w->iwbp? "IWBP" : "WSPR", w->spot_log);
                     }
                     kiwi_asfree(cmd);
                 #else
@@ -591,7 +601,7 @@ void WSPR_Deco(void *param)
 		        
 		        // in case wspr_c.rgrid has changed 
 		        kiwi_asfree(w->arun_stat_cmd);
-		        #define WSPR_STAT "curl 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.4A+Kiwi' >/dev/null 2>&1"
+		        #define WSPR_STAT "curl -L 'http://wsprnet.org/post?function=wsprstat&rcall=%s&rgrid=%s&rqrg=%.6f&tpct=0&tqrg=%.6f&dbm=0&version=1.4A+Kiwi' >/dev/null 2>&1"
                 asprintf(&w->arun_stat_cmd, WSPR_STAT, wspr_c.rcall, wspr_c.rgrid, w->arun_cf_MHz, w->arun_cf_MHz);
                 //printf("AUTORUN %s\n", w->arun_stat_cmd);
                 non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);

@@ -47,8 +47,7 @@ var ant_sw = {
    thunderstorm: 0,
    notify_timeout: null,
    url_ant: null,
-   url_deselected: false,
-   url_idx: 0,
+   url_idx: -1,
    desc_lc: [],
    last_offset: -1,
    last_high_side: -1,
@@ -68,6 +67,11 @@ var ant_sw = {
    denied_because_multiuser: false
 };
 
+function ant_switch_log(s)
+{
+   //console.log(s);
+}
+
 function ant_switch_disabled()
 {
    return (!ant_sw.isConfigured || !cfg.ant_switch.enable);
@@ -75,7 +79,7 @@ function ant_switch_disabled()
 
 function ant_switch_view()
 {
-   //console.log('ant_switch_view ant_sw.focus='+ ant_sw.focus);
+   ant_switch_log('ant_switch_view ant_sw.focus='+ ant_sw.focus);
    if (!ant_sw.focus) return;    // don't bring into view unless focused
 
    // wait for RF tab render
@@ -100,8 +104,9 @@ function ant_switch_view()
    
    var p = ext_param();    // will return URL param only once
    if (isNonEmptyString(p)) {
-	   //console.log('ant_switch_view: EXT param = <'+ p +'>');
+	   ant_switch_log('ant_switch_view: EXT param = <'+ p +'>');
 	   ant_sw.url_ant = p.split(',');
+	   ant_sw.url_idx = -1;
       ant_switch_prompt_query();
    }
 
@@ -110,7 +115,7 @@ function ant_switch_view()
 function ant_switch_msg(param)
 {
    var rv = true;
-   //console.log('ant_switch_msg '+ param.join('='));
+   ant_switch_log('ant_switch_msg '+ param.join('='));
    
    switch (param[0]) {
       case "antsw_backend_ver":
@@ -173,12 +178,12 @@ function ant_switch_buttons_setup()
       antdesc[i] = ext_get_cfg_param_string('ant_switch.ant'+ i +'desc', '', EXT_NO_SAVE);
    }
    
-   //console.log('ant_switch: Antenna configuration ant_sw.n_ant='+ ant_sw.n_ant);
+   ant_switch_log('ant_switch: Antenna configuration ant_sw.n_ant='+ ant_sw.n_ant);
    var buttons_html = '';
    var n_ant = 0;
    var backend = (cfg.ant_switch && isNonEmptyString(cfg.ant_switch.backend))? cfg.ant_switch.backend : '';
    if (backend != '') {
-      //console.log('ant_switch: backend='+ backend);
+      ant_switch_log('ant_switch: backend='+ backend);
       for (i = 1; i <= ant_sw.n_ant; i++) {
          // don't show antenna buttons without descriptions (i.e. configured)
          var s = antdesc[i]? antdesc[i] : '';
@@ -193,7 +198,7 @@ function ant_switch_buttons_setup()
             n_ant++;
          }
          ant_sw.desc_lc[i] = s.toLowerCase();
-         //console.log('ant_switch: Antenna '+ i +': '+ s);
+         ant_switch_log('ant_switch: Antenna '+ i +': '+ s);
 
          if (!ant_sw.isConfigured) {
             if (isNonEmptyString(s))
@@ -203,14 +208,14 @@ function ant_switch_buttons_setup()
    }
    w3_innerHTML('id-antsw-user', cfg.ant_switch.enable? buttons_html : '');
    ant_switch_view();
-   //console.log('ant_switch_buttons_setup DONE');
+   ant_switch_log('ant_switch_buttons_setup DONE');
 }
 
 // called when cfg reloaded
 function ant_switch_user_refresh()
 {
    if (!ant_sw.running) return;
-   //console.log('ant_switch_user_refresh');
+   ant_switch_log('ant_switch_user_refresh');
    ant_switch_prompt_query();
 }
 
@@ -220,7 +225,7 @@ function ant_switch_user_init()
    ant_sw.denymixing = ext_get_cfg_param('ant_switch.denymixing', '', EXT_NO_SAVE)? 1:0;
    ant_sw.thunderstorm = ext_get_cfg_param('ant_switch.thunderstorm', '', EXT_NO_SAVE)? 1:0;
 
-   //console.log('ant_switch: Antenna g: Ground all antennas');
+   ant_switch_log('ant_switch: Antenna g: Ground all antennas');
    var controls_html =
       w3_div('id-antsw-controls w3-margin-right w3-text-white',
          w3_inline('w3-gap-12/',
@@ -228,7 +233,7 @@ function ant_switch_user_init()
             w3_div('w3-text-white', 'by Kari Karvonen'),
             w3_button('id-antsw-help-btn w3-right w3-green w3-small w3-padding-small||onclick="ant_switch_help()"', 'help')
          ),
-         w3_div('w3-margin-LR-16',
+         w3_div('w3-margin-LR-8',
             w3_div('id-antsw-display-selected w3-margin-T-4'),
             w3_div('id-antsw-display-permissions'),
             w3_div('id-antsw-user w3-margin-B-8')
@@ -238,7 +243,7 @@ function ant_switch_user_init()
    w3_innerHTML('id-optbar-rf-antsw', controls_html);
    
    ant_sw.running = true;
-   //console.log('SET antsw_init');
+   ant_switch_log('SET antsw_init');
    ext_send('SET antsw_init');
    ant_switch_buttons_setup();
    ant_switch_prompt_query();
@@ -249,6 +254,7 @@ function ant_switch_user_init()
       if (isNonEmptyString(p)) {
          console.log('ant_switch_user_init: URL param = <'+ p +'>');
          ant_sw.url_ant = p.split(',');
+	      ant_sw.url_idx = -1;
       }
       ant_switch_focus();
       ant_switch_view();
@@ -272,21 +278,21 @@ function ant_switch_display_update(ant) {
 }
 
 function ant_switch_select_antenna(ant) {
-   //console.log('ant_switch: switching to antenna '+ ant);
+   ant_switch_log('ant_switch: switching to antenna '+ ant);
    ext_send('SET antsw_SetAntenna='+ ant);
 }
 
 function ant_switch_select_antenna_cb(path, val) { ant_switch_select_antenna(val); }
 
 function ant_switch_prompt_query() {
-   //console.log('ant_switch_prompt_query');
+   ant_switch_log('ant_switch_prompt_query');
    ext_send('SET antsw_GetAntenna');
 }
 
 // called from receiving server/backend: antsw_AntennasAre=
 function ant_switch_process_reply(ant_selected_antenna) {
    var need_to_inform = false;
-   //console.log('ant_switch_process_reply ant_selected_antenna='+ ant_selected_antenna);
+   ant_switch_log('ant_switch_process_reply ant_selected_antenna='+ ant_selected_antenna);
    
    ant_switch_buttons_setup();
    
@@ -304,10 +310,10 @@ function ant_switch_process_reply(ant_selected_antenna) {
    }
    
    if (ant_selected_antenna == 'g') {
-      if (need_to_inform) //console.log('ant_switch: all antennas grounded');
+      if (need_to_inform) ant_switch_log('ant_switch: all antennas grounded');
       ant_switch_display_update('All antennas are grounded.');
    } else {
-      if (need_to_inform) //console.log('ant_switch: antenna '+ ant_selected_antenna +' in use');
+      if (need_to_inform) ant_switch_log('ant_switch: antenna '+ ant_selected_antenna +' in use');
       ant_switch_display_update('Selected antennas are now: '+ ant_selected_antenna);
    }
    
@@ -362,38 +368,40 @@ function ant_switch_process_reply(ant_selected_antenna) {
       // So one at a time is done each with a ant_sw.url_ant.shift()
       // The call to ant_switch_select_antenna() causes an immediate callback to this routine.
       
-      // Start by deselecting all antennas (backends may have memory of last antenna(s) used).
-      //console.log('ant_switch: url_deselected='+ ant_sw.url_deselected);
-      if (ant_sw.url_deselected == false) {
-         ant_switch_select_antenna('g');
-         ant_sw.url_deselected = true;
-      } else {
-         // only allow first antenna if mixing denied
-         //console.log('ant_switch: URL url_idx='+ ant_sw.url_idx +' denymixing='+ ant_sw.denymixing);
-         if (ant_sw.url_idx == 0 || !ant_sw.denymixing) {
-            var ant = decodeURIComponent(ant_sw.url_ant.shift());
-            //console.log('ant_switch: URL ant = <'+ ant +'>');
-            if (ant == 'help') {
-               ant_switch_help();
-            } else {
-               var n = parseInt(ant);
-               if (!(!isNaN(n) && n >= 1 && n <= ant_sw.n_ant)) {
-                  if (ant == '') {
-                     n = 0;
-                  } else {
-                     // try to match on antenna descriptions
-                     ant = ant.toLowerCase();
-                     for (n = 1; n <= ant_sw.n_ant; n++) {
-                        //console.log('ant_switch: CONSIDER '+ n +' <'+ ant +'> <'+ ant_sw.desc_lc[n] +'>');
-                        if (ant_sw.desc_lc[n].indexOf(ant) != -1)
-                           break;
-                     }
+      // If mixing allowed start by deselecting all antennas (backends may have memory of last antenna(s) used).
+      if (ant_sw.url_idx == -1 ) {
+         ant_sw.url_idx = 0;
+         if (!ant_sw.denymixing) {
+            ant_switch_select_antenna('g');
+            return;
+         }
+      }
+      
+      // only allow first antenna if mixing denied
+      //console.log('ant_switch: URL url_idx='+ ant_sw.url_idx +' denymixing='+ ant_sw.denymixing);
+      if (ant_sw.url_idx == 0 || !ant_sw.denymixing) {
+         var ant = decodeURIComponent(ant_sw.url_ant.shift());
+         //console.log('ant_switch: URL ant = <'+ ant +'>');
+         if (ant == 'help') {
+            ant_switch_help();
+         } else {
+            var n = parseInt(ant);
+            if (!(!isNaN(n) && n >= 1 && n <= ant_sw.n_ant)) {
+               if (ant == '') {
+                  n = 0;
+               } else {
+                  // try to match on antenna descriptions
+                  ant = ant.toLowerCase();
+                  for (n = 1; n <= ant_sw.n_ant; n++) {
+                     //console.log('ant_switch: CONSIDER '+ n +' <'+ ant +'> <'+ ant_sw.desc_lc[n] +'>');
+                     if (ant_sw.desc_lc[n].indexOf(ant) != -1)
+                        break;
                   }
                }
-               if (n >= 1 && n <= ant_sw.n_ant)
-                  ant_switch_select_antenna(n);    // this causes antenna query to re-occur immediately
-               ant_sw.url_idx++;
             }
+            if (n >= 1 && n <= ant_sw.n_ant)
+               ant_switch_select_antenna(n);    // this causes antenna query to re-occur immediately
+            ant_sw.url_idx++;
          }
       }
    }
@@ -489,7 +497,7 @@ function ant_switch_help()
 
 function ant_switch_admin_msg(param)
 {
-   //console.log('ant_switch_admin_msg '+ param.join('='));
+   ant_switch_log('ant_switch_admin_msg '+ param.join('='));
    
    switch (param[0]) {
       case "antsw_backends":
@@ -561,15 +569,15 @@ function ant_switch_admin_msg(param)
 function ant_switch_backend_cb(path, val, first)
 {
    val = +val;
-	//console.log('ant_switch_backend_cb path='+ path +' val='+ val +' cfg.ant_switch.enable='+ cfg.ant_switch.enable +' first='+ first);
+	ant_switch_log('ant_switch_backend_cb path='+ path +' val='+ val +' cfg.ant_switch.enable='+ cfg.ant_switch.enable +' first='+ first);
 	if (first) return;
 	ant_sw.backend_s = ant_sw.backends_s[+val];
    ext_set_cfg_param('ant_switch.backend', ant_sw.backend_s, EXT_NO_SAVE);
    var enable = (val != 0);
-   //console.log('ADM antsw_SetBackend enable='+ enable);
+   ant_switch_log('ADM antsw_SetBackend enable='+ enable);
    ext_set_cfg_param('ant_switch.enable', enable, EXT_SAVE);
 	if (enable) {
-      //console.log('ADM antsw_SetBackend='+ ant_sw.backend_s);
+      ant_switch_log('ADM antsw_SetBackend='+ ant_sw.backend_s);
       ext_send('ADM antsw_SetBackend='+ ant_sw.backend_s);
       ext_send('ADM antsw_GetInfo');
    } else {
@@ -582,11 +590,11 @@ function ant_switch_backend_cb(path, val, first)
 
 function ant_switch_users_notify_change()
 {
-   //console.log('ant_switch_users_notify_change');
+   ant_switch_log('ant_switch_users_notify_change');
    kiwi_clearTimeout(ant_sw.notify_timeout);
    ant_sw.notify_timeout = setTimeout(
       function() {
-         //console.log('antsw_notify_users');
+         ant_switch_log('antsw_notify_users');
          ext_send('ADM antsw_notify_users');
       }, 1000
    );
@@ -600,23 +608,23 @@ function ant_switch_desc_cb(path, val, first)
 
 function ant_switch_set_ip_or_url_cb(path, val, first)
 {
-	//console.log('ant_switch_set_ip_or_url_cb: path='+ path +' val='+ val +' first='+ first);
+	ant_switch_log('ant_switch_set_ip_or_url_cb: path='+ path +' val='+ val +' first='+ first);
 	if (first) return;
    ant_sw.ip_or_url = val;
    w3_set_value('id-ant_sw.ip_or_url', ant_sw.ip_or_url);
-   //console.log('ADM antsw_SetIP_or_URL='+ ant_sw.ip_or_url);
+   ant_switch_log('ADM antsw_SetIP_or_URL='+ ant_sw.ip_or_url);
    ext_send('ADM antsw_SetIP_or_URL='+ ant_sw.ip_or_url);
 }
 
 function ant_denyswitch_cb(path, val, first) {
-	//console.log('ant_denyswitch_cb path='+ path +' val='+ val +'('+ w3_switch_s(val) +') first='+ first);
+	ant_switch_log('ant_denyswitch_cb path='+ path +' val='+ val +'('+ w3_switch_s(val) +') first='+ first);
 	w3_int_set_cfg_cb(path, val, first);
    ant_switch_users_notify_change();
 }
 
 // mix, multiuser, thunderstorm
 function ant_switch_cb(path, val, first) {
-	//console.log('ant_switch_cb path='+ path +' val='+ val +'('+ w3_switch_s(val) +') first='+ first);
+	ant_switch_log('ant_switch_cb path='+ path +' val='+ val +'('+ w3_switch_s(val) +') first='+ first);
 	admin_radio_YN_cb(path, val);
    ant_switch_users_notify_change();
 }
@@ -624,7 +632,7 @@ function ant_switch_cb(path, val, first) {
 function ant_switch_config_html2(n_ch)
 {
    if (n_ch) ant_sw.n_ant = n_ch;
-   //console.log('ant_switch_config_html2 n_ch='+ n_ch);
+   ant_switch_log('ant_switch_config_html2 n_ch='+ n_ch);
    var s = '';
 
    for (var i = 1; i <= ant_sw.n_ant; i++) {

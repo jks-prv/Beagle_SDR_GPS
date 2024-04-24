@@ -2,6 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.674  April 24, 2024
+    Antenna switch:
+        Antenna selection specified in the DX label extensions field now works correctly.
+        It is also possible to specify an antenna selection and an extension together, e.g.
+        "ant,1&wspr,30m" "FT8,*&ant=loop" etc. Just as you would in a URL.
+        "ant," and "ant=" are equivalent.
+
+    WSPR extension now uses the same mechanism to upload wsprnet.org spots as WSPR autorun.
+    This means the admin page, WSPR tab "Log spot debug info?" option works for both the extension
+    and auto run modes. Unfortunately wsprnet.org doesn't seem to be currently sending any spot
+    upload diagnostic information as it has done in the past.
+    
+    Admin config tab:
+        RF attn slider is disabled for KiwiSDR 1 systems. This prevents the "Attn" annunciator from
+        incorrectly appearing in the S-meter.
+
 v1.672,673  April 23, 2024
     Integrated antenna switch fixes/improvements:
         API changes for antenna switch backend scripts. If you have a private script please review
