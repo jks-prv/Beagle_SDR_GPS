@@ -9127,6 +9127,28 @@ function dx_click(ev, gid)
       extint.extname = extint.param = null;
       if (isArg(params)) {
          params = decodeURIComponent(params);
+         
+         var ap = params.split('&');
+         //console.log(ap);
+         var cut = -1;
+         ap.forEach(
+            function(p,i) {
+               if (p.startsWith('ant')) {
+                  var p1 = p.slice(3);
+                  if (p1[0] && (p1[0] == '=' || p1[0] == ',')) p1 = p1.slice(1);
+                  extint.param = p1;
+                  //console.log('dx_click: extint_open=ant param='+ p1);
+			         extint_open('ant');
+			         cut = i;
+               }
+            }
+         );
+         if (cut >= 0) {
+            ap.splice(cut,1);
+            params = ap.join('&');
+            //console.log(params);
+         }
+         
          var ext = (params == '')? [] : params.split(',');
          if (mode == 'drm') {
             extint.extname = 'drm';
@@ -9134,7 +9156,7 @@ function dx_click(ev, gid)
             ext.push('hi:'+ hi);
          } else {
             extint.extname = ext[0];
-            ext = ext.slice(1);
+            ext.shift();
          }
          if (ext[0] == '*') ext[0] = freq.toFixedNZ(2);
          extint.param = ext.join(',');
