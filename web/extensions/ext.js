@@ -44,6 +44,7 @@ var extint = {
    // extensions not subject to DRM lockout
    // FIXME: allow C-side API to specify
    no_lockout: [ 'noise_blank', 'noise_filter', 'ant_switch', 'iframe', 'colormap', 'devl', 'prefs' ],
+   former_exts: ['ant_switch', 'waterfall', 'noise_blank', 'noise_filter'],
    excl_devl: [ 'devl', 'digi_modes', 's4285', 'prefs' ],
    
    OPT_NOLOCAL: 1,
@@ -1152,7 +1153,7 @@ function extint_select(value)
       ant_switch_view();
    } else {
       ant_switch_blur();
-      if (['waterfall', 'noise_blank', 'noise_filter'].includes(name)) {
+      if (extint.former_exts.includes(name)) {
          w3_call(name +'_view');
       } else {
          extint_blur_prev(0);
@@ -1175,10 +1176,7 @@ function extint_list_json(param)
    extint.ext_names = kiwi_JSON_parse('extint_list_json', decodeURIComponent(param));
    
    // add virtual entries for ui compatibility
-	extint.ext_names.push('ant_switch');
-	extint.ext_names.push('waterfall');
-	extint.ext_names.push('noise_blank');
-	extint.ext_names.push('noise_filter');
+   extint.former_exts.forEach(function(e,i) { extint.ext_names.push(e); });
 	kiwi_dedup_array(extint.ext_names);
 	extint.ext_names.sort(kiwi_sort_ignore_case);
 	//console.log('ext_names=');
