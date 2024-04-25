@@ -9130,24 +9130,29 @@ function dx_click(ev, gid)
          
          var ap = params.split('&');
          //console.log(ap);
-         var cut = -1;
          ap.forEach(
             function(p,i) {
-               if (p.startsWith('ant')) {
-                  var p1 = p.slice(3);
-                  if (p1[0] && (p1[0] == '=' || p1[0] == ',')) p1 = p1.slice(1);
-                  extint.param = p1;
-                  //console.log('dx_click: extint_open=ant param='+ p1);
-			         extint_open('ant');
-			         cut = i;
-               }
+               if (p == '') return;
+               //console.log('p=<'+ p +'>');
+               var a = p.split(/[,=]+/);
+               //console.log(a);
+               extint.former_exts.forEach(
+                  function(e) {
+                     if (e.startsWith(a[0])) {
+                        //console.log('MATCH '+ a[0]);
+                        extint.param = isArg(a[1])? a[1] : '';
+                        //console.log('dx_click: extint_open='+ e +' param='+ extint.param);
+                        extint_open(e);
+                        ap[i] = undefined;   // remove the param we just processed
+                     }
+                  }
+               );
             }
          );
-         if (cut >= 0) {
-            ap.splice(cut,1);
-            params = ap.join('&');
-            //console.log(params);
-         }
+         //console.log(ap);
+         ap = kiwi_array_remove_undefined(ap);
+         params = ap.join('&');
+         //console.log(params);
          
          var ext = (params == '')? [] : params.split(',');
          if (mode == 'drm') {
