@@ -304,7 +304,7 @@ function kiwi_dedup_array(a, func)
    return ra;
 }
 
-function kiwi_array_iter(s, func)
+function kiwi_char_iter(s, func)
 {
    var ra = [];
    s.split('').forEach(
@@ -315,9 +315,24 @@ function kiwi_array_iter(s, func)
    return ra;
 }
 
+function kiwi_array_remove_undefined(ar)
+{
+   var ra = [];
+   var j = 0;
+   ar.forEach(
+      function(ae,i) {
+         if (isDefined(ae)) {
+            ra[j] = ae;
+            j++;
+         }
+      }
+   );
+   return ra;
+}
+
 function kiwi_string_to_hex(s, sep)
 {
-   var sa = kiwi_array_iter(s,
+   var sa = kiwi_char_iter(s,
       function (c,i) {
          return c.charCodeAt(0).toHex(-2);
       }
