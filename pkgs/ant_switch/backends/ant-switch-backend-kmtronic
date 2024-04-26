@@ -81,11 +81,11 @@ function set_antenna() {
 
 AntSW_SelectAntenna() {
     AntSW_GroundAll         # deselect all before setting a single antenna
-    set_antenna
+    set_antenna $1
 }
 
 AntSW_AddAntenna() {
-    set_antenna
+    set_antenna $1
 }
 
 AntSW_RemoveAntenna() {
