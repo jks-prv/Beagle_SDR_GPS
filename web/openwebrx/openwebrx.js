@@ -48,6 +48,7 @@ var owrx = {
    vfo_first: true,
    optbar_last_scrollpos: [],
    rec_init: false,
+   resize_seq: 0,
    
    last_freq: -1,
    last_mode: '',
@@ -621,6 +622,8 @@ function openwebrx_resize(a)
    extint_environment_changed( { resize:1, passband_screen_location:1 } );
 	resize_scale(a);
 	check_top_bar_congestion();
+	owrx.resize_seq++;
+   //console.log('resize_seq='+ owrx.resize_seq);
 }
 
 /*
@@ -3973,30 +3976,33 @@ function spectrum_update(data)
       spec.af_ctx.fillRect(0,0, 3,sh);
       spec.af_ctx.fillRect(spec.canvas.width-3,0, 3,sh);
    } else {
-   
+
       // RF spectrum passband marker
       var pbctx = spec.pb_ctx;
       var cvt = spec.canvas.width / waterfall_width;
       var x1 = w3_clamp(Math.round(owrx.pbx1 * cvt), 0, sw1);
       var x2 = w3_clamp(Math.round(owrx.pbx2 * cvt), 0, sw1);
-      if (x1 != pbctx.x1 || x2 != pbctx.x2 || pbctx.seq != wfext.spb_color_seq) {
+      if (x1 != pbctx.x1 || x2 != pbctx.x2 || pbctx.seq != wfext.spb_color_seq ||
+         pbctx.resize_seq != owrx.resize_seq) {
          //console.log('$ '+ x1 +':'+ x2);
          if (isNumber(pbctx.x1)) {
             pbctx.fillStyle = 'rgba(0,0,0,0)';
             pbctx.clearRect(pbctx.x1,0, pbctx.x2-pbctx.x1,sh);
-            //console.log('clear');
+            //console.log('clear '+ pbctx.x1 +','+ pbctx.x2);
          }
          
          // don't show if it takes up the whole space (e.g. z14)
          if ((x1 > 0 || x2 < sw1) && wfext.spb_on && owrx.allow_pb_adj) {
             pbctx.fillStyle = wfext.spb_color;
             pbctx.fillRect(x1,0, x2-x1,sh);
-            //console.log('fill '+ wfext.spb_color);
+            //console.log('fill '+ wfext.spb_color +' '+ x1 +','+ x2);
          }
          pbctx.x1 = x1;
          pbctx.x2 = x2;
          pbctx.seq = wfext.spb_color_seq;
+         pbctx.resize_seq = owrx.resize_seq;
       }
+      //console.log('seq='+ owrx.resize_seq +' '+ cvt.toFixed(2) +' '+ spec.canvas.width +' '+ waterfall_width +' '+ owrx.pbx1 +','+ owrx.pbx2 +' '+ x1 +','+ x2 +' ['+ sw1);
       //console.log(ctx.globalAlpha.toFixed(2));
    }
 
@@ -4313,6 +4319,7 @@ function resize_wf_canvases()
 	canvas_phantom.style.left = zoom_value;
 
 	spec.canvas.style.width = new_width;
+	spec.pb_canvas.style.width = new_width;
 	spec.af_canvas.style.width = px(waterfall_width - spec.af_margins);
 
    // above width change clears canvas, so redraw
@@ -9613,7 +9620,7 @@ function ident_keyup(el, evt, which)
 // letters avail: F G K L O Q tT U X Y
 
 // abcdefghijklmnopqrstuvwxyz `~!@#$%^&*()-_=+[]{}\|;:'"<>? 0123456789.,/kM
-// ..........F........ ......   ..F..     F .     .. F  ... FFFFFFFFFFFFFFF
+// ..........F........ ......  ...F..     F .     .. F  ... FFFFFFFFFFFFFFF
 // .. ..  ...  F. . ..  ..  .                               F: frequency entry keys
 // ABCDEFGHIJKLMNOPQRSTUVWXYZ
 // :space: :tab: :arrow-UDLR:
@@ -9678,6 +9685,7 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', '@ alt-@', 25, 'open DX label filter, quick clear'),
          w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database,<br>alt to toggle <x1>filter by time/day-of-week</x1> checkbox'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
+         w3_inline_percent('w3-padding-tiny', '~', 25, 'open admin page in new tab'),
          w3_inline_percent('w3-padding-tiny', 'esc', 25, 'close/cancel action'),
          w3_inline_percent('w3-padding-tiny', '? h', 25, 'toggle this help list'),
          w3_inline_percent('w3-padding-tiny', 'H', 25, 'toggle extension or frequency entry field help'),
@@ -9714,7 +9722,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 685);   // height +15 or 20 per added line
+   confirmation_show_content(shortcut.help, 550, 705);   // height +15 or 20 per added line
 }
 
 function freq_input_help()
@@ -9842,6 +9850,7 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    case '@': dx_filter(key_mod == shortcut.SHIFT_PLUS_CTL_ALT); break;
    case 'e': extension_scroll(1); break;
    case 'E': extension_scroll(-1); break;
+   case '~': admin_page_cb(); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
    case 'H':
       if (extint.current_ext_name)
@@ -10547,7 +10556,6 @@ function panels_setup()
 
    // agc
 	w3_el('id-optbar-agc').innerHTML =
-		//w3_col_percent('w3-valign w3-margin-B-4/class-slider',
 		w3_inline('w3-valign/3:w3-ialign-right',
 			w3_button('id-button-agc class-button||onclick="toggle_agc(event)" onmouseover="agc_over(event)"', 'AGC'),
 			w3_button('id-button-hang class-button w3-margin-L-10', 'Hang', 'toggle_or_set_hang'),
@@ -12064,11 +12072,23 @@ function users_setup()
 
    var mobile1 = kiwi_isMobile()? ' w3-font-16px' : '';
    var mobile2 = ' ontouchstart="popup_keyboard_touchstart(event)"';
-	s += w3_input('w3-margin-TB-4 w3-width-half/w3-label-not-bold/w3-custom-events' + mobile1 +
-	   '|padding:1px|size=20 onchange="ident_complete(\'el\', 2)" onkeyup="ident_keyup(this, event, 2)"'+ mobile2,
-	   'Your name or callsign:', 'ident-input2');
+	s +=
+		w3_inline('w3-valign/1:w3-ialign-right 1:w3-ialign-bottom 1:w3-margin-B-4',
+         w3_input('w3-margin-TB-4/w3-label-not-bold/w3-custom-events' + mobile1 +
+            '|padding:1px|size=100 onchange="ident_complete(\'el\', 2)" onkeyup="ident_keyup(this, event, 2)"'+ mobile2,
+            'Your name or callsign:', 'ident-input2'),
+         w3_button('id-admin-page-btn w3-aqua w3-small w3-padding-small w3-margin-L-32 w3-margin-R-4', 'admin page', 'admin_page_cb')
+         
+      );
 
 	w3_innerHTML('id-optbar-users', w3_div('w3-nowrap', s));
+}
+
+function admin_page_cb() {
+   // NB: Without the indirection of the setTimeout() when admin_page_cb() is called from
+   // a keyboard shortcut the browser will give a popup warning.
+   // This does not occur for a button callback calling admin_page_cb()
+   setTimeout(function() { kiwi_open_or_reload_page({ path:'admin', tab:1 }); }, 1);
 }
 
 
