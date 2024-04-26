@@ -2,6 +2,20 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.675  April 26, 2024
+    Antenna switch:
+        Added support for 3 and 7 antenna selectors for newer LZ2RR MS-V2 WiFi controller.
+            Backend is called ma-s[37]a-web. Note: the s7a is different from the older ms-s7-web
+            backend which controls an older version of the 7 antenna switch. This older version
+            supported antenna mixing which the newer MS-V2 controllers do not.
+            More info: forum.kiwisdr.com/index.php?p=/discussion/comment/18703/#Comment_18703
+        Fixed bug in kmtronic and kmtronic-udp switch code. Should work now.
+    
+    From a user connection can open admin page with '~' shortcut key or button in "user" tab.
+    DX labels can specify all former extensions: ant_switch, noise_blanker, noise_filter, waterfall.
+    Spectrum passband marker now redraws correctly when browser window resized. (Thanks Paul)
+    "ip" shell alias changes to "ipa" so as not to conflict with /sbin/ip program. (Thanks ON3RVH)
+
 v1.674  April 24, 2024
     Antenna switch:
         Antenna selection specified in the DX label extensions field now works correctly.
