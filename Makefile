@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 674
+VERSION_MIN = 675
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1281,7 +1281,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
             else
 	            @cp -v $(DTS_DEP_SRC) $(DIR_DTB)
 	            (cd $(DIR_DTB_BASE); make)
-	            # intentionally don't do "make install" -- instead only copy single .dtb below
+	            # intentionally don't do "make install"
+	            # instead only copy single DTB_KIWI .dtb to am5729-beagleboneai.dtb (name change)
 	            @cp -v $(DIR_DTB)/$(DTB_KIWI) /boot
 	            @cp -v $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)
 	            @cp -v $(DIR_DTB)/$(DTB_KIWI) /boot/dtbs/$(SYS)/am5729-beagleboneai.dtb

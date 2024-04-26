@@ -33,14 +33,16 @@ You will need antenna switch hardware.
 
 ## Available backends for hardware
 
-* ms-s7-web for controlling LZ2RR's MS-S7-WEB antenna switch
-* ms-s4a-web for controlling LZ2RR's MS-S4A-WEB antenna switch
-* beagle-gpio for controlling up to ten Beaglebone Green/Black/AI/AI-64 GPIO pins
-* snaptekk for controlling Snaptekk Wifi ham radio 8 antenna switch
-* kmtronic for controlling KMTronic LAN Ethernet IP 8 channels WEB Relay
-* kmtronic-udp for controlling KMTronic LAN Ethernet IP 8 channels UDP Relay
+* ms-s7-web for controlling the older LZ2RR MS-S7-WEB antenna switch.
+    * The version with antenna mixing.
+* ms-s[34567]a-web for controlling newer LZ2RR MS-SnA-WEB antenna switches.
+    * The version using the MS-V2 WiFi controller with SnA antenna selectors, n=3,4,5,6,7.
+* beagle-gpio for controlling up to ten Beaglebone Green/Black/AI/AI-64 GPIO pins.
+* snaptekk for controlling Snaptekk WiFi ham radio 8 antenna switch.
+* kmtronic for controlling KMTronic LAN Ethernet IP 8 channels WEB Relay.
+* kmtronic-udp for controlling KMTronic LAN Ethernet IP 8 channels UDP Relay.
 * arduino-netshield for Arduino Nano V3.0 GPIO pins. ENC28J60 Ethernet Shield needed.
-* example-backend is an example script for your own backend development
+* example-backend is an example script for your own backend development.
 
 ## Installation
 
