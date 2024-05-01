@@ -555,7 +555,7 @@ function connect_html()
 		   
 		   w3_divs('w3-padding-L-16/w3-padding-T-1',
 		      w3_inline('',
-               w3_div('id-dom-field w3-show-inline-block|width:80%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
+               w3_div('id-dom-field w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
                   'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com (don\'t include port number)')),
                w3_div('id-dom-error w3-margin-L-32 w3-padding-LR-8 w3-red w3-hide')
             ),
@@ -903,6 +903,7 @@ function connect_dom_name_cb(path, val, first)
          connect_domain_check_cb(isPublicIP? 1:-1);
          if (!isPublicIP) ok = false;
       } else {
+         console.log('SET domain_check='+ dom);
          //ext_send_new('SET domain_check='+ dom);
          ext_send('SET domain_check='+ encodeURIComponent(dom));
       }
@@ -925,7 +926,7 @@ function connect_domain_check_cb(found)
    switch (found) {
       case 1:
          w3_hide(el_error);
-         el_field.style.width = '80%';
+         el_field.style.width = '70%';
          ok = true;
          break;
       case 0: case -1:

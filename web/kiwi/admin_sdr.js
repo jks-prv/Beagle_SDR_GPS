@@ -1219,9 +1219,9 @@ function kiwi_reg_html()
 			w3_input('', 'Location', 'rx_location', '', 'w3_string_set_cfg_cb')
 		) +
 
-		w3_half('w3-margin-bottom w3-restart', 'w3-container',
+		w3_half('w3-margin-bottom', 'w3-container',
 			w3_input('', 'Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
-			w3_input('', 'Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
+			w3_input('w3-restart', 'Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
 		) +
 
 		w3_inline_percent('w3-margin-bottom w3-restart/w3-container',
