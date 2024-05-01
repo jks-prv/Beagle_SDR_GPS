@@ -2,6 +2,23 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.676  May 2, 2024
+    Trigger immediate SNR measurement via /snr/?measure URL option. (thanks scratchmoney)
+
+    Admin connect tab:
+    Remove any attempt to include a port number in the DUC domain name field.
+    Including a port number causes an invalid domain preventing any DUC-based connections.
+    The port number is similarly removed from the "Domain Name" and "specified IP" fields.
+
+    Show correct "reason disabled" message to active connections when the admin control tab
+    "Enable user connections?" is set to "No". (thanks Kai DJ9KAI)
+    
+    DX labels:
+        Community database: Change SSTV entries < 10 MHz USB to LSB. (thanks Richard VK2SKY)
+        EiBi database: update from A23 to A24. (thanks Jeff N3EDS)
+    
+    Fixed broken "Owner/Admin" email link in user control panel stat tab.
+
 v1.675  April 26, 2024
     Antenna switch:
         Added support for 3 and 7 antenna selectors for newer LZ2RR MS-V2 WiFi controller.
