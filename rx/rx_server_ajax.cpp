@@ -404,9 +404,24 @@ fail:
 		break;
 
 	// SECURITY:
-	//	Can be requested by anyone.
+	//	SNR data be requested by anyone.
+	//  Measurement request restricted to the local network.
 	//	Returns JSON
 	case AJAX_SNR: {
+        //printf("/snr qs=<%s>\n", mc->query_string);
+        if (mc->query_string && strncmp(mc->query_string, "meas", 4) == 0) {
+            if (isLocalIP) {
+                if (SNR_meas_tid) {
+                    TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));
+                }
+                asprintf(&sb, "/snr: measuring..\n");
+            } else {
+                asprintf(&sb, "/snr: NON_LOCAL MESURE ATTEMPT from %s\n", ip_unforwarded);
+            }
+            printf("%s", sb);
+            break;
+        }
+        
     	bool need_comma1 = false;
     	char *sb = (char *) "[", *sb2;
 		for (i = 0; i < SNR_MEAS_MAX; i++) {
