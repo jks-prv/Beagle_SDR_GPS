@@ -10760,7 +10760,10 @@ function zoomCorrection()
 function rf_attn_cb(path, val, done, first, ui_only)
 {
    //console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' ui_only='+ ui_only +' kiwi.rf_attn='+ kiwi.rf_attn);
-   //if (first) kiwi_trace();
+   if (first) {
+      //kiwi_trace();
+      val = kiwi.rf_attn;
+   }
    if (kiwi.rf_attn_disabled && !ui_only) return;
    
 	var attn = parseFloat(val);
