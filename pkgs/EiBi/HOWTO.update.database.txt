@@ -1,0 +1,101 @@
+Procedure for updating to a new EiBi database release from eibispace.de
+
+CAUTION:
+After much confusion figured out how downloading from eibispace.de will break the file UTF-8 encoding.
+Underlying cause is not understood. In browser DO NOT use right-click "download linked file" function.
+Instead, use the wget/iconv combination shown. Multiple browsers have this same issue.
+
+Download .csv and README.TXT files. Change e.g. "A24" to whatever is current on eibispace.de webpage.
+"eibi.in" is just the name of a temporary file.
+wget -O eibi.in http://eibispace.de/dx/sked-a24.csv && iconv -f ISO-8859-1 -t UTF-8 eibi.in > eibi.csv
+>>> Check this entry to make sure correct accented chars: 690;0000-2400;;B;Rádio Clube do Pará;P;B;be;1;;
+wget -O eibi.in http://eibispace.de/dx/README.TXT && iconv -f ISO-8859-1 -t UTF-8 eibi.in > README.A24.txt
+
+cp eibi.csv sked-[ab]2?.ddmmmyy.csv         // file before ALE added back for diff purposes
+e.g. sked-b22.14nov22.csv
+
+cp eibi.csv sked-[ab]2?.ddmmmyy.kiwi.csv    // date included in case of updated downloaded within same [ab]2? period
+e.g. sked-b22.14nov22.kiwi.csv
+
+Added ALE back manually from A21 using BBedit:
+Append file ALE-a21.kiwi.csv to sked-[ab]2?.ddmmmyy.kiwi.csv
+
+Then to sort combined lists by freq:
+	Text > Apply text transform > Sort lines
+		> Configure (numbers match by value; sort using pattern; type:"[0-9.]+;" entire match; OK)
+		> THEN SELECT THE SINGLE FILE WITH: Apply to: > Choose > open text documents > ...
+		    SELECTION IS TRICKYHERE W/ LATEST BBEDIT. DOUBLE CHECK FILENAME!!!
+            *** otherwise it will apply to the file last time sort was done!
+            *** make sure multiple files are not selected!
+      > Apply
+		> Put back top header line (the one beginning with "kHz:")
+			It gets incorrectly sorted a few dozen lines down the list
+			But this wasn't true w/ A24
+
+rm sked-current.csv
+ln -s sked-[ab]2?.ddmmmyy.kiwi.csv sked-current.csv
+make run (mr)
+Will update Beagle_SDR_GPS/dx/EiBi.h file
+Check that "Rádio Clube do Pará" appears correctly in EiBi.h
+
+openwebrx.js:dx.db_s: "EiBi-[AB]yy" string will be automatically updated now.
+
+
+History:
+A24 updated 5/2/2024
+    ====> 1 16.30 VTX1 Indian Navy
+    ====> 5 20.50 RJH99 Nizhni Novgorod
+    ====> 6 621.00 VoA Deewa Radio
+    ====> 72 2182.00 Stockholm Radio
+    ...
+    ident_dict_n=874 ident_size=15989
+    types_total=5722
+     2423 bcast
+      350 util
+       63 time
+     1167 ale
+      131 hfdl
+      108 milcom
+      116 cw
+       17 fsk
+       84 fax
+      587 aero
+      321 marine
+      355 spy
+    entries=12324 max_ident=26 max_same_freq_diff_ident=72(2182.00)
+    rm -f eibi_proc *.o *.d
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2965,6 +2965,10 @@ function kiwi_msg(param, ws)
 			kiwi.ext_clk = parseInt(param[1]);
 			break;
 
+		case "abyy":
+			kiwi.eibi_abyy = param[1];
+			break;
+
 		case "client_public_ip":
 			client_public_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
 			console.log('client public IP: '+ client_public_ip);
