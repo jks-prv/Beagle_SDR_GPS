@@ -251,9 +251,18 @@ void rx_server_kick(kick_e kick, int chan)
 	printf("rx_server_kick %s rx=%d\n", kick_s[kick], chan);
 	conn_t *c = conns;
 	bool kick_chan_all = (kick == KICK_CHAN && chan == -1);
-	const char *msg =
-	        (kick == KICK_CHAN && chan != -1)? "You were kicked!" :
-	        ((kick == KICK_USERS)? "Kiwi down for maintenance." : "Everyone was kicked!");
+	int kicked = 1;
+	const char *msg;
+	
+    if (kick == KICK_CHAN && chan != -1) {
+        msg = "You were kicked!";
+    } else
+    if (kick == KICK_USERS) {
+        msg = "User connections disabled.";
+        kicked = 0;
+    } else {
+        msg = "Everyone was kicked!";
+    }
 	
 	for (int i=0; i < N_CONNS; i++, c++) {
 		if (!c->valid)
@@ -267,7 +276,7 @@ void rx_server_kick(kick_e kick, int chan)
         //    i, c->rx_channel, rx_conn_type(c), kick_chan, kick_users, kick_all);
 		if (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL) {
 		    if (kick_chan || kick_users || kick_all) {
-		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
+		        send_msg_encoded(c, "MSG", "kiwi_kick", "%d,%s", kicked, msg);
                 c->kick = true;
                 printf("rx_server_kick KICKING rx=%d %s\n", c->rx_channel, rx_conn_type(c));
             }
@@ -275,7 +284,7 @@ void rx_server_kick(kick_e kick, int chan)
 		
 		if (c->type == STREAM_EXT) {
 		    if (kick_chan || kick_users || kick_all) {
-		        send_msg_encoded(c, "MSG", "kiwi_kick", "%s", msg);
+		        send_msg_encoded(c, "MSG", "kiwi_kick", "%d,%s", kicked, msg);
                 c->kick = true;
                 printf("rx_server_kick KICKING rx=%d EXT %s\n", c->rx_channel, c->ext? c->ext->name : "?");
             }

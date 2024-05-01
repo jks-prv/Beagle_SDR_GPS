@@ -43,6 +43,11 @@ var wspr = {
    PREEMPT_NO: 0,
    PREEMPT_YES: 1,
    preempt_u: ['no', 'yes'],
+   
+   sched_u: [ 'continuous',
+      '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+      '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+   ],
 
    last_last: 0
 };
@@ -658,11 +663,16 @@ function wspr_config_html()
 	s = '';
 	for (var i=0; i < rx_chans;) {
 	   var s2 = '';
+      var f1 = 'w3-margin-right w3-defer';
+      var f2 = f1 +' w3-margin-T-8';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
+	      
 	      s2 +=
 	         w3_div('',
-	            w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr.autorun_u, 'wspr_autorun_select_cb'),
-	            w3_select_get_param('w3-margin-right w3-margin-T-8', '', 'preemptible?', 'WSPR.preempt'+ i, wspr.preempt_u, 'wspr_autorun_select_cb')
+	            w3_select_get_param(f1, 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr.autorun_u, 'wspr_autorun_select_cb'),
+	            w3_select_get_param(f2, '', 'preemptible?', 'WSPR.preempt'+ i, wspr.preempt_u, 'wspr_autorun_select_cb')
+	            //w3_select_get_param(f2, '', 'start UTC', 'WSPR.start'+ i, wspr.sched_u, 'wspr_autorun_sched_cb', 0, 0),
+	            //w3_select_get_param(f2, '', 'stop UTC', 'WSPR.stop'+ i, wspr.sched_u, 'wspr_autorun_sched_cb', 0, 1)
 	         );
 	   }
 	   s += w3_inline('w3-margin-bottom/', s2);
@@ -701,6 +711,11 @@ function wspr_autorun_select_cb(path, idx, first)
    w3_show('id-wspr-restart');
 	var el = w3_el('id-kiwi-container');
 	w3_scrollDown(el);   // keep menus visible
+}
+
+function wspr_autorun_sched_cb(path, idx, first, cbp)
+{
+   console.log('wspr_autorun_sched_cb path='+ path +' idx='+ idx +' cbp='+ cbp +' first='+ first);
 }
 
 function wspr_autorun_all_regular_cb(path, idx, first)

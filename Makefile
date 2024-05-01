@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 675
+VERSION_MIN = 676
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -230,7 +230,7 @@ ifneq ($(RPI),true)
 endif
 _DIR_PLATFORMS = $(addprefix platform/, $(PLATFORMS))
 _DIRS_O3 += . $(PKGS_O3) platform/common $(_DIR_PLATFORMS) $(EXT_DIRS) $(EXT_SUBDIRS) \
-    $(RX) $(GPS) dev ui init support net web arch/$(ARCH)
+    $(RX) $(GPS) dev ui cfg dx support net web arch/$(ARCH)
 
 ifeq ($(OPT),0)
     DIRS = $(_DIRS) $(_DIRS_O3)

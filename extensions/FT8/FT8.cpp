@@ -112,6 +112,8 @@ static void ft8_task(void *param)
 	while (1) {
 		TaskSleepReason("wait for wakeup");
 		
+		// Only call decode_ft8_protocol() when rounded freq changes >= 1 kHz
+		// Decoder can cope with smaller freq changes.
 		int new_freq_kHz = (int) round(conn->freqHz/1e3);
 		if (e->last_freq_kHz != new_freq_kHz) {
 		    //rcprintf(rx_chan, "FT8: freq changed %d => %d\n", e->last_freq_kHz, new_freq_kHz);
@@ -290,6 +292,8 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
         for (int instance = 0; instance < rx_chans; instance++) {
             int autorun = cfg_default_int(stprintf("ft8.autorun%d", instance), 0, &update_cfg);
             int preempt = cfg_default_int(stprintf("ft8.preempt%d", instance), 0, &update_cfg);
+            //cfg_default_int(stprintf("ft8.start%d", instance), 0, &update_cfg);
+            //cfg_default_int(stprintf("ft8.stop%d", instance), 0, &update_cfg);
             //printf("ft8.autorun%d=%d(band=%d) ft8.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
             if (autorun) num_autorun++;
             if (autorun && (preempt == 0)) num_non_preempt++;

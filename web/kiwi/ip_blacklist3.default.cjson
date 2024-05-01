@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+//  1 May 24 178.250.184.0/23 (184.0:185:255) MIN-IP Moscow 178.250.185.231 connects every 30 secs!
 // 11 Apr 24 80.87.192.0/23 (192.0:193.255) Khimki, Russia datacenter (80.87.192.7 per email, forum; NB Yuri's whitelist entry)
 // 10 Apr 24 45.79.58.146 linode/akamai hacker per email
 //  9 Apr 24 207.148.0.0/19 (0.0:31.255) constant/vultr/choopa
@@ -177,6 +178,7 @@
     "173.199.64.0/18",
     "173.209.32.0/19",
     "173.255.0.0/20",
+    "178.250.184.0/23",
     "180.242.213.14/32",
     "185.77.216.0/23",
     "185.107.56.0/24",

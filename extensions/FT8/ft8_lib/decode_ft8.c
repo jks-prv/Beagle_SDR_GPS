@@ -197,7 +197,7 @@ ftx_callsign_hash_interface_t hash_if = {
     .save_hash = hashtable_add
 };
 
-static void decode(int rx_chan, const monitor_t* mon, int freqHz)
+static void decode(int rx_chan, const monitor_t* mon, int _freqHz)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
 
@@ -376,7 +376,7 @@ static void decode(int rx_chan, const monitor_t* mon, int freqHz)
                 ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
                 //   22:40:30 +11.0 +2.80 1931 nnnnn  nn i.n  CQ DH1NAS JO50
                     "     UTC   SNR    dT Freq    km age msg  freq: %.2f  mode: %s\n",
-                    freqHz/1e3, ft8->protocol_s);
+                    _freqHz/1e3, ft8->protocol_s);
                 need_header = false;
             }
             
@@ -500,10 +500,10 @@ void decode_ft8_setup(int rx_chan, int debug)
     if (have_call_and_grid != 0) ft8->have_call_and_grid = have_call_and_grid;
 }
 
-void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, u1_t *start_test)
+void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int _freqHz, u1_t *start_test)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
-    ft8->freqHz = freqHz;
+    ft8->freqHz = _freqHz;
     if (!ft8->init) return;
 
     if (!ft8->tsync) {
@@ -551,7 +551,7 @@ void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, 
 
     // Decode accumulated data (containing slightly less than a full time slot)
     NextTask("decode");
-    decode(rx_chan, &ft8->mon, freqHz);
+    decode(rx_chan, &ft8->mon, _freqHz);
 
     // Reset internal variables for the next time slot
     monitor_reset(&ft8->mon);
@@ -606,12 +606,12 @@ void decode_ft8_free(int rx_chan)
     monitor_free(&ft8->mon);
 }
 
-void decode_ft8_protocol(int rx_chan, int freqHz, int proto)
+void decode_ft8_protocol(int rx_chan, int _freqHz, int proto)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     decode_ft8_free(rx_chan);
     decode_ft8_init(rx_chan, proto);
     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
         "-------------------------------------------------------  new freq %.2f mode %s\n",
-        freqHz/1e3, ft8->protocol_s);
+        _freqHz/1e3, ft8->protocol_s);
 }

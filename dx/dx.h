@@ -152,6 +152,8 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert = false);
 
 #define DX_DOWNLOAD_ONESHOT_FN "/tmp/.kiwi_dx_community_download"
 
+extern const char eibi_abyy[4];
+
 
 // AJAX_DX support
 

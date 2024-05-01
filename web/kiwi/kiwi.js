@@ -2965,6 +2965,10 @@ function kiwi_msg(param, ws)
 			kiwi.ext_clk = parseInt(param[1]);
 			break;
 
+		case "abyy":
+			kiwi.eibi_abyy = param[1];
+			break;
+
 		case "client_public_ip":
 			client_public_ip = param[1].replace(/::ffff:/, '');    // remove IPv4-mapped IPv6 if any
 			console.log('client public IP: '+ client_public_ip);
@@ -3261,7 +3265,7 @@ function kiwi_msg(param, ws)
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
 			reason_disabled = 'User connections disabled.'+
-			   ((param[1] != '')? (' Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
+			   ((param[1] != '')? ('<br>Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
 			break;
 		
 		case "sample_rate":
@@ -3292,8 +3296,11 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'kiwi_kick':
-		   var s = ext_get_cfg_param_string('cfg.reason_kicked');
-		   var s = w3_json_to_html('kiwi_kick', param[1]) + ((s != '')? ('<br>Reason: '+ s) : '');
+		   var p = param[1].split(',');
+		   var kicked = +p[0];
+		   var s = ext_get_cfg_param_string(kicked? 'cfg.reason_kicked' : 'cfg.reason_disabled');
+		   //console.log('kick_kick p1=<'+ p[1] +'> s=<'+ s +'>');
+		   var s = w3_json_to_html('kiwi_kick', p[1]) + ((s != '')? ('<br>Reason: '+ s) : '');
          //kiwi_show_msg(s);
 			if (confirmation.displayed) break;
          s = w3_div('', s);

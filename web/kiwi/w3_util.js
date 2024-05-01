@@ -3246,12 +3246,12 @@ function w3_select_set_disabled(path, value, disabled, title)
 }
 
 // used when current value should come from config param
-function w3_select_get_param(psa, label, title, path, opts, cb, init_val)
+function w3_select_get_param(psa, label, title, path, opts, cb, init_val, cb_param)
 {
    var update_path_var = psa.includes('w3-update');
    var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? 0 : init_val, save, update_path_var);
-	return w3_select(psa, label, title, path, cur_val, opts, cb);
+	return w3_select(psa, label, title, path, cur_val, opts, cb, cb_param);
 }
 
 function w3_select_enum(path, func)

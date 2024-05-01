@@ -505,6 +505,7 @@ function control_confirm_cancel_cb()
 
 var connect = {
    focus: 0,
+   NOT_IP:0, IS_IP:1, LOCAL_IP:-1, 
    timeout: null
 };
 
@@ -554,7 +555,7 @@ function connect_html()
 		   
 		   w3_divs('w3-padding-L-16/w3-padding-T-1',
 		      w3_inline('',
-               w3_div('id-dom-field w3-show-inline-block|width:80%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
+               w3_div('id-dom-field w3-show-inline-block|width:70%;', w3_input_get('', '', 'sdr_hu_dom_name', 'connect_dom_name_cb', '',
                   'Enter domain name that you will point to Kiwi public IP address, e.g. kiwisdr.my_domain.com (don\'t include port number)')),
                w3_div('id-dom-error w3-margin-L-32 w3-padding-LR-8 w3-red w3-hide')
             ),
@@ -902,6 +903,7 @@ function connect_dom_name_cb(path, val, first)
          connect_domain_check_cb(isPublicIP? 1:-1);
          if (!isPublicIP) ok = false;
       } else {
+         console.log('SET domain_check='+ dom);
          //ext_send_new('SET domain_check='+ dom);
          ext_send('SET domain_check='+ encodeURIComponent(dom));
       }
@@ -924,7 +926,7 @@ function connect_domain_check_cb(found)
    switch (found) {
       case 1:
          w3_hide(el_error);
-         el_field.style.width = '80%';
+         el_field.style.width = '70%';
          ok = true;
          break;
       case 0: case -1:
@@ -947,21 +949,22 @@ function connect_domain_check_cb(found)
 function connect_dom_ip_cb(path, val, first)
 {
    var ok = false;
-	var ip = connect_remove_port_and_local_ip(path, val, first);
-   var isIP = kiwi_inet4_d2h(val);
-   var isPublicIP = kiwi_inet4_d2h(val, { no_local_ip:1 });
+	var ip_rem_port = connect_remove_port_and_local_ip(path, val, first);
+   var isIP = kiwi_inet4_d2h(ip_rem_port);
+   var isPublicIP = kiwi_inet4_d2h(ip_rem_port, { no_local_ip:1 });
+   //console.log('$val='+ val +' ip_rem_port='+ ip_rem_port +' isIP='+ isIP +' isPublicIP='+ isPublicIP);
    var el_field = w3_el('id-ip-field');
    var el_error = w3_el('id-ip-error');
    
    if (isIP) {
       if (isPublicIP) {
-         connect_ip_check_cb(1);
+         connect_ip_check_cb(connect.IS_IP);
          ok = true;
       } else {
-         connect_ip_check_cb(-1);
+         connect_ip_check_cb(connect.LOCAL_IP);
       }
    } else {
-         connect_ip_check_cb((val == '')? 1:0);
+         connect_ip_check_cb((val == '')? connect.IS_IP : connect.NOT_IP);
    }
 
    if (cfg.sdr_hu_dom_sel == kiwi.SIP)     // if currently selected option update the value
@@ -975,13 +978,13 @@ function connect_ip_check_cb(status)
    var el_error = w3_el('id-ip-error');
    
    switch (status) {
-      case 1:
+      case connect.IS_IP:
          w3_hide(el_error);
          el_field.style.width = '80%';
          break;
-      case -1: case 0:
+      case connect.LOCAL_IP: case connect.NOT_IP:
          w3_innerHTML(el_error,
-            status? 'Error: must not be a local IP address' : 'Error: not an IP address');
+            (status == connect.LOCAL_IP)? 'Error: must not be a local IP address' : 'Error: not an IP address');
          w3_show(el_error);
          el_field.style.width = '40%';
          break;
@@ -1057,7 +1060,8 @@ function connect_DUC_start_cb(id, idx)
 
 function connect_DUC_host_cb(path, val, first)
 {
-   w3_string_set_cfg_cb(path, val, first);
+	var rem_port = connect_remove_port_and_local_ip(path, val, first);
+   w3_string_set_cfg_cb(path, rem_port, first);
    if (cfg.sdr_hu_dom_sel == kiwi.DUC)     // if currently selected option update the value
       connect_dom_duc_focus();
    else
@@ -1090,7 +1094,7 @@ function connect_DUC_status_cb(status)
 function connect_rev_usage()
 {
    w3_show('id-proxy-menu');
-   w3_scrollDown('id-kiwi-container');
+   //w3_scrollDown('id-kiwi-container');
 }
 
 function connect_rev_register_cb(id, idx)

@@ -7553,7 +7553,7 @@ var dx = {
    DB_COMMUNITY: 2,
    DB_N: 3,
    db: 0,
-   db_s: [ 'stored (writeable)', 'EiBi-A23 (read-only)', 'community (downloaded)' ],
+   db_s: [ 'stored (writeable)', '', 'community (downloaded)' ],
    db_short_s: [ 'stored', 'EiBi', 'community' ],
    ignore_dx_update: false,
    last_community_download: '',
@@ -7683,6 +7683,7 @@ var dx = {
 
 function dx_init()
 {
+   dx.db_s[dx.DB_EiBi] = 'EiBi-'+ kiwi.eibi_abyy +' (read-only)';    // abyy value sent by server
    var open = false;
    dx.DX_DOW_BASE = dx.DX_DOW >> dx.DX_DOW_SFT;
 
@@ -10666,27 +10667,27 @@ function panels_setup()
 	}
 
 	var admin_email = ext_get_cfg_param('admin_email');
-	//console.log('contact_admin='+ contact_admin +' admin_email='+ admin_email);
-	admin_email = (contact_admin != 'undefined' && contact_admin != null && contact_admin == true && admin_email != 'undefined' && admin_email != null)? admin_email : null;
-	
-	// NB: have to double encode here because the "javascript:sendmail()" href below automatically undoes
-	// one level of encoding causing problems when an email containing an underscore gets enc() to a backslash
-	if (admin_email != null) admin_email = encodeURIComponent(encodeURIComponent(enc(admin_email)));
-
-	var email;
-	if (kiwi_isFirefox())
-      // see: stackoverflow.com/questions/42340698/change-window-location-href-in-firefox-without-closing-websockets
-	   email = '<a href="mailto:'+ admin_email +' target="iframe_mailto">Owner/Admin</a> | ';
-	else
-      email = '<a href="javascript:sendmail(\''+ admin_email +'\');">Owner/Admin</a> | ';
+	console.log('contact_admin='+ contact_admin +' admin_email='+ admin_email);
+	admin_email = (isArg(contact_admin) && contact_admin == true && isNonEmptyString(admin_email))? admin_email : null;
+	var email = '';
+	if (admin_email != null) {
+      if (kiwi_isFirefox()) {
+         // see: stackoverflow.com/questions/42340698/change-window-location-href-in-firefox-without-closing-websockets
+         email = '<a href='+ dq('mailto:'+ admin_email) +' target="iframe_mailto">Owner/Admin</a> | ';
+      } else {
+         // NB: have to double encode here because the "javascript:sendmail()" href below automatically undoes
+         // one level of encoding causing problems when an email containing an underscore gets enc() to a backslash
+	      admin_email = encodeURIComponent(encodeURIComponent(enc(admin_email)));
+         email = '<a href="javascript:sendmail(\''+ admin_email +'\');">Owner/Admin</a> | ';
+      }
+   }
 
    w3_el('id-optbar-status').innerHTML =
 		w3_div('id-status-msg') +
 		w3_div('',
 	      w3_text('w3-text-css-orange', 'Links'),
 	      '<iframe src="about:blank" name="iframe_mailto" class="ws_keep_conn"></iframe>',
-	      w3_text('',
-            (admin_email? email : '') +
+	      w3_text('', email +
             '<a href="http://kiwisdr.com" target="_blank">KiwiSDR</a> ' +
             '| <a href="http://forum.kiwisdr.com/discussions" target="_blank">Forum</a> ' +
             '| <a href="https://kiwiirc.com/client/chat.freenode.net/#kiwisdr" target="_blank">Chat</a> '
@@ -10760,7 +10761,10 @@ function zoomCorrection()
 function rf_attn_cb(path, val, done, first, ui_only)
 {
    //console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' ui_only='+ ui_only +' kiwi.rf_attn='+ kiwi.rf_attn);
-   //if (first) kiwi_trace();
+   if (first) {
+      //kiwi_trace();
+      val = kiwi.rf_attn;
+   }
    if (kiwi.rf_attn_disabled && !ui_only) return;
    
 	var attn = parseFloat(val);

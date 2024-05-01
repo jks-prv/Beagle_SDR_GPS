@@ -122,7 +122,7 @@ void cRsId::init(int _rx_chan, int fixedInputSize)
     
     rsidTime = 0;
     WideSearch = true;
-	rcprintf(rx_chan, "RSID: init\n");
+	//rcprintf(rx_chan, "RSID: init\n");
     reset();
 }
 

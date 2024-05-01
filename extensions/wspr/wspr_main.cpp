@@ -979,6 +979,8 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
         for (int instance = 0; instance < rx_chans; instance++) {
             int autorun = cfg_default_int(stprintf("WSPR.autorun%d", instance), 0, &update_cfg);
             int preempt = cfg_default_int(stprintf("WSPR.preempt%d", instance), 0, &update_cfg);
+            //cfg_default_int(stprintf("WSPR.start%d", instance), 0, &update_cfg);
+            //cfg_default_int(stprintf("WSPR.stop%d", instance), 0, &update_cfg);
             //printf("WSPR.autorun%d=%d(band=%d) WSPR.preempt%d=%d\n", instance, autorun, autorun-1, instance, preempt);
             if (autorun) num_autorun++;
             if (autorun && (preempt == 0)) num_non_preempt++;

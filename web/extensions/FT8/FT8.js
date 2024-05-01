@@ -42,6 +42,11 @@ var ft8 = {
    PREEMPT_YES: 1,
    preempt_u: ['no', 'yes'],
 
+   sched_u: [ 'continuous',
+      '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
+      '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
+   ],
+
    last_last: 0
 };
 
@@ -325,11 +330,15 @@ function FT8_config_html()
 	s = '';
 	for (var i=0; i < rx_chans;) {
 	   var s2 = '';
+      var f1 = 'w3-margin-right w3-defer';
+      var f2 = f1 +' w3-margin-T-8';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
 	      s2 +=
 	         w3_div('',
-	            w3_select_get_param('w3-margin-right', 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8.autorun_u, 'ft8_autorun_select_cb'),
-	            w3_select_get_param('w3-margin-right w3-margin-T-8', '', 'preemptible?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_autorun_select_cb')
+	            w3_select_get_param(f1, 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8.autorun_u, 'ft8_autorun_select_cb'),
+	            w3_select_get_param(f2, '', 'preemptible?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_autorun_select_cb')
+	            //w3_select_get_param(f2, '', 'start UTC', 'ft8.start'+ i, ft8.sched_u, 'ft8_autorun_sched_cb', 0, 0),
+	            //w3_select_get_param(f2, '', 'stop UTC', 'ft8.stop'+ i, ft8.sched_u, 'ft8_autorun_sched_cb', 0, 1)
 	         );
 	   }
 	   s += w3_inline('w3-margin-bottom/', s2);
@@ -369,6 +378,11 @@ function ft8_autorun_select_cb(path, idx, first)
    w3_show('id-ft8-restart');
 	var el = w3_el('id-kiwi-container');
 	w3_scrollDown(el);   // keep menus visible
+}
+
+function ft8_autorun_sched_cb(path, idx, first, cbp)
+{
+   console.log('ft8_autorun_sched_cb path='+ path +' idx='+ idx +' cbp='+ cbp +' first='+ first);
 }
 
 function ft8_autorun_all_regular_cb(path, idx, first)
