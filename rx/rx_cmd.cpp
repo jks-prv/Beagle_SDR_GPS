@@ -351,6 +351,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 log_auth_attempt = (stream_admin_or_mfg || stream_mon || (stream_ext && type_admin));
                 pwd_debug = false;
             }
+            
+            pwd_lprintf("PWD new connection --------------------------------------------------------\n");
         
             if (conn->internal_connection) {
                 is_local_e = IS_LOCAL;
@@ -405,7 +407,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             #else
                 if (is_local) {
                     conn->tlimit_exempt = true;
-                    pwd_printf("TLIMIT exempt local connection from %s\n", conn->remote_ip);
+                    pwd_printf("PWD TLIMIT exempt local connection from %s\n", conn->remote_ip);
                 }
             #endif
             pdb_printf("PWD TLIMIT exempt password check: ipl=<%s> tlimit_exempt_pwd=<%s>\n", ipl_m, tlimit_exempt_pwd);
@@ -498,9 +500,17 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
                 cfg_auto_login = admcfg_bool("user_auto_login", NULL, CFG_REQUIRED);
             
+                // internal connections always allowed
+                if (conn->internal_connection) {
+                    pwd_lprintf("PWD %s %s ALLOWED: internal connection\n",
+                        type_m, uri);
+                    allow = true;
+                    skip_dup_ip_check = true;
+                } else
+                
                 // config pwd set, but auto_login for local subnet is true
                 if (cfg_auto_login && is_local) {
-                    nwf_printf("PWD %s %s ALLOWED: config pwd set, but is_local and auto-login set\n",
+                    pwd_lprintf("PWD %s %s ALLOWED: user connection allowed because local connection and auto-login set\n",
                         type_m, uri);
                     allow = true;
                     skip_dup_ip_check = true;
@@ -508,19 +518,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
                 // if no user password set allow unrestricted connection
                 if (no_pwd) {
-                    nwf_printf("PWD %s %s ALLOWED: no config pwd set, allow any (%s)\n",
+                    pwd_lprintf("PWD %s %s ALLOWED: no user password set, so allow connection from %s\n",
                         type_m, uri, conn->remote_ip);
                     allow = true;
                 } else
             
-                // internal connections always allowed
-                if (conn->internal_connection) {
-                    nwf_printf("PWD %s %s ALLOWED: internal connection\n",
-                        type_m, uri);
-                    allow = true;
-                    skip_dup_ip_check = true;
-                } else
-                
                 if (!type_prot) {       // consider only if protected mode not requested
             
                     int rx_free = rx_chan_free_count(RX_COUNT_ALL);
@@ -581,20 +583,20 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
                 // no config pwd set (e.g. initial setup) -- allow if connection is from local network
                 if (no_pwd && is_local) {
-                    pwd_lprintf("PWD %s ALLOWED: no config pwd set, but is_local\n", type_m);
+                    pwd_lprintf("PWD %s ALLOWED: no admin password set, but connections is from local network\n", type_m);
                     allow = true;
                 } else
             
                 // config pwd set, but auto_login for local subnet is true
                 if (cfg_auto_login && is_local) {
-                    pwd_lprintf("PWD %s ALLOWED: config pwd set, but is_local and auto-login set\n", type_m);
+                    pwd_lprintf("PWD %s ALLOWED: admin password set, but not checked because local connection and auto-login set\n", type_m);
                     pwd_not_required = true;
                     allow = true;
                 } else
             
                 // when no admin pwd set, display msg when not on same subnet to aid in debugging
                 if (no_pwd && !is_local) {
-                    pwd_lprintf("PWD %s CANT LOGIN: no config pwd set, not is_local\n", type_m);
+                    pwd_lprintf("PWD %s CANT LOGIN: no admin password set, connection is not is_local\n", type_m);
                     cant_login = true;
                 }
             } else {
@@ -625,13 +627,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             
             if (allow) {
                 if (log_auth_attempt || pwd_debug)
-                    pwd_lprintf("PWD %s %s ALLOWED: from %s\n", type_m, uri, conn->remote_ip);
+                    pwd_lprintf("PWD %s %s RESULT ALLOWED: from %s\n", type_m, uri, conn->remote_ip);
                 badp = BADP_OK;
             } else
         
             if ((pwd_s == NULL || *pwd_s == '\0')) {
                 // catch-all for when no pwd set, but none of special cases above applied
-                pwd_lprintf("PWD %s %s REJECTED: no config pwd set, from %s\n", type_m, uri, conn->remote_ip);
+                pwd_lprintf("PWD %s %s RESULT REJECTED: no config password set, from %s\n", type_m, uri, conn->remote_ip);
                 badp = BADP_TRY_AGAIN;
             } else {
                 if (pwd_m == NULL || pwd_s == NULL) {
@@ -646,7 +648,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                         badp = strcasecmp(pwd_m, pwd_s)? BADP_TRY_AGAIN : BADP_OK;
                     #endif
 
-                    pdb_printf("PWD %s %s %s:%s from %s\n", type_m, uri, (badp == BADP_OK)? "ACCEPTED":"REJECTED",
+                    pdb_printf("PWD %s %s %s:%s from %s\n", type_m, uri, (badp == BADP_OK)? "ACCEPTED" : "REJECTED",
                         type_prot? " (protected login)":"", conn->remote_ip);
                     if (badp == BADP_OK) {
                         if (type_kiwi_prot) is_password = true;     // password used to get in
