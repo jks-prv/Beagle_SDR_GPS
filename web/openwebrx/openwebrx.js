@@ -1249,28 +1249,37 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		//console.log('DOSET fcar='+freq_car_Hz);
 		//if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
 		
-		var freq = (freq_car_Hz/1000).toFixed(3);
+		var freq_Hz = freq_car_Hz;
+		var freq_kHz = freq_Hz/1000;
+      var freq_kHz_s = freq_kHz.toFixed(3);     // always allow manual entry of 3 significant digits
+
 		var mode = this.server_mode;
 		var locut = this.low_cut.toString();
 		var hicut = this.high_cut.toString();
 		var mparam = (ext_mode(mode).SAx)? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
 		//if (mparam != '') console.log('$mode='+ mode +' mparam='+ mparam); else console.log('$mode='+ mode);
-		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
+		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq_kHz_s + mparam;
 		snd_send(s);
       //kiwi_trace('doSet');
 		//console.log('$'+ s);
 
       var changed = null;
-      if (freq != owrx.last_freq) {
+      if (!owrx.freq_dsp_1Hz) {
+         // in 10 Hz mode store truncated freq so comparison below against last freq works correctly
+         var _freq_Hz = Math.round(freq_Hz/10) * 10;
+         //console.log('prev_freq_kHz PUSH '+ freq_Hz +'=>'+ _freq_Hz);
+         freq_Hz = _freq_Hz;
+      }
+      if (freq_Hz != owrx.last_freq_Hz) {
          changed = changed || {};
          changed.freq = 1;
-         if (freq > 0) {
-            //console.log('prev_freq_kHz PUSH '+ freq +'|'+ owrx.last_freq);
-            owrx.prev_freq_kHz.unshift(freq);
+         if (freq_Hz > 0) {
+            //console.log('prev_freq_kHz PUSH '+ freq_Hz +'|'+ owrx.last_freq_Hz);
+            owrx.prev_freq_kHz.unshift(freq_Hz);
             owrx.prev_freq_kHz.length = 2;
             //console.log(owrx.prev_freq_kHz);
          }
-         owrx.last_freq = freq;
+         owrx.last_freq_Hz = freq_Hz;
       }
       if (mode != owrx.last_mode) {
          changed = changed || {};
@@ -1329,7 +1338,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
       // show "BFO" in tooltip when shift key changed before BFO dragging starts or while it is ongoing
       var isAdjBFO = (owrx.last_shiftKey || this.dragged_range == demodulator.draggable_ranges.bfo);
       var f_kHz = (center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz;
-		pb_adj_car_ttip.innerHTML = (isAdjBFO? 'BFO ':'') + f_kHz.toFixed(freq_field_prec(f_kHz)) +' kHz';
+		pb_adj_car_ttip.innerHTML = (isAdjBFO? 'BFO ':'') + freq_field_prec_s(f_kHz) +' kHz';
 	};
 
 	// event handlers
@@ -1536,7 +1545,8 @@ function demodulator_analog_replace(subtype, freq)
 		var i_freq_Hz = Math.round(i_freq_kHz * 1000);
       offset = (i_freq_Hz <= 0 || i_freq_Hz > bandwidth)? 0 : (i_freq_Hz - center_freq);
 		//console.log('### init_freq='+ init_frequency +' freq_offset_kHz='+ kiwi.freq_offset_kHz +' i_freq_Hz='+ i_freq_Hz +' offset='+ offset +' init_mode='+ init_mode);
-      owrx.prev_freq_kHz = [ i_freq_kHz, i_freq_kHz ];
+      owrx.prev_freq_kHz = [ i_freq_Hz, i_freq_Hz ];
+      //console.log(owrx.prev_freq_kHz);
 		subtype = isArg(init_mode)? init_mode : 'am';
 	}
 	
@@ -5791,6 +5801,11 @@ function freq_field_prec(f_kHz)
    return prec;
 }
 
+function freq_field_prec_s(f_kHz)
+{
+   return f_kHz.toFixed(freq_field_prec(f_kHz));
+}
+
 function freq_field_width()
 {
    var _1Hz = owrx.freq_dsp_1Hz;
@@ -5834,7 +5849,7 @@ function freqset_restore_ui()
 	if (isNoArg(obj)) return null;      // can happen if SND comes up long before W/F
 
    var f_kHz_with_freq_offset = (freq_displayed_Hz + kiwi.freq_offset_Hz)/1000;
-   freq_displayed_kHz_str_with_freq_offset = f_kHz_with_freq_offset.toFixed(freq_field_prec(f_kHz_with_freq_offset));
+   freq_displayed_kHz_str_with_freq_offset = freq_field_prec_s(f_kHz_with_freq_offset);
    obj.value = freq_displayed_kHz_str_with_freq_offset;
 
 	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
@@ -5849,7 +5864,7 @@ function freqset_update_ui(from)
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	var f_kHz = freq_displayed_Hz/1000;
-   freq_displayed_kHz_str = f_kHz.toFixed(freq_field_prec(f_kHz));
+   freq_displayed_kHz_str = freq_field_prec_s(f_kHz);
    //console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz +' from='+ from +'('+ owrx.fset_s[from] +')');
    //kiwi_trace();
 	
@@ -6199,10 +6214,10 @@ function freqset_keyup(obj, evt)
 			}
 	
 			if (evt.key == 'Enter' && evt.shiftKey) {
-			   var f = owrx.prev_freq_kHz[1];
-			   //console.log('prev_freq_kHz FLIP '+ f);
+			   var f_kHz = owrx.prev_freq_kHz[1] / 1000;
+			   //console.log('prev_freq_kHz FLIP '+ f_kHz);
 			   //console.log(owrx.prev_freq_kHz);
-			   if (f != 0) tune(f);
+			   if (f_kHz != 0) tune(f_kHz);
 			   freqset_update_ui(owrx.FSET_NOP);
 			}
 			
