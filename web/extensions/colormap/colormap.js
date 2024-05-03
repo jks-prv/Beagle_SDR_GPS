@@ -637,7 +637,7 @@ function colormap_bresenham(xy0, xy1, cb)
 function colormap_update()
 {
    //console.log('SET aper='+ wf.aper +' algo='+ wf.aper_algo +' param='+ wf.aper_param.toFixed(2));
-   //kiwi_trace();
+   kiwi_trace();
    wf_send('SET aper='+ wf.aper +' algo='+ wf.aper_algo +' param='+ wf.aper_param.toFixed(2));
 }
 

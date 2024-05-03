@@ -11285,8 +11285,18 @@ function set_ceilfloordb(done)
 {
    maxdb = wf.auto_maxdb + wf.auto_ceil.val;
    mindb = wf.auto_mindb + wf.auto_floor.val;
+   console.log('$set_ceilfloordb amin/amax/ceil/floor='+ wf.auto_mindb +'/'+ wf.auto_maxdb +'/'+ wf.auto_ceil.val +'/'+ wf.auto_floor.val);
+   var range = maxdb - mindb;
+   if (cfg.spec_min_range) {
+      if (range < cfg.spec_min_range) {
+         var boost = cfg.spec_min_range - range;
+         console.log('$set_ceilfloordb BOOST orange='+ range +' min='+ mindb +' max='+ maxdb +'=>'+ (maxdb + boost) +' min_range='+ cfg.spec_min_range);
+         maxdb += boost;
+         range = maxdb - mindb;
+      }
+   }
 	mindb_un = mindb + zoomCorrection();
-   //console_log_dbgUs('# set_ceilfloordb min/max='+ mindb +'/'+ maxdb +' min_un='+ mindb_un);
+	console_log_dbgUs('$set_ceilfloordb min/max/un='+ mindb +'/'+ maxdb +'/'+ mindb_un +' range='+ range);
 	setmaxmindb(done, false);
 	w3_call('waterfall_maxmin_cb');
 
@@ -12593,13 +12603,16 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			break;
 		case "maxdb":
 		   wf.auto_maxdb = +param[1];
+		   //console.log('$SET wf.auto_maxdb='+ wf.auto_maxdb);
          setmaxdb(1, wf.auto_maxdb, true);
 			break;
 		case "mindb":
 		   wf.auto_mindb = +param[1];
+		   //console.log('$SET wf.auto_mindb='+ wf.auto_mindb);
          setmindb(1, wf.auto_mindb, true);
 	      w3_call('waterfall_maxmin_cb');
          update_maxmindb_sliders(true);
+         set_ceilfloordb(true);
 			break;
 		case "max_thr":
 			owrx.overload_mute = Math.round(+param[1]);

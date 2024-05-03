@@ -55,7 +55,7 @@ Boston, MA  02110-1301, USA.
 
 #ifdef USE_SDR
 
-//#define WF_INFO
+#define WF_INFO
 //#define TR_WF_CMDS
 #define SM_WF_DEBUG		false
 //#define WF_SPEC_INV_DEBUG
@@ -523,6 +523,9 @@ void c2s_waterfall(void *param)
                     if (wf->aper == AUTO) {
                         wf->avg_clear = 1;
                         wf->need_autoscale++;
+                        #ifdef WF_INFO
+                        printf("waterfall: zoom_start_chg need_autoscale++=%d algo=%d\n", wf->need_autoscale, wf->aper_algo);
+                        #endif
                     }
                 }
                 break;
@@ -1134,8 +1137,12 @@ void sample_wf(int rx_chan)
                     #endif
                 }
 
-                if (wf->aper_algo != OFF)
+                if (wf->aper_algo != OFF) {
                     wf->need_autoscale++;   // go again
+                    #ifdef WF_INFO
+                    printf("waterfall: SENT need_autoscale++=%d algo=%d\n", wf->need_autoscale, wf->aper_algo);
+                    #endif
+                }
             }
         #endif
         
@@ -1248,7 +1255,7 @@ static void aperture_auto(wf_inst_t *wf, u1_t *bp)
         for (i = 0; i <= len; i++) {
             if (i == len || band[i] != last) {
                 #ifdef WF_INFO
-                printf("%4d: %d\n", last, same);
+                //printf("%4d: %d\n", last, same);
                 #endif
                 if (same > max_count) max_count = same, min_dBm = last;
                 if (last > max_dBm) max_dBm = last;

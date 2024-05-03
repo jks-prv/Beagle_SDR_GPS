@@ -211,10 +211,12 @@ function waterfall_aper_param_cb(path, val, done, first)
 function waterfall_maxmin_cb()
 {
    w3_flash_fade('id-wfext-maxmin', 'cyan', 50, 300, '#575757');
-   w3_innerHTML('id-wfext-content', 
-      mindb.toString().positiveWithSign() +','+ maxdb.toString().positiveWithSign() +'&nbsp;=&nbsp;'+
-      wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign() +'&nbsp;+&nbsp;'+
-      wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign());
+   var dyn_range = maxdb - mindb;
+   var total_s = mindb.toString().positiveWithSign() +','+ maxdb.toString().positiveWithSign();
+   var computed_s = wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign();
+   var floor_ceil_s = wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign();
+   w3_innerHTML('id-wfext-content',
+      paren(total_s) +'&nbsp;=&nbsp;'+ paren(computed_s) +'&nbsp;+&nbsp;'+ paren(floor_ceil_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
 }
 
 function wfext_spb_color_cb(path, val, first, cbp)
