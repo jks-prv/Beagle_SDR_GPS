@@ -3651,7 +3651,7 @@ function zoom_over(evt)
    var key_mod = shortcut_key_mod(evt);
    var title = owrx.zoom_titles[key_mod][zin];
    if (disabled && key_mod == shortcut.NO_MODIFIER) title = '';
-   console.log('zoom_over key_mod='+ key_mod +' zin='+ zin +' title='+ title);
+   //console.log('zoom_over key_mod='+ key_mod +' zin='+ zin +' title='+ title);
    el.title = title;
 }
 
