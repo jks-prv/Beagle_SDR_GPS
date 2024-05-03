@@ -549,6 +549,8 @@ input.kiwi-pw
 }
 
 
+/* misc */
+
 .id-wf-sp-button
 {
     color: orange;
@@ -563,8 +565,12 @@ input.kiwi-pw
     background: cyan;
 }
 
-
-.ws_keep_conn { position: absolute; left: -9999px; visibility: hidden; }
+.ws_keep_conn
+{
+    position: absolute;
+    left: -9999px;
+    visibility: hidden;
+}
 
 
 /* coloris color picker */
