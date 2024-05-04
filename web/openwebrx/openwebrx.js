@@ -5683,7 +5683,7 @@ function wf_audio_FFT(audio_data, samps)
 	select_band					-> freqmode_set_dsp_kHz -> (above)
 	dx_click
 	freqset_complete
-	freqstep
+	freqstep_cb
 	WF shift-click (nearest boundary)
 	
 */
@@ -6160,7 +6160,8 @@ function freqset_complete(from, ev)
          if (pb.length == 1) {
             // /pbw
             var pbhw = lo/2;
-            lo = cpbcf - pbhw; hi = cpbcf + pbhw;
+            lo = cpbcf - pbhw;
+            hi = cpbcf + pbhw;
          }
       } else {
          // adjust passband center using current or specified pb width
@@ -6326,13 +6327,23 @@ function special_step(b, sel, caller)
 	return step_Hz;
 }
 
-function freqstep(path, sel, first, ev)
+function freqstep_cb(path, sel, first, ev)
 {
    var shiftKey = ev? ev.shiftKey : false;
    var hold = (ev && ev.type == 'hold');
-   console.log('freqstep: path='+ path +' sel='+ sel +' first='+ first +' ev='+ ev +' shiftKey='+ shiftKey +' hold='+ hold);
+   var hold_done = (ev && ev.type == 'hold-done');
+   //console.log('freqstep_cb: path='+ path +' sel='+ sel +' first='+ first +' ev='+ ev +' shiftKey='+ shiftKey +' hold='+ hold +' hold_done='+ hold_done);
    if (hold) {
-      console.log('freqstep HOLD');
+      //console.log('freqstep_cb HOLD');
+      owrx.freqstep_interval = setInterval(
+         function() {
+            freqstep_cb(null, sel);
+         }, 100);
+      return;
+   }
+   if (hold_done) {
+      //console.log('freqstep_cb HOLD-DONE');
+      kiwi_clearInterval(owrx.freqstep_interval);
       return;
    }
 	var step_Hz = up_down[cur_mode][sel]*1000;
@@ -6340,7 +6351,7 @@ function freqstep(path, sel, first, ev)
 	// set step size from band channel spacing
 	if (step_Hz == 0) {
 		var b = find_band(freq_displayed_Hz);
-		step_Hz = special_step(b, sel, 'freqstep');
+		step_Hz = special_step(b, sel, 'freqstep_cb');
 	}
 
 	var fnew = freq_displayed_Hz;
@@ -6415,7 +6426,7 @@ function freq_step_update_ui(force)
 		else {
 			title = (posHz? '+':'-')+'400/'+(posHz? '+':'-')+'1000';
 		}
-		w3_el('id-step-'+i).title = title;
+		w3_el('id-step-'+i).title = title +'\nclick-hold to repeat';
 	}
 	
 	freq_step_last_mode = cur_mode;
@@ -9804,13 +9815,13 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    // 0: -large, 1: -med, 2: -small || 3: +small, 4: +med, 5: +large
    case 'j': case 'J': case 'ArrowLeft':
       if (key_mod != shortcut.SHIFT_PLUS_CTL_ALT)
-         freqstep(null, owrx.wf_snap? key_mod : (2 - key_mod));
+         freqstep_cb(null, owrx.wf_snap? key_mod : (2 - key_mod));
       else
          dx_label_step(-1);
       break;
    case 'i': case 'I': case 'ArrowRight':
       if (key_mod != shortcut.SHIFT_PLUS_CTL_ALT)
-         freqstep(null, owrx.wf_snap? (5 - key_mod) : (3 + key_mod));
+         freqstep_cb(null, owrx.wf_snap? (5 - key_mod) : (3 + key_mod));
       else
          dx_label_step(+1);
       break;
@@ -10208,7 +10219,7 @@ function panels_setup()
       );
    
    check_suspended_audio_state();
-   fmt = 'w3-hold w3-padding-0 w3-575757';
+   fmt = 'w3-hold w3-hold-done w3-padding-0 w3-575757';
 	
 	w3_el("id-control-freq2").innerHTML =
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
@@ -10223,12 +10234,12 @@ function panels_setup()
          ),
 
          w3_div('id-step-freq',
-            w3_button(fmt, w3_img('id-step-0',                    'icons/stepdn.20.png'), 'freqstep', 0),
-            w3_button(fmt, w3_img('id-step-1|padding-bottom:1px', 'icons/stepdn.18.png'), 'freqstep', 1),
-            w3_button(fmt, w3_img('id-step-2|padding-bottom:2px', 'icons/stepdn.16.png'), 'freqstep', 2),
-            w3_button(fmt, w3_img('id-step-3|padding-bottom:2px', 'icons/stepup.16.png'), 'freqstep', 3),
-            w3_button(fmt, w3_img('id-step-4|padding-bottom:1px', 'icons/stepup.18.png'), 'freqstep', 4),
-            w3_button(fmt, w3_img('id-step-5',                    'icons/stepup.20.png'), 'freqstep', 5)
+            w3_button(fmt, w3_img('id-step-0',                    'icons/stepdn.20.png'), 'freqstep_cb', 0),
+            w3_button(fmt, w3_img('id-step-1|padding-bottom:1px', 'icons/stepdn.18.png'), 'freqstep_cb', 1),
+            w3_button(fmt, w3_img('id-step-2|padding-bottom:2px', 'icons/stepdn.16.png'), 'freqstep_cb', 2),
+            w3_button(fmt, w3_img('id-step-3|padding-bottom:2px', 'icons/stepup.16.png'), 'freqstep_cb', 3),
+            w3_button(fmt, w3_img('id-step-4|padding-bottom:1px', 'icons/stepup.18.png'), 'freqstep_cb', 4),
+            w3_button(fmt, w3_img('id-step-5',                    'icons/stepup.20.png'), 'freqstep_cb', 5)
          ),
 
          w3_div('',
