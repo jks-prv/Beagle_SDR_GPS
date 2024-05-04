@@ -2,6 +2,28 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.677  May 5, 2024
+    Click-hold the frequency step buttons "- - - + + +" for auto repeat.
+
+    Fixed various issues with auto aperture mode:
+        When the waterfall was panned or scrolled too many requests to adjust the aperture piled up.
+        If strongest signals were fading significantly this caused the noise floor displayed to
+        bounce up and down unnecessarily. Now the aperture should adjust only once per pan/zoom.
+        
+        To help keep the noise floor displayed in a darker colormap color capped the WF min/max
+        delta to >= 50 dB.
+        
+        Added a second auto-scale button (when aperture averaging mode is "off") so you don't
+        have to scroll up to get to the usual auto-scale button at the top of the WF tab.
+    
+    Fixed frequency undo/redo (i.e. typing shift-return). Didn't work properly in 10 Hz
+    frequency display mode.
+    
+    Improved wording of password-related messages in the log when a user connects.
+
+    Added shell alias "cl" for cleaning (reducing size of) the Debian system logs.
+    Same as "clean logs" button in admin console tab.
+
 v1.676  May 2, 2024
     Trigger immediate SNR measurement via /snr/?measure URL option. (thanks scratchmoney)
 
