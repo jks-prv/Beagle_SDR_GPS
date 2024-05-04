@@ -1122,6 +1122,11 @@ input[type=range]::-moz-range-thumb {
 	width: 33%;
 }
 
+.w3-width-40pct
+{
+	width: 40%;
+}
+
 .w3-width-half
 {
 	width: 50%;
@@ -1259,6 +1264,11 @@ input[type=range]::-moz-range-thumb {
     background-color: lightGray;
 }
 
+.w3-575757
+{
+    background-color: #575757;
+}
+
 /* e.g. to override black text of a w3-* color */
 .w3-text-css-white
 {
@@ -1359,7 +1369,7 @@ input[type=range]::-moz-range-thumb {
 .w3-selection-green
 {
     color: white;
-    background-color: #4CAF50;
+    background-color: #4CAF50 !important;
 }
 
 .w3-text-outline {

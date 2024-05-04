@@ -145,13 +145,10 @@ function mode_html()
          
          w3_div('',
             w3_div('w3-left',
-               w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/kiwi.73x73.jpg" width="73" height="73" />'),
-               w3_div('w3-flex w3-halign-center w3-margin-B-5', '<img src="gfx/cowbelly.73x73.jpg" width="73" height="73" />'),
-               w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />'),
-               admin.is_multi_core? 
-                  w3_div('w3-flex', '<img src="gfx/kiwi.derp.113x73.jpg" width="113" height="73" />')
-               :
-                  ''
+               w3_div('w3-flex w3-halign-center w3-margin-B-5', w3_img('', 'gfx/kiwi.73x73.jpg', 73, 73)),
+               w3_div('w3-flex w3-halign-center w3-margin-B-5', w3_img('', 'gfx/cowbelly.73x73.jpg', 73, 73)),
+               w3_div('w3-flex',                                w3_img('', 'gfx/kiwi.derp.113x73.jpg', 113, 73)),
+               admin.is_multi_core? w3_div('w3-flex',           w3_img('', 'gfx/kiwi.derp.113x73.jpg', 113, 73)) : ''
             ),
             w3_sidenav('id-sidenav-fw|width:'+ bwpx +';border-collapse:collapse',
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', 'id-sidenav-fw', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
@@ -2507,7 +2504,7 @@ function gps_html()
          ),
          w3_div('id-gps-azel-container w3-hide',
             w3_div('w3-hcenter w3-relative',
-               '<img id="id-gps-azel-graph" src="gfx/gpsEarth.png" width="400" height="400" style="position:absolute; top:-2px" />',
+               w3_img('id-gps-azel-graph|position:absolute; top:-2px', 'gfx/gpsEarth.png', 400, 400),
                '<canvas id="id-gps-azel-canvas" width="400" height="400" style="position:absolute"></canvas>'
             )
          ),

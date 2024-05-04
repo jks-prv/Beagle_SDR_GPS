@@ -722,7 +722,7 @@ function wspr_autorun_all_regular_cb(path, idx, first)
 {
    if (first) return;
    for (var i = 0; i < rx_chans; i++) {
-      var path = 'WSPR.autorun'+ i;
+      path = 'WSPR.autorun'+ i;
       w3_select_value(path, 0);
       admin_select_cb(path, 0, /* first: true => no save */ true);
    }

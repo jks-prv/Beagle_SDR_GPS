@@ -320,7 +320,7 @@ function w3_esc_dq(s)
 // a multi-argument call that silently continues if func not found
 function w3_call(func, arg0, arg1, arg2, arg3, arg4)
 {
-   var rv = undefined;
+   var rv;
 
    if (isNoArg(func)) return rv;
    
@@ -1623,10 +1623,12 @@ function w3_br(s)
 // => <div [class="[prop] [extra_prop]"] [style="[style] [extra_style]"] [attr] [extra_attr]>
 function w3_psa(psa, extra_prop, extra_style, extra_attr)
 {
-	//console.log('psa_in=['+ psa +']');
-	//console.log('extra_prop=['+ extra_prop +']');
-	//console.log('extra_style=['+ extra_style +']');
-	//console.log('extra_attr=['+ extra_attr +']');
+   if (psa && psa.includes('w3-dump')) {
+	   console.log('psa_in=['+ psa +']');
+	   console.log('extra_prop=['+ extra_prop +']');
+	   console.log('extra_style=['+ extra_style +']');
+	   console.log('extra_attr=['+ extra_attr +']');
+	}
 
    if (psa && psa.startsWith('class=')) {
       //console.log('#### w3_psa RECURSION ####');
@@ -2144,6 +2146,17 @@ function w3_img_wh(src, func)
       func(this.width, this.height);
    };
    img.src = src;
+}
+
+function w3_img(psa, file, width, height)
+{
+   var w = isArg(width)? ('width='+ width) : '';
+   var h = isArg(height)? ('height='+ height) : '';
+   var src = 'src='+ dq(file);
+	var p = w3_psa(psa, null, null, w3_sb(src, w, h));
+	var s = '<img '+ p +' />';
+	if (psa && psa.includes('w3-dump')) console.log('w3-dump: '+ s);
+	return s;
 }
 
 

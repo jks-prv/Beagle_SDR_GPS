@@ -49,12 +49,13 @@ function waterfall_controls_setup()
 		   w3_divs('w3-margin-T-8',
             w3_text('w3-margin-B-2 w3-text-css-orange', '<b>Aperture auto mode</b>'),
 
-            w3_col_percent('w3-valign w3-margin-LR-16/',
-               w3_select('id-wfext-aper-algo w3-text-red', '', 'avg', 'wfext.aper_algo', wfext.aper_algo, wfext.aper_algo_s, 'waterfall_aper_algo_cb'), 25,
-               w3_div('id-wfext-aper-param',
+            w3_inline('w3-valign w3-margin-LR-16 w3-gap-16/',
+               w3_select('id-wfext-aper-algo w3-text-red', '', 'avg', 'wfext.aper_algo', wfext.aper_algo, wfext.aper_algo_s, 'waterfall_aper_algo_cb'),
+               w3_div('id-wfext-aper-param w3-width-40pct',
                   w3_slider('id-wfext-aper-param-slider', 'Parameter', 'wfext.aper_param', wfext.aper_param, 0, 10, 1, 'waterfall_aper_param_cb')
-               ), 40,
-               '&nbsp;', 3, w3_div('id-wfext-aper-param-field')
+               ),
+               w3_div('id-wfext-aper-param-field'),
+               w3_button('id-wfext-aper-autoscale class-button w3-right w3-selection-green w3-font-11_25px||title="waterfall auto scale"', 'Auto<br>Scale', 'wf_autoscale_cb')
             )
          ),
          
@@ -150,7 +151,8 @@ function waterfall_aper_algo_cb(path, idx, first)
    wf.aper_algo = wfext.aper_algo = +idx;
 
    if (wfext.aper_algo == wfext.aper_algo_e.OFF) {
-      w3_hide(w3_el('id-wfext-aper-param').parentElement);
+      w3_hide(w3_el('id-wfext-aper-param'));
+      w3_show(w3_el('id-wfext-aper-autoscale'));
       w3_innerHTML('id-wfext-aper-param-field', 'aperture auto-scale on <br> waterfall pan/zoom only');
       colormap_update();
    } else {
@@ -161,7 +163,8 @@ function waterfall_aper_algo_cb(path, idx, first)
       //console.log('waterfall_aper_algo_cb menu='+ f_a +'('+ f_s +') val='+ val);
    
       // update slider to match menu change
-      w3_show(w3_el('id-wfext-aper-param').parentElement);
+      w3_show(w3_el('id-wfext-aper-param'));
+      w3_hide(w3_el('id-wfext-aper-autoscale'));
       waterfall_aper_param_cb('id-wfext-aper-param-slider', val, /* done */ true, /* first */ false);
       //console.log('waterfall_aper_algo_cb EXIT path='+ path +' menu='+ f_a +'('+ f_s +') param='+ wfext.aper_param);
    }

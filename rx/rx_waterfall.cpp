@@ -56,7 +56,7 @@ Boston, MA  02110-1301, USA.
 #ifdef USE_SDR
 
 //#define WF_INFO
-#define WF_APER_INFO
+//#define WF_APER_INFO
 //#define TR_WF_CMDS
 #define SM_WF_DEBUG		false
 //#define WF_SPEC_INV_DEBUG
@@ -769,6 +769,7 @@ void c2s_waterfall(void *param)
             continue;
         }
         
+        // coalesse the repeated start_chg resulting from a WF pan/scroll
         if (aper_pan_timer && wf->mark > (aper_pan_timer + 1000)) {
             wf->avg_clear = 1;
             wf->need_autoscale++;

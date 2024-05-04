@@ -1296,8 +1296,8 @@ function drm_desktop_controls_setup(w_multi)
                w3_div(sprintf('id-drm-panel-1-slideshow w3-relative w3-light-blue|width:%dpx; height:100%%;', w_multi),
                   w3_div(sprintf('w3-margin-TL-%d w3-relative w3-scroll|width:%dpx; height:%dpx', m_ss, w_ss, h_ss),
                      w3_div('id-drm-slideshow-images',
-                        '<img id="id-drm-slideshow-img0" class="cl-drm-slideshow-img" src="">' +
-                        '<img id="id-drm-slideshow-img1" class="cl-drm-slideshow-img" src="">'
+                        w3_img('id-drm-slideshow-img0 cl-drm-slideshow-img', ''),
+                        w3_img('id-drm-slideshow-img1 cl-drm-slideshow-img', '')
                      ),
                      w3_div('id-drm-slideshow-info w3-relative')
                   )

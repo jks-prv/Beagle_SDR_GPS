@@ -325,7 +325,7 @@ function tdoa_controls_setup()
                accessToken: 'not-needed',
                style: 'https://api.maptiler.com/maps/'+ map_style +'/style.json'+ tdoa.a[1]
             });
-         }
+         };
       }
 
       // MapTiler 512/256 px raster tiles
@@ -342,7 +342,7 @@ function tdoa_controls_setup()
                attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                crossOrigin: true
             });
-         }
+         };
       }
 
       // OSM raster tiles
@@ -356,7 +356,7 @@ function tdoa_controls_setup()
                attribution: '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>',
                crossOrigin: true
             });
-         }
+         };
       }
 
       var sat_map = map_tiles('hybrid');
@@ -404,7 +404,7 @@ function tdoa_controls_setup()
       tdoa.cur_map = tdoa.kiwi_map = m;
       if (dbgUs) sat_map.getPane()._jks = 'MAP';
 
-      var scale = L.control.scale()
+      var scale = L.control.scale();
       scale.addTo(m);
       scale.setPosition('bottomright');
    
@@ -931,7 +931,10 @@ function tdoa_style_marker(marker, idx, name, type, map)
                      //console.log('tooltip mouseleave z='+ el.style.zIndex);
                      //console.log(ev);
                      if (!rh.selected) {
-                        rh.type_host? w3_color(el, 'white', 'blue') : w3_color(el, 'black', 'lime');
+                        if (rh.type_host)
+                           w3_color(el, 'white', 'blue');
+                        else
+                           w3_color(el, 'black', 'lime');
                         el.style.zIndex = 9000;    // NB: "z-index: 9000" in TDoA.css
                      }
                      tdoa_set_unspiderfy_timeout();
@@ -1012,7 +1015,7 @@ function tdoa_spiderfied(which, a)
    var l = 10, r = 20, tb = 20;
    var nwLL = m.layerPointToLatLng([nw.x-l, nw.y-tb]);
    var seLL = m.layerPointToLatLng([se.x+r, se.y+tb]);
-   tdoa.clusterLLB = L.latLngBounds([nwLL, seLL])
+   tdoa.clusterLLB = L.latLngBounds([nwLL, seLL]);
    if (tdoa.orange_rect) tdoa.orange_rect.removeFrom(m);
    if (dbgUs) tdoa.orange_rect = L.rectangle(tdoa.clusterLLB, {color: "#ff7800", weight: 0.5}).addTo(m);
 }
@@ -1083,7 +1086,7 @@ function tdoa_remove_hosts()
       tdoa.hosts.forEach(function(h) {
          tdoa_marker_remove(h.mkr);
       });
-      if (tdoa.leaflet && tdoa.hosts_clusterer) tdoa.hosts_clusterer.clearLayers(); else tdoa.hosts_clusterer.clearMarkers()
+      if (tdoa.leaflet && tdoa.hosts_clusterer) tdoa.hosts_clusterer.clearLayers(); else tdoa.hosts_clusterer.clearMarkers();
    }
 }
 
@@ -1239,7 +1242,7 @@ function tdoa_remove_refs()
       tdoa.refs_markers.forEach(function(mkr) {
          tdoa_marker_remove(mkr);
       });
-      if (tdoa.leaflet && tdoa.refs_clusterer) tdoa.refs_clusterer.clearLayers(); else tdoa.refs_clusterer.clearMarkers()
+      if (tdoa.leaflet && tdoa.refs_clusterer) tdoa.refs_clusterer.clearLayers(); else tdoa.refs_clusterer.clearMarkers();
    }
 }
 
@@ -1783,7 +1786,7 @@ function tdoa_host_click_status_cb(obj, field_idx)
       var arr = obj.response.split('\n');
       //console.log('tdoa_host_click_status_cb field_idx='+ field_idx +' arr.len='+ arr.length);
       //console.log(arr);
-      var offline = auth = users = users_max = preempt = fixes_min = null;
+      var offline = null, auth = null, users = null, users_max = null, preempt = null, fixes_min = null;
       for (var i = 0; i < arr.length; i++) {
          var a = arr[i];
          if (a.startsWith('offline=')) offline = a.split('=')[1];
@@ -1930,7 +1933,7 @@ function tdoa_submit_button_cb2()
          continue;
       }
 
-      if (list_i) h_v += ',', p_v += ',', id_v += ',';
+      if (list_i) { h_v += ','; p_v += ','; id_v += ','; }
       h =  a[0];
       li.h = h;
       h_v += h;
@@ -2171,7 +2174,7 @@ function tdoa_submit_status_new_cb(no_rerun_files)
          console.log('tdoa_submit_status_new_cb');
          console.log(j);
          var okay = 0;
-         var info = undefined;
+         var info;
          var err = 'unknown status returned';
          var per_file, status, message;
          
@@ -2634,7 +2637,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
 
          // figure out which markers to show on the result maps
          var show_mkrs = [];
-         var ms2, me2   // can't reuse ms/me here because of async kiwi_ajax() callback code above!
+         var ms2, me2;   // can't reuse ms/me here because of async kiwi_ajax() callback code above!
          if (idx == tdoa.TDOA_MAP_NO_HOSTS || idx == tdoa.TDOA_MAP_WITH_HOSTS || idx == tdoa.COMBINED_MAP) {
             // TDoA and combined map get all host markers
             ms2 = tdoa.SINGLE_MAPS; me2 = tdoa.SINGLE_MAPS + npairs;
@@ -2714,10 +2717,7 @@ function tdoa_result_menu_click_cb(path, idx, first)
          if (idx == tdoa.COMBINED_MAP)
             s = 'Available only for new map option';
          else
-            s = '<img' +
-               ' src="'+ tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[idx].file +'.png"' +
-               ' alt="Image not available"' +
-            '/>';
+            s = w3_img('||alt="Image not available"', tdoa.url_files + tdoa.response.key +'/'+ tdoa.results[idx].file +'.png');
          w3_innerHTML('id-tdoa-png', w3_div('w3-text-yellow', s));
          w3_show('id-tdoa-png');
          tdoa.cur_map = tdoa.kiwi_map;
@@ -2740,7 +2740,7 @@ function tdoa_all_results_cb(path, checked)
 
 function tdoa_clear_results_cb(path, idx, first)
 {
-   if (!(+idx)) return;
+   if ((+idx) == 0) return;
    tdoa.result_refs.forEach(function(ref, i) {
       if (tdoa.result_refs.length <= 1) return;
       var mkr = tdoa.result_mkrs.shift();
@@ -3189,7 +3189,7 @@ function tdoa_wf_preview(mkr)
    var h = mkr.kiwi_mkr_2_ref_or_host;
    //console.log(h);
    tdoa.wf_url = h.h +':'+ h.p;
-   tdoa.wf_id_snr = h.id_snr
+   tdoa.wf_id_snr = h.id_snr;
    w3_innerHTML('id-tdoa-submit-status', 'Waterfall preview: '+ h.id_snr +' ('+ tdoa.wf_url +')');
 
    tdoa.wf_ws = open_websocket('W/F',

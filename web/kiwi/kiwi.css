@@ -179,6 +179,7 @@ x2
 .id-step-freq img
 {
 	margin-right: 3px;
+	margin-bottom: -3px;
 }
 
 .id-step-freq img:hover 

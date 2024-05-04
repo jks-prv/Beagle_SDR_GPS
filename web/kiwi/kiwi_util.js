@@ -28,7 +28,7 @@ try {
 	if (!String.prototype.includes) {
 		String.prototype.includes = function(str) {
 			return (this.indexOf(str) >= 0);
-		}
+		};
 	}
 } catch(ex) {
 	console.log("kiwi_util: String.prototype.includes");
@@ -39,7 +39,7 @@ try {
 	if (!String.prototype.startsWith) {
 		String.prototype.startsWith = function(str) {
 			return this.indexOf(str) == 0;
-		}
+		};
 	}
 } catch(ex) {
 	console.log("kiwi_util: String.prototype.startsWith");
@@ -137,7 +137,7 @@ document.onreadystatechange = function() {
          kiwi_load2();
       }
 	}
-}
+};
 
 function kiwi_load2()
 {
@@ -181,7 +181,7 @@ var kiwi_version_fail = false;
 function kiwi_version_cb(response_obj)
 {
 	version_maj = response_obj.maj; version_min = response_obj.min;
-	kiwi.admin_save_pwd = response_obj.sp
+	kiwi.admin_save_pwd = response_obj.sp;
 	//console.log('v'+ version_maj +'.'+ version_min +': KiwiSDR server asp='+ kiwi.admin_save_pwd);
 	var s='';
 	
@@ -377,7 +377,7 @@ function kiwi_bitReverse(v, len) {
 
 function kiwi_bitCount(n) {
    if (n == 0) return 0;
-   return n.toString(2).match(/1/g).length
+   return n.toString(2).match(/1/g).length;
 }
 
 // external API compatibility
@@ -403,7 +403,7 @@ function kiwi_inet4_d2h(inet4_str, opt)
 	   var n = parseInt(v);    // includes "" => NaN
 	   if (!isNumber(n) || n < 0 || n > 255) return null;
 	   return n;
-	}
+	};
 	var a, b, c, d;
 	if ((a = check(s[0])) == null) return null;
 	if ((b = check(s[1])) == null) return null;
@@ -470,7 +470,7 @@ Number.prototype.leadingZeros = function(size)
 	if (!isNumber(size)) size = 2;
 	while (s.length < size) s = '0'+ s;
 	return s;
-}
+};
 
 // size is total number of digits, padded to the left with zeros
 String.prototype.leadingZeros = function(size)
@@ -479,7 +479,7 @@ String.prototype.leadingZeros = function(size)
 	if (!isNumber(size)) size = 2;
 	while (s.length < size) s = '0'+ s;
 	return s;
-}
+};
 
 // size is total number of characters, padded to the left with spaces
 Number.prototype.fieldWidth = function(size)
@@ -488,7 +488,7 @@ Number.prototype.fieldWidth = function(size)
 	if (!isNumber(size)) return s;
 	while (s.length < size) s = ' '+ s;
 	return s;
-}
+};
 
 String.prototype.fieldWidth = function(size)
 {
@@ -496,7 +496,7 @@ String.prototype.fieldWidth = function(size)
 	if (!isNumber(size)) return s;
 	while (s.length < size) s = ' '+ s;
 	return s;
-}
+};
 
 // unlike parseInt() considers the entire string
 String.prototype.filterInt = function() {
@@ -504,7 +504,7 @@ String.prototype.filterInt = function() {
 	if (/^(\-|\+)?([0-9]+|Infinity)$/.test(s))
 		return Number(s);
 	return NaN;
-}
+};
 
 String.prototype.parseIntEnd = function() {
 	var s = String(this);
@@ -514,21 +514,21 @@ String.prototype.parseIntEnd = function() {
 	if (a.length == 2 && isNumber(+a[1]))
 		return Number(a[1]);
 	return NaN;
-}
+};
 
 String.prototype.withSign = function()
 {
 	var s = this;
 	var n = Number(s);
 	return (n < 0)? s : ('+'+ s);
-}
+};
 
 String.prototype.positiveWithSign = function()
 {
 	var s = this;
 	var n = Number(s);
 	return (n <= 0)? s : ('+'+ s);
-}
+};
 
 function isHexDigit(c) { return ('0123456789ABCDEFabcdef'.indexOf(c) > -1); }
 
@@ -546,7 +546,7 @@ Number.prototype.toHex = function(digits)
 	while (s.length < digits) s = '0'+ s;
 	if (add_0x) s = '0x'+ s;
 	return s;
-}
+};
 
 // minimum number of digits: remove trailing zeros and/or decimal point
 Number.prototype.toFixedNZ = function(d)
@@ -557,7 +557,7 @@ Number.prototype.toFixedNZ = function(d)
 	   s = s.slice(0, -1);
 	if (s.endsWith('.')) s = s.slice(0, -1);   // nnn.0 => nnn. => nnn
 	return s;
-}
+};
 
 Number.prototype.toUnits = function()
 {
@@ -573,7 +573,7 @@ Number.prototype.toUnits = function()
 	} else {
 		return (n/1e9).toFixed(1)+'G';   // nnn.fG
 	}
-}
+};
 
 // allow 'k' (1e3) and 'M' (1e6) suffix
 // use "adj" param to convert returned result in kHz (=1e-3), MHz (=1e-6) etc.
@@ -586,7 +586,7 @@ String.prototype.parseFloatWithUnits = function(allowed_suffixes, adj, frac_digi
 	if (!allowed_suffixes || allowed_suffixes.includes('M'))
       if (new RegExp('([-0-9.]*M)').test(s)) { v *= 1e6; if (isNumber(adj)) v *= adj; }
    return kiwi_round(v, frac_digits);
-}
+};
 
 function kiwi_round(v, frac_digits)
 {
@@ -600,9 +600,9 @@ Number.prototype.withSign = function()
 	var n = Number(this);
 	var s = n.toString();
 	return (n < 0)? s : ('+'+ s);
-}
+};
 
-var kHz = function(f) { return (f / 1e3).toFixed(3) +'k'; }
+var kHz = function(f) { return (f / 1e3).toFixed(3) +'k'; };
 
 // like setTimeout() except also calls once immediately
 function kiwi_setTimeout(func, msec, param)
@@ -613,7 +613,7 @@ function kiwi_setTimeout(func, msec, param)
 
 function kiwi_clearTimeout(timeout)
 {
-   try { clearTimeout(timeout); } catch(e) {};
+   try { clearTimeout(timeout); } catch(e) {}
 }
 
 // like setInterval() except also calls once immediately
@@ -625,7 +625,7 @@ function kiwi_setInterval(func, msec, param)
 
 function kiwi_clearInterval(interval)
 {
-   try { clearInterval(interval); } catch(e) {};
+   try { clearInterval(interval); } catch(e) {}
 }
 
 var littleEndian = (function() {
@@ -924,11 +924,12 @@ function key_stringify(evt)
 function event_dump(evt, id, oneline)
 {
    var k = evt.key || '(no key)';
+   var ct_id;
 
    if (oneline) {
       var trel = (isDefined(evt.relatedTarget) && evt.relatedTarget)? (' Trel='+ evt.relatedTarget.id) : '';
       var key = key_stringify(evt);
-      var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
+      ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
       console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ ct_id + trel);
    } else {
       console.log('================================');
@@ -939,7 +940,7 @@ function event_dump(evt, id, oneline)
       }
       console.log('EVENT_DUMP: '+ id +' type='+ evt.type);
       console.log('key: '+ key_stringify(evt));
-      var ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
+      ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
       console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ ct_id);
       var buttons = '';
       if (evt.buttons & 1) buttons += 'L';
@@ -1109,12 +1110,12 @@ function kiwi_decodeURIComponent(id, uri)
 }
 
 kiwi_util.str_recode_lookup = [];
-var e1 = function(c) { kiwi_util.str_recode_lookup[ord(c)] = 1; }
-var e2 = function(c) { kiwi_util.str_recode_lookup[ord(c)] = 2; }
+var e1 = function(c) { kiwi_util.str_recode_lookup[ord(c)] = 1; };
+var e2 = function(c) { kiwi_util.str_recode_lookup[ord(c)] = 2; };
 var er = function(r1, r2, v) {
    for (var i = r1; i <= r2; i++)
       kiwi_util.str_recode_lookup[i] = v;
-}
+};
 er(0, 127, 0);
 e1('&'); e1("'"); e1('+'); e1(';'); e1('<'); e1('>'); e1('`');
 e2('"'); e2('%'); e2('\\');
@@ -1483,7 +1484,7 @@ function kiwi_storeRead(k, def)
    if (isNoArg(k)) return null;
 
    if (kiwi.noLocalStorage) {
-      var rv = readCookie(k, def);
+      rv = readCookie(k, def);
       //alert('sRd k='+ k +' d='+ def +' r='+ rv);
       return rv;
    }
@@ -1509,7 +1510,7 @@ function kiwi_storeInit(k, init)
    if (isNoArg(k)) return null;
 
    if (kiwi.noLocalStorage) {
-      var rv = initCookie(k, init);
+      rv = initCookie(k, init);
       //alert('sIn k='+ k +' i='+ init +' r='+ rv);
       return rv;
    }
@@ -1721,11 +1722,11 @@ function setVarFromString(string, val)
 
 // from: stackoverflow.com/questions/332422/how-do-i-get-the-name-of-an-objects-type-in-javascript
 // NB: may not work in all cases
-function getType(o) { return o && o.constructor && o.constructor.name }
+function getType(o) { return o && o.constructor && o.constructor.name; }
 
 // see: feather.elektrum.org/book/src.html
 function kiwi_parseQuery ( query ) {
-   var Params = new Object ();
+   var Params = {};
    if ( ! query ) return Params; // return empty object
    var Pairs = query.split(/[;&]/);
    for ( var i = 0; i < Pairs.length; i++ ) {
@@ -1902,22 +1903,22 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 	ajax.onerror = function(e) {
       dbug('XHR.onerror='+ e);
       if (debug) console.log(e);
-	}
+	};
 
 	ajax.onabort = function(e) {
       dbug('XHR.onabort='+ e);
       if (debug) console.log(e);
-	}
+	};
 
 	ajax.onload = function(e) {
       dbug('XHR.onload='+ e);
       if (debug) console.log(e);
-	}
+	};
 
 	ajax.onloadstart = function(e) {
       dbug('XHR.onloadstart='+ e);
       if (debug) console.log(e);
-	}
+	};
 
 	ajax.onreadystatechange = function() {
       dbug('XHR.onreadystatechange readyState='+ ajax.readyState);
@@ -1990,7 +1991,7 @@ function kiwi_ajax_prim(method, data, url, callback, cb_param, timeout, progress
 		dbug('AJAX ORSC ABORT/DELETE');
 		ajax.abort();
 		delete ajax_requests[id];
-	}
+	};
 
    if (timeout >= 0) {     // timeout < 0 is test mode
       // DANGER: some URLs are relative e.g. /VER
@@ -2091,7 +2092,7 @@ function kiwi_draw_pie(id, size, filled) {
 	if (alpha == 360) { mid = 1; x = -0.1; y = -size; }
 	var animate = 'M 0 0 v '+ (-size) +' A '+ size +' '+ size +' 1 '+ mid +' 1 '+  x  +' '+  y  +' z';
 	w3_iterate_classname(id, function(el) { el.setAttribute('d', animate); });
-};
+}
 
 function page_draw_pie(which_s) {
    var which = (which_s == 'admin')? admin : mfg;
@@ -2113,7 +2114,7 @@ function page_draw_pie(which_s) {
          }
       }
 	}
-};
+}
 
 function wait_then_reload_page(secs, msg, which_s)
 {
@@ -2163,7 +2164,7 @@ var sendmail = function (to, subject) {
 	var o = { url: s };
 	if (!(kiwi_isSafari() || kiwi_isFirefox())) o.tab = 1;
    kiwi_open_or_reload_page(o);
-}
+};
 
 function line_stroke(ctx, vert, linew, color, x1,y1,x2,y2)
 {
@@ -2251,7 +2252,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	ws.open_cb = open_cb;
 	ws.open_cb_param = open_cb_param;
 	ws.msg_cb = msg_cb;
-	ws.all_msg_cb = w3_opt(opt, 'all_msg_cb', null)
+	ws.all_msg_cb = w3_opt(opt, 'all_msg_cb', null);
 	ws.recv_cb = recv_cb;
 	ws.error_cb = error_cb;
 	ws.close_cb = close_cb;
