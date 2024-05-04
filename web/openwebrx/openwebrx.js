@@ -239,8 +239,8 @@ function kiwi_main_ready()
    //console.log('last_vol='+ last_vol);
 	setvolume(true, last_vol);
 	
-	console.log('LAST f='+ override_freq +' m='+ override_mode +' z='+ override_zoom
-		+' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
+	console.log('LAST f='+ override_freq +' m='+ override_mode +' z='+ override_zoom +
+		' 9_10='+ override_9_10 +' min='+ override_min_dB +' max='+ override_max_dB);
 
 	// process URL query string parameters
 	var num_win = 16;     // FIXME: should really be rx_chans, but that's not available yet 
@@ -253,7 +253,7 @@ function kiwi_main_ready()
 			qd[a[0]] = a[1]? a[1] : 1;		// &foo& shorthand for &foo=1&
 		});
 		return qd;
-	}
+	};
 	
 	var q = window.location.search && window.location.search.substr(1);		// skip initial '?'
 	var qs = [], qd = [];
@@ -283,7 +283,7 @@ function kiwi_main_ready()
       }
 	}
 	
-	var q = qd[1];
+	q = qd[1];
 	//console.log('this window/tab:');
 	//console.log(q);
 	
@@ -517,7 +517,7 @@ function init_panel_toggle(type, panel, scrollable, timeo, color)
 	} else {		// ptype.POPUP or ptype:HIDE
 		divVis.innerHTML =
 			'<a id="'+panel+'-close" onclick="toggle_panel('+ sq(panel) +');">' +
-			   '<img id='+ dq(panel +'-close-img') +' src="icons/close.24.png" width="24" height="24" />' +
+			   w3_img(panel +'-close-img', 'icons/close.24.png', 24, 24) +
 			'</a>';
 	}
 
@@ -748,7 +748,7 @@ function init_rx_photo()
 	if (dbgUs || kiwi_isMobile()) {
 		close_rx_photo();
 	} else {
-		window.setTimeout(function() { close_rx_photo() }, 3000);
+		window.setTimeout(function() { close_rx_photo(); }, 3000);
 	}
 }
 
@@ -862,10 +862,10 @@ function style_value(of_what, which)
 // demodulator
 ////////////////////////////////
 
-demodulators = []
+demodulators = [];
 
 demodulator_color_index = 0;
-demodulator_colors = ["#ffff00", "#00ff00", "#00ffff", "#058cff", "#ff9600", "#a1ff39", "#ff4e39", "#ff5dbd"]
+demodulator_colors = ["#ffff00", "#00ff00", "#00ffff", "#058cff", "#ff9600", "#a1ff39", "#ff4e39", "#ff5dbd"];
 
 function demodulators_get_next_color()
 {
@@ -971,7 +971,7 @@ function demod_envelope_draw(range, from, to, color, line)
 function demod_envelope_where_clicked(x, y, drag_ranges, key_modifiers)
 {
 	// Check exactly what the user has clicked based on ranges returned by demod_envelope_draw().
-	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x && y < scale_canvas_h/2; }
+	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x && y < scale_canvas_h/2; };
 	dr = demodulator.draggable_ranges;
 	//console.log('demod_envelope_where_clicked x='+ x +' y='+ y +' in_pb='+ ((y < scale_canvas_h/2)? 1:0) +' allow_pb_adj='+ drag_ranges.allow_pb_adj);
 	//console.log(drag_ranges);
@@ -1016,7 +1016,7 @@ demodulator = function(offset_frequency)
 	this.envelope = {};
 	this.color = demodulators_get_next_color();
 	this.stop = function(){};
-}
+};
 
 // ranges on filter envelope that can be dragged:
 demodulator.draggable_ranges = {
@@ -1028,7 +1028,7 @@ demodulator.draggable_ranges = {
 	pbs: 5,			// passband (while holding shift)
 	bwlo: 6,			// bandwidth (while holding alt in envelope beginning)
 	bwhi: 7,			// bandwidth (while holding alt in envelope ending)
-} // to which parameter these correspond in demod_envelope_draw()
+}; // to which parameter these correspond in demod_envelope_draw()
 
 //******* class demodulator_default_analog *******
 // This can be used as a base for basic audio demodulators.
@@ -1119,12 +1119,13 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
    }
    owrx.last_hi[subtype] = hi;
 
+   var min, p;
 	if (override_pbw != '') {
 	   var center = lo + (hi-lo)/2;
-	   var min = this.filter.min_passband;
+	   min = this.filter.min_passband;
 	   //console.log('### override_pbw cur_lo='+ lo +' cur_hi='+ hi +' cur_center='+ center +' min='+ min);
 	   override_pbw = decodeURIComponent(override_pbw);
-	   var p = override_pbw.split(',');
+	   p = override_pbw.split(',');
 	   console.log('p.len='+ p.length);
 	   var nlo = p[0].parseFloatWithUnits('k');
       console.log('nlo="'+ p[0] +'" '+ nlo);
@@ -1154,10 +1155,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 	if (override_pbc != '') {
 	   var cpbhw = (hi - lo)/2;
 	   var cpbc = lo + cpbhw;
-	   var min = this.filter.min_passband;
+	   min = this.filter.min_passband;
 	   //console.log('### override_pbc cur_lo='+ lo +' cur_hi='+ hi +' cpbc='+ cpbc +' cpbhw='+ cpbhw +' min='+ min);
 	   override_pbc = decodeURIComponent(override_pbc);
-	   var p = override_pbc.split(',');
+	   p = override_pbc.split(',');
 	   var pbc = p[0].parseFloatWithUnits('k');
       console.log('pbc='+ dq(p[0]) +' '+ pbc);
 	   var pbw = NaN;
@@ -1242,35 +1243,44 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		} else {
 			this.set_after = true;
 		}
-	}
+	};
 
 	// this function sends demodulator parameters to the server
 	this.doset = function() {
 		//console.log('DOSET fcar='+freq_car_Hz);
 		//if (dbgUs && dbgUsFirst) { dbgUsFirst = false; console.trace(); }
 		
-		var freq = (freq_car_Hz/1000).toFixed(3);
+		var freq_Hz = freq_car_Hz;
+		var freq_kHz = freq_Hz/1000;
+      var freq_kHz_s = freq_kHz.toFixed(3);     // always allow manual entry of 3 significant digits
+
 		var mode = this.server_mode;
 		var locut = this.low_cut.toString();
 		var hicut = this.high_cut.toString();
 		var mparam = (ext_mode(mode).SAx)? (' param='+ (owrx.chan_null | (owrx.SAM_opts << owrx.SAM_opts_sft))) : '';
 		//if (mparam != '') console.log('$mode='+ mode +' mparam='+ mparam); else console.log('$mode='+ mode);
-		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq + mparam;
+		var s = 'SET mod='+ mode +' low_cut='+ locut +' high_cut='+ hicut +' freq='+ freq_kHz_s + mparam;
 		snd_send(s);
       //kiwi_trace('doSet');
 		//console.log('$'+ s);
 
       var changed = null;
-      if (freq != owrx.last_freq) {
+      if (!owrx.freq_dsp_1Hz) {
+         // in 10 Hz mode store truncated freq so comparison below against last freq works correctly
+         var _freq_Hz = Math.round(freq_Hz/10) * 10;
+         //console.log('prev_freq_kHz PUSH '+ freq_Hz +'=>'+ _freq_Hz);
+         freq_Hz = _freq_Hz;
+      }
+      if (freq_Hz != owrx.last_freq_Hz) {
          changed = changed || {};
          changed.freq = 1;
-         if (freq > 0) {
-            //console.log('prev_freq_kHz PUSH '+ freq +'|'+ owrx.last_freq);
-            owrx.prev_freq_kHz.unshift(freq);
+         if (freq_Hz > 0) {
+            //console.log('prev_freq_kHz PUSH '+ freq_Hz +'|'+ owrx.last_freq_Hz);
+            owrx.prev_freq_kHz.unshift(freq_Hz);
             owrx.prev_freq_kHz.length = 2;
             //console.log(owrx.prev_freq_kHz);
          }
-         owrx.last_freq = freq;
+         owrx.last_freq_Hz = freq_Hz;
       }
       if (mode != owrx.last_mode) {
          changed = changed || {};
@@ -1297,7 +1307,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		   //console.log('audio_meas_dly_start');
 		   audio_meas_dly_start = (new Date()).getTime();
 		}
-	}
+	};
 	// this.set(); //we set parameters on object creation
 
 	//******* envelope object *******
@@ -1329,7 +1339,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
       // show "BFO" in tooltip when shift key changed before BFO dragging starts or while it is ongoing
       var isAdjBFO = (owrx.last_shiftKey || this.dragged_range == demodulator.draggable_ranges.bfo);
       var f_kHz = (center_freq + this.parent.offset_frequency)/1000 + kiwi.freq_offset_kHz;
-		pb_adj_car_ttip.innerHTML = (isAdjBFO? 'BFO ':'') + f_kHz.toFixed(freq_field_prec(f_kHz)) +' kHz';
+		pb_adj_car_ttip.innerHTML = (isAdjBFO? 'BFO ':'') + freq_field_prec_s(f_kHz) +' kHz';
 	};
 
 	// event handlers
@@ -1536,7 +1546,8 @@ function demodulator_analog_replace(subtype, freq)
 		var i_freq_Hz = Math.round(i_freq_kHz * 1000);
       offset = (i_freq_Hz <= 0 || i_freq_Hz > bandwidth)? 0 : (i_freq_Hz - center_freq);
 		//console.log('### init_freq='+ init_frequency +' freq_offset_kHz='+ kiwi.freq_offset_kHz +' i_freq_Hz='+ i_freq_Hz +' offset='+ offset +' init_mode='+ init_mode);
-      owrx.prev_freq_kHz = [ i_freq_kHz, i_freq_kHz ];
+      owrx.prev_freq_kHz = [ i_freq_Hz, i_freq_Hz ];
+      //console.log(owrx.prev_freq_kHz);
 		subtype = isArg(init_mode)? init_mode : 'am';
 	}
 	
@@ -1759,6 +1770,7 @@ function scale_offset_carfreq_from_px(x, visible_range)
 
 function scale_canvas_drag(evt, x, y)
 {
+   var i;
    if (scale_canvas_ignore_mouse_event) return;
    
 	//event_dump(evt, 'SC-MDRAG', 1);
@@ -1769,7 +1781,7 @@ function scale_canvas_drag(evt, x, y)
 		// we can use the main drag_min_delta thing of the main canvas
 		scale_canvas_drag_params.drag = true;
 		// call env_drag_start() for all demodulators (and they will decide if they're dragged, based on X coordinate)
-		for (var i=0; i < demodulators.length; i++)
+		for (i=0; i < demodulators.length; i++)
 			event_handled |= demodulators[i].envelope.env_drag_start(x, y, scale_canvas_drag_params.key_modifiers);
 		//console.log("MOV1 evh? "+event_handled);
 		evt.target.style.cursor = "move";
@@ -1779,7 +1791,7 @@ function scale_canvas_drag(evt, x, y)
 
 	if (scale_canvas_drag_params.drag) {
 		// call the drag_move for all demodulators (and they will decide if they're dragged)
-		for (var i=0; i < demodulators.length; i++)
+		for (i=0; i < demodulators.length; i++)
 			event_handled |= demodulators[i].envelope.drag_move(x);
 		//console.log("MOV2 evh? "+event_handled);
 		if (!event_handled) {
@@ -2034,7 +2046,7 @@ function get_scale_mark_spacing(range)
       //w3_innerHTML('id-owner-info', 'mkr_spacing='+ kHz(mkr_spacing));
 		out.smallbw = mkr_spacing/out.ratio;
 		return true;
-	}
+	};
 
 	for (var i=scale_markers_levels.length-1; i>=0; i--) {
 		mp = scale_markers_levels[i];
@@ -2086,15 +2098,16 @@ function mk_freq_scale()
 		}
 		text_to_draw = format_frequency(spacing.params.format+((f < 1e6)? 'kHz':'MHz'), f, pre_divide, decimals);
       //console.log('ftext-mkfs z'+ zoom_level +' '+ spacing.params.hz_per_large_marker +' marker_hz='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset) +' fo|f='+ kHz(fo) +'|'+ kHz(f) +' "'+ text_to_draw +'"');
-	}
+	};
 	
 	var last_large;
    var conv_ct=0;
+   var x;
 
 	for (;;) {
       conv_ct++;
       if (conv_ct > 1000) break;
-		var x = scale_px_from_freq_offset(marker_hz, g_range);
+		x = scale_px_from_freq_offset(marker_hz, g_range);
       //console.log('mkfs marker_hz|HPLM|0?='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset) +' '+ kHz(spacing.params.hz_per_large_marker) +' '+ (marker_hz_offset % spacing.params.hz_per_large_marker) +' x='+ x);
 		if (x > window.innerWidth) break;
 		scale_ctx.beginPath();		
@@ -2174,7 +2187,7 @@ function mk_freq_scale()
 		// on the left side
 		scale_ctx.textAlign = "center";
 		var f = first_large - spacing.smallbw * spacing.ratio;
-		var x = scale_px_from_freq_offset(f, g_range);
+		x = scale_px_from_freq_offset(f, g_range);
 		ftext(f);
 		var w = scale_ctx.measureText(text_to_draw).width;
 		if (x+w/2 > 0) scale_ctx.fillText(text_to_draw, x, 22+10);
@@ -2191,7 +2204,8 @@ function mk_freq_scale()
 // carrier marker symbol dimensions
 var dx_car_size = 8;
 var dx_car_border = 3;
-var dx_car_w = dx_car_h = dx_car_border*2 + dx_car_size;
+var dx_car_w = dx_car_border*2 + dx_car_size;
+var dx_car_h = dx_car_border*2 + dx_car_size;
 
 function resize_scale(a)
 {
@@ -3195,6 +3209,8 @@ function right_click_menu_cb(idx, x, cbp)
       break;
    
    case -1:
+      break;
+
    default:
       break;
    }
@@ -3402,11 +3418,12 @@ function zoom_step(dir, arg2)
 	var x_norm;
 	var update_zoom_f = true;
 	var b1, b2;
+	var f, znew;
 	
 	if (dir == ext_zoom.WHEEL) {
 	   if (arg2 == undefined) return;
 	   update_zoom_f = false;
-	   var znew = Math.round(zoom_level_f);
+	   znew = Math.round(zoom_level_f);
 	   if (znew == ozoom) return;
 	   dir = (znew > ozoom)? ext_zoom.IN : ext_zoom.OUT;
 	}
@@ -3431,7 +3448,7 @@ function zoom_step(dir, arg2)
 
 		if (dir == ext_zoom.TO_BAND) {
 			// zoom to band
-			var f = center_freq + demodulators[0].offset_frequency;
+			f = center_freq + demodulators[0].offset_frequency;
 			var cf;
 			var band = arg2;     // band specified by caller
 			if (band != undefined) {
@@ -3446,7 +3463,7 @@ function zoom_step(dir, arg2)
             //console.log('zoom_band f='+ f +' ITU_region=R'+ ITU_region);
             
             var _dxcfg = dx_cfg_db();
-            if (!_dxcfg) { zoom_finally(); return; };
+            if (!_dxcfg) { zoom_finally(); return; }
             var _kiwi_bands = kiwi_bands_db(dx.INIT_BANDS_NO);
 				for (i=0; i < _dxcfg.bands.length; i++) {    // search for first containing band
 					b1 = _dxcfg.bands[i];
@@ -3474,7 +3491,7 @@ function zoom_step(dir, arg2)
 		
 		if (dir == ext_zoom.ABS) {
 			if (arg2 == undefined) { zoom_finally(); return; }		// no abs zoom value specified
-			var znew = arg2;
+			znew = arg2;
 			//console.log('zoom_step ABS znew='+ znew +' zmax='+ zoom_levels_max +' zcur='+ zoom_level +' zoom_center='+ zoom_center);
 			if ((znew < 0 || znew > zoom_levels_max || znew == zoom_level) && zoom_center == 0.5) {
 			   zoom_finally();
@@ -3566,7 +3583,7 @@ function zoom_step(dir, arg2)
    zoom_finally();
 
    if (0 && dbgUs) {
-      var f = get_visible_freq_range();
+      f = get_visible_freq_range();
       console.log('^ZOOM z'+ zoom_level +' '+ (f.start/1e3).toFixed(0) +'|'+
          (f.center/1e3).toFixed(0) +'|'+ (f.end/1e3).toFixed(0) +' ('+ (f.bw/1e3).toFixed(0) +' kHz)');
    }
@@ -3641,7 +3658,7 @@ function zoom_over(evt)
    var key_mod = shortcut_key_mod(evt);
    var title = owrx.zoom_titles[key_mod][zin];
    if (disabled && key_mod == shortcut.NO_MODIFIER) title = '';
-   console.log('zoom_over key_mod='+ key_mod +' zin='+ zin +' title='+ title);
+   //console.log('zoom_over key_mod='+ key_mod +' zin='+ zin +' title='+ title);
    el.title = title;
 }
 
@@ -3793,9 +3810,9 @@ function spectrum_init()
 	spectrum_dB_bands();
 	var spectrum_update_rate_Hz = kiwi_isMobile()? 10:10;  // limit update rate since rendering spectrum is currently expensive
 	//if (kiwi_isMobile()) alert('spectrum_update_rate_Hz = '+ spectrum_update_rate_Hz +' Hz');
-	setInterval(function() { spec.update++ }, 1000 / spectrum_update_rate_Hz);
+	setInterval(function() { spec.update++; }, 1000 / spectrum_update_rate_Hz);
 
-   spec.spectrum_image = spec.ctx.createImageData(spec.canvas.width, spec.canvas.height)
+   spec.spectrum_image = spec.ctx.createImageData(spec.canvas.width, spec.canvas.height);
    
    if (!wf.audioFFT_active && rx_chan >= wf_chans) {
 		// clear entire spectrum canvas to black
@@ -3856,7 +3873,7 @@ function spectrum_dB_bands()
 		var color_transparent = color_map_transparent[cmi];
 		var color_name = '#'+(color >>> 8).toString(16).leadingZeros(6);
 		
-		var ypos_f = function(norm) { return Math.round(norm * spec.canvas.height) }
+		var ypos_f = function(norm) { return Math.round(norm * spec.canvas.height); };
 		var ypos_last = ypos_f(last_norm);
 		var ypos = ypos_f(norm);
 		if (ypos_last == 0 && ypos == 0) continue;
@@ -3930,7 +3947,7 @@ function spectrum_update(data)
       return;
    }
 
-	var i, trace, x, y, z;
+	var i, trace, x, y, z, band;
    spec.last_update = spec.update;
    
    // clear entire spectrum canvas to black
@@ -3952,7 +3969,7 @@ function spectrum_update(data)
    ctx.fillStyle = "lightGray";
    spec.af_ctx.fillStyle = "lightGray";
    for (i=0; i < spec.dB_bands.length; i++) {
-      var band = spec.dB_bands[i];
+      band = spec.dB_bands[i];
       y = Math.round(band.norm * sh);
       ctx.fillRect(0,y, sw1,1);
       spec.af_ctx.fillRect(0,y, sw2,1);
@@ -4050,7 +4067,7 @@ function spectrum_update(data)
       // the dB scale text
       ctx.fillStyle = "white";
       for (i=0; i < spec.dB_bands.length; i++) {
-         var band = spec.dB_bands[i];
+         band = spec.dB_bands[i];
          y = Math.round(band.norm * sh);
          ctx.fillText(band.dB, sw1+3, y-4);
          //console.log("SP x="+sw1+" y="+y+' '+dB);
@@ -4697,7 +4714,7 @@ function waterfall_add(data_raw, audioFFT)
 	      var pwr = dB_wire_to_dBm(autoscale[i]);
 	      if (pwr <= -190) continue;    // disregard masked areas
 	      pwr_dBm[j] = pwr;
-	      j++
+	      j++;
       }
       var len = pwr_dBm.length;
       if (len) {
@@ -5545,10 +5562,11 @@ function wf_audio_FFT(audio_data, samps)
                afft.i_re[i] = audio_data[i] * afft.window_2k[i];
             }
             afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-            if (lsb)
-               k = 512, ki = -1;
-            else
-               k = 256, ki = +1;
+            if (lsb) {
+               k = 512; ki = -1;
+            } else {
+               k = 256; ki = +1;
+            }
             for (j = 0; j < 1024; j++) {
                var re = afft.o_re[j], im = afft.o_im[j];
                var pwr = re*re + im*im;
@@ -5564,10 +5582,11 @@ function wf_audio_FFT(audio_data, samps)
                afft.i_re[i] = audio_data[i] * afft.window_1k[i];
             }
             afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-            if (lsb)
-               k = 512, ki = -1;
-            else
-               k = 256, ki = +1;
+            if (lsb) {
+               k = 512; ki = -1;
+            } else {
+               k = 256; ki = +1;
+            }
             for (j = 0; j < 512; j++, k += ki) {
                var re = afft.o_re[j], im = afft.o_im[j];
                var pwr = re*re + im*im;
@@ -5579,10 +5598,11 @@ function wf_audio_FFT(audio_data, samps)
                afft.i_re[i] = audio_data[i] * afft.window_2k[i-1024];
             }
             afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-            if (lsb)
-               k = 512, ki = -1;
-            else
-               k = 256, ki = +1;
+            if (lsb) {
+               k = 512; ki = -1;
+            } else {
+               k = 256; ki = +1;
+            }
             for (j = 0; j < 512; j++, k += ki) {
                var re = afft.o_re[j], im = afft.o_im[j];
                var pwr = re*re + im*im;
@@ -5595,10 +5615,11 @@ function wf_audio_FFT(audio_data, samps)
             afft.i_re[i] = audio_data[i] * afft.window_512[i];
          }
          afft.offt.fft(afft.offt, afft.i_re.buffer, afft.o_re.buffer, afft.o_im.buffer);
-         if (lsb)
-            k = 512, ki = -2;
-         else
-            k = 256, ki = +2;
+         if (lsb) {
+            k = 512; ki = -2;
+         } else {
+            k = 256; ki = +2;
+         }
          for (j = 0; j < 256; j++, k += ki) {
             var re = afft.o_re[j], im = afft.o_im[j];
             var pwr = re*re + im*im;
@@ -5662,7 +5683,7 @@ function wf_audio_FFT(audio_data, samps)
 	select_band					-> freqmode_set_dsp_kHz -> (above)
 	dx_click
 	freqset_complete
-	freqstep
+	freqstep_cb
 	WF shift-click (nearest boundary)
 	
 */
@@ -5791,6 +5812,11 @@ function freq_field_prec(f_kHz)
    return prec;
 }
 
+function freq_field_prec_s(f_kHz)
+{
+   return f_kHz.toFixed(freq_field_prec(f_kHz));
+}
+
 function freq_field_width()
 {
    var _1Hz = owrx.freq_dsp_1Hz;
@@ -5834,7 +5860,7 @@ function freqset_restore_ui()
 	if (isNoArg(obj)) return null;      // can happen if SND comes up long before W/F
 
    var f_kHz_with_freq_offset = (freq_displayed_Hz + kiwi.freq_offset_Hz)/1000;
-   freq_displayed_kHz_str_with_freq_offset = f_kHz_with_freq_offset.toFixed(freq_field_prec(f_kHz_with_freq_offset));
+   freq_displayed_kHz_str_with_freq_offset = freq_field_prec_s(f_kHz_with_freq_offset);
    obj.value = freq_displayed_kHz_str_with_freq_offset;
 
 	//console.log("FUPD obj="+ typeof(obj) +" val="+ obj.value);
@@ -5849,7 +5875,7 @@ function freqset_update_ui(from)
 	//kiwi_trace();
 	freq_displayed_Hz = freq_car_to_dsp(freq_car_Hz);
 	var f_kHz = freq_displayed_Hz/1000;
-   freq_displayed_kHz_str = f_kHz.toFixed(freq_field_prec(f_kHz));
+   freq_displayed_kHz_str = freq_field_prec_s(f_kHz);
    //console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz +' from='+ from +'('+ owrx.fset_s[from] +')');
    //kiwi_trace();
 	
@@ -6134,7 +6160,8 @@ function freqset_complete(from, ev)
          if (pb.length == 1) {
             // /pbw
             var pbhw = lo/2;
-            lo = cpbcf - pbhw, hi = cpbcf + pbhw;
+            lo = cpbcf - pbhw;
+            hi = cpbcf + pbhw;
          }
       } else {
          // adjust passband center using current or specified pb width
@@ -6199,10 +6226,10 @@ function freqset_keyup(obj, evt)
 			}
 	
 			if (evt.key == 'Enter' && evt.shiftKey) {
-			   var f = owrx.prev_freq_kHz[1];
-			   //console.log('prev_freq_kHz FLIP '+ f);
+			   var f_kHz = owrx.prev_freq_kHz[1] / 1000;
+			   //console.log('prev_freq_kHz FLIP '+ f_kHz);
 			   //console.log(owrx.prev_freq_kHz);
-			   if (f != 0) tune(f);
+			   if (f_kHz != 0) tune(f_kHz);
 			   freqset_update_ui(owrx.FSET_NOP);
 			}
 			
@@ -6300,14 +6327,31 @@ function special_step(b, sel, caller)
 	return step_Hz;
 }
 
-function freqstep(sel, shiftKey)
+function freqstep_cb(path, sel, first, ev)
 {
+   var shiftKey = ev? ev.shiftKey : false;
+   var hold = (ev && ev.type == 'hold');
+   var hold_done = (ev && ev.type == 'hold-done');
+   //console.log('freqstep_cb: path='+ path +' sel='+ sel +' first='+ first +' ev='+ ev +' shiftKey='+ shiftKey +' hold='+ hold +' hold_done='+ hold_done);
+   if (hold) {
+      //console.log('freqstep_cb HOLD');
+      owrx.freqstep_interval = setInterval(
+         function() {
+            freqstep_cb(null, sel);
+         }, 100);
+      return;
+   }
+   if (hold_done) {
+      //console.log('freqstep_cb HOLD-DONE');
+      kiwi_clearInterval(owrx.freqstep_interval);
+      return;
+   }
 	var step_Hz = up_down[cur_mode][sel]*1000;
 	
 	// set step size from band channel spacing
 	if (step_Hz == 0) {
 		var b = find_band(freq_displayed_Hz);
-		step_Hz = special_step(b, sel, 'freqstep');
+		step_Hz = special_step(b, sel, 'freqstep_cb');
 	}
 
 	var fnew = freq_displayed_Hz;
@@ -6382,7 +6426,7 @@ function freq_step_update_ui(force)
 		else {
 			title = (posHz? '+':'-')+'400/'+(posHz? '+':'-')+'1000';
 		}
-		w3_el('id-step-'+i).title = title;
+		w3_el('id-step-'+i).title = title +'\nclick-hold to repeat';
 	}
 	
 	freq_step_last_mode = cur_mode;
@@ -6705,7 +6749,7 @@ function band_info()
 	}
 	
 	//console.log('ITU='+ ITU_region +' _9_10='+ _9_10 +' LW_lo='+ LW_lo +' NDB_lo='+ NDB_lo +' NDB_hi='+ NDB_hi +' MW_hi='+ MW_hi);
-	return { ITU_region:ITU_region, _9_10:_9_10, LW_lo:LW_lo, NDB_lo:NDB_lo, NDB_hi:NDB_hi, MW_hi:MW_hi }
+	return { ITU_region:ITU_region, _9_10:_9_10, LW_lo:LW_lo, NDB_lo:NDB_lo, NDB_hi:NDB_hi, MW_hi:MW_hi };
 }
 
 // for a particular config band_svc.key return its object element and index
@@ -7179,13 +7223,13 @@ function mk_bands_scale()
       var mt = band_ctx.measureText(txt);
       //console.log("BB mt="+mt.width+" txt="+txt);
       if (w >= mt.width+4) {
-         ;     // long name fits in bar
+         // long name fits in bar
       } else {
          txt = b1.name;
          mt = band_ctx.measureText(txt);
          //console.log("BB mt="+mt.width+" txt="+txt);
          if (w >= mt.width+4) {
-            ;  // short name fits in bar
+            // short name fits in bar
          } else {
             txt = null;
          }
@@ -8159,8 +8203,8 @@ function dx_label_render_cb(arr)
 		if (!eibi && color_idx == 0 && (ident == 'IBP' || ident == 'IARU%2fNCDXF')) {
 		   color = 'aquamarine';
 		}
-		console_log_lbl('DX '+ dx_idx +' f='+ freq +' k='+ mkr_off +' FL='+ flags.toHex(8)
-		   +' m='+ kiwi.modes_uc[dx_decode_mode(flags)] +' <'+ ident +'> <'+ notes +'>');
+		console_log_lbl('DX '+ dx_idx +' f='+ freq +' k='+ mkr_off +' FL='+ flags.toHex(8) +
+		   ' m='+ kiwi.modes_uc[dx_decode_mode(flags)] +' <'+ ident +'> <'+ notes +'>');
 		
 		carrier = freq * 1000 - mkr_off;
 		carrier /= 1000;
@@ -8483,9 +8527,9 @@ function dx_label_step(dir)
       
       // search above frequency for match
       if (i == dx.displayed.length) {
-	      wf_send('SET MARKER db='+ dx.db +' dir=1 freq='+ (freq_displayed_Hz/1e3).toFixed(3)
-	         +' eibi_types_mask='+ dx.eibi_types_mask.toHex()
-	         +' filter_tod='+ dx.filter_tod[dx.db]);
+	      wf_send('SET MARKER db='+ dx.db +' dir=1 freq='+ (freq_displayed_Hz/1e3).toFixed(3) +
+	         ' eibi_types_mask='+ dx.eibi_types_mask.toHex() +
+	         ' filter_tod='+ dx.filter_tod[dx.db]);
 	      if (dx.step_dbg) console.log('>>> STEP DX_STEP [[[REQ]]]');
 	      dx.last_stepped_gid = -1;
          return;
@@ -8504,9 +8548,9 @@ function dx_label_step(dir)
       
       // search below frequency for match
       if (i < 0) {
-	      wf_send('SET MARKER db='+ dx.db +' dir=-1 freq='+ (freq_displayed_Hz/1e3).toFixed(3)
-	         +' eibi_types_mask='+ dx.eibi_types_mask.toHex()
-	         +' filter_tod='+ dx.filter_tod[dx.db]);
+	      wf_send('SET MARKER db='+ dx.db +' dir=-1 freq='+ (freq_displayed_Hz/1e3).toFixed(3) +
+	         ' eibi_types_mask='+ dx.eibi_types_mask.toHex() +
+	         ' filter_tod='+ dx.filter_tod[dx.db]);
 	      if (dx.step_dbg) console.log('<<< STEP DX_STEP [[[REQ]]]');
 	      dx.last_stepped_gid = -1;
          return;
@@ -9771,13 +9815,13 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    // 0: -large, 1: -med, 2: -small || 3: +small, 4: +med, 5: +large
    case 'j': case 'J': case 'ArrowLeft':
       if (key_mod != shortcut.SHIFT_PLUS_CTL_ALT)
-         freqstep(owrx.wf_snap? key_mod : (2 - key_mod));
+         freqstep_cb(null, owrx.wf_snap? key_mod : (2 - key_mod));
       else
          dx_label_step(-1);
       break;
    case 'i': case 'I': case 'ArrowRight':
       if (key_mod != shortcut.SHIFT_PLUS_CTL_ALT)
-         freqstep(owrx.wf_snap? (5 - key_mod) : (3 + key_mod));
+         freqstep_cb(null, owrx.wf_snap? (5 - key_mod) : (3 + key_mod));
       else
          dx_label_step(+1);
       break;
@@ -10087,7 +10131,7 @@ function test_audio_suspended()
       var s2 =
          w3_div('id-play-button-container class-overlay-container w3-valign w3-halign-center||'+ onclick,
             w3_inline('id-play-button w3-relative w3-flex-col/',
-               '<img src="gfx/openwebrx-play-button.png" width="150" height="150" /><br><br>', s1
+               w3_img('', 'gfx/openwebrx-play-button.png', 150, 150), '<br><br>', s1
             )
          );
       w3_create_appendElement('id-kiwi-body', 'div', s2);
@@ -10134,8 +10178,7 @@ function play_button_click_cb()
 // called from wf_init()
 function panels_setup()
 {
-   var el;
-   var s;
+   var el, s, fmt;
    
    el = w3_el("id-ident");
 	el.innerHTML =
@@ -10167,8 +10210,7 @@ function panels_setup()
 
          '<select id="id-select-band" class="w3-pointer w3-select-menu" onchange="select_band(this.value)">' +
             setup_band_menu() +
-         '</select>'
-         +
+         '</select>' +
 
          '<select id="id-select-ext" class="w3-pointer w3-select-menu" onchange="freqset_select(); extint_select(this.value)">' +
             '<option value="-1" selected disabled>extension</option>' +
@@ -10177,6 +10219,7 @@ function panels_setup()
       );
    
    check_suspended_audio_state();
+   fmt = 'w3-hold w3-hold-done w3-padding-0 w3-575757';
 	
 	w3_el("id-control-freq2").innerHTML =
 	   w3_inline('w3-halign-space-between w3-margin-T-4/',
@@ -10191,12 +10234,12 @@ function panels_setup()
          ),
 
          w3_div('id-step-freq',
-            '<img id="id-step-0" src="icons/stepdn.20.png" onclick="freqstep(0, event.shiftKey)" />',
-            '<img id="id-step-1" src="icons/stepdn.18.png" onclick="freqstep(1, event.shiftKey)" style="padding-bottom:1px" />',
-            '<img id="id-step-2" src="icons/stepdn.16.png" onclick="freqstep(2, event.shiftKey)" style="padding-bottom:2px" />',
-            '<img id="id-step-3" src="icons/stepup.16.png" onclick="freqstep(3, event.shiftKey)" style="padding-bottom:2px" />',
-            '<img id="id-step-4" src="icons/stepup.18.png" onclick="freqstep(4, event.shiftKey)" style="padding-bottom:1px" />',
-            '<img id="id-step-5" src="icons/stepup.20.png" onclick="freqstep(5, event.shiftKey)" />'
+            w3_button(fmt, w3_img('id-step-0',                    'icons/stepdn.20.png'), 'freqstep_cb', 0),
+            w3_button(fmt, w3_img('id-step-1|padding-bottom:1px', 'icons/stepdn.18.png'), 'freqstep_cb', 1),
+            w3_button(fmt, w3_img('id-step-2|padding-bottom:2px', 'icons/stepdn.16.png'), 'freqstep_cb', 2),
+            w3_button(fmt, w3_img('id-step-3|padding-bottom:2px', 'icons/stepup.16.png'), 'freqstep_cb', 3),
+            w3_button(fmt, w3_img('id-step-4|padding-bottom:1px', 'icons/stepup.18.png'), 'freqstep_cb', 4),
+            w3_button(fmt, w3_img('id-step-5',                    'icons/stepup.20.png'), 'freqstep_cb', 5)
          ),
 
          w3_div('',
@@ -10262,34 +10305,34 @@ function panels_setup()
 	w3_el("id-control-zoom").innerHTML =
 	   w3_inline('w3-halign-space-between/',
          w3_div('id-zoom-in class-icon'+  afd2 +'onclick="zoom_click(event, 1)" onmouseover="zoom_over(event)"',
-            '<img src="icons/zoomin.png" width="32" height="32" />'
+            w3_img('', 'icons/zoomin.png', 32, 32)
          ),
          w3_div('id-zoom-out class-icon'+ afd2 +'onclick="zoom_click(event,-1)" onmouseover="zoom_over(event)"',
-            '<img src="icons/zoomout.png" width="32" height="32" />'
+            w3_img('', 'icons/zoomout.png', 32, 32)
          ),
          w3_div('id-maxin'+ afd1,
-            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.png" width="32" height="32" />')
+            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', w3_img('', 'icons/maxin.png', 32, 32))
          ),
          w3_div('id-maxin-nom w3-hide'+ afd1,
-            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.nom.png" width="32" height="32" />')
+            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', w3_img('', 'icons/maxin.nom.png', 32, 32))
          ),
          w3_div('id-maxin-max w3-hide'+ afd1,
-            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', '<img src="icons/maxin.max.png" width="32" height="32" />')
+            w3_div('class-icon||onclick="zoom_click(event,8)" title="max in"', w3_img('', 'icons/maxin.max.png', 32, 32))
          ),
          w3_div('id-maxout'+ afd1,
-            w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.png" width="32" height="32" />')
+            w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', w3_img('', 'icons/maxout.png', 32, 32))
          ),
          w3_div('id-maxout-max w3-hide'+ afd1,
-            w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', '<img src="icons/maxout.max.png" width="32" height="32" />')
+            w3_div('class-icon||onclick="zoom_click(event,-9)" title="max out"', w3_img('', 'icons/maxout.max.png', 32, 32))
          ),
          w3_div('class-icon'+ afd1 +'||onclick="zoom_click(event,0)" title="zoom to band"',
-            '<img src="icons/zoomband.png" width="32" height="16" style="padding-top:13px; padding-bottom:13px;"/>'
+            w3_img('|padding-top:13px; padding-bottom:13px', 'icons/zoomband.png', 32, 16)
          ),
          w3_div('class-icon'+ afd2 +'onclick="page_scroll_icon_click(event,-page_scroll_amount)" title="page down\nalt: label step"',
-            '<img src="icons/pageleft.png" width="32" height="32" />'
+            w3_img('', 'icons/pageleft.png', 32, 32)
          ),
          w3_div('class-icon'+ afd2 +'onclick="page_scroll_icon_click(event,+page_scroll_amount)" title="page up\nalt: label step"',
-            '<img src="icons/pageright.png" width="32" height="32" />'
+            w3_img('', 'icons/pageright.png', 32, 32)
          )
 		);
 
@@ -10367,7 +10410,7 @@ function panels_setup()
 
 
    // rf
-   var fmt = 'id-rf-attn-disable w3-btn w3-padding-tiny w3-margin-R-8 ';
+   fmt = 'id-rf-attn-disable w3-btn w3-padding-tiny w3-margin-R-8 ';
    //kiwi.rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : +kiwi_storeInit('last_rf_attn', cfg.init.rf_attn);
    kiwi.rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : +kiwi_storeInit('last_rf_attn', 0);
 	w3_el("id-optbar-rf").innerHTML =
@@ -10611,7 +10654,7 @@ function panels_setup()
 		'<span style="font-size: 14pt; font-weight: bold;">' +
 			'KiwiSDR now available on ' +
 			'<a href="https://www.kickstarter.com/projects/1575992013/kiwisdr-beaglebone-software-defined-radio-sdr-with" target="_blank">' +
-				'<img class="class-KS" src="icons/kickstarter-logo-light.150x18.png" />' +
+				w3_img('class-KS', 'icons/kickstarter-logo-light.150x18.png') +
 			'</a>' +
 		'</span>' +
 		'';
@@ -10999,7 +11042,7 @@ function wf_sp_slider_cb(path, val, done, first)
 
 function wf_sp_slider_wheel_cb()
 {
-   var el = w3_el('id-wf-sp-slider')
+   var el = w3_el('id-wf-sp-slider');
    var param = wf_sp_which? wf_param : sp_param;
    var nval = w3_slider_wheel('wf_sp_slider_wheel_cb', el, param, +el.step, +el.step * 5);
    //console.log('wf_sp_slider_wheel_cb min='+ el.min +' max='+ el.max +' step='+ el.step +' param='+ param +' up_down='+ up_down +' nval='+ nval);
@@ -11072,7 +11115,7 @@ function setwfspeed_cb(path, str, done)
    
 	wf_speed = +str;
 	//console.log('# setwfspeed '+ wf_speed +' done='+ done);
-	w3_set_value('slider-rate', wf_speed)
+	w3_set_value('slider-rate', wf_speed);
    var el = w3_el('slider-rate-field');
    el.innerHTML = wf_speeds[wf_speed];
    el.style.color = wf_speed? 'white':'orange';
@@ -11285,8 +11328,18 @@ function set_ceilfloordb(done)
 {
    maxdb = wf.auto_maxdb + wf.auto_ceil.val;
    mindb = wf.auto_mindb + wf.auto_floor.val;
+   //console.log('$set_ceilfloordb amin/amax/ceil/floor='+ wf.auto_mindb +'/'+ wf.auto_maxdb +'/'+ wf.auto_ceil.val +'/'+ wf.auto_floor.val);
+   var range = maxdb - mindb;
+   if (cfg.spec_min_range) {
+      if (range < cfg.spec_min_range) {
+         var boost = cfg.spec_min_range - range;
+         //console.log('$set_ceilfloordb BOOST orange='+ range +' min='+ mindb +' max='+ maxdb +'=>'+ (maxdb + boost) +' min_range='+ cfg.spec_min_range);
+         maxdb += boost;
+         range = maxdb - mindb;
+      }
+   }
 	mindb_un = mindb + zoomCorrection();
-   //console_log_dbgUs('# set_ceilfloordb min/max='+ mindb +'/'+ maxdb +' min_un='+ mindb_un);
+	//console_log_dbgUs('$set_ceilfloordb min/max/un='+ mindb +'/'+ maxdb +'/'+ mindb_un +' range='+ range);
 	setmaxmindb(done, false);
 	w3_call('waterfall_maxmin_cb');
 
@@ -11378,7 +11431,7 @@ function setvolume_cb(path, val, done, first, cb_param)
 function setvolume(done, str)
 {
    //console.log('setvolume done='+ done +' str='+ str +' t/o='+ typeof(str) +' volume_f WAS='+ kiwi.volume_f);
-   kiwi.volume = +str
+   kiwi.volume = +str;
    if (!isNumber(kiwi.volume)) kiwi.volume = 50;
    
    // when 'v' shortcut key, or URL param, attempts to set < 0 clamp to 0
@@ -12124,7 +12177,7 @@ function freq_vfo_cb(el, val, trace, ev)
    w3_innerHTML('id-freq-vfo', "AB"[owrx.vfo_ab]);
    
 	var vfo = parse_freq_pb_mode_zoom(kiwi_storeRead('last_vfo_'+ "AB"[owrx.vfo_ab]));
-	var mode = undefined, zoom = 0;
+	var mode, zoom = 0;
 	if (vfo[3]) mode = vfo[3].toLowerCase();
 	if (vfo[4]) zoom = +vfo[4];
 	//console.log('VFO TUNE '+ vfo[1] +' '+ mode +' '+ zoom);
@@ -12466,7 +12519,7 @@ function panel_set_width_height(id, width, height)
 // NB: use kiwi_log() instead of console.log() in here
 function add_problem(what, append, sticky, el_id)
 {
-   var id = el_id? el_id : 'id-status-problems'
+   var id = el_id? el_id : 'id-status-problems';
 	//kiwi_log('add_problem '+ what +' sticky='+ sticky +' id='+ id);
 	el = w3_el(id);
 	if (!el) return;
@@ -12593,13 +12646,16 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			break;
 		case "maxdb":
 		   wf.auto_maxdb = +param[1];
+		   //console.log('$SET wf.auto_maxdb='+ wf.auto_maxdb);
          setmaxdb(1, wf.auto_maxdb, true);
 			break;
 		case "mindb":
 		   wf.auto_mindb = +param[1];
+		   //console.log('$SET wf.auto_mindb='+ wf.auto_mindb);
          setmindb(1, wf.auto_mindb, true);
 	      w3_call('waterfall_maxmin_cb');
          update_maxmindb_sliders(true);
+         set_ceilfloordb(true);
 			break;
 		case "max_thr":
 			owrx.overload_mute = Math.round(+param[1]);

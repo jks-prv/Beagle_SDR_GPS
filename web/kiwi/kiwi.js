@@ -156,7 +156,7 @@ var kiwi = {
    _last_: null
 };
 
-kiwi.modes_lc.forEach(function(e,i) { kiwi.modes_uc.push(e.toUpperCase()); kiwi.modes_idx[e] = i});
+kiwi.modes_lc.forEach(function(e,i) { kiwi.modes_uc.push(e.toUpperCase()); kiwi.modes_idx[e] = i; });
 //console.log(kiwi.modes_uc);
 //console.log(kiwi.modes_idx);
 
@@ -232,7 +232,7 @@ function kiwi_bodyonload(error)
 function kiwi_open_ws_cb(p)
 {
 	if (p.conn_type != 'kiwi')
-		setTimeout(function() { setInterval(function() { ext_send("SET keepalive"); }, 5000) }, 5000);
+		setTimeout(function() { setInterval(function() { ext_send("SET keepalive"); }, 5000); }, 5000);
 	
 	if (seriousError)
 	   return;        // don't go any further
@@ -519,8 +519,8 @@ function kiwi_get_init_settings()
 	init_min = ext_get_cfg_param('init.min_dB', init_min, EXT_NO_SAVE);
 	init_min_dB = override_min_dB? override_min_dB : init_min;
 	
-	console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom
-		+' min='+ init_min_dB +' max='+ init_max_dB);
+	console.log('INIT f='+ init_frequency +' m='+ init_mode +' z='+ init_zoom +
+		' min='+ init_min_dB +' max='+ init_max_dB);
 
 	w3_call('init_scale_dB');
 	
@@ -1684,18 +1684,18 @@ function kiwi_output_msg(id, id_scroll, p)
                      var r_start, r_end, c_start, c_end;
 
                      if (second == '0' || second == 'J') {     // [J  [0J
-                        r_start = p.r, r_end = p.nrows;
-                        c_start = p.c, c_end = p.cols;
+                        r_start = p.r; r_end = p.nrows;
+                        c_start = p.c; c_end = p.cols;
                         result = 'erase cur to EOS';
                      } else
                      if (second == '2' || second == '3') {     // [2J  [3J
-                        r_start = 1, r_end = p.nrows;
-                        c_start = 1, c_end = p.cols;
+                        r_start = 1; r_end = p.nrows;
+                        c_start = 1; c_end = p.cols;
                         result = 'erase full screen';
                      } else
                      if (second == '1') {                      // [1J
-                        r_start = 1, r_end = p.r;
-                        c_start = 1, c_end = p.c;
+                        r_start = 1; r_end = p.r;
+                        c_start = 1; c_end = p.c;
                         result = 'erase BOS to cur';
                      } else {
                         r_start = 0;
@@ -2569,7 +2569,7 @@ function update_cb(fail_reason, pending, in_progress, rx_chans, gps_chans, vmaj,
 	      w3_hide('id-build-reboot');
 		} else
 		if (in_progress) {
-			s += '<br>Update to version v'+ + pmaj +'.'+ pmin +' in progress';
+			s += '<br>Update to version v'+ pmaj +'.'+ pmin +' in progress';
 		} else
 		if (pending) {
 			s += '<br>Update check pending';

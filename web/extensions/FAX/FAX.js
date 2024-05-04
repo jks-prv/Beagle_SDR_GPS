@@ -176,8 +176,7 @@ function fax_recv(data)
             var gif = file +'.gif';
             var thumb = file +'.thumb.gif';
             w3_remove_then_add('id-fax-file-icon', 'fa-refresh fa-spin w3-text-aqua', 'fa-repeat w3-text-pink');
-            w3_el('id-fax-file-status').innerHTML =
-               w3_link('', gif, '<img src='+ dq(thumb) +' />');
+            w3_el('id-fax-file-status').innerHTML = w3_link('', gif, w3_img('', thumb));
 				break;
 
 			case "fax_sps_changed":

@@ -323,7 +323,7 @@ function FT8_config_html()
                w3_div('id-ft8-admin-autorun w3-margin-T-16')
             )
          )
-      )
+      );
 
    ext_config_html(ft8, 'ft8', 'FT8', 'FT8/FT4 configuration', s);
 
@@ -389,7 +389,7 @@ function ft8_autorun_all_regular_cb(path, idx, first)
 {
    if (first) return;
    for (var i = 0; i < rx_chans; i++) {
-      var path = 'ft8.autorun'+ i;
+      path = 'ft8.autorun'+ i;
       w3_select_value(path, 0);
       admin_select_cb(path, 0, /* first: true => no save */ true);
    }

@@ -125,7 +125,8 @@ struct wf_inst_t {
 	u2_t wf2fft_map[WF_WIDTH];							// map is 1:1 with plot
 	u2_t drop_sample[WF_WIDTH];
 	int start, prev_start, zoom, prev_zoom;
-	int mark, speed, fft_used_limit;
+	u4_t mark;
+	int speed, fft_used_limit;
 	bool new_map, new_map2, compression, no_sync, isWF, isFFT;
 	int flush_wf_pipe;
 	bool cic_comp;
