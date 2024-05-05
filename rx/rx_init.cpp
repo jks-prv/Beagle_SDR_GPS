@@ -595,6 +595,7 @@ void update_vars_from_config(bool called_at_init)
     admin_keepalive = admcfg_default_bool("admin_keepalive", true, &update_admcfg);
     log_local_ip = admcfg_default_bool("log_local_ip", true, &update_admcfg);
     admcfg_default_bool("dx_comm_auto_download", true, &update_admcfg);
+    kiwi.restart_delay = admcfg_default_int("restart_delay", RESTART_DELAY_30_SEC, &update_admcfg);
     
     // convert daily_restart switch bool => menu int
     bool daily_restart_bool = admcfg_bool("daily_restart", &err, CFG_OPTIONAL);
