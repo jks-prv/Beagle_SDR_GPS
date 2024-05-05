@@ -322,18 +322,28 @@ int main(int argc, char *argv[])
     
     debug_printfs |= kiwi_file_exists(DIR_CFG "/opt.debug")? 1:0;
 
-    #ifndef PLATFORM_raspberrypi
-        // on reboot let ntpd and other stuff settle first
-        if (background_mode && !kiwi_file_exists("/tmp/.kiwi_no_restart_delay")) {
-            lprintf("background mode: delaying start 30 secs...\n");
-            system("touch /tmp/.kiwi_no_restart_delay");    // removed on reboot
-            sleep(30);
-        }
-    #endif
-
 	TaskInit();
 	misc_init();
     cfg_reload();
+
+    // on reboot let ntpd and other stuff settle first
+    kiwi.restart_delay = admcfg_default_int("restart_delay", RESTART_DELAY_30_SEC, NULL);
+    if (background_mode && !kiwi_file_exists("/tmp/.kiwi_no_restart_delay")) {
+        kiwi.restart_delay = CLAMP(kiwi.restart_delay, 0, RESTART_DELAY_MAX);
+        int delay;
+        switch (kiwi.restart_delay) {
+            case 0:  delay =  0; break;
+            case 1:  delay = 30; break;
+            case 2:  delay = 45; break;
+            default: delay = (kiwi.restart_delay - 1) * 30; break;
+        }
+        system("touch /tmp/.kiwi_no_restart_delay");    // removed on reboot
+        if (delay != 0) {
+            lprintf("power on detected: delaying start %d secs...\n", delay);
+            sleep(delay);
+        }
+    }
+
     clock_init();
 
     if (fw_sel_override != FW_CONFIGURED) {

@@ -55,6 +55,9 @@ typedef struct {
     platform_e platform;
     int current_nusers;
     bool dbgUs;
+    #define RESTART_DELAY_30_SEC 1
+    #define RESTART_DELAY_MAX 7
+    int restart_delay;
 
     bool ext_clk;
     bool allow_admin_conns;

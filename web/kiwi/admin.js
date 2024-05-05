@@ -324,7 +324,8 @@ function control_html()
 			
 			w3_divs('', 
             w3_checkbox_get_param('//w3-label-inline', 'Require name/callsign entry when connecting', 'require_id', 'admin_bool_cb', false),
-            w3_checkbox_get_param('w3-margin-T-8//w3-label-inlinew3-restart', 'Non-Kiwi connections (kiwirecorder, TDoA) <br> can preempt autorun processes', 'any_preempt_autorun', 'admin_bool_cb', true)
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline w3-restart', 'Prevent multiple connections from <br> the same IP address', 'adm.no_dup_ip', 'admin_bool_cb', false),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline w3-restart', 'Non-Kiwi connections (kiwirecorder, TDoA) <br> can preempt autorun processes', 'any_preempt_autorun', 'admin_bool_cb', true)
          )
 		) +
 
@@ -1585,6 +1586,8 @@ var network = {
    ESPEED_10M: 1,
    ESPEED_ENA: 1,
    ethernet_mtu_s: [ '1500 (default)', '1440', '1400' ],
+   
+   restart_delay_s: [ 'no delay', 30, 45, 60, 90, 120, 150, 180 ],
 
    bl_port_s: [ 'default (yes)', 'yes', 'no' ],
    
@@ -1742,8 +1745,17 @@ function network_html()
                )
             ),
          
-            w3_switch_label('w3-center w3-margin-B-24 w3-text-teal', 'Prevent multiple connections<br>from the same IP address?',
-               'Yes', 'No', 'adm.no_dup_ip', adm.no_dup_ip, 'admin_radio_YN_cb')
+            w3_div('w3-center w3-text-teal|widthx:300px',
+               w3_select('w3-width-auto', 'Power on restart delay (secs)', '', 'adm.restart_delay', adm.restart_delay, network.restart_delay_s, 'admin_select_cb'),
+               w3_text('w3-block w3-center w3-text-black',
+                  'On a power on of the Kiwi, how long to <br>' +
+                  'wait before starting the server. <br>' +
+                  'Gives time for network equipment <br>' +
+                  'such as a router to boot and stabilize. <br>' +
+                  'Increase value if e.g. proxy service <br>' +
+                  'doesn\'t work after a power cycle.'
+               )
+            )
          )
       );
 
@@ -2146,9 +2158,9 @@ function network_port_open_init()
          var port = (cfg.sdr_hu_dom_sel == kiwi.REV)? admin.proxy_port : adm.port_ext;
          el.innerHTML =
             (cfg.server_url != '')?
-               'http://'+ cfg.server_url +':'+ port +' :'
+               'http://'+ cfg.server_url +':'+ port
                   :
-               '(incomplete information -- on "connect" tab please use a valid setting in menu) :';
+               '(incomplete: on "connect" tab please use a valid setting in menu)';
 
 
          w3_el('id-net-check-port-dom-s').innerHTML = '';
@@ -2167,7 +2179,7 @@ function network_port_open_init()
       },
       function() {
          w3_innerHTML('id-net-check-port-ip-q',
-            'http://'+ config_net.pvt_ip +':'+ adm.port_ext +' :');
+            'http://'+ config_net.pvt_ip +':'+ adm.port_ext);
       }
    );
    // REMINDER: w3_do_when_cond() returns immediately
