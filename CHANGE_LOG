@@ -2,12 +2,22 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.678  May 8, 2024
+    Admin page:
+        New menu "Power on restart delay (secs)" on network tab. Allows adjustment of the time delay
+        the Kiwi server waits after a Beagle/Debian restart as would be experienced after a
+        power fail recovery. This delay allows for example network equipment such as routers to
+        fully boot and stabilize before the server attempts to start things like the proxy service
+        (which might otherwise fail to start if there is no network connectivity).
+        The item formerly in this spot "Prevent multiple connections from the same IP address"
+        has moved to the control tab as a new checkbox item.
+
 v1.677  May 5, 2024
     Click-hold the frequency step buttons "- - - + + +" for auto repeat.
 
     Fixed various issues with auto aperture mode:
         When the waterfall was panned or scrolled too many requests to adjust the aperture piled up.
-        If strongest signals were fading significantly this caused the noise floor displayed to
+        If the strongest signals were fading significantly this caused the noise floor displayed to
         bounce up and down unnecessarily. Now the aperture should adjust only once per pan/zoom.
         
         To help keep the noise floor displayed in a darker colormap color capped the WF min/max
