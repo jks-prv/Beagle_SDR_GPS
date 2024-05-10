@@ -324,7 +324,7 @@ function control_html()
 			
 			w3_divs('', 
             w3_checkbox_get_param('//w3-label-inline', 'Require name/callsign entry when connecting', 'require_id', 'admin_bool_cb', false),
-            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline w3-restart', 'Prevent multiple connections from <br> the same IP address', 'adm.no_dup_ip', 'admin_bool_cb', false),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Prevent multiple connections from <br> the same IP address', 'adm.no_dup_ip', 'admin_bool_cb', false),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline w3-restart', 'Non-Kiwi connections (kiwirecorder, TDoA) <br> can preempt autorun processes', 'any_preempt_autorun', 'admin_bool_cb', true)
          )
 		) +
