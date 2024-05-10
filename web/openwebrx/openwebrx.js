@@ -10412,7 +10412,9 @@ function panels_setup()
    // rf
    fmt = 'id-rf-attn-disable w3-btn w3-padding-tiny w3-margin-R-8 ';
    //kiwi.rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : +kiwi_storeInit('last_rf_attn', cfg.init.rf_attn);
-   kiwi.rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : +kiwi_storeInit('last_rf_attn', 0);
+   var rf_attn = +kiwi_storeInit('last_rf_attn', 0);
+   //console.log('INIT rf_attn='+ rf_attn +' kiwi.model='+ kiwi.model);
+   kiwi.rf_attn = (kiwi.model == kiwi.KiwiSDR_1)? 0 : rf_attn;
 	w3_el("id-optbar-rf").innerHTML =
 	   w3_div('',
          w3_col_percent('w3-valign/class-slider',
@@ -10804,10 +10806,6 @@ function zoomCorrection()
 function rf_attn_cb(path, val, done, first, ui_only)
 {
    //console.log('rf_attn_cb val='+ val +' done='+ done +' first='+ first +' ui_only='+ ui_only +' kiwi.rf_attn='+ kiwi.rf_attn);
-   if (first) {
-      //kiwi_trace();
-      val = kiwi.rf_attn;
-   }
    if (kiwi.rf_attn_disabled && !ui_only) return;
    
 	var attn = parseFloat(val);
@@ -10819,6 +10817,7 @@ function rf_attn_cb(path, val, done, first, ui_only)
    field_attn.innerHTML = attn.toFixed(1) + ' dB';
    field_attn.style.color = "white";
    if (ui_only == true) return;
+
    //console.log('SET rf_attn='+ attn.toFixed(1));
    snd_send('SET rf_attn='+ attn.toFixed(1));
 
