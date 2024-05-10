@@ -37,6 +37,12 @@ var tc = {
    dbug:       '',
    test:       0,
    force_rev:  0,
+
+   sync_ph_done: 0,
+   sync_ph_ct: 0,
+   sync_ph:    0,
+   sync_ph_p:  0,
+   sync_ph_n:  0,
    
 	srate:		0,
 	srate_upd:  0,
@@ -260,14 +266,18 @@ function tc_recv(data)
                
                if (tc._1Hz++ >= 100 && tc.sig_s[tc.config][1] != 2) {
                   timecode_update_srate();
-                  tc.sync_ph = tc.sync_ph_p / Math.max(1, (tc.sync_ph_p + tc.sync_ph_n));
-                  var pt = tc.sync_ph_done? (tc.data_ainv? 'REV ' : 'IN ') : ((tc.sync_ph_ct / tc.srate).toFixed(0) +'s ');
                   var s = 'cf '+ tc.pb_cf +
                      ', pll '+ tc.df.toFixed(2).withSign() +' Hz ' +
                      tc.pll_phase.toFixed(2).withSign() +' &phi; ' +
                      ', sr '+ tc.srate.toFixed(2) + ' ('+ tc.srate_upd.toUnits() +
-                     '), clk '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' ('+ ext_adc_gps_clock_corr().toUnits() +')' +
-                     ', ph '+ tc.sync_ph.toFixed(2) +' '+ pt +' S'+ tc.state + (tc.force_rev? ' R' : '');
+                     '), clk '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' ('+ ext_adc_gps_clock_corr().toUnits() +'), ' +
+                     'S'+ tc.state;
+                  var phase_meas = (tc.sync_phase[tc.config] != 2);
+                  if (phase_meas) {
+                     tc.sync_ph = tc.sync_ph_p / Math.max(1, (tc.sync_ph_p + tc.sync_ph_n));
+                     var pt = tc.sync_ph_done? (tc.data_ainv? 'REV ' : 'IN ') : ((tc.sync_ph_ct / tc.srate).toFixed(0) +'s ');
+                     s += ', ph '+ tc.sync_ph.toFixed(2) +' '+ pt + (tc.force_rev? ' R' : '');
+                  }
                   tc_stat2('orange', s);
                   tc._1Hz = 0;
                }
