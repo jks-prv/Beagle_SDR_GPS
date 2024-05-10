@@ -1,10 +1,9 @@
-// Copyright (c) 2017-2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 //
 // TODO
 //
 // all
-//    For amplitude modes do better auto-inversion detection and restart.
 //    No leap second, UTC correction processing etc.
 //
 // JJY
@@ -25,16 +24,19 @@ var tc = {
    update: false,
    start_point: 0,
    ref: 0,
+   col: 0,
    
    state:      0,
-   ACQ_SYNC:   0,
-   SYNCED:     1,
-   MIN_MARK:   1,
-   ACQ_DATA:   2,
-   ACQ_DATA2:  3,
+   ACQ_PHASE:  0,
+   ACQ_SYNC:   1,
+   SYNCED:     2,
+   MIN_MARK:   3,
+   ACQ_DATA:   4,
+   ACQ_DATA2:  5,
 
    dbug:       '',
-   //test:       0,
+   test:       0,
+   force_rev:  0,
    
 	srate:		0,
 	srate_upd:  0,
@@ -51,20 +53,21 @@ var tc = {
 	sample_point: -1,
 	ampl_last:  0,
 	data:       0,
-	data_last:  1,
+	data_ainv:  0,    // ampl phase invert
 	
    df:         0,
-   phase:      0,
+   pll_phase:  0,
    pll_bw:     0,
 
    config:     0,
    // RBU: lsb stronger, RTZ: usb stronger
-   sig:        { Beta:0,   JJY40:1, RTZ:2,   WWVBa:3, WWVBp:4, JJY60:5, MSF:6,   RBU:7,   BPCa:8,  BPCss:9, DCF77a:10,  DCF77ss:11, TDF:12,  WWV:13 },
+   sig:        { Beta:0,   JJY40:1, RTZ:2,   WWVBa:3, WWVBp:4, JJY60:5, MSF:6,   RBU:7,   BPCa:8,  BPCss:9, DCF77a:10,  DCF77ss:11, TDF:12,  WWV:13   },
    freq:       [ 25,       40,      50.1,    60,      60,      60,      60,      66.566,  68.5,    68.5,    77.5,       77.5,       162,     10000.1, ],
-   pb:         [ 5,        5,       30,      5,       5,       5,       5,       30,      5,       5,       5,          5,          5,       5 ],
-   pll_bw_i:   [ 100,      100,     100,     100,     5,       100,     100,     100,     100,     100,     100,        100,        5,       5 ],
-   pll_off_i:  [ 500,      500,     500,     500,     0,       500,     500,     500,     500,     500,     500,        500,        0,       100 ],
-   sigid_s:    [ 'beta',   'jjy',   'rus',   'wwvb',  'wwvb',  'jjy',   'msf',   'rus',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv' ],
+   pb:         [ 5,        5,       30,      5,       5,       5,       5,       30,      5,       5,       5,          5,          5,       5        ],
+   pll_bw_i:   [ 100,      100,     100,     100,     5,       100,     100,     100,     100,     100,     100,        100,        5,       5        ],
+   pll_off_i:  [ 500,      500,     500,     500,     0,       500,     500,     500,     500,     500,     500,        500,        0,       100      ],
+   sigid_s:    [ 'beta',   'jjy',   'rus',   'wwvb',  'wwvb',  'jjy',   'msf',   'rus',   'bpc',   'bpc',   'dcf77',    'dcf77',    'tdf',   'wwv'    ],
+   sync_phase: [ 2,        1,       1,       1,       2,       1,       1,       1,       1,       2,       1,          2,          2,       1        ],
    prev_sig:   -1,
 
    sig_s: [
@@ -117,10 +120,27 @@ function timecode_main()
 
 function tc_dmsg(s)
 {
-	if (s == undefined)
+	if (s == undefined) {
 		tc.dbug = '';
-	else
+		tc.col = 0;
+	} else {
+      s = s.toString();
 		tc.dbug += s;
+		//console.log(tc.col +' >>>'+ s);
+      if (s.includes('<br>')) {
+         tc.col = 0;
+		   //console.log('tc.col(1) = 0');
+      } else {
+         if (s[0] != '<')     // don't count HTML
+            tc.col += s.length;
+         if (tc.col > 100) {
+            tc.dbug += '<br>';
+            tc.col = 0;
+		      //console.log('tc.col(2) = 0');
+         }
+      }
+   }
+	
 	w3_el('id-tc-dbug').innerHTML = tc.dbug;
 }
 
@@ -157,6 +177,7 @@ function tc_gap_bcd(bits, offset, n_bits, dir)
 
 function tc_recv(data)
 {
+   var i;
 	var firstChars = arrayBufferToStringLen(data, 3);
 	
 	// process data sent from server/C by ext_send_msg_data()
@@ -166,7 +187,7 @@ function tc_recv(data)
 		var nsamps = ba.length;
 
 		if (cmd == 0) {
-         for (var i = 1; i < nsamps; i++) {
+         for (i = 1; i < nsamps; i++) {
             var sample = ba[i] - 127;
 
             var ampl = -sample / 127.0;
@@ -239,10 +260,14 @@ function tc_recv(data)
                
                if (tc._1Hz++ >= 100 && tc.sig_s[tc.config][1] != 2) {
                   timecode_update_srate();
-                  var s = 'cf '+ tc.pb_cf;
-                  s += ', pll: '+ tc.df.toFixed(2).withSign() +' Hz ';
-                  s += tc.phase.toFixed(2).withSign() +' &phi; ';
-                  s += ', srate '+ tc.srate.toFixed(2) +' ('+ tc.srate_upd +'), clock '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' ('+ ext_adc_gps_clock_corr() +')';
+                  tc.sync_ph = tc.sync_ph_p / Math.max(1, (tc.sync_ph_p + tc.sync_ph_n));
+                  var pt = tc.sync_ph_done? (tc.data_ainv? 'REV ' : 'IN ') : ((tc.sync_ph_ct / tc.srate).toFixed(0) +'s ');
+                  var s = 'cf '+ tc.pb_cf +
+                     ', pll '+ tc.df.toFixed(2).withSign() +' Hz ' +
+                     tc.pll_phase.toFixed(2).withSign() +' &phi; ' +
+                     ', sr '+ tc.srate.toFixed(2) + ' ('+ tc.srate_upd.toUnits() +
+                     '), clk '+ (ext_adc_clock_Hz()/1e6).toFixed(6) +' ('+ ext_adc_gps_clock_corr().toUnits() +')' +
+                     ', ph '+ tc.sync_ph.toFixed(2) +' '+ pt +' S'+ tc.state + (tc.force_rev? ' R' : '');
                   tc_stat2('orange', s);
                   tc._1Hz = 0;
                }
@@ -317,7 +342,7 @@ function tc_recv(data)
                   /* cyan */ (tc.trig <= tc.sample_point),
                   /* red  */ ampl_abs,
                   /* org  */ undefined,
-                  /* blk  */ tc.data? -0.6 : -0.3,    // inverted
+                  /* blk  */ tc.data? -0.3 : -0.6,
                   /* lime */ 0,
                   /* trig */ 0
                );
@@ -328,7 +353,7 @@ function tc_recv(data)
                   /* cyan */ (tc.trig >= 0 && tc.trig <= tc.sample_point),
                   /* red  */ ampl_abs,
                   /* org  */ undefined,
-                  /* blk  */ tc.data? -0.6 : -0.3,    // inverted
+                  /* blk  */ tc.data? -0.3 : -0.6,
                   /* lime */ 0,
                   /* trig */ 0
                );
@@ -363,6 +388,33 @@ function tc_recv(data)
             }
       
             //if (tc.mkr) tc.mkr--;
+            
+            if (tc.state == tc.ACQ_PHASE) {
+               if (tc.data) tc.sync_ph_p++; else tc.sync_ph_n++;
+               tc.sync_ph_ct++;
+               if (tc.sync_ph_ct >= 10 * tc.srate) {     // measure for 10 secs
+                  tc.sync_ph_done = 1;
+                  var phase = (tc.sync_ph >= 0.5)? 1:0;
+                  if (phase != tc.sync_phase[tc.config]) {
+                     tc.data_ainv ^= 1;
+                     w3_call(tc.sigid_s[tc.config] +'_clr');
+                     //tc_dmsg('[REV PHASE] ');
+                  }
+                  //tc_dmsg('[FIND SYNC] ');
+                  tc.state = tc.ACQ_SYNC;
+                  //console.log('FIND SYNC');
+                  if (tc.test) {
+                     //console.log('restart test file playback');
+                     timecode_test_cb();
+                  }
+                  tc_stat('yellow',
+                     w3_inline('',
+                        w3_icon('w3-text-aqua', 'fa-cog fa-spin', 20),
+                        w3_div('w3-margin-L-8 w3-text-css-yellow', 'Looking for sync')
+                     )
+                  );
+               }
+            }
          }
 		} else {
 			console.log('tc_recv: DATA UNKNOWN cmd='+ cmd +' len='+ len);
@@ -375,7 +427,7 @@ function tc_recv(data)
 	var stringData = arrayBufferToString(data);
 	var params = stringData.substring(4).split(" ");
 
-	for (var i=0; i < params.length; i++) {
+	for (i = 0; i < params.length; i++) {
 		var param = params[i].split("=");
 
 		if (0 && param[0] != "keepalive") {
@@ -398,7 +450,7 @@ function tc_recv(data)
 				break;
 
 			case "phase":
-				tc.phase = parseFloat(param[1]);
+				tc.pll_phase = parseFloat(param[1]);
 				break;
 
 			default:
@@ -436,7 +488,7 @@ function tc_controls_setup()
             w3_button('w3-padding-small w3-aqua', 'Reset PLL', 'timecode_reset_pll_cb'),
             //w3_checkbox('w3-label-inline w3-label-not-bold/', 'update Kiwi<br>date &amp; time', 'tc.update', tc.update, 'w3_bool_cb'),
 			   w3_input('w3-padding-tiny w3-label-inline w3-label-not-bold|width:auto|size=3', 'pll bw:', 'tc.pll_bw', tc.pll_bw, 'timecode_pll_bw_cb'),
-            //w3_button('w3-padding-small w3-aqua', 'Test', 'timecode_test_cb'),
+            dbgUs? w3_button('w3-padding-small w3-aqua', 'Test', 'timecode_test_cb') : '',
 				w3_div('', '<pre id="id-tc-info" style="margin:0"></pre>')
 			),
 			w3_inline('w3-margin-T-4/w3-margin-right',
@@ -456,16 +508,27 @@ function tc_controls_setup()
 	
 	var p = ext_param();
 	if (p) {
-	   var i;
-	   p = p.split(',')[0];
-      p = p.toLowerCase();
-      for (i = 0; i < tc.sig_s.length; i++) {
-         if (tc.sig_s[i][1] && tc.sig_s[i][0].toLowerCase().includes(p))
-            break;
-      }
-      if (i < tc.sig_s.length) {
-         tc.config = i;
-         w3_select_value('tc.config', i);
+	   var i, j;
+	   p = p.split(',');
+      for (i = 0, len = p.length; i < len; i++) {
+         var a = p[i];
+         if (i == 0) {
+            var ps = a.toLowerCase();
+            for (j = 0; j < tc.sig_s.length; j++) {
+               if (/* enable */ tc.sig_s[j][1] && tc.sig_s[j][0].toLowerCase().includes(ps))
+                  break;
+            }
+            if (j < tc.sig_s.length) {
+               tc.config = j;
+               w3_select_value('tc.config', j);
+            }
+         } else
+         if (w3_ext_param('test', a).match) {
+            setTimeout(function() { timecode_test_cb(); }, 2000);
+         } else
+         if (w3_ext_param('rev', a).match) {
+            tc.force_rev = 1;
+         }
       }
    }
 
@@ -610,24 +673,45 @@ function tc_signal_menu_cb(path, val, first)
    tc.pb_cf = pb.low + (pb.high - pb.low)/2;
 }
 
-function timecode_resync_cb(path, val)
+function timecode_reset(state)
 {
-	tc_dmsg();
-	tc_stat('yellow',
-	   w3_inline('',
-	      w3_icon('w3-text-aqua', 'fa-cog fa-spin', 20),
-	      w3_div('w3-margin-L-8 w3-text-css-yellow', 'Looking for sync')
-	   )
-	);
+   tc_dmsg();
+	//tc_dmsg('[MEAS PHASE] ');
+	//tc_dmsg('test='+ tc.test +' ');
+
+	if (state == false) {
+	   if (tc.state != tc.ACQ_PHASE) tc.state = tc.ACQ_SYNC;
+	} else
+	if (isNumber(state)) {
+	} else {
+	   tc.state = tc.ACQ_SYNC;
+	}
 	
+	if (tc.state == tc.ACQ_PHASE) {
+	   tc.sync_ph_done = tc.sync_ph_ct = tc.sync_ph_p = tc.sync_ph_n = 0;
+	   tc.data_ainv = 0;
+	}
+
 	tc.raw = [];
-	tc.state = tc.ACQ_SYNC;
 	tc.sample_point = -1;
-	tc.data_last = tc.data = 0;
+	tc.data = 0;
 	tc.ref = 0;
    w3_call(tc.sigid_s[tc.config] +'_clr');
 	scope_clr();
-	//if (tc.test) ext_send('SET test');
+	tc_stat('yellow',
+	   w3_inline('',
+	      w3_icon('w3-text-aqua', 'fa-cog fa-spin', 20),
+	      w3_div('w3-margin-L-8 w3-text-css-yellow', (tc.state == tc.ACQ_PHASE)? 'Measuring phase' : 'Looking for sync')
+	   )
+	);
+}
+
+function timecode_resync_cb(path, val)
+{
+   var phase_meas = (tc.sync_phase[tc.config] != 2);
+	tc.state = phase_meas? tc.ACQ_PHASE : tc.ACQ_SYNC;
+	timecode_reset(tc.state);
+	if (tc.test) ext_send('SET test');
 }
 
 function timecode_reset_pll_cb(path, val)
@@ -645,14 +729,13 @@ function timecode_pll_bw_cb(path, val, complete, first)
 	ext_send('SET pll_bandwidth='+ val);
 }
 
-/*
 function timecode_test_cb(path, val, first)
 {
    if (first) return;
+   timecode_reset(false);
    tc.test = 1;
 	ext_send('SET test');
 }
-*/
 
 function timecode_update_srate()
 {

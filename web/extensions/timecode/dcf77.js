@@ -1,8 +1,20 @@
-// Copyright (c) 2017-2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
+
+//
+// TODO
+//    phase decoding
+//
 
 var dcf77 = {
+   // ampl
+   AMPL_NOISE_THRESHOLD: 3,
    arm: 0,
-   NOISE_THRESHOLD: 3,
+   data: 0,
+   data_last: 0,
+
+   // phase
+   // ...
+
    cur: 0,
    sec: 0,
    msec: 0,
@@ -22,7 +34,7 @@ function dcf77_dmsg(s)
 function dcf77_legend()
 {
    if ((dcf77.line++ & 3) == 0)
-      tc_dmsg('0 wwwwwwwwwwwwww EASNL 1 mmmmmmm p hhhhhh p dddddd www mmmmm yyyyyyyy p 0<br>');
+      tc_dmsg('0 civil/weather  EASNL 1 mmmmmmm p hhhhhh p dddddd www mmmmm yyyyyyyy p 0<br>');
 }
 
 function dcf77_decode(bits)
@@ -39,13 +51,14 @@ function dcf77_decode(bits)
 
    var s = day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz;
    tc_dmsg('  '+ s +'<br>');
-   tc_stat('lime', 'Time decoded: '+ s);
+   tc_stat('lime', 'Time: '+ s);
 }
 
 function dcf77_clr()
 {
    var d = dcf77;
    
+   d.data = d.data_last = d.cur = 0;
    d.cnt = d.cur = d.one_width = d.zero_width = 0;
    d.arm = d.no_modulation = d.dcnt = d.modct = d.line = d.sec = d.msec = 0;
 }
@@ -57,32 +70,33 @@ function dcf77_ampl(ampl)
 	var d = dcf77;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
-	if (!tc.ref) { tc.data = ampl; tc.ref = 1; }
+	ampl = ampl ^ tc.force_rev ^ tc.data_ainv;
 	
 	// de-noise signal
    if (ampl == d.cur) {
    	d.cnt = 0;
    } else {
    	d.cnt++;
-   	if (d.cnt > d.NOISE_THRESHOLD) {
+   	if (d.cnt > d.AMPL_NOISE_THRESHOLD) {
    		d.cur = ampl;
    		d.cnt = 0;
    		//if (tc.state == tc.ACQ_SYNC)
-   		//   tc_dmsg((tc.data? '1':'0') +':'+ (tc.data? d.one_width : d.zero_width) +' ');
-   		//if (tc.state == tc.ACQ_SYNC && !tc.data)
+   		//   tc_dmsg((d.data? '1':'0') +':'+ (d.data? d.one_width : d.zero_width) +' ');
+   		//if (tc.state == tc.ACQ_SYNC && !d.data)
    		//   tc_dmsg(d.zero_width +' ');
-   		tc.data ^= 1;
-   		if (tc.data) d.one_width = 0; else d.zero_width = 0;
+	      if (!tc.ref) { d.data = ampl; tc.ref = 1; } else { d.data ^= 1; }
+   		if (d.data) d.one_width = 0; else d.zero_width = 0;
    	}
    }
 
-   if (tc.data) d.one_width++; else d.zero_width++;
+   if (d.data) d.one_width++; else d.zero_width++;
 	
-	if (d.one_width == 170) {
+	// both sync and end-of-minute detection, hence "!= tc.ACQ_PHASE"
+	if (tc.state != tc.ACQ_PHASE && d.one_width == 170) {
 	   d.arm = 1;
 	}
 	
-	if (d.arm && tc.data == 0) {
+	if (d.arm && d.data == 0) {
 	   tc.trig = 0;
       tc.sample_point = 25;
       d.sec = 0;
@@ -107,13 +121,15 @@ function dcf77_ampl(ampl)
 
 	if (tc.state == tc.ACQ_DATA && tc.sample_point == tc.trig) {
 	   var b = (d.zero_width > 15)? 1:0;
-      tc.raw[d.sec] = b;
       tc_dmsg(b);
+      tc.raw[d.sec] = b;
       if ([0,14,19,20,27,28,34,35,41,44,49,57,58].includes(d.dcnt)) tc_dmsg(' ');
       //tc_dmsg(d.zero_width +' ');
       d.dcnt++;
       if (d.dcnt == 60) d.dcnt = 0;
    }
+
+   tc.data = d.data;
 }
 
 function dcf77_focus()

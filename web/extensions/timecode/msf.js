@@ -1,14 +1,15 @@
-// Copyright (c) 2017-2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 //
 // TODO
-//    inverted amplitude
 //    parity checking
 //
 
 var msf = {
+   AMPL_NOISE_THRESHOLD: 3,
    arm: 0,
-   NOISE_THRESHOLD: 3,
+   data: 0,
+
    cur: 0,
    sec: 0,
    msec: 0,
@@ -44,7 +45,7 @@ function msf_decode(bits)
 
    var s = day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC';
    tc_dmsg('  '+ s +'<br>');
-   tc_stat('lime', 'Time decoded: '+ s);
+   tc_stat('lime', 'Time: '+ s);
 }
 
 function msf_clr()
@@ -63,31 +64,31 @@ function msf_ampl(ampl)
 	var m = msf;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
-	if (!tc.ref) { tc.data = ampl ^ m.phase; tc.ref = 1; }
+	ampl = ampl ^ tc.force_rev ^ tc.data_ainv;
 	
 	// de-noise signal
    if (ampl == m.cur) {
    	m.cnt = 0;
    } else {
    	m.cnt++;
-   	if (m.cnt > m.NOISE_THRESHOLD) {
+   	if (m.cnt > m.AMPL_NOISE_THRESHOLD) {
    		m.cur = ampl;
    		m.cnt = 0;
    		//if (tc.state == tc.ACQ_SYNC)
-   		//   tc_dmsg((tc.data? '1':'0') +':'+ (tc.data? m.one_width : m.zero_width) +' ');
-   		//if (tc.state == tc.ACQ_SYNC && !tc.data)
+   		//   tc_dmsg((m.data? '1':'0') +':'+ (m.data? m.one_width : m.zero_width) +' ');
+   		//if (tc.state == tc.ACQ_SYNC && !m.data)
    		//   tc_dmsg(m.zero_width +' ');
-   		tc.data ^= 1;
-   		if (tc.data) m.one_width = 0; else m.zero_width = 0;
+	      if (!tc.ref) { m.data = ampl; tc.ref = 1; } else { m.data ^= 1; }
+   		if (m.data) m.one_width = 0; else m.zero_width = 0;
    	}
    }
 
-   if (tc.data) m.one_width++; else m.zero_width++;
+   if (m.data) m.one_width++; else m.zero_width++;
 	
 	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.zero_width >= 40) { m.arm = 1; m.zero_width = 0; }
-	if (m.arm == 1 && m.one_width >= 40 && tc.data) { m.arm = 2; m.one_width = 0; }
+	if (m.arm == 1 && m.one_width >= 40 && m.data) { m.arm = 2; m.one_width = 0; }
 	
-	if (m.arm == 2 && tc.data == 0) {
+	if (m.arm == 2 && m.data == 0) {
 	   tc.trig = 0;
       tc.sample_point = 25;
       m.sec = 0;
@@ -103,8 +104,8 @@ function msf_ampl(ampl)
 	}
 	
 	if (tc.state == tc.MIN_MARK || (tc.state == tc.ACQ_DATA && tc.sample_point == tc.trig)) {
-	   var a_bit = (tc.state == tc.MIN_MARK || m.zero_width > 15)? 1:0;     // inverted
-      tc.raw[m.sec] = a_bit;
+	   var b = (tc.state == tc.MIN_MARK || m.zero_width > 15)? 1:0;     // inverted
+      tc.raw[m.sec] = b;
 
       if (tc.state == tc.MIN_MARK) {
          m.msec = 990;
@@ -112,8 +113,8 @@ function msf_ampl(ampl)
 	   }
 
       if (1) {
-         //tc_dmsg(m.sec.toFixed(0) + a_bit.toFixed(0) +'|');
-         tc_dmsg(a_bit);
+         //tc_dmsg(m.sec.toFixed(0) + b.toFixed(0) +'|');
+         tc_dmsg(b);
          if ([0,16,24,29,35,38,44,51].includes(m.dcnt)) tc_dmsg(' ');
       } else {
          tc_dmsg(m.zero_width +' ');
@@ -135,6 +136,8 @@ function msf_ampl(ampl)
       m.sec++;
       m.msec = 0;
    }
+
+   tc.data = m.data;
 }
 
 function msf_focus()

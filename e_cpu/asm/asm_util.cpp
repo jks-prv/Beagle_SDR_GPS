@@ -19,15 +19,20 @@ static void remove_files()
 	}
 }
 
+char *token(tokens_t *tp);
+
 static void _errmsg(char *str, tokens_t *t = NULL)
 {
     //dump_tokens("errmsg", tp_start, tp_end);
     if (t == NULL)
-	    printf("%s:%d error: %s", fn, curline, str);
+	    printf("error: %s", str);
 	else {
-        for (; t->ttype != TT_EOL; t++)
+        for (; t->ttype != TT_EOL; t++) {
+            //printf("DBG %s %s ifl=%d %s:%d\n", ttype(t->ttype), token(t), t->ifl, ifiles_list[t->ifl], t->num-1);
             ;
-	    printf("%s:%d error: %s", ifiles_list[t->ifl], t->num-1, str);
+        }
+        //printf("DBG %s %s ifl=%d %s:%d\n", ttype(t->ttype), token(t), t->ifl, ifiles_list[t->ifl], t->num-1);
+	    printf("%s:%d error: %s", ifiles_list[t->ifl], t->num-2, str);
 	}
 }
 
@@ -57,27 +62,21 @@ void panic(const char *str, tokens_t *t)
     _panic((char *) str, t);
 }
 
-void syntax(int cond, const char *fmt, ...)
-{
-	if (!cond) {
-	    dump_tokens("syntax", tp_start, tp_end);
-        va_list ap;
-        va_start(ap, fmt);
-        char *buf;
-		vasprintf(&buf, fmt, ap);
-        va_end(ap);
-		_panic(buf);
-	}
-}
-
-void syntax2(int cond, tokens_t *tp, const char *fmt, ...)
+void syntax(int cond, tokens_t *tp, const char *fmt, ...)
 {
 	if (!cond) {
         tokens_t *t;
         printf("\ntokens: ");
-        for (t = tp; t->ttype != TT_EOL; t++) {
+
+        // find first token
+        for (t = tp; t->ttype != TT_EOL; t--)
+            ;
+
+        // dump until EOL
+        for (t = t+1; t->ttype != TT_EOL; t++) {
             token_dump(t);
         }
+        
         printf("\n");
         va_list ap;
         va_start(ap, fmt);
@@ -85,6 +84,19 @@ void syntax2(int cond, tokens_t *tp, const char *fmt, ...)
 		vasprintf(&buf, fmt, ap);
         va_end(ap);
 		_panic(buf, t);
+	}
+}
+
+void syntax2(int cond, const char *fmt, ...)
+{
+	if (!cond) {
+	    dump_tokens("syntax2", tp_start, tp_end);
+        va_list ap;
+        va_start(ap, fmt);
+        char *buf;
+		vasprintf(&buf, fmt, ap);
+        va_end(ap);
+		_panic(buf);
 	}
 }
 
@@ -171,23 +183,34 @@ const char *ttype(token_type_e ttype_e)
     return ttype_s[ttype_e];
 }
 
-void token_dump(tokens_t *tp)
+char *token(tokens_t *tp)
 {
+    char *s;
+    
 	switch (tp->ttype) {
 	
-	case TT_EOL:	printf("\\n:%s:%d ", ifiles_list[tp->ifl], tp->num); break;
-	case TT_LABEL:	printf("%s: ", tp->str); break;
-	case TT_SYM:	printf("\"%s\"%s ", tp->str, (tp->flags&TF_RET)? ".r": (tp->flags&TF_CIN)? ".cin":"");  break;
-	case TT_NUM:	if (tp->flags & TF_HEX) printf("0x%x ", tp->num); else if (tp->flags & TF_FIELD) printf("%d'd%d ", tp->width, tp->num); else printf("%d ", tp->num);  break;
-	case TT_OPC:	printf("[%s%s] ", tp->str, (tp->flags&TF_RET)? ".r": (tp->flags&TF_CIN)? ".cin":"");  break;
-	case TT_PRE:	printf("<%s> ", tp->str);  break;
-	case TT_OPR:	printf("%s ", tp->str); break;
-	case TT_DATA:	printf("U%d ", tp->num*8); break;
-	case TT_STRUCT:	printf("{%s} ", tp->str); break;
-	case TT_ITER:	printf("<iter> "); break;
-	case TT_FILE:	printf("file:%s ", tp->str); break;
-	default:		printf("UNK ttype??? "); break;
+	case TT_EOL:	asprintf(&s, "\\n (%s:%d)", ifiles_list[tp->ifl], tp->num); break;
+	case TT_LABEL:	asprintf(&s, "%s:", tp->str); break;
+	case TT_SYM:	asprintf(&s, "\"%s\"%s", tp->str, (tp->flags&TF_RET)? ".r": (tp->flags&TF_CIN)? ".cin":"");  break;
+	case TT_NUM:	if (tp->flags & TF_HEX) asprintf(&s, "0x%x", tp->num); else if (tp->flags & TF_FIELD) asprintf(&s, "%d'd%d", tp->width, tp->num); else asprintf(&s, "%d", tp->num);  break;
+	case TT_OPC:	asprintf(&s, "[%s%s]", tp->str, (tp->flags&TF_RET)? ".r": (tp->flags&TF_CIN)? ".cin":"");  break;
+	case TT_PRE:	asprintf(&s, "<%s>", tp->str);  break;
+	case TT_OPR:	asprintf(&s, "%s", tp->str); break;
+	case TT_DATA:	asprintf(&s, "U%d", tp->num*8); break;
+	case TT_STRUCT:	asprintf(&s, "{%s}", tp->str); break;
+	case TT_ITER:	asprintf(&s, "<iter>"); break;
+	case TT_FILE:	asprintf(&s, "file: %s", tp->str); break;
+	default:		asprintf(&s, "UNK ttype???"); break;
 	}
+	
+	return s;
+}
+
+void token_dump(tokens_t *tp)
+{
+    char *s = token(tp);
+    printf("%s ", s);
+    free(s);
 }
 
 void dump_tokens(const char *pass, tokens_t *f, tokens_t *l)
@@ -261,7 +284,7 @@ int def(tokens_t *tp, tokens_t **ep)
 	strs_t *st;
 
 	if (tp->ttype == TT_OPR && tp->num == OPR_SIZEOF) {
-		tp++; syntax(tp->ttype == TT_SYM, "expected sizeof sym");
+		tp++; syntax(tp->ttype == TT_SYM, tp, "expected sizeof sym");
 		if ((p = pre(tp->str, PT_STRUCT))) {
 			if (debug) printf("sizeof %s <- %d\n", tp->str, p->size);
 			pullup(tp, tp+1, ep);
@@ -340,7 +363,7 @@ tokens_t *cond(tokens_t *t, tokens_t **ep, int *val)
 		    continue;
 		}
 		
-        syntax2(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
+        syntax(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
 	}
 	
     if (debug) printf("COND final = %d\n", tp->num);
@@ -355,15 +378,15 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi, tokens_t *ltp)
 	tokens_t *t;
 	
 	def(tp, ep);
-	syntax(tp->ttype == TT_NUM, "expected expr NUM, got %s", ttype(tp->ttype));
+	syntax(tp->ttype == TT_NUM, tp, "expected expr NUM, got %s (%s)", ttype(tp->ttype), token(tp));
 	*val = tp->num; tp++;
 	while (tp->ttype != TT_EOL && (ltp == NULL || tp != ltp)) {
 		t = tp;
-		syntax(t->ttype == TT_OPR, "expected expr OPR");
+		syntax(t->ttype == TT_OPR, t, "expected expr OPR");
 		
 		if (t->flags & TF_2OPR) {
 			tp++; def(tp, ep);
-			syntax(tp->ttype == TT_NUM, "expected expr NUM");
+			syntax(tp->ttype == TT_NUM, tp, "expected expr NUM");
 			switch (t->num) {
 				case OPR_ADD:   *val += tp->num; break;
 				case OPR_SUB:   *val -= tp->num; break;
@@ -379,7 +402,7 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi, tokens_t *ltp)
 				case OPR_NEQ:   *val  = *val != tp->num; break;
 				case OPR_MAX:   *val  = MAX(*val, tp->num); break;
 				case OPR_MIN:   *val  = MIN(*val, tp->num); break;
-				default: syntax(0, "unknown expr 2-arg OPR"); break;
+				default: syntax(0, t, "unknown expr 2-arg OPR"); break;
 			}
 		} else
 		if (t->flags & TF_1OPR) {
@@ -387,10 +410,10 @@ tokens_t *expr(tokens_t *tp, tokens_t **ep, int *val, int multi, tokens_t *ltp)
 				case OPR_INC: *val += 1; break;
 				case OPR_DEC: *val -= 1; break;
 				case OPR_NOT: *val = (~*val) & 0xffff; break;   // NB: currently done postfix
-				default: syntax(0, "unknown expr 1-arg OPR"); break;
+				default: syntax(0, t, "unknown expr 1-arg OPR"); break;
 			}
 		} else {
-			syntax(0, "expected expr OPR");
+			syntax(0, t, "expected expr OPR");
 		}
 		if (!multi) break;
 		tp++;
@@ -405,7 +428,7 @@ tokens_t *expr_parens(tokens_t *t, tokens_t **ep, int *val)
 {
 	tokens_t *tp = t;
 
-    syntax2(tp->ttype == TT_OPR && tp->num == OPR_OPEN, tp, "expected \"(\"");
+    syntax(tp->ttype == TT_OPR && tp->num == OPR_OPEN, tp, "expected \"(\"");
     tp++;
     
 	while (!(tp->ttype == TT_OPR && tp->num == OPR_CLOSE)) {
@@ -415,7 +438,7 @@ tokens_t *expr_parens(tokens_t *t, tokens_t **ep, int *val)
 		    continue;
 		}
 		
-        syntax2(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
+        syntax(0, t-1, "expected \"NUM OPR NUM\" or \"NUM OPR\"");
 	}
 	
     if (debug) printf("PARENS final = %d\n", tp->num);

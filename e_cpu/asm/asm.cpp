@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
 			        printf("#include_other file: (ignored) %s\n", basename);
 			        continue;
 			    }
-				ifn++; ifl++;
+				ifn++; lineno[ifn] = 0; ifl++;
 				if (ifn >= NIFILES_NEST) panic("too many nested include files");
 				fn = ifiles[ifn]; strcpy(fn, basename); strcpy(ifiles_list[ifl], basename);
                 snprintf(fullpath, sizeof(fullpath), "%s%s", other_dir? other_dir : "", fn);
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
 			}
 	
 			if (sscanf(cp, "#include %s", basename) == 1) {
-				ifn++; ifl++;
+				ifn++; lineno[ifn] = 0; ifl++;
 				if (ifn >= NIFILES_NEST) panic("too many nested include files");
 				fn = ifiles[ifn]; strcpy(fn, basename); strcpy(ifiles_list[ifl], basename);
 				printf("#include file: %s\n", fn);
@@ -299,11 +299,11 @@ int main(int argc, char *argv[])
 					int num = strtol(cp, &cp, 0);
 					if (*cp == '\'') {
 						tp->flags |= TF_FIELD; cp++;
-						syntax(*cp == 'd', "expecting \'d"); cp++;
+						syntax(*cp == 'd', tp, "expecting \'d"); cp++;
 						tp->width = num;
 						int max = (1 << num) - 1;
 						num = strtol(cp, &cp, 0);
-						syntax(num <= max, "value greater than field width");
+						syntax(num <= max, tp, "value greater than field width");
 					}
 					tp->num = num; tp++; continue;
 				}
@@ -410,9 +410,9 @@ int main(int argc, char *argv[])
 
 		// define new MACRO
 		if (tp->ttype == TT_PRE && tp->num == PP_MACRO) {
-			tp++; syntax(tp->ttype == TT_SYM, "expected MACRO name"); t = tp; tp++; pp->args = tp;
+			tp++; syntax(tp->ttype == TT_SYM, tp, "expected MACRO name"); t = tp; tp++; pp->args = tp;
 			for (i=0; tp->ttype != TT_EOL; i++) {
-				syntax(tp->ttype == TT_SYM, "expected MACRO arg"); tp++;
+				syntax(tp->ttype == TT_SYM, tp, "expected MACRO arg"); tp++;
 			}
 			tp++; pp->nargs = i; pp->body = tp;
 			for (i=0; !(tp->ttype == TT_PRE && tp->num == PP_ENDM); i++) {
@@ -492,7 +492,7 @@ int main(int argc, char *argv[])
 					if (debug) printf("STRUCT \"%s\"\n", tp->str);
 					to->ttype = TT_STRUCT; to->str = tp->str; to->num = p->size; to++;
 				} else {
-					syntax(0, "symbol or MACRO undefined");
+					syntax(0, tp, "symbol or MACRO undefined");
 				}
 				tp++;
 			}
@@ -506,8 +506,8 @@ int main(int argc, char *argv[])
 		
 		if (tp->ttype == TT_PRE && tp->num == PP_DEF) {
 			pp->flags = tp->flags;
-			tp++; syntax(tp->ttype == TT_SYM, "expected DEF name");
-			if (pre(tp->str, PT_NONE)) syntax(0, "re-defined: %s", tp->str);
+			tp++; syntax(tp->ttype == TT_SYM, tp, "expected DEF name");
+			if (pre(tp->str, PT_NONE)) syntax(0, tp, "re-defined: %s", tp->str);
 			t = tp; tp++;
 			if (tp->flags & TF_FIELD) {		// fixme: not quite right wrt expr()
 				pp->width = tp->width;
@@ -525,15 +525,15 @@ int main(int argc, char *argv[])
 		if (tp->ttype == TT_PRE && tp->num == PP_STRUCT) {
 			int size, offset;
 
-			tp++; syntax(tp->ttype == TT_SYM, "expected STRUCT name"); tt = tp; tp++; offset = 0;
-			syntax(tp->ttype == TT_EOL, "expecting STRUCT EOL"); tp++;
+			tp++; syntax(tp->ttype == TT_SYM, tp, "expected STRUCT name"); tt = tp; tp++; offset = 0;
+			syntax(tp->ttype == TT_EOL, tp, "expecting STRUCT EOL"); tp++;
 			while (!(tp->ttype == TT_PRE && tp->num == PP_ENDS)) {
 				t = tp;
-				syntax(tp->ttype == TT_DATA, "expecting STRUCT data"); size = tp->num; tp++;
-				syntax(tp->ttype == TT_SYM, "expecting STRUCT sym"); tp++;
+				syntax(tp->ttype == TT_DATA, t, "expecting STRUCT data"); size = tp->num; tp++;
+				syntax(tp->ttype == TT_SYM, t, "expecting STRUCT sym"); tp++;
 				tp = expr(tp, &ep1, &val, 1);
 				size *= val;	// TODO alignment?
-				syntax(tp->ttype == TT_EOL, "expecting STRUCT EOL"); tp++;
+				syntax(tp->ttype == TT_EOL, t, "expecting STRUCT EOL"); tp++;
 				pp->str = (t+1)->str; pp->ptype = PT_MEMBER; pp->dtype = t->str; pp->size = t->num, pp->ninst = val;
 				pp->offset = offset; offset += size;
 				if (debug) printf("MEMBER \"%s\" %s %d ninst %d offset %d\n", pp->str, pp->dtype, pp->size, pp->ninst, pp->offset);
@@ -584,7 +584,7 @@ int main(int argc, char *argv[])
 						tp++;
 					}
 				}
-				syntax(tp->ttype == TT_PRE && tp->num == PP_ENDR, "expecting REPEAT END");
+				syntax(tp->ttype == TT_PRE && tp->num == PP_ENDR, tp, "expecting REPEAT END");
 			}
 			tp+=2;		// remove extra \n
 			continue;
@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
 					while (tp->ttype != TT_PRE || tp->num != PP_FCALL) {
 						tp++;
 					}
-					tp++; syntax(tp->ttype == TT_NUM, "expecting FCALL num"); fcall = tp->num; tp++;
+					tp++; syntax(tp->ttype == TT_NUM, tp, "expecting FCALL num"); fcall = tp->num; tp++;
 					if (debug) printf("\tFCALL %d\n", fcall);
 					if (val >= fcall) {
 						val -= fcall;
@@ -616,7 +616,7 @@ int main(int argc, char *argv[])
 					if (limit-- == 0) panic("FACTOR never converged");
 				}
 			}
-			syntax(tp->ttype == TT_PRE && tp->num == PP_ENDF, "expecting FACTOR END");
+			syntax(tp->ttype == TT_PRE && tp->num == PP_ENDF, tp, "expecting FACTOR END");
 			tp+=2;		// remove extra \n
 			continue;
 		}
@@ -955,10 +955,10 @@ int main(int argc, char *argv[])
 			        if (st->flags & SF_DEFINED) {
 				        val = st->val, operand_type=2;
 			        } else {
-                        syntax(0, "symbol not defined: %s", t->str);
+                        syntax(0, t, "symbol not defined: %s", t->str);
                     }
 			    } else {
-                    syntax(0, "symbol not found: %s", t->str);
+                    syntax(0, t, "symbol not found: %s", t->str);
 			    }
 			}
 			if (debug || show_bin) printf("\t%04x u%d ", a, tp->num*8);
@@ -1017,8 +1017,8 @@ int main(int argc, char *argv[])
 			
 			// check operand
 			switch (oc) {
-				case OC_PUSH:	syntax(oper >= 0 && oper <= 0x7fff, "constant outside range 0..0x7fff"); break;
-				case OC_ADDI:	syntax(oper >= 0 && oper <= 127, "constant outside range 0..127"); break;
+				case OC_PUSH:	syntax(oper >= 0 && oper <= 0x7fff, t, "constant outside range 0..0x7fff"); break;
+				case OC_ADDI:	syntax(oper >= 0 && oper <= 127, t, "constant outside range 0..127"); break;
 
 				case OC_CALL:
 				case OC_BR:
@@ -1026,8 +1026,8 @@ int main(int argc, char *argv[])
 				case OC_BRNZ:
 				case OC_LOOP:
 				case OC_LOOP2:
-								syntax(!(oper&1), "destination address must be even");
-								syntax(oper >= 0 && oper < (CPU_RAM_SIZE<<1), "destination address out of range");
+								syntax(!(oper&1), t, "destination address must be even");
+								syntax(oper >= 0 && oper < (CPU_RAM_SIZE<<1), t, "destination address out of range");
 								break;
 
 				case OC_RDREG:
@@ -1036,21 +1036,21 @@ int main(int argc, char *argv[])
 				case OC_WRREG2:
 				case OC_WREVT:
 				case OC_WREVT2: {
-								syntax(oper >= 1 && oper <= 0x7ff, "i/o specifier outside range 1..0x7ff: 0x%04x", oper);
+								syntax(oper >= 1 && oper <= 0x7ff, t, "i/o specifier outside range 1..0x7ff: 0x%04x", oper);
 								int ones = count_ones(oper);
-								syntax(ones <= 2, "too many bits (%d) in i/o specifier 0x%04x", ones, oper);
+								syntax(ones <= 2, t, "too many bits (%d) in i/o specifier 0x%04x", ones, oper);
 								break;
 				}
 
 				default:		if (operand_type != 3) {
-									syntax(0, "instruction takes no operand");
+									syntax(0, t, "instruction takes no operand");
 								}
 								break;
 			}
 			
-			if ((tp->flags & TF_CIN) && (oc != OC_ADD)) syntax(0, "\".cin\" only valid for add instruction");
+			if ((tp->flags & TF_CIN) && (oc != OC_ADD)) syntax(0, tp, "\".cin\" only valid for add instruction");
 			bool rstk = (oc == OC_R || oc == OC_R_FROM || oc == OC_TO_R);
-			if ((tp->flags & TF_RET) && (((oc & 0xe000) != 0x8000) || rstk)) syntax(0, "\".r\" not valid for this instruction");
+			if ((tp->flags & TF_RET) && (((oc & 0xe000) != 0x8000) || rstk)) syntax(0, tp, "\".r\" not valid for this instruction");
 			
 			op += oper;
 			if (tp->flags & TF_RET) op |= OPT_RET;
@@ -1091,7 +1091,7 @@ int main(int argc, char *argv[])
 						break;
 					}
 				}
-				syntax(ic->addr != -1, "not in init_code");
+				syntax2(ic->addr != -1, "not in init_code");
 			}
 			
 			if (debug || show_bin) printf("\n");

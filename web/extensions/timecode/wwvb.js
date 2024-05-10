@@ -1,8 +1,7 @@
-// Copyright (c) 2017-2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 //
 // TODO
-//    inverted amplitude?
 //    parity checking
 //
 
@@ -10,12 +9,14 @@ var wwvb = {
    // ampl
    AMPL_NOISE_THRESHOLD: 3,
    arm: 0,
+   data: 0,
+   data_last: 0,
 
    // phase
    PHASE_NOISE_THRESHOLD: 15,
    prev_one_width: 0,
    ph_sync:    [ 0,0,0,1,1,1,0,1,1,0,1,0,0,0 ],    // sync[13..0] starting at :59 (double ampl marker pulses)
-   inverted: 0,
+   phase_inv: 0,
    sixmin_mode: 0,
    
    cur: 0,
@@ -30,32 +31,6 @@ var wwvb = {
    
    end: null
 };
-
-function wwvb_sync()
-{
-	var rl = tc.raw.length;
-	var sync = 1;
-	for (i = 0; i < 14; i++) {
-		if (tc.raw[rl-(14-i)] != wwvb.ph_sync[i]) {
-			sync = 0;
-			break;
-		}
-	}
-	if (!sync) {
-			sync = 2;
-			for (i = 0; i < 14; i++) {
-				if (tc.raw[rl-(14-i)] != (wwvb.ph_sync[i] ^ 1)) {
-					sync = 0;
-					break;
-				}
-			}
-	}
-	
-	if (sync != 0)
-      console.log('SYNC'+ ((sync == 2)? '-I':'') +' dlen='+ tc.raw.length);
-	
-	return sync;
-}
 
 function wwvb_dmsg(s)
 {
@@ -89,13 +64,14 @@ function wwvb_ampl_decode(bits)
 
    var s = day +' '+ mo +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' UTC';
    tc_dmsg('  ' + 'day #'+ doy +' '+ s +'<br>');
-   tc_stat('lime', 'Time decoded: '+ s);
+   tc_stat('lime', 'Time: '+ s);
 }
 
 function wwvb_clr()
 {
    var w = wwvb;
    
+   w.data = w.data_last = w.cur = 0;
    w.arm = 0;
    w.cnt = w.dcnt = 0;
    w.prev_one_width = w.one_width = w.zero_width = 0;
@@ -108,7 +84,7 @@ function wwvb_ampl(ampl)
 	var w = wwvb;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.95)? 1:0;
-	if (!tc.ref) { tc.data = ampl; tc.ref = 1; }
+	ampl = ampl ^ tc.force_rev ^ tc.data_ainv;
 	
 	// de-noise signal
    if (ampl == w.cur) {
@@ -118,9 +94,11 @@ function wwvb_ampl(ampl)
    	if (w.cnt > w.AMPL_NOISE_THRESHOLD) {
    		w.cur = ampl;
    		w.cnt = 0;
-   		tc.data ^= 1;
-   		if (!tc.data) {
+	      if (!tc.ref) { w.data = ampl; tc.ref = 1; } else { w.data ^= 1; }
+   		if (!w.data) {
    		   //tc_dmsg(w.one_width +' ');
+   		   //tc_dmsg((w.prev_one_width +'|'+ w.one_width +' ');
+   		   //tc_dmsg('S'+ tc.ACQ_SYNC +' ');
    		   if (tc.state == tc.ACQ_SYNC && w.prev_one_width > 0 && w.prev_one_width < 25 && w.one_width < 25) {
    		      //tc_dmsg('[SYNC] ');
                tc_stat('cyan', 'Found sync');
@@ -134,17 +112,17 @@ function wwvb_ampl(ampl)
    		   }
    		   w.prev_one_width = w.one_width;
    		}
-   		if (tc.data) w.one_width = 0; else w.zero_width = 0;
+         if (w.data) w.one_width = 0; else w.zero_width = 0;
    	}
    }
 
-   if (tc.data) w.one_width++; else w.zero_width++;
+   if (w.data) w.one_width++; else w.zero_width++;
 
 	if (tc.state == tc.MIN_MARK || (tc.state == tc.ACQ_DATA && tc.sample_point == tc.trig)) {
 	   var b = (tc.state == tc.MIN_MARK || w.one_width <= 60)? 1:0;
       //tc_dmsg(b.toFixed(0) + w.one_width.toFixed(0) +'|');
       tc_dmsg(b);
-      tc.raw[w.sec] = b;    // raw, not inversion-corrected data
+      tc.raw[w.sec] = b;
       if ([0,8,11,18,21,33,35,38,39,43,44,53,54,58].includes(w.dcnt)) tc_dmsg(' ');
 
       if (tc.state == tc.MIN_MARK) {
@@ -168,15 +146,43 @@ function wwvb_ampl(ampl)
       w.sec++;
       w.msec = 0;
    }
+
+   tc.data = w.data;
+}
+
+function wwvb_phase_sync()
+{
+	var rl = tc.raw.length;
+	var sync = 1;
+	for (i = 0; i < 14; i++) {
+		if (tc.raw[rl-(14-i)] != wwvb.ph_sync[i]) {
+			sync = 0;
+			break;
+		}
+	}
+	if (!sync) {
+			sync = 2;
+			for (i = 0; i < 14; i++) {
+				if (tc.raw[rl-(14-i)] != (wwvb.ph_sync[i] ^ 1)) {
+					sync = 0;
+					break;
+				}
+			}
+	}
+	
+	if (sync != 0)
+      console.log('SYNC'+ ((sync == 2)? '-I':'') +' dlen='+ tc.raw.length);
+	
+	return sync;
 }
 
 // called at 100 Hz (10 msec)
 function wwvb_phase(ampl_sgn)
 {
-	var i;
+	var i, sync, data;
 	var w = wwvb;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
-	if (!tc.ref) { tc.data = ampl_sgn; tc.ref = 1; }
+	if (!tc.ref) { w.data = ampl_sgn; tc.ref = 1; }
 	
 	// de-noise signal
    if (ampl_sgn == w.cur) {
@@ -186,17 +192,17 @@ function wwvb_phase(ampl_sgn)
    	if (w.cnt > w.PHASE_NOISE_THRESHOLD) {
    		w.cur = ampl_sgn;
    		w.cnt = 0;
-   		tc.data ^= 1;
+   		w.data ^= 1;
    	}
    }
 
-	if (tc.data) {
+	if (w.data) {
 		w.width++;
 	}
 	
-	// if we need it, measure width on falling edge tc.data
-	if (tc.sample_point == -1 && tc.data_last != tc.data) {
-		//tc_dmsg(tc.data_last.toFixed(0) + tc.data.toFixed(0) +':'+ w.width.toFixed(0) +' ');
+	// if we need it, measure width on falling edge w.data
+	if (tc.sample_point == -1 && w.data_last != w.data) {
+		//tc_dmsg(w.data_last.toFixed(0) + w.data.toFixed(0) +':'+ w.width.toFixed(0) +' ');
 		if (w.width > 50 && w.width < 110) {
 			//tc.sample_point = tc.trig - Math.round(w.width/2);
 			tc.sample_point = tc.trig - 1;
@@ -205,23 +211,23 @@ function wwvb_phase(ampl_sgn)
 			tc.start_point = 1;
 		}
 		w.width = 0;
-	   tc.data_last = tc.data;
+	   w.data_last = w.data;
 	}
 	
 	//wwvb_dmsg('sp='+ tc.sample_point +' trig='+ tc.trig);
 
 	if (tc.sample_point == tc.trig) {
 		if (tc.state == tc.ACQ_SYNC) {
-			tc.raw.push(tc.data);
-			tc_dmsg(tc.data.toString());
+			tc.raw.push(w.data);
+			tc_dmsg(w.data.toString());
 			
 			if (tc.raw.length >= 14) {
-				var sync = wwvb_sync();
-				w.inverted = 0;
-				if (sync == 2) w.inverted = 1;
+				sync = wwvb_phase_sync();
+				w.phase_inv = 0;
+				if (sync == 2) w.phase_inv = 1;
 				if (sync) {
 					tc_stat('cyan', 'Found sync');
-					tc_dmsg(' SYNC'+ (w.inverted? '-inv<br>':'<br>'));
+					tc_dmsg(' SYNC'+ (w.phase_inv? '-inv<br>':'<br>'));
 					wwvb_legend(1);
 					tc_dmsg('00011101101000 ');
 					w.dcnt = 13;
@@ -243,9 +249,9 @@ function wwvb_phase(ampl_sgn)
 		} else
 		
 		if (tc.state == tc.ACQ_DATA) {
-			tc.raw.push(tc.data);
-			var data = tc.data ^ w.inverted;
-			//tc_dmsg(w.inverted? (data? 'i':'o') : data.toString());
+			tc.raw.push(w.data);
+			data = w.data ^ w.phase_inv;
+			//tc_dmsg(w.phase_inv? (data? 'i':'o') : data.toString());
 			tc_dmsg(data.toString());
          if ([12,17,18,19,28,29,38,39,46,48,49,52].includes(w.dcnt)) tc_dmsg(' ');
 			
@@ -259,7 +265,7 @@ function wwvb_phase(ampl_sgn)
 			
 			//tc_info('dlen='+ tc.raw.length +' dcnt='+ w.dcnt);
 			if (tc.raw.length >= 14 && w.dcnt == 12) {
-				var sync = wwvb_sync();
+				sync = wwvb_phase_sync();
 				if (!sync) {
 					tc_dmsg(' RESYNC<br>');
 					tc.state = tc.ACQ_SYNC;
@@ -267,9 +273,9 @@ function wwvb_phase(ampl_sgn)
 					w.width = 0;
 					w.tick = 0;
 				} else
-				if ((sync == 1 && w.inverted) || (sync == 2 && !w.inverted)) {
+				if ((sync == 1 && w.phase_inv) || (sync == 2 && !w.phase_inv)) {
 					tc_dmsg(' PHASE INVERSION<br>00011101101000 ');
-					w.inverted ^= 1;
+					w.phase_inv ^= 1;
 				}
 			}
 			
@@ -325,7 +331,7 @@ function wwvb_phase(ampl_sgn)
 					var hour = Math.floor(m / 60);
 					m -= hour * 60;
 					tc_dmsg(' '+ (day+1) +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
-					tc_stat('lime', 'Time decoded: '+ (day+1) +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
+					tc_stat('lime', 'Time: '+ (day+1) +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ m.leadingZeros(2) +' UTC');
 					
 					if (m == 10 || m == 40) w.sixmin_mode = 1;
 				}
@@ -351,7 +357,7 @@ function wwvb_phase(ampl_sgn)
 			if (w.dcnt == 127) tc_dmsg('<br>106b: ');
 			if (w.dcnt == 233) tc_dmsg('<br>127b: ');
 
-			var data = tc.data ^ w.inverted;
+			data = w.data ^ w.phase_inv;
 			tc_dmsg(data.toString());
 
 			w.dcnt++;
@@ -365,7 +371,7 @@ function wwvb_phase(ampl_sgn)
 		}
 	}
 	
-	return tc.data;
+	return w.data;
 }
 
 function wwvb_focus()

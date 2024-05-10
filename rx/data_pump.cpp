@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2015-2024 John Seamons, ZL4VO/KF6VO
 
 #include "types.h"
 #include "config.h"
@@ -70,8 +70,8 @@ struct rx_trailer_t {
 static rx_trailer_t *rxt;
 
 // rescale factor from hardware samples to what CuteSDR code is expecting
-#define CICF_GAIN_dB 4.5    // empirical measurement using Kiwi sig gen
-const TYPEREAL rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, CICF_GAIN_dB/20.0) : 1);
+const TYPEREAL cicf_gain_dB[] = { 4.5, 4.5, 4.5 + 8.6, 4.5 };   // empirical measurement using sig gen
+static TYPEREAL rescale;
 
 static int rx_xfer_size;
 static u4_t last_run_us;
@@ -397,6 +397,7 @@ void data_pump_init()
 	// see rx_dpump_t.in_samps[][]
 	assert(FASTFIR_OUTBUF_SIZE > nrx_samps);
 	
+	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, cicf_gain_dB[fw_sel]/20.0) : 1);
 	//printf("data pump: rescale=%.6g VAL_USE_RX_CICF=%d\n", rescale, VAL_USE_RX_CICF);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR);

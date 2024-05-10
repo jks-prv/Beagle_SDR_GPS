@@ -2,6 +2,11 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.679  May 10, 2024
+    Fixed CIC compensation filter gain for 3-channel mode.
+    Fixed frequency sorting of EiBi database.
+    Added initial phase correction to timecode extension. Time stations should sync now in all cases.
+
 v1.678  May 8, 2024
     Admin page:
         New menu "Power on restart delay (secs)" on network tab. Allows adjustment of the time delay

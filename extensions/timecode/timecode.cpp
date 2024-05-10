@@ -20,7 +20,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-static bool test_init = false;
 static s2_t *testStart, *testEnd;
 
 class timecode {
@@ -141,25 +140,30 @@ public:
         }
 
         if (strcmp(msg, "SET test") == 0) {
+            static bool test_init;
             if (!test_init) {
                 char *file;
                 int fd;
                 #define TIMECODE_FNAME DIR_CFG "/samples/timecode.test.au"
                 printf("timecode: mmap " TIMECODE_FNAME "\n");
-                scall("timecode open", (fd = open(TIMECODE_FNAME, O_RDONLY)));
-                off_t fsize = kiwi_file_size(TIMECODE_FNAME);
-                printf("timecode: size=%ld\n", fsize);
-                file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
-                if (file == MAP_FAILED) sys_panic("timecode mmap");
-                close(fd);
-                int words = fsize / sizeof(s2_t);
-                testStart = (s2_t *) file;
-                testEnd = testStart + words;
-                test_init = true;
+                fd = open(TIMECODE_FNAME, O_RDONLY);
+                if (fd >= 0) {
+                    off_t fsize = kiwi_file_size(TIMECODE_FNAME);
+                    printf("timecode: size=%ld\n", fsize);
+                    file = (char *) mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
+                    if (file == MAP_FAILED) sys_panic("timecode mmap");
+                    close(fd);
+                    int words = fsize / sizeof(s2_t);
+                    testStart = (s2_t *) file;
+                    testEnd = testStart + words;
+                    test_init = true;
+                }
             }
 
-            testP = testStart;
-            test = true;
+            if (test_init) {
+                testP = testStart;
+                test = true;
+            }
             return true;
         }
 
@@ -271,7 +275,7 @@ void timecode_close(int rx_chan) {
 
 bool timecode_msgs(char *msg, int rx_chan)
 {
-	rcprintf(rx_chan, "TIMECODE <%s>\n", msg);
+	//rcprintf(rx_chan, "TIMECODE <%s>\n", msg);
 
     if (strcmp(msg, "SET ext_server_init") == 0) {
         tc[rx_chan] = timecode::make(rx_chan);
