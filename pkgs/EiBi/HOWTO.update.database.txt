@@ -30,7 +30,7 @@ Then to sort combined lists by freq:
       > Apply
 		> Put back top header line (the one beginning with "kHz:")
 			It gets incorrectly sorted a few dozen lines down the list
-			But this wasn't true w/ A24
+			If this _isn't_ true then sort may have not worked!
 
 rm sked-current.csv
 ln -s sked-[ab]2?.ddmmmyy.kiwi.csv sked-current.csv

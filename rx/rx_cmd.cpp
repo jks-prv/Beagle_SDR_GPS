@@ -68,6 +68,61 @@ int debug_v;
 
 #ifdef USE_SDR
 
+#define DX_PRINT
+#ifdef DX_PRINT
+
+    // -dx 0xhh
+    
+	#define DX_PRINT_MKRS 0x01
+	#define dx_print_mkrs(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_MKRS) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_MKRS_ALL 0x02
+	#define dx_print_mkrs_all(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_MKRS_ALL) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_ADM_MKRS 0x04
+	#define dx_print_adm_mkrs(fmt, ...) \
+		if (dx_print & DX_PRINT_ADM_MKRS) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_UPD 0x08
+	#define dx_print_upd(fmt, ...) \
+		if (dx_print & DX_PRINT_UPD) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_SEARCH 0x10
+	#define dx_print_search(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_SEARCH) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_FILTER 0x20
+	#define dx_print_filter(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_FILTER) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_DOW_TIME 0x40
+	#define dx_print_dow_time(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_DOW_TIME) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
+
+	#define DX_PRINT_DEBUG 0x80
+	#define dx_print_debug(cond, fmt, ...) \
+		if ((dx_print & DX_PRINT_DEBUG) && (cond)) printf(fmt, ## __VA_ARGS__)
+
+    #define DX_DONE() \
+        if (dx_print) _dx_done(conn, mark, max_quanta, loop, nt_loop, send, nt_send, msg_sl)
+
+#else
+	#define DX_PRINT_MKRS 0
+	#define DX_PRINT_UPD 0
+	#define DX_PRINT_FILTER 0
+	#define dx_print_mkrs(cond, fmt, ...)
+	#define dx_print_mkrs_all(cond, fmt, ...)
+	#define dx_print_adm_mkrs(fmt, ...)
+	#define dx_print_upd(fmt, ...)
+	#define dx_print_search(cond, fmt, ...)
+	#define dx_print_filter(cond, fmt, ...)
+	#define dx_print_dow_time(cond, fmt, ...)
+	#define dx_print_debug(cond, fmt, ...)
+    #define DX_DONE()
+#endif
+
 static dx_t *dx_list_first, *dx_list_last;
 
 int bsearch_freqcomp(const void *key, const void *elem)
@@ -76,21 +131,36 @@ int bsearch_freqcomp(const void *key, const void *elem)
 	double key_freq = dx_key->freq;
     double elem_freq = dx_elem->freq + ((double) dx_elem->offset / 1000.0);		// carrier plus offset
     
-    if (key_freq == elem_freq) return 0;
+    //dx_print_debug(true, "k=%.2f e=%.2f\n", key_freq, elem_freq);
+    if (key_freq == elem_freq) {
+        //dx_print_debug(true, "k == e: 0\n");
+        return 0;
+    }
     if (key_freq < elem_freq) {
-        if (dx_elem == dx_list_first) return 0;     // key < first in array so lower is first
+        if (dx_elem == dx_list_first) {
+            //dx_print_debug(true, "k < array first: 0\n");
+            return 0;     // key < first in array so lower is first
+        }
+        //dx_print_debug(true, "k < e: -1\n");
         return -1;
     }
     
     // implicit key_freq > elem_freq
     // but because there may never be an exact match must do a range test
+    //dx_print_debug(true, "k > e: look at e2\n");
     dx_t *dx_elem2 = dx_elem+1;
     if (dx_elem2 < dx_list_last) {
         // there is a following array element to range check with
         double elem2_freq = dx_elem2->freq + ((double) dx_elem2->offset / 1000.0);		// carrier plus offset
-        if (key_freq < elem2_freq) return 0;    // key was between without exact match
+        //dx_print_debug(true, "k=%.2f e2=%.2f\n", key_freq, elem2_freq);
+        if (key_freq < elem2_freq) {
+            //dx_print_debug(true, "k < e2: 0\n");
+            return 0;    // key was between without exact match
+        }
+        //dx_print_debug(true, "k > e2: 1\n");
         return 1;   // key_freq > elem2_freq -> keep looking
     }
+    //dx_print_debug(true, "k > array last: 0\n");
     return 0;   // key > last in array so lower is last (degenerate case)
 }
 
@@ -821,61 +891,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 #define DX_SPACING_ZOOM_THRESHOLD	5
 #define DX_SPACING_THRESHOLD_PX		10
 
-#define DX_PRINT
-#ifdef DX_PRINT
-
-    // -dx 0xhh
-    
-	#define DX_PRINT_MKRS 0x01
-	#define dx_print_mkrs(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_MKRS) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_MKRS_ALL 0x02
-	#define dx_print_mkrs_all(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_MKRS_ALL) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_ADM_MKRS 0x04
-	#define dx_print_adm_mkrs(fmt, ...) \
-		if (dx_print & DX_PRINT_ADM_MKRS) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_UPD 0x08
-	#define dx_print_upd(fmt, ...) \
-		if (dx_print & DX_PRINT_UPD) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_SEARCH 0x10
-	#define dx_print_search(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_SEARCH) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_FILTER 0x20
-	#define dx_print_filter(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_FILTER) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_DOW_TIME 0x40
-	#define dx_print_dow_time(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_DOW_TIME) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-	#define DX_PRINT_DEBUG 0x80
-	#define dx_print_debug(cond, fmt, ...) \
-		if ((dx_print & DX_PRINT_DEBUG) && (cond)) cprintf(conn, fmt, ## __VA_ARGS__)
-
-    #define DX_DONE() \
-        if (dx_print) _dx_done(conn, mark, max_quanta, loop, nt_loop, send, nt_send, msg_sl)
-
-#else
-	#define DX_PRINT_MKRS 0
-	#define DX_PRINT_UPD 0
-	#define DX_PRINT_FILTER 0
-	#define dx_print_mkrs(cond, fmt, ...)
-	#define dx_print_mkrs_all(cond, fmt, ...)
-	#define dx_print_adm_mkrs(fmt, ...)
-	#define dx_print_upd(fmt, ...)
-	#define dx_print_search(cond, fmt, ...)
-	#define dx_print_filter(cond, fmt, ...)
-	#define dx_print_dow_time(cond, fmt, ...)
-	#define dx_print_debug(cond, fmt, ...)
-    #define DX_DONE()
-#endif
-
     dx_t *dp, *ldp, *upd;
 
 	// SECURITY: should be okay: checks for conn->auth_admin first
@@ -1425,7 +1440,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
                     u4_t flags = 0;
                     double freq = dp->freq + ((double) dp->offset / 1000.0);		// carrier plus offset
-                    //dx_print_search(db_eibi, "DX_MKR EiBi CONSIDER %.2f\n", freq);
+                    dx_print_debug(db_eibi, "DX_MKR EiBi CONSIDER %.2f\n", freq);
 
                     if (func == DX_MKRS && freq > max + DX_SEARCH_WINDOW) break;    // get extra one above for label stepping
                 
