@@ -1,18 +1,26 @@
-// Copyright (c) 2017-2021 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 //
-// The protocol is unpublished, so some of the data bit values are still unknown.
+// TODO
+//    phase decoding
+//    The protocol is unpublished, so some of the data bit values are still unknown.
 //
 
 var bpc = {
+   // ampl
+   AMPL_NOISE_THRESHOLD: 3,
    arm: 0,
-   NOISE_THRESHOLD: 3,
+   data: 0,
+   data_last: 0,
+
+   // phase
+   // ...
+
    cur: 0,
    sec: 0,
    msec: 0,
    dcnt: 0,
    line: 0,
-   phase: 0,
    prev: [],
    raw: [],
    chr: 0,
@@ -75,113 +83,112 @@ function bpc_decode(b)
    var p = parity_error? 'PARITY ERROR' : '';
    var p2 = parity_error? '<span style="color:orange">PARITY ERROR</span>' : '';
    tc_dmsg('   '+ s +'  '+ p2 +'<br>');
-   tc_stat('lime', 'Time decoded: '+ (parity_error? p : s));
+   tc_stat('lime', 'Time: '+ (parity_error? p : s));
 */
 
    tc_dmsg('   '+ s +'<br>');
-   tc_stat('lime', 'Time decoded: '+ s);
+   tc_stat('lime', 'Time: '+ s);
 }
 
 function bpc_clr()
 {
-   var m = bpc;
+   var b = bpc;
    
-   m.cur = m.cnt = m.one_width = m.zero_width = 0;
-   m.phase ^= 1;
-   m.arm = m.no_modulation = m.dcnt = m.modct = m.line = m.sec = m.msec = 0;
+   b.data = b.data_last = 0;
+   b.cur = b.cnt = b.one_width = b.zero_width = 0;
+   b.arm = b.no_modulation = b.dcnt = b.modct = b.line = b.sec = b.msec = 0;
    tc.trig = 0;
-   tc.state = tc.ACQ_SYNC;
 
    if (server_time_local != null && server_time_local != '') {
-      m.time = parseInt(server_time_local)*3600 + parseInt(server_time_local.substr(3))*60 + 60;
+      b.time = parseInt(server_time_local)*3600 + parseInt(server_time_local.substr(3))*60 + 60;
    }
    
-   //m.time = 7*3600 + 59*60;
-   m.tod = m.time;
+   //b.time = 7*3600 + 59*60;
+   b.tod = b.time;
 }
 
 // called at 100 Hz (10 msec)
 function bpc_ampl(ampl)
 {
 	var i;
-	var m = bpc;
+	var b = bpc;
 	tc.trig++; if (tc.trig >= 100) tc.trig = 0;
 	ampl = (ampl > 0.5)? 1:0;
-	if (!tc.ref) { tc.data = ampl ^ m.phase; tc.ref = 1; }
+	ampl = ampl ^ tc.force_rev ^ tc.data_ainv;
 	
 	// de-noise signal
-   if (ampl == m.cur) {
-   	m.cnt = 0;
+   if (ampl == b.cur) {
+   	b.cnt = 0;
    } else {
-   	m.cnt++;
-   	if (m.cnt > m.NOISE_THRESHOLD) {
-   		m.cur = ampl;
-   		m.cnt = 0;
+   	b.cnt++;
+   	if (b.cnt > b.AMPL_NOISE_THRESHOLD) {
+   		b.cur = ampl;
+   		b.cnt = 0;
    		//if (tc.state == tc.ACQ_SYNC)
-   		//   tc_dmsg((tc.data? '1':'0') +':'+ (tc.data? m.one_width : m.zero_width) +' ');
-   		//if (tc.state == tc.ACQ_SYNC && !tc.data)
-   		//   tc_dmsg(m.zero_width +' ');
-	      tc.data_last = tc.data;
-   		tc.data ^= 1;
-   		//if (tc.data) m.one_width = 0; else m.zero_width = 0;
+   		//   tc_dmsg((b.data? '1':'0') +':'+ (b.data? b.one_width : b.zero_width) +' ');
+   		//if (tc.state == tc.ACQ_SYNC && !b.data)
+   		//   tc_dmsg(b.zero_width +' ');
+	      b.data_last = b.data;
+	      if (!tc.ref) { b.data = ampl; tc.ref = 1; } else { b.data ^= 1; }
+   		//if (b.data) b.one_width = 0; else b.zero_width = 0;
 
-   		if (tc.data) {
+   		if (b.data) {
    		   // zero-to-one transition
-   		   //tc_dmsg('0-'+ m.zero_width +' ');
-   		   //m.chr += 5;
-   		   if (tc.state != tc.ACQ_SYNC) {
+   		   //tc_dmsg('0-'+ b.zero_width +' ');
+   		   //b.chr += 5;
+   		   if (tc.state != tc.ACQ_PHASE && tc.state != tc.ACQ_SYNC) {
    		   /*
-   		      if (m.dcnt == 0) {
-   		         var secs = m.tod;
+   		      if (b.dcnt == 0) {
+   		         var secs = b.tod;
    		         var hh = Math.floor(secs/3600);
    		         secs -= hh * 3600;
    		         var mm = Math.floor(secs/60);
    		         secs -= mm * 60;
    		         tc_dmsg(hh.leadingZeros(2) +':'+ mm.leadingZeros(2) +':'+ secs.leadingZeros(2) +' ');
-   		         m.tod += 20;
+   		         b.tod += 20;
    		      }
    		   */
    		      
    		      // each pulse is 1, 2, 3 or 4 ten msec periods of no carrier
    		      // representing the dibit values 00, 01, 10 and 11 respectively
-   		      var t = Math.round((m.zero_width - 9) / 10);
+   		      var t = Math.round((b.zero_width - 9) / 10);
    		      if (t >= 4) t = 0;
-   		      m.raw[m.dcnt] = t;
-   		      var s = m.dibit[t];
-               if (t != m.prev[m.dcnt] && m.line) {
+   		      b.raw[b.dcnt] = t;
+   		      var s = b.dibit[t];
+               if (t != b.prev[b.dcnt] && b.line) {
                   s = '<span style="color:lime">'+ s +'</span>';
                }
-               m.prev[m.dcnt] = t;
+               b.prev[b.dcnt] = t;
                tc_dmsg(s);
-               if ([0,3,6,9,12,14,17].includes(m.dcnt)) tc_dmsg(' ');
-               //m.chr += s.length;
-               //if (m.chr > 80) { tc_dmsg('<br>'); m.chr = 0; }
-               m.dcnt++;
+               if ([0,3,6,9,12,14,17].includes(b.dcnt)) tc_dmsg(' ');
+               //b.chr += s.length;
+               //if (b.chr > 80) { tc_dmsg('<br>'); b.chr = 0; }
+               b.dcnt++;
                
                // each 20 sec frame is sync followed by 19 data dibits
-               if (m.dcnt >= 19) {
-                  bpc_decode(m.raw);
-                  m.dcnt = 0; m.line++;
+               if (b.dcnt >= 19) {
+                  bpc_decode(b.raw);
+                  b.dcnt = 0; b.line++;
                   bpc_legend();
                }
             }
-   		   m.one_width = 0;
+   		   b.one_width = 0;
    		} else {
    		   // one-to-zero transition
-   		   //tc_dmsg('1-'+ m.one_width +' ');
-   		   //m.chr += 5;
-   		   //if (m.chr > 80) { tc_dmsg('<br>'); m.chr = 0; }
-   		   m.zero_width = 0;
+   		   //tc_dmsg('1-'+ b.one_width +' ');
+   		   //b.chr += 5;
+   		   //if (b.chr > 80) { tc_dmsg('<br>'); b.chr = 0; }
+   		   b.zero_width = 0;
    		}
    	}
    }
 
-   if (tc.data) m.one_width++; else m.zero_width++;
+   if (b.data) b.one_width++; else b.zero_width++;
 	
 	// sync is 1900 ms (2 sec - 10 ms) of carrier every 20 sec
-	if (tc.state == tc.ACQ_SYNC && m.arm == 0 && m.one_width >= 170) { m.arm = 1; m.one_width = 0; }
-	if (m.arm == 1 && tc.data_last == 1 && tc.data == 0) {
-	   m.arm = 2;
+	if (tc.state == tc.ACQ_SYNC && b.arm == 0 && b.one_width >= 170) { b.arm = 1; b.one_width = 0; }
+	if (b.arm == 1 && b.data_last == 1 && b.data == 0) {
+	   b.arm = 2;
 	   tc.state = tc.SYNCED;
       tc.trig = 0;
       tc.sample_point = 40;
@@ -190,12 +197,14 @@ function bpc_ampl(ampl)
 
 	}
 
-   m.msec += 10;
+   b.msec += 10;
 
-   if (m.msec == 1000) {
-      m.sec++;
-      m.msec = 0;
+   if (b.msec == 1000) {
+      b.sec++;
+      b.msec = 0;
    }
+
+   tc.data = b.data;
 }
 
 function bpc_focus()

@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2017-2024 John Seamons, ZL4VO/KF6VO
 
 var tdf = {
    arm: 0,
@@ -40,7 +40,7 @@ function tdf_decode(bits)
    var tz   = bits[17]? 'CEST' : (bits[18]? 'CET' : 'TZ?');
 
    tc_dmsg('  '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz +'<br>');
-   tc_stat('lime', 'Time decoded: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz);
+   tc_stat('lime', 'Time: '+ day +' '+ tc.mo[mo] +' '+ yr +' '+ hour.leadingZeros(2) +':'+ min.leadingZeros(2) +' '+ tz);
 }
 
 function tdf_clr()
