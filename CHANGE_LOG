@@ -2,6 +2,17 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.680  May 12, 2024
+    Mobile improvements:
+        Protection against the "- - - + + +" icon auto repeat continuing to repeat after you're
+        no longer touching the icon.
+        
+        Disabled iOS browser "double tap zoom" and "hold-to-copy panel" features that interfered
+        with Kiwi buttons and icons in some cases.
+
+    For KiwiSDR 2 and later, the automatic proxy service configuration is restored after re-flashing
+    with the latest re-flash image.
+
 v1.679  May 10, 2024
     Fixed CIC compensation filter gain for 3-channel mode.
     Fixed frequency sorting of EiBi database.

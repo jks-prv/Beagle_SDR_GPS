@@ -211,6 +211,8 @@ var w3 = {
 };
 
 var w3int = {
+   btn_grp_uniq: 0,
+   
    menu_cur_id: null,
    menu_active: false,
    menu_debug: false,
@@ -2334,6 +2336,18 @@ function w3int_btn_evt(ev, path, cb, cb_param)
 {
    if (!w3_contains(path, 'w3-disabled')) {
       //console.log('w3int_btn_evt ev.type='+ ev.type +' path='+ path +' cb='+ cb +' cb_param='+ cb_param);
+
+      if (w3int.autorepeat_canceller_path != null) {
+         var diff = (w3int.autorepeat_canceller_path != path);
+         var same = (w3int.autorepeat_canceller_path == path && ev.type == 'mousedown');
+         if (diff || same) {
+            //console.log(path +' CANCELLED '+ w3int.autorepeat_canceller_path);
+            //if (kiwi_isMobile()) alert(path +' CANCELLED '+ w3int.autorepeat_canceller_path +' diff='+ TF(diff) +' same='+ TF(same));
+            kiwi_clearInterval(w3int.autorepeat_canceller_interval);
+            w3int.autorepeat_canceller_path = null;
+         }
+      }
+      
       w3_check_restart_reboot(ev.currentTarget);
       
       var el = w3_el(path);
@@ -2356,7 +2370,8 @@ function w3int_btn_evt(ev, path, cb, cb_param)
             return ignore(ev);   // don't run callback below
          } else {
             //canvas_log('HT='+ el.hold_timeout);
-            if ((ev.type == 'click' || ev.type == 'touchend') && isArg(el.hold_timeout)) {
+            if ((ev.type == 'click' || ev.type == 'mouseout' || ev.type == 'touchend') && isArg(el.hold_timeout)) {
+               //if (ev.type == 'mouseout') console.log('MOUSEOUT-HOLD');
                var timeout = el.hold_timeout;
                var triggered = el.hold_triggered;
                el.hold_timeout = null;
@@ -2378,6 +2393,12 @@ function w3int_btn_evt(ev, path, cb, cb_param)
          }
       }
    
+      // ignore spurious mouseout events when w3-hold is enabled
+      if (ev.type == 'mouseout') {
+         //console.log('MOUSEOUT-REG');
+         return;
+      }
+      
       // cb is a string because can't pass an object to onclick
       if (cb) {
          w3_call(cb, path, cb_param, /* first */ false, ev);   // buttons don't have first callback
@@ -2387,7 +2408,11 @@ function w3int_btn_evt(ev, path, cb, cb_param)
    w3int_post_action();
 }
 
-var w3int_btn_grp_uniq = 0;
+function w3_autorepeat_canceller(path, interval)
+{
+   w3int.autorepeat_canceller_path = isUndefined(path)? null : path;
+   w3int.autorepeat_canceller_interval = isUndefined(interval)? null : interval;
+}
 
 // deprecated (still used by older versions of antenna switch ext)
 function w3_btn(text, cb)
@@ -2446,6 +2471,7 @@ function w3int_button(psa, path, text, cb, cb_param)
 	} else
 	if (cb && hold && !momentary && !custom_events) {
 	   onclick += ' onmousedown='+ ev_cb(cb_param);
+	   onclick += ' onmouseout='+ ev_cb(cb_param);        // needed to cancel w3-hold
 	   onclick += ' ontouchstart='+ ev_cb(cb_param);
 	   onclick += ' ontouchend='+ ev_cb(cb_param);        // mobile doesn't generate a click event
 	} else
@@ -2482,8 +2508,8 @@ function w3int_button(psa, path, text, cb, cb_param)
 
 function w3_button(psa, text, cb, cb_param)
 {
-	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
-	w3int_btn_grp_uniq++;
+	var path = 'id-btn-grp-'+ w3int.btn_grp_uniq.toString();
+	w3int.btn_grp_uniq++;
    return w3int_button(psa, path, text, cb, cb_param);
 }
 
@@ -2521,8 +2547,8 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 
    // by default use pointer cursor if there is a callback
 	var pointer = (cb && cb != '')? ' w3-pointer':'';
-	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
-	w3int_btn_grp_uniq++;
+	var path = 'id-btn-grp-'+ w3int.btn_grp_uniq.toString();
+	w3int.btn_grp_uniq++;
 
 	var font_size = null;
 	if (isNumber(size) && size >= 0) font_size = px(size);
@@ -2542,6 +2568,7 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 	if (cb && (momentary || hold) && !custom_events) {
 	   if (momentary) cb_param = 0;
 	   onclick += ' onmousedown='+ ev_cb(cb_param);
+      onclick += ' onmouseout='+ ev_cb(cb_param);    // needed to cancel w3-hold
 	   onclick += ' ontouchstart='+ ev_cb(cb_param);
 	} else
 	if (cb && (custom_events || hold) && !momentary) {
@@ -2556,7 +2583,7 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 	   onclick += ' ontouchend='+ ev_cb(cb_param);
 	}
 
-	var p = w3_psa(psa, path + pointer +' fa '+ fa_icon, font_size + color, onclick);
+	var p = w3_psa(psa, path +' w3-ext-icon'+ pointer +' fa '+ fa_icon, font_size + color, onclick);
 	var s = '<i '+ p +'></i>';
 	//console.log(s);
 	return s;
@@ -2594,8 +2621,8 @@ function w3_icon_cb2(psa, fa_icon, size, color, cb, cb_param)
 {
    // by default use pointer cursor if there is a callback
 	var pointer = (cb && cb != '')? ' w3-pointer':'';
-	var path = 'id-btn-grp-'+ w3int_btn_grp_uniq.toString();
-	w3int_btn_grp_uniq++;
+	var path = 'id-btn-grp-'+ w3int.btn_grp_uniq.toString();
+	w3int.btn_grp_uniq++;
 	cb_param = cb_param || 0;
 
 	var font_size = null;
@@ -3612,7 +3639,7 @@ function w3_menu_popup(id, close_func, x, y)
    el.style.left = px(x);
 
    var yt = y + el.clientHeight + slop;
-	//if (w3int.menu_debug) canvas_log('Y:'+ x0 +':'+ y0 +'/'+ yt +'>'+ window.innerHeight +' '+ ((yt > window.innerHeight)? 'T':'F'));
+	//if (w3int.menu_debug) canvas_log('Y:'+ x0 +':'+ y0 +'/'+ yt +'>'+ window.innerHeight +' '+ TF(yt > window.innerHeight));
 	if (yt > window.innerHeight) {
 	   y = window.innerHeight - el.clientHeight - slop;
 	   el.w3_realigned_time = Date.now();

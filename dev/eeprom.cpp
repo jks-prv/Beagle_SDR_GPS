@@ -352,7 +352,7 @@ void eeprom_write(eeprom_action_e action, int serno, int model, char *key)
 
 void eeprom_update(eeprom_action_e action)
 {
-	int n, serno;
+	int i, n, serno;
 	eeprom_t *e = &eeprom;
 	
 	if (action == EE_RESET) {
@@ -397,6 +397,50 @@ void eeprom_update(eeprom_action_e action)
 	    printf("EEPROM: UPDATING from old model format\n");
 	    update = true;
 	}
+	
+	// recover cfg values of rev_{auto,user,host} from EEPROM
+	if (action == EE_NORM && model != KiwiSDR_1) {
+	    bool upd_cfg = false;
+	    int ok = 0;
+        const char *auto_user = admcfg_string("rev_auto_user", NULL, CFG_OPTIONAL);
+        if (auto_user == NULL || auto_user[0] == '\0') {
+            for (i = 0; i < 29; i++) {
+                if (!isxdigit(e->key[0][i]))
+                    break;
+            }
+            if (i == 29 && e->key[0][29] == '\0') {
+                admcfg_string_free(auto_user);
+                admcfg_set_string("rev_auto_user", e->key[0]);
+                lprintf("EEPROM rev_auto_user RECOVERED TO %s\n", e->key[0]);
+                upd_cfg = true;
+                ok++;
+            } else {
+                lprintf("EEPROM rev_auto_user UNSET, BUT EEPROM KEY INVALID\n");
+            }
+        } else {
+            ok++;       // found existing auto_user
+        }
+        
+        const char *auto_host = admcfg_string("rev_auto_host", NULL, CFG_OPTIONAL);
+        if (auto_host == NULL || auto_host[0] == '\0') {
+            admcfg_string_free(auto_host);
+            admcfg_set_string("rev_auto_host", stprintf("%d", serno));
+            lprintf("EEPROM rev_auto_host RECOVERED TO %d\n", serno);
+            upd_cfg = true;
+        }
+        
+        if (upd_cfg) {
+            if (ok) {   // don't use auto if user key wasn't good
+                admcfg_set_bool("rev_auto", true);
+                lprintf("EEPROM rev_auto SET TRUE\n");
+            }
+            admcfg_save_json(cfg_adm.json);
+            
+            cfg_set_int("sdr_hu_dom_sel", DOM_SEL_REV);
+            cfg_save_json(cfg_cfg.json);
+            lprintf("EEPROM dom_sel SET DOM_SEL_REV\n");
+        }
+    }
 
     if (action == EE_TEST) {
 	    printf("EEPROM: WRITING old model format\n");
