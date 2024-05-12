@@ -73,6 +73,7 @@ var owrx = {
    show_cursor_freq: 0,
    tuning_locked: 0,
    capture_input_field: false,
+   freqstep_interval: null,
    
    dx_click_gid_last_stored: undefined,
    dx_click_gid_last_until_tune: undefined,
@@ -2723,7 +2724,7 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
 		if (!canvas_dragging && drag_cnt_b && drag_delta_b) {
 		   if (owrx.debug_drag) canvas_log('### dc='+ owrx.drag_count +' >? '+ min_drag_cnt +' && '+
 		      Math.abs(x - owrx.canvas.drag_start_x) +' >? '+ canvas_drag_min_delta +' '+
-		      (drag_cnt_b? 'T':'F') + (drag_delta_b? 'T':'F'));
+		      TF(drag_cnt_b) + TF(drag_delta_b));
 			canvas_dragging = true;
 			wf_container.style.cursor = "move";
 		}
@@ -2938,7 +2939,7 @@ function canvas_touchEnd(evt)
 	spectrum_tooltip_update(evt, x, y);
 	
 	if (owrx.double_touch_start) {
-	   if (owrx.debug_drag) canvas_log('DTS-D='+ (canvas_dragging? 'T':'F'));
+	   if (owrx.debug_drag) canvas_log('DTS-D='+ TF(canvas_dragging));
 
       // last freq of a double-touch drag is saved in freq mem
       demodulator_set_offset_frequency(owrx.FSET_SCALE_TOUCH_DRAG_END, freq_car_Hz - center_freq);
@@ -4112,7 +4113,7 @@ function spectrum_update(data)
          z = spec.avg[rf_af][x];
          break;
          
-      case wf_sp_menu_e.OFF:
+      //case wf_sp_menu_e.OFF:
       default:
          if (z > 255) z = 255; if (z < 0) z = 0;
          break;
@@ -4596,7 +4597,7 @@ function waterfall_add(data_raw, audioFFT)
             z = Math.round(wfavg[x]);
             break;
          
-         case wf_sp_menu_e.OFF:
+         //case wf_sp_menu_e.OFF:
          default:
             break;
       }
@@ -5311,7 +5312,7 @@ function color_index(db_value, sqrt)
       try {
          switch (+sqrt) {
       
-         case 0:
+         //case 0:
          default:
             break;
          case 1:
@@ -6334,16 +6335,19 @@ function freqstep_cb(path, sel, first, ev)
    var hold_done = (ev && ev.type == 'hold-done');
    //console.log('freqstep_cb: path='+ path +' sel='+ sel +' first='+ first +' ev='+ ev +' shiftKey='+ shiftKey +' hold='+ hold +' hold_done='+ hold_done);
    if (hold) {
-      //console.log('freqstep_cb HOLD');
+      //console.log('freqstep_cb HOLD '+ sel);
+      kiwi_clearInterval(owrx.freqstep_interval);
       owrx.freqstep_interval = setInterval(
          function() {
             freqstep_cb(null, sel);
          }, 100);
+      w3_autorepeat_canceller(path, owrx.freqstep_interval);
       return;
    }
    if (hold_done) {
-      //console.log('freqstep_cb HOLD-DONE');
+      //console.log('freqstep_cb HOLD-DONE '+ sel);
       kiwi_clearInterval(owrx.freqstep_interval);
+      w3_autorepeat_canceller();
       return;
    }
 	var step_Hz = up_down[cur_mode][sel]*1000;
@@ -6583,8 +6587,8 @@ function freq_memory_menu_open(shortcut_key)
          //canvas_log(close +' first='+ first +' '+ evt.type +' ='+ (kiwi.freq_memory_menu_shown? 'SH':'NS') +
          //   (w3_contains(evt.target, 'w3-menu')? 'W3-MENU':''));
          //event_dump(evt, 'freq-memory-menu close_func='+ close, true);
-         //canvas_log('menu_popup close_func='+ (close? 'T':'F') +' ev='+ evt.type +' kup='+ (close_keyup? 'T':'F') +' clk='+ (close_click? 'T':'F'));
-         //canvas_log((click? 'T':'F') + (first? 'T':'F') + (tgt_isMenu? 'T':'F') + (menu_shown? 'T':'F') +'{TF(F||F)}');
+         //canvas_log('menu_popup close_func='+ TF(close) +' ev='+ evt.type +' kup='+ TF(close_keyup) +' clk='+ TF(close_click));
+         //canvas_log(TF(click) + TF(first) + TF(tgt_isMenu) + TF(menu_shown) +'{TF(F||F)}');
 
          return close;
       },
@@ -10192,7 +10196,6 @@ function panels_setup()
 	
 	var mobile = kiwi_isMobile()?
 	   (' inputmode='+ dq(kiwi_is_iOS()? 'decimal' : 'tel') +' ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
-	   //(' inputmode="tel" ontouchstart="popup_keyboard_touchstart(event)" onclick="this.select()"') : '';
 	
 	w3_el("id-control-freq1").innerHTML =
 	   w3_inline('w3-halign-space-between/',
@@ -10230,7 +10233,7 @@ function panels_setup()
          kiwi_isMobile()? null : w3_div('id-freq-link|padding-left:0px'),
 
          w3_div('id-9-10-cell w3-hide',
-            w3_div('id-button-9-10 class-button-small||title="LW/MW 9/10 kHz tuning step" onclick="button_9_10()"', '10')
+            w3_button('id-button-9-10 class-button-small||title="LW&slash;MW 9&slash;10 kHz tuning step"', '10', 'button_9_10')
          ),
 
          w3_div('id-step-freq',
@@ -10293,7 +10296,10 @@ function panels_setup()
 	      var disabled = mba.dis || (mslc == 'drm' && !kiwi.DRM_enable);
 	      var attr = disabled? '' : ' onclick="mode_button(event, this)"';
 	      attr += ' onmouseover="mode_over(event, this)"';
-	      s += w3_div('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
+	      //s += w3_div('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
+	      //   ' class-button'+ (disabled? ' class-button-disabled':'') +
+	      //   ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
+	      s += w3_button('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
 	         ' class-button'+ (disabled? ' class-button-disabled':'') +
 	         ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
 	   });
@@ -10522,9 +10528,9 @@ function panels_setup()
 		w3_inline_percent('w3-valign/w3-last-halign-end',
 			w3_text('w3-text-css-orange cl-closer-spaced-label-text', 'Noise'), 17,
          w3_select('w3-text-red||title="noise blanker selection"', '', 'blanker', 'nb_algo', 0, noise_blank.menu_s, 'nb_algo_cb', 'm'), 24,
-			w3_div('w3-hcenter', w3_div('class-button w3-text-orange||onclick="noise_blank_view()" title="noise blanker parameters"', 'More')), 19,
+		   w3_div('w3-hcenter', w3_button('class-button w3-text-orange||title="noise blanker parameters"', 'More', 'noise_blank_view')), 19,
          w3_div('w3-hcenter ', w3_select('w3-text-red||title="noise filter selection"', '', 'filter', 'nr_algo', 0, noise_filter.menu_s, 'nr_algo_cb', 'm')), 27,
-			w3_div('class-button w3-text-orange||onclick="noise_filter_view()" title="noise filter parameters"', 'More')
+		   w3_button('class-button w3-text-orange||title="noise filter parameters"', 'More', 'noise_filter_view')
 		) +
 		w3_inline_percent('id-vol w3-valign w3-margin-T-2 w3-hide/class-slider w3-last-halign-end',
 			w3_text('w3-text-css-orange', 'Volume'), 17,
@@ -10603,7 +10609,7 @@ function panels_setup()
    // agc
 	w3_el('id-optbar-agc').innerHTML =
 		w3_inline('w3-valign/3:w3-ialign-right',
-			w3_button('id-button-agc class-button||onclick="toggle_agc(event)" onmouseover="agc_over(event)"', 'AGC'),
+			w3_button('id-button-agc class-button||onmouseover="agc_over(event)"', 'AGC', 'toggle_agc'),
 			w3_button('id-button-hang class-button w3-margin-L-10', 'Hang', 'toggle_or_set_hang'),
 			w3_button('w3-padding-tiny w3-yellow w3-margin-L-10', 'Defaults', 'agc_load_defaults'),
          w3_button('w3-green w3-small w3-padding-small w3-margin-R-4', 'help', 'agc_help')
@@ -11924,7 +11930,7 @@ function set_agc()
 
 var agc = 0;
 
-function toggle_agc(evt)
+function toggle_agc(path, cbp, first, evt)
 {
 	if (any_alternate_click_event(evt)) {
 		setup_agc(toggle_e.SET);
@@ -11940,7 +11946,7 @@ function agc_over(evt)
 	w3_el('id-button-agc').title = any_alternate_click_event(evt)? 'restore AGC params':'';
 }
 
-function agc_load_defaults(evt)
+function agc_load_defaults(path, cbp, first, evt)
 {
    setup_agc(toggle_e.SET);
 	return cancelEvent(evt);
@@ -11967,7 +11973,7 @@ function setup_agc(toggle_flags)
 
 function toggle_or_set_agc(set)
 {
-	if (set != undefined)
+	if (isNumber(set))
 		agc = set;
 	else
 		agc ^= 1;
@@ -12345,7 +12351,8 @@ var step_9_10;
 
 function button_9_10(set)
 {
-	if (set != undefined)
+   //console.log('button_9_10 set='+ set);
+	if (isNumber(set))
 		step_9_10 = set;
 	else
 		step_9_10 ^= 1;
@@ -12456,6 +12463,7 @@ function panel_setup_control(el)
 	el.style.marginBottom = '0';
 
    var el2 = w3_el('id-control-inner');
+   w3_add(el2, 'w3-no-copy-popup');    // so popup won't appear when touching anywhere in the panel
 	el2.innerHTML =
       w3_div('id-control-top',
          w3_div('id-control-freq1'),

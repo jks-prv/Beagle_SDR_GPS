@@ -924,6 +924,11 @@ html, body
 	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.0	, #373737), color-stop(1, #4F4F4F) );
 	background:-moz-linear-gradient( center top, #373737 0%, #4F4F4F 100% );
 	*/
+	
+	/* mobile */
+	-webkit-user-select: none;      /* w3-no-copy-popup */
+	user-select: none;
+    touch-action: manipulation;     /* w3-no-dbl-tap-zoom */
 }
 
 .class-button.class-button-disabled
@@ -976,6 +981,11 @@ html, body
 .class-icon
 {
 	display: inline;
+	
+	/* mobile */
+	-webkit-user-select: none;      /* w3-no-copy-popup */
+	user-select: none;
+    touch-action: manipulation;     /* w3-no-dbl-tap-zoom */
 }
 
 .class-slider
