@@ -131,7 +131,7 @@ CCIR476.prototype.code_to_char = function(code, shift) {
    var ch = shift? t.code_figs[code] : t.code_ltrs[code];
    if (ch == undefined)
       ch = -code;    // default: return negated code
-   //console.log('code=0x'+ code.toString(16) +' sft='+ (shift? 'T':'F') +' char='+ ch +'(0x'+ ch.toString(16) +')');
+   //console.log('code=0x'+ code.toString(16) +' sft='+ TF(shift) +' char='+ ch +'(0x'+ ch.toString(16) +')');
    return ch;
 }
 

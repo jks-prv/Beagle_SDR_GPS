@@ -249,6 +249,11 @@ function paren(s)
    return '('+ s +')';
 }
 
+function TF(cond)
+{
+   return (cond? 'T':'F');
+}
+
 function plural(num, word)
 {
    if (num == 1) return word; else return word +'s';
@@ -1076,7 +1081,7 @@ function kiwi_decodeURIComponent(id, uri)
                var c1 = uri.charAt(i+1);
                var c2 = uri.charAt(i+2);
                if (isHexDigit(c1) && isHexDigit(c2)) {
-                  //console.log(c1 +' '+ ((c1 >= '8')? 'T':'F'));
+                  //console.log(c1 +' '+ TF(c1 >= '8'));
                   if (c1 >= '8') {
                      //var x0 = uri.charAt(i-1);
                      //x0 = x0.charCodeAt(0);

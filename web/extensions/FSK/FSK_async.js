@@ -179,7 +179,7 @@ FSK_async.prototype.code_to_char = function(code, shift, fixed_start) {
       s = shift? t.code_figs[code] : t.code_ltrs[code];
       if (s == undefined)
          s = -code;   // default: return negated code
-      //console.log('ITA2 code=0x'+ code.toString(16) +' shift='+ (shift? 'T':'F') +' char=['+ s +']');
+      //console.log('ITA2 code=0x'+ code.toString(16) +' shift='+ TF(shift) +' char=['+ s +']');
    } else {
       if (t.EFR) {
          s = '';

@@ -894,7 +894,7 @@ function ale_2g_scan_button_cb(path, val, first)
 
 function ale_2g_scan(scan)
 {
-   if (dbgUs) console.log('ale_2g_scan scan='+ (scan? 'T':'F'));
+   if (dbgUs) console.log('ale_2g_scan scan='+ TF(scan));
    ale.scanning = scan;
    ext_set_scanning(scan? 1:0);
 }

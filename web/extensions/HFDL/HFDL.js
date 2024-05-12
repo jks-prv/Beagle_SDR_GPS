@@ -717,7 +717,7 @@ function hfdl_menu_match(m_freq, m_str)
             match = true;
          }
       } else {
-         if (dbgUs) console.log('menu_s '+ dq(menu_s) +' m_str '+ dq(m_str) +' '+ (menu_s.includes(m_str)? 'T':'F'));
+         if (dbgUs) console.log('menu_s '+ dq(menu_s) +' m_str '+ dq(m_str) +' '+ TF(menu_s.includes(m_str)));
          if (menu_s.includes(m_str)) {
             if (dbgUs) console.log('MATCH str: '+ dq(menu_s) +'['+ j +']');
             match = true;
