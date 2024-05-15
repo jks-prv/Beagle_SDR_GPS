@@ -60,12 +60,10 @@ function waterfall_controls_setup()
          ),
          
          w3_div('w3-margin-LR-16 w3-margin-T-8',
-            w3_text('', 'Min,max: total = computed + floor,ceil'),
-            w3_inline('id-wfext-maxmin w3-background-fade w3-hide w3-text-white w3-small|background:#575757/',
-               w3_div('id-wfext-content', '&nbsp;')
-            ),
-            //w3_div('id-wfext-maxmin-spacer w3-small', '&nbsp;')
-            w3_div('id-wfext-maxmin-spacer w3-small', '(aperture manual mode selected)')
+            w3_text('id-wfext-text'),
+            w3_inline('id-wfext-maxmin w3-background-fade w3-text-white w3-small|background:#575757/',
+               w3_div('id-wfext-content')
+            )
          ),
          
          w3_div('w3-margin-T-8',
@@ -103,12 +101,7 @@ function waterfall_controls_setup()
 	w3_innerHTML('id-wf-more', controls_html);
 	coloris_init();      // NB: has to be after elements using coloris are instantiated
    w3_show_hide('id-wfext-tstamp-custom', false, null, 2);
-	
-	if (wf.aper == kiwi.APER_AUTO) {
-      w3_show_inline('id-wfext-maxmin');
-      waterfall_maxmin_cb();
-      w3_hide('id-wfext-maxmin-spacer');
-   }
+   waterfall_maxmin_cb();
 }
 
 function waterfall_init()
@@ -213,13 +206,24 @@ function waterfall_aper_param_cb(path, val, done, first)
 
 function waterfall_maxmin_cb()
 {
-   w3_flash_fade('id-wfext-maxmin', 'cyan', 50, 300, '#575757');
-   var dyn_range = maxdb - mindb;
-   var total_s = mindb.toString().positiveWithSign() +','+ maxdb.toString().positiveWithSign();
-   var computed_s = wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign();
-   var floor_ceil_s = wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign();
-   w3_innerHTML('id-wfext-content',
-      paren(total_s) +'&nbsp;=&nbsp;'+ paren(computed_s) +'&nbsp;+&nbsp;'+ paren(floor_ceil_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
+   var auto = (wf.aper == kiwi.APER_AUTO);
+   var max = auto? (wf.auto_maxdb + wf.auto_ceil.val) : maxdb;
+   var min = auto? (wf.auto_mindb + wf.auto_floor.val) : mindb;
+	//console.log('auto='+ TF(auto) +' min='+ min +' max='+ max);   
+   var dyn_range = max - min;
+   var total_s = min.toString().positiveWithSign() +','+ max.toString().positiveWithSign();
+	if (auto) {
+      w3_innerHTML('id-wfext-text', 'Min,max: total = computed + floor,ceil');
+      w3_flash_fade('id-wfext-maxmin', 'cyan', 50, 300, '#575757');
+      var computed_s = wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign();
+      var floor_ceil_s = wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign();
+      w3_innerHTML('id-wfext-content',
+         paren(total_s) +'&nbsp;=&nbsp;'+ paren(computed_s) +'&nbsp;+&nbsp;'+ paren(floor_ceil_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
+   } else {
+      w3_innerHTML('id-wfext-text', 'Min,max: aperture manual mode');
+      w3_innerHTML('id-wfext-content',
+         paren(total_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
+   }
 }
 
 function wfext_spb_color_cb(path, val, first, cbp)

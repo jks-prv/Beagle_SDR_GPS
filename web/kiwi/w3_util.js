@@ -2,9 +2,9 @@
 
 /*
 
-	///////////////////////////////////////
+	////////////////////////////////
 	// API summary (w3_*)
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	                           integrated: L=label T=text 3=psa3()
 	                           |  callback
@@ -66,10 +66,9 @@
 	col_percent                3
 	
 	
-	
-	///////////////////////////////////////
+	////////////////////////////////
 	// Useful stuff
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	<element attribute="attribute-values ..." inline-style-attribute="properties ...">
 	"styles" refers to any style-attribute="properties ..." combination
@@ -121,9 +120,9 @@
 	   w3-label-inline
 
 
-	///////////////////////////////////////
+	////////////////////////////////
 	// Notes about HTML/DOM
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	"Typically, the styles are merged, but when conflicts arise, the later declared style will generally win
 	(unless the !important attribute is specified on one of the styles, in which case that wins).
@@ -138,9 +137,9 @@
 		offset{Width,Height}		viewable only; includes padding, border, scrollbars
 
 	
-	///////////////////////////////////////
+	////////////////////////////////
 	// FIXME cleanups
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	some routines that return nothing now could return el from internal w3_el() so
 	   caller could do chained references (see w3_innerHTML(), w3_show() ...)
@@ -174,9 +173,9 @@
 	x normalize use of embedded labels
 	
 	
-	///////////////////////////////////////
+	////////////////////////////////
 	// API users
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	1) kiwisdr.com website content
 	
@@ -703,7 +702,7 @@ function w3_els(el_id, func)
 function w3_id(el_id)
 {
 	var el = w3_el(el_id);
-	if (!el) return null;
+	if (!el) return 'id-NULL';
 	if (el.id && el.id.startsWith('id-')) return el.id;
 	var done = false;
 	var id = null;
@@ -714,7 +713,7 @@ function w3_id(el_id)
 	      done = true;
 	   }
 	});
-	return id;
+	return (id? id : 'id-NULL');
 }
 
 // assign innerHTML, silently failing if element doesn't exist
@@ -1844,6 +1843,87 @@ function w3_elementAtPointer(x, y)
    return null;
 }
 
+function w3_event_log(el_id, id, event_name)
+{
+   var el = w3_el(el_id);
+   if (el == null) return;
+   el.addEventListener(event_name,
+      function() {
+         console.log('w3_event_log '+ id +': '+ event_name);
+         //canvas_log(event_name);
+      }
+   );
+}
+
+
+////////////////////////////////
+// focus management
+////////////////////////////////
+
+// NB: Even though not needed for auto aperture update problem anymore (due to latest fix)
+// needed e.g. for ALE scanning suppression.
+//
+// Don't disturb an active, adjustable ui element by programatic focus changes.
+// e.g. w3_input() w3_select()
+// But not w3_textarea() because non are used currently on the user interface page (only admin).
+// And not w3_menu(), the Kiwi menu widget, because it is unaffected by focus changes.
+// And w3_slider() also seems unaffected.
+//
+// NB: Even though w3-ADJ and w3-RIF{-EXT} perform the same function here
+// the latter is used in w3_util.js to drive calls to w3_field_select().
+// So leave both mechanisms intact.
+
+function w3_retain_input_focus(opt)
+{
+   //kiwi_trace();
+   //return true;
+   // only switch focus to id-freq-input if active element doesn't specify w3-RIF
+   var ae = document.activeElement;
+   var id = w3_id(ae);     // returns 'id-NULL' if ae is null
+   if (ae && id == 'id-freq-input') {
+      //console.log('w3_retain_input_focus: true SELF REF');
+      return false;     // ignore self reference
+   }
+   //console.log(ae);
+   
+   // extensions use w3-RIF-EXT instead of w3-RIF so we can handle the following situation:
+   var closed_ext_input_still_holding_focus = (ae && w3_contains(ae, 'w3-RIF-EXT') && !opt.ext);
+   if (closed_ext_input_still_holding_focus) {
+      console.log('#### closed_ext_input_still_holding_focus');
+   }
+
+   var retain_input_focus = (ae && (w3_match_wildcard(ae, 'w3-RIF') || w3_contains(ae, 'w3-ADJ')));
+   if (retain_input_focus) {
+      //console.log('#### retain_input_focus');
+   }
+   
+   // don't focus freq input field when scanning to lower the update overhead (the value will still update)
+   if (opt.scan) {
+      //console.log('w3_retain_input_focus: scanning, so skip id-freq-input select');
+      return true;
+   }
+
+   var no_retain = (!ae || !retain_input_focus || closed_ext_input_still_holding_focus);
+   if (0) {
+   //if (1) {
+   //if (!no_retain) {
+      console.log('w3_retain_input_focus: RETAIN='+ TF(!no_retain) +' id='+ id +' RIF='+ retain_input_focus +' closed_ext_input_still_holding_focus='+ closed_ext_input_still_holding_focus);
+      console.log(ae);
+   }
+   return !no_retain;
+}
+
+// force focus change to freq input if w3-ADJ element is active
+// (not currently used)
+function w3_click_cancel_focus()
+{
+   var ae = document.activeElement;
+   if (ae && w3_contains(ae, 'w3-ADJ')) {
+      //console.log('---- w3_click_cancel_focus ----------------');
+	   w3_field_select('id-freq-input', {mobile:1, log:1});
+   }
+}
+
 
 ////////////////////////////////
 // hr
@@ -2780,7 +2860,7 @@ function w3_input_change(path, cb, from)
 */
    }
 	
-   if (w3_contains(el, 'w3-retain-input-focus') || w3_contains(el, 'w3-ext-retain-input-focus'))
+   if (w3_match_wildcard(el, 'w3-RIF'))   // w3-RIF or w3-RIF-EXT
 	   w3_field_select(path, {mobile:1});     // select the field
    else
       w3int_post_action();
@@ -2834,7 +2914,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
    var style = psa.includes('w3-no-styling')? '' : 'w3-input w3-border w3-hover-shadow';
 	var type = psa3.right.includes('type=')? '' : 'type="text"';
-	var psa_inner = w3_psa(psa3.right, w3_sb(id, style, label_spacing), '', w3_sb(type, phold));
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, style, label_spacing, 'w3-ADJ'), '', w3_sb(type, phold));
 	if (dump) console.log('O:['+ psa_outer +'] L:['+ psa_label +'] I:['+ psa_inner +']');
 	
    // NB: include id in an id= for benefit of keyboard shortcut field detection
@@ -2983,7 +3063,7 @@ function w3int_checkbox_change(path, cb, cb_param)
 		w3_call(cb, path, el.checked, /* first */ false, cb_param);
 	}
 
-   if (w3_contains(el, 'w3-retain-input-focus') || w3_contains(el, 'w3-ext-retain-input-focus'))
+   if (w3_match_wildcard(el, 'w3-RIF'))   // w3-RIF or w3-RIF-EXT
 	   w3_field_select(path, {mobile:1});     // select the field
    else
       w3int_post_action();
@@ -3084,15 +3164,15 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 	
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && !inline)? ' w3-margin-T-8' : '';
-	if (inline) spacing += ' w3-margin-left';
+	var spacing = (label != '' && !inline)? 'w3-margin-T-8' : '';
+	if (inline) spacing += 'w3-margin-left';
 	if (cb == undefined) cb = '';
 	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, id +' w3-select-menu'+ spacing, '', onchange);
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, 'w3-select-menu w3-ADJ', spacing), '', onchange);
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -3164,6 +3244,7 @@ function w3int_select_options(sel, opts, show_empty)
    //       option value is elements's sequential position
    //          *unless* value obj.value exists, then obj.value is option value
    if (isObject(opts)) {
+      if (opts == null) return '';
       w3_obj_enum(opts, function(key, i, obj) {
          var value, text, disabled = false;
          if (isObject(obj)) {
@@ -3366,8 +3447,10 @@ function w3int_slider_change(ev, complete, path, cb, cb_param)
 		w3_call(cb, path, el.value, complete, /* first */ false, cb_param);
 	}
 	
-	if (complete)
+	if (complete) {
+	   //console.log('w3int_slider_change COMPLETE path='+ path +' el.value='+ el.value);
 	   w3int_post_action();
+	}
 }
 
 function w3int_slider_wheel(evt, path, cb, cb_param, need_shift_s)
@@ -3409,7 +3492,7 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 	var id = w3_add_id(path);
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && inline)? ' w3-margin-L-8' : '';
+	var spacing = (label != '' && inline)? 'w3-margin-L-8' : '';
 	if (inline) spacing += ' w3-margin-left';
 
 	value = (val == null)? '' : w3_strip_quotes(val);
@@ -3430,7 +3513,7 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, id + spacing, '', value +
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, spacing), '', value +
       ' type="range" min='+ dq(min) +' max='+ dq(max) +' step='+ dq(step) + oc + os + ow);
 
 	var s = (label != '') ?
@@ -4094,6 +4177,14 @@ function w3_inline(psa, attr)
       if (dump) console.log(s);
       return s;
    }
+}
+
+// call w3_inline when parameters need to be accumulated in an array
+function w3_inline_array(psa, ar)
+{
+	ar.unshift(psa);
+	//console.log(ar);
+   return w3_inline.apply(null, ar);
 }
 
 // see: stackoverflow.com/questions/29885284/how-to-set-a-fixed-width-column-with-css-flexbox
