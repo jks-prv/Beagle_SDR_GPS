@@ -10,7 +10,7 @@ var hfdl = {
    ctrlW: 600,
    ctrlH: 185,
    freq: 0,
-   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+   sfmt: 'w3-text-red w3-RIF-EXT',
    pb: { lo: 300, hi: 2600 },
    
    stations: null,
@@ -367,7 +367,7 @@ function hfdl_controls_setup()
                w3_div('id-hfdl-bar w3-progressbar w3-round-large w3-light-green|width:0%', '&nbsp;')
             ),
             
-            w3_input('id-hfdl-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+            w3_input('id-hfdl-log-mins/w3-label-not-bold/w3-RIF-EXT|padding:0;width:auto|size=4',
                'log min', 'hfdl.log_mins', hfdl.log_mins, 'hfdl_log_mins_cb')
          )
       );

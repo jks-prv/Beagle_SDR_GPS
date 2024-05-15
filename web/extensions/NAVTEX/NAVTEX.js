@@ -18,7 +18,7 @@ var nt = {
    freqs: null,
    menu_s: [ ],
    menus: [ ],
-   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+   sfmt: 'w3-text-red w3-RIF-EXT',
    
    SHOW_MSGS: 0,
    SHOW_MAP: 1,
@@ -318,7 +318,7 @@ function navtex_controls_setup()
 
                cfg.navtex.test_file? w3_button('w3-padding-smaller w3-aqua', 'Test', 'navtex_test_cb') : '',
 
-               w3_input('id-navtex-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+               w3_input('id-navtex-log-mins/w3-label-not-bold/w3-RIF-EXT|padding:0;width:auto|size=4',
                   'log min', 'nt.log_mins', nt.log_mins, 'navtex_log_mins_cb')
             )
 			)

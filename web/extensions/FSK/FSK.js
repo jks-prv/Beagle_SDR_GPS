@@ -16,7 +16,7 @@ var fsk = {
    freqs: null,
    menu_s: [ ],
    menus: [ ],
-   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+   sfmt: 'w3-text-red w3-RIF-EXT',
 
    header: null,
    menu_sel: '',
@@ -582,7 +582,7 @@ function fsk_controls_setup()
                      w3_checkbox('w3-label-inline w3-label-not-bold/', 'auto<br>zoom', 'fsk.auto_zoom', fsk.auto_zoom, 'fsk_auto_zoom_cb'),
                      w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'fsk_clear_button_cb', 0),
                      w3_button('id-fsk-log w3-padding-smaller w3-purple', 'Log', 'fsk_log_cb'),
-                     w3_input('id-fsk-log-mins/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+                     w3_input('id-fsk-log-mins/w3-label-not-bold/w3-RIF-EXT|padding:0;width:auto|size=4',
                         'log min', 'fsk.log_mins', fsk.log_mins, 'fsk_log_mins_cb')
                   ),
    
