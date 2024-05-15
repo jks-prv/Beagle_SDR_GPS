@@ -60,6 +60,9 @@ try {
 }
 
 var kiwi_util = {
+   last_time: '',
+   
+   _last_: null
 };
 
 var kiwi_iOS, kiwi_iPhone, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
@@ -750,6 +753,7 @@ function canvas_log_int(s)
 {
    var el;
    if (!kiwi.canvas_log_init) {
+      //kiwi_trace();
       el = w3_el('id-news');
       el.style.top = '';
       el.style.bottom = '';
@@ -799,14 +803,20 @@ function canvas_log(s)
 {
    if (!isString(s)) s = s.toString();
    if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '<br>';
+   var d = new Date(), ts = '';;
+   var time = d.toTimeString().slice(4,8);
+   if (time != kiwi_util.last_time) {
+      ts = time +' ';
+      kiwi_util.last_time = time;
+   }
 
    if (s == '\f') {
       owrx.news_acc_s = '<br>';
    } else
    if (s.charAt(0) == '$') {
-      owrx.news_acc_s += '<br>'+ s;
+      owrx.news_acc_s += '<br>'+ ts + s;
    } else {
-      owrx.news_acc_s += ((owrx.news_acc_s != '<br>')? ' | ' : '') + s;
+      owrx.news_acc_s += ((owrx.news_acc_s != '<br>')? ' | ' : '') + ts + s;
    }
 
    canvas_log_int(owrx.news_acc_s);
