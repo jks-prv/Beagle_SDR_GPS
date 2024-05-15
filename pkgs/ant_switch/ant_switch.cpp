@@ -169,13 +169,20 @@ void ant_switch_select_default_antenna()
 	    asprintf(&ant, "%d", i);
 	    bool isDefault = cfg_true(stprintf("ant_switch.ant%sdefault", ant));
 	    if (isDefault) {
-	        antsw_printf("ant_switch_select_default_antenna <%s>\n", ant);
+	        printf("ant_switch select_default_antenna <%s>\n", ant);
 	        ant_switch_setantenna(ant);
 	        kiwi_asfree(ant);
             using_default = true;
 	        break;
 	    }
 	    kiwi_asfree(ant);
+	}
+
+    // if no antennas marked as default then tell switch to ground all (if switch supports)
+	if (!using_default) {
+        printf("ant_switch select_default_antenna <g>\n");
+        ant_switch_setantenna((char *) "g");
+        using_default = true;
 	}
 }
 
