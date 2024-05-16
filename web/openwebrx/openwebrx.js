@@ -178,6 +178,8 @@ var nb_click = false;
 var no_geoloc = false;
 var force_mobile = false;
 var mobile_laptop_test = false;
+var show_activeElement = false;
+var force_need_autoscale = false;
 var user_url = null;
 var override_1Hz = null;
 
@@ -229,32 +231,6 @@ function kiwi_main_ready()
       return;
    */
    
-   // shows activeElement in owner field
-   if (0) {
-      setInterval(
-         function() {
-            var id = w3_id(document.activeElement);   // returns 'id-NULL' if ae is null
-            if (id != owrx.activeElementID && id != 'id-freq-input') {
-               w3_innerHTML('id-owner-info', id);
-               owrx.activeElementID = id;
-            }
-         }, 250
-      );
-   }
-   
-   // Forces a periodic auto aperture autoscale.
-   if (0) {
-      setInterval(
-         function() {
-            if (wf.aper == kiwi.APER_AUTO) {
-               wf.need_autoscale = wf.FNAS = 1;
-               colormap_update();
-               console.log('FNAS');
-            }
-         }, 3000
-      );
-   }
-      
 	override_freq = parseFloat(kiwi_storeRead('last_freq'));
 	override_mode = kiwi_storeRead('last_mode');
 	override_zoom = parseFloat(kiwi_storeRead('last_zoom'));
@@ -384,6 +360,8 @@ function kiwi_main_ready()
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
 	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
 	s = 'tmobile'; if (q[s]) mobile_laptop_test = true;
+	s = 'ae'; if (q[s]) show_activeElement = true;
+	s = 'fnas'; if (q[s]) force_need_autoscale = true;
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
@@ -402,6 +380,32 @@ function kiwi_main_ready()
 	   }
 	}
 
+   // shows activeElement in owner field
+   if (show_activeElement) {
+      setInterval(
+         function() {
+            var id = w3_id(document.activeElement);   // returns 'id-NULL' if ae is null
+            if (id != owrx.activeElementID && id != 'id-freq-input') {
+               w3_innerHTML('id-owner-info', id);
+               owrx.activeElementID = id;
+            }
+         }, 250
+      );
+   }
+   
+   // Forces a periodic auto aperture autoscale.
+   if (force_need_autoscale) {
+      setInterval(
+         function() {
+            if (wf.aper == kiwi.APER_AUTO) {
+               wf.need_autoscale = wf.FNAS = 1;
+               colormap_update();
+               console.log('FNAS');
+            }
+         }, 3000
+      );
+   }
+      
 	//kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	if (!no_geoloc) kiwi_geolocate();
@@ -5979,15 +5983,8 @@ function retain_input_focus()
 
 function freqset_select()
 {
-   // NB: Even though not needed for auto aperture update problem anymore (due to latest fix)
-   // needed e.g. for ALE scanning suppression.
-   if (retain_input_focus()) {
-      //console.log('$freqset_select SKIPPED because RIF');
-      //console.log(document.activeElement);
-   } else {
-      //console.log('$freqset_select');
-	   w3_field_select('id-freq-input', {mobile:1, log:1});
-   }
+   //console.log('$freqset_select');
+	w3_field_select('id-freq-input', {mobile:1, log:1});
 }
 
 function modeset_update_ui(mode)
@@ -7126,22 +7123,10 @@ function mk_band_menu()
    //console.log('mk_band_menu');
    band_menu = [];
    owrx.last_selected_band = 0;
-   var s = 'id-select-band';
-   var el = w3_el(s);
+   var id = 'id-select-band';
+   var el = w3_el(id);
    w3_innerHTML(el, setup_band_menu());
-   
-   /*
-   // observe select element (menu) event behavior
-   if (!owrx.bandListener) {
-      w3_event_log(el, s, 'mouseup');
-      w3_event_log(el, s, 'mousedown');
-      w3_event_log(el, s, 'click');
-      w3_event_log(el, s, 'submit');
-      w3_event_log(el, s, 'focus');
-      w3_event_log(el, s, 'blur');
-      owrx.bandListener = true;
-   }
-   */
+   //w3_event_listener(id, el);
 }
 
 // find_band() is only called by code related to setting the frequency step size.
@@ -7307,6 +7292,11 @@ function band_scroll(dir)
    
    select_band(i);
    w3_set_value('id-select-band', i);
+}
+
+function select_band_cb(path, idx)
+{
+   select_band(idx);
 }
 
 function select_band(v, mode_s)
@@ -8461,12 +8451,12 @@ function dx_filter(shift_plus_ctl_alt)
 		w3_divs('w3-text-aqua',
 		   w3_col_percent('',
             w3_divs('/w3-margin-T-8',
-               w3_input('w3-label-inline/id-dx-filter-ident w3-RIF w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
-               w3_input('w3-label-inline/id-dx-filter-notes w3-RIF w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
+               w3_input('w3-label-inline/id-dx-filter-ident w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
+               w3_input('w3-label-inline/id-dx-filter-notes w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
             ), 90
          ),
          w3_inline('w3-halign-space-around w3-margin-T-8 w3-text-white/',
-            w3_checkbox('w3-RIF w3-label-inline w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+            w3_checkbox('w3-label-inline w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
 
             // Wildcard pattern matching, in addition to grep, is implemented. But currently checkbox is not shown because
             // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
@@ -8474,8 +8464,8 @@ function dx_filter(shift_plus_ctl_alt)
             // simple search engines which is what the user probably really wants.
             w3_inline('',
                w3_text('', 'pattern match:'),
-               //w3_checkbox('w3-RIF w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
-               w3_checkbox('w3-margin-left w3-RIF w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+               //w3_checkbox('w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
+               w3_checkbox('w3-margin-left w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
             )
          )
       );
@@ -8484,18 +8474,9 @@ function dx_filter(shift_plus_ctl_alt)
    w3_field_select('id-dx-filter-ident', {mobile:1});    // select the field
 }
 
-// Use a custom panel close routine because we need to remove focus if any of our elements are the
-// active element at close time. This is due to how the w3-RIF logic works.
 function dx_filter_panel_close()
 {
    //console_log_dbgUs('dx_filter_panel_close');
-   var ae = document.activeElement;
-   //console_log_dbgUs(ae);
-   if (ae && ae.id && (ae.id.startsWith('id-dx-filter') || ae.id.startsWith('id-dx.filter'))) {
-      //console_log_dbgUs('### activeElement='+ ae.id);
-      ae.blur();
-   }
-
    confirmation_panel_close();
 }
 
@@ -10257,7 +10238,7 @@ function panels_setup()
             '</form>'
          ) +
 
-         w3_select('id-select-band w3-pointer', '', '', '', 0, '', 'select_band') +
+         w3_select('id-select-band w3-pointer', '', '', '', 0, '', 'select_band_cb') +
 
 /*
          '<select id="id-select-ext" class="w3-pointer w3-select-menu" onchange="freqset_select(); extint_select(this.value)">' +

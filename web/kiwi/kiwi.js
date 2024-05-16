@@ -381,7 +381,7 @@ function kiwi_ask_pwd(conn_kiwi)
 	var user_login = conn_kiwi? w3_innerHTML('id-kiwi-user-login').trim() : '';
 	var s = isNonEmptyString(user_login)? (user_login +'<br><br>') : 'KiwiSDR: software-defined receiver<br>';
 	s += s1 + try_again +
-      w3_input('w3-RIF w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb') +
+      w3_input('w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40', 'Password:', 'id-pwd', '', 'kiwi_ask_pwd_cb') +
       s2;
 
 	kiwi_show_msg(s);
@@ -2330,7 +2330,7 @@ function kiwi_show_error_ask_exemption_cb(path, val, first)
 function kiwi_show_error_ask_exemption(s)
 {
    s += '<br><br>If you have an exemption password from the KiwiSDR owner/admin <br> please enter it here: ' +
-      w3_input('w3-RIF w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40',
+      w3_input('w3-margin-TB-8/w3-label-inline w3-label-not-bold/kiwi-pw|padding:1px|size=40',
          'Password:', 'id-epwd', '', 'kiwi_show_error_ask_exemption_cb');
 	kiwi_show_msg(s);
 	w3_field_select('id-epwd', {mobile:1});

@@ -225,6 +225,8 @@ var w3int = {
    rate_limit_need_shift: {},
    rate_limit_evt: {},
    
+   eventListener: [],
+   
    _last_: 0
 };
 
@@ -1843,9 +1845,9 @@ function w3_elementAtPointer(x, y)
    return null;
 }
 
-function w3_event_log(el_id, id, event_name)
+function w3_event_log(el, id, event_name)
 {
-   var el = w3_el(el_id);
+   var el = w3_el(el);
    if (el == null) return;
    el.addEventListener(event_name,
       function() {
@@ -1855,72 +1857,20 @@ function w3_event_log(el_id, id, event_name)
    );
 }
 
-
-////////////////////////////////
-// focus management
-////////////////////////////////
-
-// NB: Even though not needed for auto aperture update problem anymore (due to latest fix)
-// needed e.g. for ALE scanning suppression.
-//
-// Don't disturb an active, adjustable ui element by programatic focus changes.
-// e.g. w3_input() w3_select()
-// But not w3_textarea() because non are used currently on the user interface page (only admin).
-// And not w3_menu(), the Kiwi menu widget, because it is unaffected by focus changes.
-// And w3_slider() also seems unaffected.
-//
-// NB: Even though w3-ADJ and w3-RIF{-EXT} perform the same function here
-// the latter is used in w3_util.js to drive calls to w3_field_select().
-// So leave both mechanisms intact.
-
-function w3_retain_input_focus(opt)
+// observe element event behavior
+function w3_event_listener(id, el)
 {
-   //kiwi_trace();
-   //return true;
-   // only switch focus to id-freq-input if active element doesn't specify w3-RIF
-   var ae = document.activeElement;
-   var id = w3_id(ae);     // returns 'id-NULL' if ae is null
-   if (ae && id == 'id-freq-input') {
-      //console.log('w3_retain_input_focus: true SELF REF');
-      return false;     // ignore self reference
-   }
-   //console.log(ae);
-   
-   // extensions use w3-RIF-EXT instead of w3-RIF so we can handle the following situation:
-   var closed_ext_input_still_holding_focus = (ae && w3_contains(ae, 'w3-RIF-EXT') && !opt.ext);
-   if (closed_ext_input_still_holding_focus) {
-      console.log('#### closed_ext_input_still_holding_focus');
-   }
-
-   var retain_input_focus = (ae && (w3_match_wildcard(ae, 'w3-RIF') || w3_contains(ae, 'w3-ADJ')));
-   if (retain_input_focus) {
-      //console.log('#### retain_input_focus');
-   }
-   
-   // don't focus freq input field when scanning to lower the update overhead (the value will still update)
-   if (opt.scan) {
-      //console.log('w3_retain_input_focus: scanning, so skip id-freq-input select');
-      return true;
-   }
-
-   var no_retain = (!ae || !retain_input_focus || closed_ext_input_still_holding_focus);
-   if (0) {
-   //if (1) {
-   //if (!no_retain) {
-      console.log('w3_retain_input_focus: RETAIN='+ TF(!no_retain) +' id='+ id +' RIF='+ retain_input_focus +' closed_ext_input_still_holding_focus='+ closed_ext_input_still_holding_focus);
-      console.log(ae);
-   }
-   return !no_retain;
-}
-
-// force focus change to freq input if w3-ADJ element is active
-// (not currently used)
-function w3_click_cancel_focus()
-{
-   var ae = document.activeElement;
-   if (ae && w3_contains(ae, 'w3-ADJ')) {
-      //console.log('---- w3_click_cancel_focus ----------------');
-	   w3_field_select('id-freq-input', {mobile:1, log:1});
+   var el = w3_el(el);
+   if (!el) return null;
+   if (!w3int.eventListener[id]) {
+      w3_event_log(el, id, 'mouseup');
+      w3_event_log(el, id, 'mousedown');
+      w3_event_log(el, id, 'click');
+      w3_event_log(el, id, 'change');
+      w3_event_log(el, id, 'submit');
+      w3_event_log(el, id, 'focus');
+      w3_event_log(el, id, 'blur');
+      w3int.eventListener[id] = true;
    }
 }
 
@@ -2860,10 +2810,7 @@ function w3_input_change(path, cb, from)
 */
    }
 	
-   if (w3_match_wildcard(el, 'w3-RIF'))   // w3-RIF or w3-RIF-EXT
-	   w3_field_select(path, {mobile:1});     // select the field
-   else
-      w3int_post_action();
+   w3int_post_action();
 }
 
 function w3int_input_up_down_cb(path, cb_param, first, ev)
@@ -2914,7 +2861,7 @@ function w3_input(psa, label, path, val, cb, placeholder)
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
    var style = psa.includes('w3-no-styling')? '' : 'w3-input w3-border w3-hover-shadow';
 	var type = psa3.right.includes('type=')? '' : 'type="text"';
-	var psa_inner = w3_psa(psa3.right, w3_sb(id, style, label_spacing, 'w3-ADJ'), '', w3_sb(type, phold));
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, style, label_spacing), '', w3_sb(type, phold));
 	if (dump) console.log('O:['+ psa_outer +'] L:['+ psa_label +'] I:['+ psa_inner +']');
 	
    // NB: include id in an id= for benefit of keyboard shortcut field detection
@@ -3063,10 +3010,7 @@ function w3int_checkbox_change(path, cb, cb_param)
 		w3_call(cb, path, el.checked, /* first */ false, cb_param);
 	}
 
-   if (w3_match_wildcard(el, 'w3-RIF'))   // w3-RIF or w3-RIF-EXT
-	   w3_field_select(path, {mobile:1});     // select the field
-   else
-      w3int_post_action();
+   w3int_post_action();
 }
 
 function w3_checkbox(psa, label, path, checked, cb, cb_param)
@@ -3135,8 +3079,32 @@ function w3_checkbox_set(path, checked)
 
 var W3_SELECT_SHOW_TITLE = -1;
 
+// Event behavior of w3_select() i.e. HTML <select>|<option> elements
+//    menu open: MD focus
+//    change menu item: MU blur change click
+//    same menu item: MD MU w3_click-tgt=OPTION-BLUR blur FSEL click
+//    when menu popup doesn't cover cursor: MU w3_click-tgt=SELECT blur FSEL click
+//
+// Since change+blur events are not fired if the same menu item is clicked
+// must do blur here on click event. But only if same selected item is detected
+// by ev.target being an <option> element.
+
+function w3int_select_click(ev, path, cb, cb_param)
+{
+   // ev.target = SELECT|OPTION, ev.currentTarget = SELECT
+   //console.log('w3int_select_click: '+ w3_id(ev.currentTarget));
+	var el = ev.target;
+	if (el && el.nodeName && el.nodeName == 'OPTION') {
+      //console.log('w3int_select_click: same menu item clicked: BLUR and FSEL');
+	   el.blur();
+      w3int_post_action();
+   }
+}
+
 function w3int_select_change(ev, path, cb, cb_param)
 {
+   // ev.target = SELECT|OPTION, ev.currentTarget = SELECT
+   //console.log('w3int_select_change: CHANGE '+ w3_id(ev.currentTarget));
 	var el = ev.currentTarget;
 	w3_check_restart_reboot(el);
 
@@ -3168,11 +3136,12 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 	if (inline) spacing += 'w3-margin-left';
 	if (cb == undefined) cb = '';
 	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
+	var onclick = 'onclick="w3int_select_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, w3_sb(id, 'w3-select-menu w3-ADJ', spacing), '', onchange);
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, 'w3-select-menu', spacing), '', onchange +' '+ onclick);
 
 	var s =
 	   '<div '+ psa_outer +'>' +

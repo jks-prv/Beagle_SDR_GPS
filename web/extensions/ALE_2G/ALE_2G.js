@@ -12,7 +12,7 @@ var ale = {
    freq_next: 0,
    tune_ack_expecting: 0,
    tune_ack_got: 0,
-   sfmt: 'w3-text-red w3-RIF-EXT',
+   sfmt: 'w3-text-red',
    scan: ['scan', 'w3-bold w3-text-blue'],
    scan_lsb: ['scan', 'id-ale_2g-lsb w3-bold w3-text-blue'],
    pb: { lo: 600, hi: 2650 },
@@ -285,12 +285,12 @@ function ale_2g_controls_setup()
             w3_select(ale.sfmt, '', 'display', 'ale.dsp', ale.dsp, ale.dsp_s, 'ale_2g_display_cb'),
             w3_inline('',
                w3_select('id-ale_2g-scan-t '+ ale.sfmt, '', 'scan T', 'ale.scan_t_m', ale.scan_t_m, ale.scan_t_s, 'ale_2g_scan_t_cb'),
-               w3_input('id-ale_2g-scan-t-custom w3-margin-left w3-RIF-EXT w3-hide|padding:0;width:auto|size=4',
+               w3_input('id-ale_2g-scan-t-custom w3-margin-left w3-hide|padding:0;width:auto|size=4',
                   '', 'ale.scan_t_f', ale.scan_t_f, 'ale_2g_scan_t_custom_cb')
             ),
             w3_inline('',
                w3_select('id-ale_2g-f-limit '+ ale.sfmt, '', 'F limit', 'ale.f_limit_m', ale.f_limit_m, ale.f_limit_s, 'ale_2g_f_limit_cb'),
-               w3_input('id-ale_2g-f-limit-custom w3-margin-left w3-RIF-EXT w3-hide|padding:0;width:auto|size=8',
+               w3_input('id-ale_2g-f-limit-custom w3-margin-left w3-hide|padding:0;width:auto|size=8',
                   '', 'ale.f_limit_f', ale.f_limit_f, 'ale_2g_f_limit_custom_cb')
             )
          ),
@@ -307,12 +307,12 @@ function ale_2g_controls_setup()
             ),
             
             w3_select('id-ale_2g-record '+ ale.sfmt, '', 'record', 'ale.record_m', ale.record_m, ale.record_s, 'ale_2g_record_cb'),
-            w3_input('id-ale_2g-record-secs/w3-label-not-bold/w3-RIF-EXT|padding:0;width:auto|size=4',
+            w3_input('id-ale_2g-record-secs/w3-label-not-bold/|padding:0;width:auto|size=4',
                'rec sec', 'ale.record_secs', ale.record_secs, 'ale_2g_record_secs_cb'),
             w3_div('fa-stack||title="record"',
                w3_icon('id-rec2', 'fa-repeat fa-stack-1x w3-text-pink', 22, '', 'ale_2g_toggle_recording_cb')
             ),
-            w3_input('id-ale_2g-log-mins/w3-label-not-bold/w3-RIF-EXT|padding:0;width:auto|size=4',
+            w3_input('id-ale_2g-log-mins/w3-label-not-bold/|padding:0;width:auto|size=4',
                'log min', 'ale.log_mins', ale.log_mins, 'ale_2g_log_mins_cb'),
 
             (0 && dbgUs)? w3_select(ale.sfmt, '', 'resampler', 'ale.resamp_m', ale.resamp_m, ale.resamp_s, 'ale_2g_resamp_cb') : ''
