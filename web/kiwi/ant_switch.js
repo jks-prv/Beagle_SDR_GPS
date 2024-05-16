@@ -700,7 +700,8 @@ function ant_switch_config_html()
                   'The <x1>Default antenna</x1> checkbox below define which single antenna is initially selected. <br>' +
                   'And also when no users are connected if the switch below is set to <x1>Yes</x1>. <br>' +
                   '"Users" includes all connections including FT8/WSPR autorun and kiwirecorder (e.g. wsprdaemon). <br>' +
-                  'If multiple are checked only the first encountered is used.'
+                  'If multiple are checked only the first encountered is used. <br>' +
+                  'If none are checked then all antennas are grounded if such a mode is supported by the switch device.'
                ),
                w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8',
                   'Switch to default antenna when no users connected?',

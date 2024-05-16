@@ -13,7 +13,7 @@ var fax = {
    freqs: null,
    menu_s: [ ],
    menus: [ ],
-   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+   sfmt: 'w3-text-red',
 
    phasing:    true,
    autostop:   false,

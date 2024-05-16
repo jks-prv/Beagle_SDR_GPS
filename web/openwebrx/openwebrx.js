@@ -23,6 +23,7 @@ This file is part of OpenWebRX.
 
 var owrx = {
    debug_drag: false,
+   activeElementID: null,
    
    height_top_bar_parts: 67,
    hide_bars: 0,
@@ -72,7 +73,6 @@ var owrx = {
    touch_hold_pressed: false,
    show_cursor_freq: 0,
    tuning_locked: 0,
-   capture_input_field: false,
    freqstep_interval: null,
    
    dx_click_gid_last_stored: undefined,
@@ -178,6 +178,8 @@ var nb_click = false;
 var no_geoloc = false;
 var force_mobile = false;
 var mobile_laptop_test = false;
+var show_activeElement = false;
+var force_need_autoscale = false;
 var user_url = null;
 var override_1Hz = null;
 
@@ -358,6 +360,8 @@ function kiwi_main_ready()
 	s = 'gc_wspr'; if (q[s]) kiwi_gc_wspr = parseInt(q[s]);
 	s = 'ctrace'; if (q[s]) { param_ctrace = true; ctrace = parseInt(q[s]); }
 	s = 'tmobile'; if (q[s]) mobile_laptop_test = true;
+	s = 'ae'; if (q[s]) show_activeElement = true;
+	s = 'fnas'; if (q[s]) force_need_autoscale = true;
 	s = 'v'; if (q[s]) console.log('URL: debug_v = '+ (debug_v = q[s]));
 
 	if (kiwi_gc_snd == -1) kiwi_gc_snd = kiwi_gc;
@@ -376,6 +380,32 @@ function kiwi_main_ready()
 	   }
 	}
 
+   // shows activeElement in owner field
+   if (show_activeElement) {
+      setInterval(
+         function() {
+            var id = w3_id(document.activeElement);   // returns 'id-NULL' if ae is null
+            if (id != owrx.activeElementID && id != 'id-freq-input') {
+               w3_innerHTML('id-owner-info', id);
+               owrx.activeElementID = id;
+            }
+         }, 250
+      );
+   }
+   
+   // Forces a periodic auto aperture autoscale.
+   if (force_need_autoscale) {
+      setInterval(
+         function() {
+            if (wf.aper == kiwi.APER_AUTO) {
+               wf.need_autoscale = wf.FNAS = 1;
+               colormap_update();
+               console.log('FNAS');
+            }
+         }, 3000
+      );
+   }
+      
 	//kiwi_xdLocalStorage_init();
 	kiwi_get_init_settings();
 	if (!no_geoloc) kiwi_geolocate();
@@ -4745,10 +4775,15 @@ function waterfall_add(data_raw, audioFFT)
          console_log_dbgUs('audioFFT_active: force noise = '+ noise.toFixed(0) +' dBm');
       }
 
-      setmaxdb(1, signal);
-      setmindb(1, noise);
-      update_maxmindb_sliders();
-	   wf.need_autoscale = 0;
+      var auto = (wf.aper == kiwi.APER_AUTO);
+      if (!auto && wf.FNAS) {
+         //console.log('$$SKIP !auto && wf.FNAS');
+      } else {
+         setmaxdb(signal, {done:1, no_fsel:auto});
+         setmindb(noise, {done:1, no_fsel:auto});
+         update_maxmindb_sliders();
+      }
+	   wf.need_autoscale = wf.FNAS = 0;
 	}
 
 	wf_canvas_actual_line--;
@@ -5450,8 +5485,8 @@ function audioFFT_setup()
    if (wf.aper != kiwi.APER_AUTO) {
       var last_AF_max_dB = kiwi_storeRead('last_AF_max_dB', maxdb);
       var last_AF_min_dB = kiwi_storeRead('last_AF_min_dB', mindb_un);
-      setmaxdb(1, last_AF_max_dB);
-      setmindb(1, last_AF_min_dB);
+      setmaxdb(last_AF_max_dB, {done:1});
+      setmindb(last_AF_min_dB, {done:1});
       update_maxmindb_sliders();
    }
 
@@ -5941,36 +5976,15 @@ function popup_keyboard_touchstart(event)
    owrx.popup_keyboard_active = true;
 }
 
+function retain_input_focus()
+{
+   return w3_retain_input_focus({ext:extint.displayed, scan:extint.scanning});
+}
+
 function freqset_select()
 {
-   if (owrx.capture_input_field) return;
-   
-   // only switch focus to id-freq-input if active element doesn't specify w3-retain-input-focus (or w3-ext-retain-input-focus)
-   var ae = document.activeElement;
-   //console.log(ae);
-   
-   // extensions use w3-ext-retain-input-focus instead of w3-retain-input-focus so we can handle the following situation:
-   var closed_ext_input_still_holding_focus = (ae && w3_contains(ae, 'w3-ext-retain-input-focus') && !extint.displayed);
-   if (closed_ext_input_still_holding_focus) {
-      //console.log('#### closed_ext_input_still_holding_focus');
-   }
-
-   var retain_input_focus = (ae && (w3_contains(ae, 'w3-retain-input-focus') || w3_contains(ae, 'w3-ext-retain-input-focus')));
-   if (retain_input_focus) {
-      //console.log('#### retain_input_focus');
-   }
-   
-   if (extint.scanning) {
-      //console.log('freqset_select: scanning, so skip id-freq-input select');
-      return;
-   }
-
-   if (!ae || !retain_input_focus || closed_ext_input_still_holding_focus) {
-	   w3_field_select('id-freq-input', {mobile:1, log:1});
-	} else {
-      //console.log('#### activeElement w3-retain-input-focus:');
-      //console.log(ae);
-	}
+   //console.log('$freqset_select');
+	w3_field_select('id-freq-input', {mobile:1, log:1});
 }
 
 function modeset_update_ui(mode)
@@ -6132,7 +6146,7 @@ function freqset_complete(from, ev)
             } else {
                var dsp_f = +freq_displayed_kHz_str;
                var same = (f == dsp_f);
-               //console.log('$$ f='+ f +' dsp_f='+ dsp_f +' same='+ same);
+               //console.log('f='+ f +' dsp_f='+ dsp_f +' same='+ same);
                freqmode_set_dsp_kHz(f, null, same? { dont_clear_wf:true } : null);
                restore = false;
             }
@@ -7109,7 +7123,10 @@ function mk_band_menu()
    //console.log('mk_band_menu');
    band_menu = [];
    owrx.last_selected_band = 0;
-   w3_innerHTML('id-select-band', setup_band_menu());
+   var id = 'id-select-band';
+   var el = w3_el(id);
+   w3_innerHTML(el, setup_band_menu());
+   //w3_event_listener(id, el);
 }
 
 // find_band() is only called by code related to setting the frequency step size.
@@ -7275,6 +7292,11 @@ function band_scroll(dir)
    
    select_band(i);
    w3_set_value('id-select-band', i);
+}
+
+function select_band_cb(path, idx)
+{
+   select_band(idx);
 }
 
 function select_band(v, mode_s)
@@ -8429,12 +8451,12 @@ function dx_filter(shift_plus_ctl_alt)
 		w3_divs('w3-text-aqua',
 		   w3_col_percent('',
             w3_divs('/w3-margin-T-8',
-               w3_input('w3-label-inline/id-dx-filter-ident w3-retain-input-focus w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
-               w3_input('w3-label-inline/id-dx-filter-notes w3-retain-input-focus w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
+               w3_input('w3-label-inline/id-dx-filter-ident w3-input-any-change w3-padding-small', 'Ident', 'dx.filter_ident', dx.filter_ident, 'dx_filter_cb'),
+               w3_input('w3-label-inline/id-dx-filter-notes w3-input-any-change w3-padding-small', 'Notes', 'dx.filter_notes', dx.filter_notes, 'dx_filter_cb')
             ), 90
          ),
          w3_inline('w3-halign-space-around w3-margin-T-8 w3-text-white/',
-            w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
+            w3_checkbox('w3-label-inline w3-label-not-bold', 'case sensitive', 'dx.filter_case', dx.filter_case, 'dx_filter_opt_cb'),
 
             // Wildcard pattern matching, in addition to grep, is implemented. But currently checkbox is not shown because
             // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
@@ -8442,8 +8464,8 @@ function dx_filter(shift_plus_ctl_alt)
             // simple search engines which is what the user probably really wants.
             w3_inline('',
                w3_text('', 'pattern match:'),
-               //w3_checkbox('w3-retain-input-focus w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
-               w3_checkbox('w3-margin-left w3-retain-input-focus w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
+               //w3_checkbox('w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
+               w3_checkbox('w3-margin-left w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
             )
          )
       );
@@ -8452,18 +8474,9 @@ function dx_filter(shift_plus_ctl_alt)
    w3_field_select('id-dx-filter-ident', {mobile:1});    // select the field
 }
 
-// Use a custom panel close routine because we need to remove focus if any of our elements are the
-// active element at close time. This is due to how the w3-retain-input-focus logic works to keep
 function dx_filter_panel_close()
 {
    //console_log_dbgUs('dx_filter_panel_close');
-   var ae = document.activeElement;
-   //console_log_dbgUs(ae);
-   if (ae && ae.id && (ae.id.startsWith('id-dx-filter') || ae.id.startsWith('id-dx.filter'))) {
-      //console_log_dbgUs('### activeElement='+ ae.id);
-      ae.blur();
-   }
-
    confirmation_panel_close();
 }
 
@@ -9991,21 +10004,23 @@ function keyboard_shortcut_event(evt)
          k == 'k' || k == 'M' ||                // scale modifiers
          k == 'Enter' || k == 'Backspace' || k == 'Delete'
       );
-
-      if (k == 'h' || k == '?') {
-         var el = w3_elementAtPointer(owrx.last_pageX, owrx.last_pageY);
-         //console.log(el);
-         if (el && el.id == 'id-freq-input') {
-            freq_input_help();
-            return cancelEvent(evt);
-         }
-         if (w3_contains(el, 'id-freq-menu')) {
-            freq_memory_help();
-            return cancelEvent(evt);
-         }
+   
+   if (k == 'h' || k == '?') {
+      var el = w3_elementAtPointer(owrx.last_pageX, owrx.last_pageY);
+      //console.log(el);
+      if (el && el.id == 'id-freq-input') {
+         freq_input_help();
+         return cancelEvent(evt);
       }
+      if (w3_contains(el, 'id-freq-menu')) {
+         freq_memory_help();
+         return cancelEvent(evt);
+      }
+   }
 
-   if (evt.target.nodeName != 'INPUT' || (id == 'id-freq-input' && !field_input_key)) {
+   var field_or_slider = (evt.target.nodeName == 'INPUT');
+   var slider_not_field = (evt.target.type == 'range');
+   if (!field_or_slider || slider_not_field || (id == 'id-freq-input' && !field_input_key)) {
       
       // don't interfere with the meta key shortcuts of the browser
       if (kiwi_isMacOS()) {
@@ -10043,8 +10058,22 @@ function keyboard_shortcut_event(evt)
 
       return cancelEvent(evt);
    } else {
+      //console.log(evt.target);
       //console.log('KEY INPUT FIELD <'+ k +'> '+ id + suffix);
    }
+}
+
+
+////////////////////////////////
+// extensions
+////////////////////////////////
+
+function mk_ext_menu()
+{
+   w3_innerHTML('id-select-ext',
+      '<option value="-1" selected disabled>extension</option>' +
+      extint_select_build_menu()
+   );
 }
 
 function extension_scroll(dir)
@@ -10119,7 +10148,7 @@ function test_audio_suspended()
 
    if (cfg.require_id && isEmptyString(ident)) {
       snd_send('SET require_id=1');
-      s1 = w3_input('w3-flex w3-flex-col w3-valign-center//w3-custom-events w3-margin-T-10 w3-font-18px w3-normal'+
+      s1 = w3_input('w3-dump w3-flex w3-flex-col w3-valign-center//w3-custom-events w3-margin-T-10 w3-font-18px w3-normal'+
          '|padding:1px; width:300px|size=20'+
          ' onchange="ident_complete(\'el\', 3)" onkeyup="ident_keyup(this, event, 3)"',
          'Enter your name or callsign <br> to start KiwiSDR', 'ident-input3');
@@ -10143,7 +10172,6 @@ function test_audio_suspended()
       if (input) {
          var el = w3_el('id-ident-input3');
          w3_attribute(el, 'maxlength', Math.max(cfg.ident_len, kiwi.ident_min));
-         owrx.capture_input_field = true;    // lockout freqset_select() from being called behind the scenes
          w3_field_select(el, {mobile:1});
       }
 
@@ -10175,7 +10203,6 @@ function play_button_click_cb()
 	w3_opacity('id-play-button-container', 0);
 	setTimeout(function() { w3_hide('id-play-button-container'); }, 1100);
 	audio_reset();    // handle possible audio overflow condition during wait for button click
-   owrx.capture_input_field = false;
    freqset_select();
 }
 
@@ -10211,15 +10238,17 @@ function panels_setup()
             '</form>'
          ) +
 
-         '<select id="id-select-band" class="w3-pointer w3-select-menu" onchange="select_band(this.value)">' +
-            setup_band_menu() +
-         '</select>' +
+         w3_select('id-select-band w3-pointer', '', '', '', 0, '', 'select_band_cb') +
 
+/*
          '<select id="id-select-ext" class="w3-pointer w3-select-menu" onchange="freqset_select(); extint_select(this.value)">' +
             '<option value="-1" selected disabled>extension</option>' +
             extint_select_build_menu() +
-         '</select>'
+         '</select>'*/
+         w3_select('id-select-ext w3-pointer||onchange="freqset_select(); extint_select(this.value)"', '', '', '', 0)
       );
+   mk_band_menu();
+   mk_ext_menu();
    
    check_suspended_audio_state();
    fmt = 'w3-hold w3-hold-done w3-padding-0 w3-575757';
@@ -10288,7 +10317,7 @@ function panels_setup()
 	
 	button_9_10(step_9_10);
 
-	s = '';
+	amode = [];
    mode_buttons.forEach(
 	   function(mba, i) {
 	      var ms = mba.s[0];
@@ -10296,14 +10325,11 @@ function panels_setup()
 	      var disabled = mba.dis || (mslc == 'drm' && !kiwi.DRM_enable);
 	      var attr = disabled? '' : ' onclick="mode_button(event, this)"';
 	      attr += ' onmouseover="mode_over(event, this)"';
-	      //s += w3_div('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
-	      //   ' class-button'+ (disabled? ' class-button-disabled':'') +
-	      //   ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
-	      s += w3_button('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
+	      amode[i] = w3_button('id-button-'+ mslc + ' id-mode-'+ ext_mode(mslc).str +
 	         ' class-button'+ (disabled? ' class-button-disabled':'') +
 	         ' ||id="'+ i +'-id-mode-col"' + attr + ' onmousedown="cancelEvent(event)"', ms);
 	   });
-	w3_el("id-control-mode").innerHTML = w3_inline('w3-halign-space-between/', s);
+	w3_el("id-control-mode").innerHTML = w3_inline_array('w3-halign-space-between/', amode);
 
    var afd1 = wf.audioFFT_active? ' w3-disabled||onclick="freqset_select()" disabled=""' : '';
    var afd2 = wf.audioFFT_active? ' w3-disabled||disabled="" ' : '||';
@@ -10884,6 +10910,7 @@ var wf = {
    contr: 0,
    last_zoom: -1,
    need_autoscale: 0,
+   FNAS: 0,
    
    auto_ceil: { min:0, val:5, max:30 },
    auto_floor: { min:-30, val:0, max:0 },
@@ -11098,14 +11125,12 @@ function wf_aper_cb(path, idx, first)
       //console_log_dbgUs('# save maxdb='+ maxdb +' mindb='+ mindb);
    } else {
       //console_log_dbgUs('# restore maxdb='+ wf.save_maxdb +' mindb='+ wf.save_mindb_un +' zcorr='+ zoomCorrection());
-      setmaxdb(1, wf.save_maxdb);
-      setmindb(1, wf.save_mindb_un - zoomCorrection());
+      setmaxdb(wf.save_maxdb, {done:1});
+      setmindb(wf.save_mindb_un - zoomCorrection(), {done:1});
    }
 
    spectrum_dB_bands();
    update_maxmindb_sliders();
-   w3_show_hide_inline('id-wfext-maxmin', auto);
-   w3_show_hide_inline('id-wfext-maxmin-spacer', !auto);
    colormap_update();
    freqset_select();
 }
@@ -11136,13 +11161,13 @@ function setwfspeed_wheel_cb()
 
 function setmaxdb_cb(path, val, done, first)
 {
-   setmaxdb(done, val, false);
+   setmaxdb(val, {done:done, no_fsel:0});
 }
 
-function setmaxdb(done, str, no_freqset_select)
+function setmaxdb(str, opt)
 {
 	var strdb = parseFloat(str);
-	var write_cookies = false;
+	var wstore = false;
 
    if (wf.aper == kiwi.APER_AUTO) {
       maxdb = strdb + wf.auto_ceil.val;
@@ -11151,7 +11176,7 @@ function setmaxdb(done, str, no_freqset_select)
       var field_max = w3_el('id-field-maxdb');
       var field_min = w3_el('id-field-mindb');
       if (!input_max || !field_max || !field_min) return;
-      write_cookies = true;
+      wstore = true;
 
       if (strdb <= mindb) {
          maxdb = mindb + 1;
@@ -11167,13 +11192,13 @@ function setmaxdb(done, str, no_freqset_select)
       }
    }
 	
-	setmaxmindb(done, write_cookies, no_freqset_select);
+	setmaxmindb({done:opt.done, wstore:wstore, no_fsel:opt.no_fsel});
 }
 
 function setmaxdb_wheel_cb()
 {
    var nval = w3_slider_wheel('setmaxdb_wheel_cb', 'id-input-maxdb', maxdb, 1, 10);
-   if (isNumber(nval)) setmaxdb(1, nval);
+   if (isNumber(nval)) setmaxdb(nval, {done:1});
 }
 
 function incr_mindb(done, incr)
@@ -11189,19 +11214,19 @@ function incr_mindb(done, incr)
    var incrdb = (+mindb) + incr;
    var val = Math.max(-190, Math.min(-30, incrdb));
    //console.log('incr_mindb mindb='+ mindb +' incrdb='+ incrdb +' val='+ val);
-   setmindb(done, val.toFixed(0));
+   setmindb(val.toFixed(0), {done:done});
 }
 
 function setmindb_cb(path, val, done, first)
 {
-   setmindb(done, val, false);
+   setmindb(val, {done:done, no_fsel:0});
 }
 
-function setmindb(done, str, no_freqset_select)
+function setmindb(str, opt)
 {
 	var strdb = parseFloat(str);
-   //console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
-	var write_cookies = false;
+   //console.log('setmindb strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ opt.done);
+	var wstore = false;
 
    if (wf.aper == kiwi.APER_AUTO) {
       mindb = strdb + wf.auto_floor.val;
@@ -11210,7 +11235,7 @@ function setmindb(done, str, no_freqset_select)
       var field_max = w3_el('id-field-maxdb');
       var field_min = w3_el('id-field-mindb');
       if (!input_min || !field_max || !field_min) return;
-      write_cookies = true;
+      wstore = true;
 
       if (maxdb <= strdb) {
          mindb = maxdb - 1;
@@ -11219,7 +11244,7 @@ function setmindb(done, str, no_freqset_select)
          field_min.style.color = "red";
       } else {
          mindb = strdb;
-         //console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ done);
+         //console.log('setmindb SET strdb='+ strdb +' maxdb='+ maxdb +' mindb='+ mindb +' done='+ opt.done);
          input_min.value = mindb;
          field_min.innerHTML = strdb.toFixed(0) + ' dB';
          field_min.style.color = "white";
@@ -11228,30 +11253,31 @@ function setmindb(done, str, no_freqset_select)
    }
 
 	mindb_un = mindb + zoomCorrection();
-	setmaxmindb(done, write_cookies, no_freqset_select);
+	setmaxmindb({done:opt.done, wstore:wstore, no_fsel:opt.no_fsel});
 }
 
 function setmindb_wheel_cb()
 {
    var nval = w3_slider_wheel('setmindb_wheel_cb', 'id-input-mindb', mindb, 1, 10);
-   if (isNumber(nval)) setmindb(1, nval);
+   if (isNumber(nval)) setmindb(nval, {done:1});
 }
 
-function setmaxmindb(done, write_cookies, no_freqset_select)
+function setmaxmindb(opt)
 {
 	full_scale = maxdb - mindb;
 	full_scale = full_scale? full_scale : 1;	// can't be zero
 	spectrum_dB_bands();
-   wf_send("SET maxdb="+maxdb.toFixed(0)+" mindb="+mindb.toFixed(0));
+   //console.log('setmaxmindb maxdb='+ maxdb.toFixed(0) +' mindb='+ mindb.toFixed(0) +' done='+ opt.done);
+   wf_send('SET maxdb='+ maxdb.toFixed(0) +' mindb='+ mindb.toFixed(0));
 	need_clear_wf_sp_avg = true;
 
-   if (done) {
-      if (no_freqset_select != true)
-   	   freqset_select();
-   	if (write_cookies) {
+   if (opt.done) {
+      if (!opt.no_fsel) freqset_select();
+   	if (opt.wstore) {
    	   kiwi_storeWrite(wf.audioFFT_active? 'last_AF_max_dB' : 'last_max_dB', maxdb.toFixed(0));
    	   kiwi_storeWrite(wf.audioFFT_active? 'last_AF_min_dB' : 'last_min_dB', mindb_un.toFixed(0));	// need to save the uncorrected (z0) value
 	   }
+      w3_call('waterfall_maxmin_cb');
 	}
 }
 
@@ -11289,6 +11315,7 @@ function update_maxmindb_sliders()
    
    field1.innerHTML = db1_s + ' dB';
    field2.innerHTML = db2_s + ' dB';
+   w3_call('waterfall_maxmin_cb');
 }
 
 function setceildb_cb(path, str, done)
@@ -11301,7 +11328,7 @@ function setceildb_cb(path, str, done)
    input_ceil.value = ceildb;
    w3_innerHTML(field_ceil, ceildb.toFixed(0).positiveWithSign() + ' dB');
    wf.auto_ceil.val = ceildb;
-	set_ceilfloordb(done);
+	set_ceilfloordb({done:done});
 }
 
 function setceildb_wheel_cb()
@@ -11320,7 +11347,7 @@ function setfloordb_cb(path, str, done)
    input_floor.value = floordb;
    w3_innerHTML(field_floor, floordb.toFixed(0).positiveWithSign() + ' dB');
    wf.auto_floor.val = floordb;
-	set_ceilfloordb(done);
+	set_ceilfloordb({done:done});
 }
 
 function setfloordb_wheel_cb()
@@ -11329,7 +11356,7 @@ function setfloordb_wheel_cb()
    if (isNumber(nval)) setfloordb_cb('', nval, 1);
 }
 
-function set_ceilfloordb(done)
+function set_ceilfloordb(opt)
 {
    maxdb = wf.auto_maxdb + wf.auto_ceil.val;
    mindb = wf.auto_mindb + wf.auto_floor.val;
@@ -11345,11 +11372,11 @@ function set_ceilfloordb(done)
    }
 	mindb_un = mindb + zoomCorrection();
 	//console_log_dbgUs('$set_ceilfloordb min/max/un='+ mindb +'/'+ maxdb +'/'+ mindb_un +' range='+ range);
-	setmaxmindb(done, false);
+	setmaxmindb({done:opt.done, wstore:false, no_fsel:opt.no_fsel});
 	w3_call('waterfall_maxmin_cb');
 
-   if (done) {
-   	freqset_select();
+   if (opt.done) {
+   	if (!opt.no_fsel) freqset_select();
    	kiwi_storeWrite('last_ceil_dB', wf.auto_ceil.val.toFixed(0));
    	kiwi_storeWrite('last_floor_dB', wf.auto_floor.val.toFixed(0));
 	}
@@ -12652,17 +12679,24 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 			kiwi_fft_mode();
 			break;
 		case "maxdb":
+		   if (wf.aper != kiwi.APER_AUTO) {    // probably keyboard shortcut switched aperture mode
+		      //console.log($SKIP MSG maxdb wf.aper='+ wf.aper);
+		      break;
+		   }
 		   wf.auto_maxdb = +param[1];
 		   //console.log('$SET wf.auto_maxdb='+ wf.auto_maxdb);
-         setmaxdb(1, wf.auto_maxdb, true);
+         setmaxdb(wf.auto_maxdb, {done:1, no_fsel:1});
 			break;
 		case "mindb":
+		   if (wf.aper != kiwi.APER_AUTO) {    // probably keyboard shortcut switched aperture mode
+		      //console.log($SKIP MSG mindb wf.aper='+ wf.aper);
+		      break;
+		   }
 		   wf.auto_mindb = +param[1];
 		   //console.log('$SET wf.auto_mindb='+ wf.auto_mindb);
-         setmindb(1, wf.auto_mindb, true);
-	      w3_call('waterfall_maxmin_cb');
-         update_maxmindb_sliders(true);
-         set_ceilfloordb(true);
+         setmindb(wf.auto_mindb, {done:1, no_fsel:1});
+         w3_call('waterfall_maxmin_cb');
+         set_ceilfloordb({done:1, no_fsel:1});
 			break;
 		case "max_thr":
 			owrx.overload_mute = Math.round(+param[1]);

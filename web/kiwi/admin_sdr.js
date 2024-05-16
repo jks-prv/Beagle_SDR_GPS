@@ -1565,12 +1565,12 @@ function dx_html()
                w3_input('//w3-hide w3-no-styling||type="file"', '', 'id-dx-import-form', '', 'dx_file_upload_cb')
             ),
             w3_text('w3-padding-medium w3-padding-R-0 w3-text-teal w3-bold', 'Search:'),
-            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus|width:75px|title="finds nearest freq"',
+            w3_input('w3-text-black/w3-label-inline/w3-padding-small|width:75px|title="finds nearest freq"',
                'Freq', 'dx.o.search_f', '', 'dx_search_freq_cb'),
-            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
+            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-input-any-change|width:150px' +
                '|title="Search ident fields.\nUse return&slash;enter key to find next. Wraps."',
                'Ident', 'dx.o.search_i', '', 'dx_search_ident_cb'),
-            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-retain-input-focus w3-input-any-change|width:150px' +
+            w3_input('w3-text-black/w3-label-inline/w3-padding-small w3-input-any-change|width:150px' +
                '|title="Search notes fields.\nUse return&slash;enter key to find next. Wraps."',
                'Notes', 'dx.o.search_n', '', 'dx_search_notes_cb')
          )

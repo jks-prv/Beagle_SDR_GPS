@@ -8,6 +8,7 @@
 //
 // Updates:
 //
+// 13 May 24 136.244.64.0/18 (64.0:127:255) 136.244.117.202 constant/vultr/choopa fast connects, old SET MARKER variants
 //  9 May 24 137.220.32.0/19 (32.0:63.255) 137.220.40.124 constant/vultr/choopa fast connects, old SET MARKER variants
 //  9 May 24 207.148.88.0/21 (88.0:95.255) 207.148.92.163 constant/vultr/choopa fast connects, old SET MARKER variants
 //  7 May 24 195.128.246.0/23 (246.0:247:255) Alliance Russia
@@ -148,6 +149,7 @@
     "128.1.0.0/16",
     "128.14.0.0/16",
     "130.211.0.0/16",
+    "136.244.64.0/18",
     "137.220.32.0/19",
     "138.19.0.0/16",
     "139.84.128.0/17",

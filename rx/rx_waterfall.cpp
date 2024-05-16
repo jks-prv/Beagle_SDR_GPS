@@ -548,7 +548,7 @@ void c2s_waterfall(void *param)
                 if (i == 2) {
                     did_cmd = true;
                     #ifdef WF_APER_INFO
-                        //printf("waterfall: maxdb=%d mindb=%d\n", wf->maxdb, wf->mindb);
+                        printf("waterfall: maxdb=%d mindb=%d\n", wf->maxdb, wf->mindb);
                     #endif
                     cmd_recv |= CMD_DB;
                 }

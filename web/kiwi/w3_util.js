@@ -2,9 +2,9 @@
 
 /*
 
-	///////////////////////////////////////
+	////////////////////////////////
 	// API summary (w3_*)
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	                           integrated: L=label T=text 3=psa3()
 	                           |  callback
@@ -66,10 +66,9 @@
 	col_percent                3
 	
 	
-	
-	///////////////////////////////////////
+	////////////////////////////////
 	// Useful stuff
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	<element attribute="attribute-values ..." inline-style-attribute="properties ...">
 	"styles" refers to any style-attribute="properties ..." combination
@@ -121,9 +120,9 @@
 	   w3-label-inline
 
 
-	///////////////////////////////////////
+	////////////////////////////////
 	// Notes about HTML/DOM
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	"Typically, the styles are merged, but when conflicts arise, the later declared style will generally win
 	(unless the !important attribute is specified on one of the styles, in which case that wins).
@@ -138,9 +137,9 @@
 		offset{Width,Height}		viewable only; includes padding, border, scrollbars
 
 	
-	///////////////////////////////////////
+	////////////////////////////////
 	// FIXME cleanups
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	some routines that return nothing now could return el from internal w3_el() so
 	   caller could do chained references (see w3_innerHTML(), w3_show() ...)
@@ -174,9 +173,9 @@
 	x normalize use of embedded labels
 	
 	
-	///////////////////////////////////////
+	////////////////////////////////
 	// API users
-	///////////////////////////////////////
+	////////////////////////////////
 	
 	1) kiwisdr.com website content
 	
@@ -225,6 +224,8 @@ var w3int = {
    rate_limit: {},
    rate_limit_need_shift: {},
    rate_limit_evt: {},
+   
+   eventListener: [],
    
    _last_: 0
 };
@@ -703,7 +704,7 @@ function w3_els(el_id, func)
 function w3_id(el_id)
 {
 	var el = w3_el(el_id);
-	if (!el) return null;
+	if (!el) return 'id-NULL';
 	if (el.id && el.id.startsWith('id-')) return el.id;
 	var done = false;
 	var id = null;
@@ -714,7 +715,7 @@ function w3_id(el_id)
 	      done = true;
 	   }
 	});
-	return id;
+	return (id? id : 'id-NULL');
 }
 
 // assign innerHTML, silently failing if element doesn't exist
@@ -1844,6 +1845,35 @@ function w3_elementAtPointer(x, y)
    return null;
 }
 
+function w3_event_log(el, id, event_name)
+{
+   var el = w3_el(el);
+   if (el == null) return;
+   el.addEventListener(event_name,
+      function() {
+         console.log('w3_event_log '+ id +': '+ event_name);
+         //canvas_log(event_name);
+      }
+   );
+}
+
+// observe element event behavior
+function w3_event_listener(id, el)
+{
+   var el = w3_el(el);
+   if (!el) return null;
+   if (!w3int.eventListener[id]) {
+      w3_event_log(el, id, 'mouseup');
+      w3_event_log(el, id, 'mousedown');
+      w3_event_log(el, id, 'click');
+      w3_event_log(el, id, 'change');
+      w3_event_log(el, id, 'submit');
+      w3_event_log(el, id, 'focus');
+      w3_event_log(el, id, 'blur');
+      w3int.eventListener[id] = true;
+   }
+}
+
 
 ////////////////////////////////
 // hr
@@ -2780,10 +2810,7 @@ function w3_input_change(path, cb, from)
 */
    }
 	
-   if (w3_contains(el, 'w3-retain-input-focus') || w3_contains(el, 'w3-ext-retain-input-focus'))
-	   w3_field_select(path, {mobile:1});     // select the field
-   else
-      w3int_post_action();
+   w3int_post_action();
 }
 
 function w3int_input_up_down_cb(path, cb_param, first, ev)
@@ -2983,10 +3010,7 @@ function w3int_checkbox_change(path, cb, cb_param)
 		w3_call(cb, path, el.checked, /* first */ false, cb_param);
 	}
 
-   if (w3_contains(el, 'w3-retain-input-focus') || w3_contains(el, 'w3-ext-retain-input-focus'))
-	   w3_field_select(path, {mobile:1});     // select the field
-   else
-      w3int_post_action();
+   w3int_post_action();
 }
 
 function w3_checkbox(psa, label, path, checked, cb, cb_param)
@@ -3055,8 +3079,32 @@ function w3_checkbox_set(path, checked)
 
 var W3_SELECT_SHOW_TITLE = -1;
 
+// Event behavior of w3_select() i.e. HTML <select>|<option> elements
+//    menu open: MD focus
+//    change menu item: MU blur change click
+//    same menu item: MD MU w3_click-tgt=OPTION-BLUR blur FSEL click
+//    when menu popup doesn't cover cursor: MU w3_click-tgt=SELECT blur FSEL click
+//
+// Since change+blur events are not fired if the same menu item is clicked
+// must do blur here on click event. But only if same selected item is detected
+// by ev.target being an <option> element.
+
+function w3int_select_click(ev, path, cb, cb_param)
+{
+   // ev.target = SELECT|OPTION, ev.currentTarget = SELECT
+   //console.log('w3int_select_click: '+ w3_id(ev.currentTarget));
+	var el = ev.target;
+	if (el && el.nodeName && el.nodeName == 'OPTION') {
+      //console.log('w3int_select_click: same menu item clicked: BLUR and FSEL');
+	   el.blur();
+      w3int_post_action();
+   }
+}
+
 function w3int_select_change(ev, path, cb, cb_param)
 {
+   // ev.target = SELECT|OPTION, ev.currentTarget = SELECT
+   //console.log('w3int_select_change: CHANGE '+ w3_id(ev.currentTarget));
 	var el = ev.currentTarget;
 	w3_check_restart_reboot(el);
 
@@ -3084,15 +3132,16 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 	
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && !inline)? ' w3-margin-T-8' : '';
-	if (inline) spacing += ' w3-margin-left';
+	var spacing = (label != '' && !inline)? 'w3-margin-T-8' : '';
+	if (inline) spacing += 'w3-margin-left';
 	if (cb == undefined) cb = '';
 	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
+	var onclick = 'onclick="w3int_select_click(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, id +' w3-select-menu'+ spacing, '', onchange);
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, 'w3-select-menu', spacing), '', onchange +' '+ onclick);
 
 	var s =
 	   '<div '+ psa_outer +'>' +
@@ -3164,6 +3213,7 @@ function w3int_select_options(sel, opts, show_empty)
    //       option value is elements's sequential position
    //          *unless* value obj.value exists, then obj.value is option value
    if (isObject(opts)) {
+      if (opts == null) return '';
       w3_obj_enum(opts, function(key, i, obj) {
          var value, text, disabled = false;
          if (isObject(obj)) {
@@ -3366,8 +3416,10 @@ function w3int_slider_change(ev, complete, path, cb, cb_param)
 		w3_call(cb, path, el.value, complete, /* first */ false, cb_param);
 	}
 	
-	if (complete)
+	if (complete) {
+	   //console.log('w3int_slider_change COMPLETE path='+ path +' el.value='+ el.value);
 	   w3int_post_action();
+	}
 }
 
 function w3int_slider_wheel(evt, path, cb, cb_param, need_shift_s)
@@ -3409,7 +3461,7 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 	var id = w3_add_id(path);
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && inline)? ' w3-margin-L-8' : '';
+	var spacing = (label != '' && inline)? 'w3-margin-L-8' : '';
 	if (inline) spacing += ' w3-margin-left';
 
 	value = (val == null)? '' : w3_strip_quotes(val);
@@ -3430,7 +3482,7 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, inline? 'w3-show-inline-new':'');
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
-	var psa_inner = w3_psa(psa3.right, id + spacing, '', value +
+	var psa_inner = w3_psa(psa3.right, w3_sb(id, spacing), '', value +
       ' type="range" min='+ dq(min) +' max='+ dq(max) +' step='+ dq(step) + oc + os + ow);
 
 	var s = (label != '') ?
@@ -4094,6 +4146,14 @@ function w3_inline(psa, attr)
       if (dump) console.log(s);
       return s;
    }
+}
+
+// call w3_inline when parameters need to be accumulated in an array
+function w3_inline_array(psa, ar)
+{
+	ar.unshift(psa);
+	//console.log(ar);
+   return w3_inline.apply(null, ar);
 }
 
 // see: stackoverflow.com/questions/29885284/how-to-set-a-fixed-width-column-with-css-flexbox

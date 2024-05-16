@@ -2,7 +2,7 @@
 
 
 var wfext = {    // "wf" is already used elsewhere
-   sfmt: 'w3-text-red w3-ext-retain-input-focus',
+   sfmt: 'w3-text-red',
 
    aper_algo: 3,
    aper_algo_s: [ 'IIR', 'MMA', 'EMA', 'off' ],
@@ -50,7 +50,7 @@ function waterfall_controls_setup()
             w3_text('w3-margin-B-2 w3-text-css-orange', '<b>Aperture auto mode</b>'),
 
             w3_inline('w3-valign w3-margin-LR-16 w3-gap-16/',
-               w3_select('id-wfext-aper-algo w3-text-red', '', 'avg', 'wfext.aper_algo', wfext.aper_algo, wfext.aper_algo_s, 'waterfall_aper_algo_cb'),
+               w3_select('id-wfext-aper-algo '+ wfext.sfmt, '', 'avg', 'wfext.aper_algo', wfext.aper_algo, wfext.aper_algo_s, 'waterfall_aper_algo_cb'),
                w3_div('id-wfext-aper-param w3-width-40pct',
                   w3_slider('id-wfext-aper-param-slider', 'Parameter', 'wfext.aper_param', wfext.aper_param, 0, 10, 1, 'waterfall_aper_param_cb')
                ),
@@ -60,12 +60,10 @@ function waterfall_controls_setup()
          ),
          
          w3_div('w3-margin-LR-16 w3-margin-T-8',
-            w3_text('', 'Min,max: total = computed + floor,ceil'),
-            w3_inline('id-wfext-maxmin w3-background-fade w3-hide w3-text-white w3-small|background:#575757/',
-               w3_div('id-wfext-content', '&nbsp;')
-            ),
-            //w3_div('id-wfext-maxmin-spacer w3-small', '&nbsp;')
-            w3_div('id-wfext-maxmin-spacer w3-small', '(aperture manual mode selected)')
+            w3_text('id-wfext-text'),
+            w3_inline('id-wfext-maxmin w3-background-fade w3-text-white w3-small|background:#575757/',
+               w3_div('id-wfext-content')
+            )
          ),
          
          w3_div('w3-margin-T-8',
@@ -82,7 +80,7 @@ function waterfall_controls_setup()
             w3_text('w3-margin-B-8 w3-text-css-orange', '<b>Timestamps</b>'),
             w3_inline('w3-margin-LR-16/w3-hspace-16',
                w3_select('id-wfext-tstamp '+ wfext.sfmt, '', '', 'wfext.tstamp_i', wfext.tstamp_i, wfext.tstamp_s, 'wfext_tstamp_cb'),
-               w3_input('id-wfext-tstamp-custom w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+               w3_input('id-wfext-tstamp-custom|padding:0;width:auto|size=4',
                   '', 'wfext.tstamp_f', wfext.tstamp_f, 'wfext_tstamp_custom_cb'),
                w3_select(wfext.sfmt, '', '', 'wf.ts_tz', wf.ts_tz, wfext.tstamp_tz_s, 'w3_num_cb'),
 				   w3_button('w3-padding-smaller w3-aqua', 'Save WF as JPG', 'export_waterfall')
@@ -103,12 +101,9 @@ function waterfall_controls_setup()
 	w3_innerHTML('id-wf-more', controls_html);
 	coloris_init();      // NB: has to be after elements using coloris are instantiated
    w3_show_hide('id-wfext-tstamp-custom', false, null, 2);
-	
-	if (wf.aper == kiwi.APER_AUTO) {
-      w3_show_inline('id-wfext-maxmin');
-      waterfall_maxmin_cb();
-      w3_hide('id-wfext-maxmin-spacer');
-   }
+   waterfall_maxmin_cb();
+   //w3_event_listener('wf_cmap', 'id-wf.cmap');
+   //w3_event_listener('wf_ts_tz', 'id-wf.ts_tz');
 }
 
 function waterfall_init()
@@ -213,13 +208,24 @@ function waterfall_aper_param_cb(path, val, done, first)
 
 function waterfall_maxmin_cb()
 {
-   w3_flash_fade('id-wfext-maxmin', 'cyan', 50, 300, '#575757');
-   var dyn_range = maxdb - mindb;
-   var total_s = mindb.toString().positiveWithSign() +','+ maxdb.toString().positiveWithSign();
-   var computed_s = wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign();
-   var floor_ceil_s = wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign();
-   w3_innerHTML('id-wfext-content',
-      paren(total_s) +'&nbsp;=&nbsp;'+ paren(computed_s) +'&nbsp;+&nbsp;'+ paren(floor_ceil_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
+   var auto = (wf.aper == kiwi.APER_AUTO);
+   var max = auto? (wf.auto_maxdb + wf.auto_ceil.val) : maxdb;
+   var min = auto? (wf.auto_mindb + wf.auto_floor.val) : mindb;
+	//console.log('auto='+ TF(auto) +' min='+ min +' max='+ max);   
+   var dyn_range = max - min;
+   var total_s = min.toString().positiveWithSign() +','+ max.toString().positiveWithSign();
+	if (auto) {
+      w3_innerHTML('id-wfext-text', 'Min,max: total = computed + floor,ceil');
+      w3_flash_fade('id-wfext-maxmin', 'cyan', 50, 300, '#575757');
+      var computed_s = wf.auto_mindb.toString().positiveWithSign() +','+ wf.auto_maxdb.toString().positiveWithSign();
+      var floor_ceil_s = wf.auto_floor.val.toString().positiveWithSign() +','+ wf.auto_ceil.val.toString().positiveWithSign();
+      w3_innerHTML('id-wfext-content',
+         paren(total_s) +'&nbsp;=&nbsp;'+ paren(computed_s) +'&nbsp;+&nbsp;'+ paren(floor_ceil_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
+   } else {
+      w3_innerHTML('id-wfext-text', 'Min,max: aperture manual mode');
+      w3_innerHTML('id-wfext-content',
+         paren(total_s) +'&nbsp;&nbsp;[&Delta; '+ dyn_range +' dB]');
+   }
 }
 
 function wfext_spb_color_cb(path, val, first, cbp)

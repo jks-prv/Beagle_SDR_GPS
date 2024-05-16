@@ -238,7 +238,7 @@ function cw_decoder_controls_setup()
                   ),
                   w3_inline('',
                      w3_button('id-cw-log w3-margin-T-8 w3-padding-smaller w3-purple', 'Log', 'cw_log_cb'),
-                     w3_input('id-cw-log-mins w3-margin-L-16/w3-label-not-bold/w3-ext-retain-input-focus|padding:0;width:auto|size=4',
+                     w3_input('id-cw-log-mins w3-margin-L-16/w3-label-not-bold/|padding:0;width:auto|size=4',
                         'log min', 'cw.log_mins', cw.log_mins, 'cw_log_mins_cb')
                   )
                )
