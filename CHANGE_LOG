@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.681  May 16, 2024
+    Antenna switch: If the "Switch to default antenna when no users connected?" option is set,
+    and none of the "Default antenna" checkboxes are selected, then the switch device will be sent
+    the command to ground all antennas. What this actually does depends on the switch hardware and
+    the functioning of the switch backend script.
+    
+    If auto aperture mode is enabled and adjusting the waterfall min/max values this will no longer
+    cause browser focus to be taken away from selected elements like input fields and menus.
+
 v1.680  May 12, 2024
     Mobile improvements:
         Protection against the "- - - + + +" icon auto repeat continuing to repeat after you're
@@ -11,7 +20,9 @@ v1.680  May 12, 2024
         with Kiwi buttons and icons in some cases.
 
     For KiwiSDR 2 and later, the automatic proxy service configuration is restored after re-flashing
-    with the latest re-flash image.
+    with the latest re-flash image. This means you can once again access the Kiwi with the URL
+    (serial number).proxy.kiwisdr.com after a re-flash just as you could when the Kiwi was new
+    out-of-the-box.
 
 v1.679  May 10, 2024
     Fixed CIC compensation filter gain for 3-channel mode.
