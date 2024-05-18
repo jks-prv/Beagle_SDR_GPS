@@ -145,7 +145,7 @@ typedef struct {
 
     ip_lookup_t ips_kiwisdr_com;
     
-    bool ip_blacklist_inuse;
+    bool ip_blacklist_inuse, ip_blacklist_update_busy;
     int ip_blacklist_port_only;
     int ip_blacklist_len;
     ip_blacklist_t ip_blacklist[N_IP_BLACKLIST];

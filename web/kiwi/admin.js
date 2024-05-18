@@ -1580,6 +1580,7 @@ var network = {
    
    ip_blacklist_file_base: 'kiwisdr.com/ip_blacklist/ip_blacklist3.cjson',
    ip_blacklist_check_mtime: true,
+   bl_timeout: null,
    
    // this ordering gives a remapping of the old 0/1 values: 100M(0) => auto, 10M(1) => same
    ethernet_speed_s: [ ['auto', 1], ['10 Mbps', 1], ['100 Mbps', 1] ],
@@ -1877,7 +1878,9 @@ function network_download_button_cb(id, idx, first)
 
 function network_download_clear_cb(id, idx, first)
 {
-   network_ip_blacklist_cb('adm.ip_blacklist', '');
+   kiwi_clearTimeout(network.bl_timeout);
+   ext_send('SET network_ip_blacklist_clear');
+   network_ip_blacklist_set('adm.ip_blacklist', '');
    w3_int_set_cfg_cb('adm.ip_blacklist_mtime', 0);
 }
 
@@ -1886,14 +1889,14 @@ function network_user_blacklist_save_cb(path)
    //console.log('network_user_blacklist_save_cb');
    var el = w3_el('id-adm.ip_blacklist_local');
    //console.log('val='+ el.value);
-   network_ip_blacklist_cb('adm.ip_blacklist_local', el.value);
+   network_ip_blacklist_set('adm.ip_blacklist_local', el.value);
    w3_schedule_highlight(el);
 }
 
 function network_user_blacklist_cb(path, val)
 {
    //console.log('network_user_blacklist_cb val='+ val);
-   network_ip_blacklist_cb('adm.ip_blacklist_local', val);
+   network_ip_blacklist_set('adm.ip_blacklist_local', val);
 }
 
 function network_download_blacklist_cb(bl)
@@ -2004,7 +2007,7 @@ function network_download_blacklist_cb(bl)
       ip_bl_s = ip_bl_s +' '+ (o.whitelist? '+':'') + kiwi_ip_str(o.ip) +'/'+ o.nmd;
    });
    
-   network_ip_blacklist_cb('adm.ip_blacklist', ip_bl_s);
+   network_ip_blacklist_set('adm.ip_blacklist', ip_bl_s);
    network.show_updating = true;
 
    // silently fail if kiwisdr.com can't be contacted for the mtime check
@@ -2051,9 +2054,16 @@ function network_blacklist_mtime_cb(mt, update)
    }
 }
 
-function network_ip_blacklist_cb(path, val)
+function network_ip_blacklist_set(path, val)
 {
-   //console.log('network_ip_blacklist_cb path='+ path +' val='+ val);
+   network.bl_path = path;
+   network.bl_val = val;
+   ext_send('SET network_ip_blacklist_lock');
+}
+
+function network_ip_blacklist_set2(path, val)
+{
+   //console.log('network_ip_blacklist_set path='+ path +' val='+ val);
    
 	var re = /([^,;\s]+)/gm;
 	var ar = val.match(re);
@@ -2086,7 +2096,7 @@ function network_ip_blacklist_cb(path, val)
 	   network.ip_blacklist_local = ar;
 	}
 
-   ext_send('SET network_ip_blacklist_clear');
+   ext_send('SET network_ip_blacklist_start');
    if (network.show_updating) {
       w3_innerHTML('id-ip-blacklist-status', 'updating..'+ w3_icon('w3-margin-left', 'fa-refresh fa-spin', 24));
    }
@@ -2099,7 +2109,7 @@ function network_ip_blacklist_cb(path, val)
 	console.log(network.ip_blacklist_local);
 	
    ext_send('SET network_ip_blacklist_disable');
-   network_ip_blacklist_send( {idx:0, type:0} );
+   network_ip_blacklist_send( {idx:0, global:1} );
 }
 
 // Send rate limited requests to invoke iptables on server side.
@@ -2107,19 +2117,20 @@ function network_ip_blacklist_cb(path, val)
 function network_ip_blacklist_send(p)
 {
    var rate = admin.status.ip_set? 20 : 250;      // rate limit due to iptables overhead
-   if (p.type == 0) {
+   if (p.global) {
       if (p.idx == network.ip_blacklist.length) {
-         network_ip_blacklist_send( {idx:0, type:1} );
+         network_ip_blacklist_send( {idx:0, global:0} );
       } else {
          ext_send('SET network_ip_blacklist='+ encodeURIComponent(network.ip_blacklist[p.idx]));
-         setTimeout(function() { network_ip_blacklist_send( {idx:p.idx+1, type:0} ); }, rate);
+         network.bl_timeout = setTimeout(function() { network_ip_blacklist_send( {idx:p.idx+1, global:1} ); }, rate);
       }
    } else {
       if (p.idx == network.ip_blacklist_local.length) {
          ext_send('SET network_ip_blacklist_enable');
+         network.bl_timeout = null;
       } else {
          ext_send('SET network_ip_blacklist='+ encodeURIComponent(network.ip_blacklist_local[p.idx]));
-         setTimeout(function() { network_ip_blacklist_send( {idx:p.idx+1, type:1} ); }, rate);
+         network.bl_timeout = setTimeout(function() { network_ip_blacklist_send( {idx:p.idx+1, global:0} ); }, rate);
       }
    }
 }
@@ -4475,6 +4486,15 @@ function admin_recv(data)
 			case "network_ip_blacklist_enabled":
             if (!network.ip_address_error)
                w3_innerHTML('id-ip-blacklist-status', 'updated');
+				break;
+			
+			case "network_ip_blacklist_locked":
+			   network_ip_blacklist_set2(network.bl_path, network.bl_val);
+				break;
+			
+			case "network_ip_blacklist_busy":
+            if (!network.ip_address_error)
+               w3_innerHTML('id-ip-blacklist-status', 'busy');
 				break;
 			
          case "user_list":

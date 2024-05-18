@@ -29,6 +29,16 @@ Boston, MA  02110-1301, USA.
 	#define ipbl_prf(fmt, ...)
 #endif
 
+//#define IP_BL_DBG2
+#ifdef IP_BL_DBG2
+	#define ipbl_prf2(fmt, ...) \
+	    printf(fmt,  ## __VA_ARGS__);
+	#define ipbl_dbg(x) x
+#else
+	#define ipbl_prf2(fmt, ...)
+	#define ipbl_dbg(x)
+#endif
+
 #define N_IP_BLACKLIST 512
 #define N_IP_BLACKLIST_HASH_BYTES 4     // 4 bytes = 8 chars
 

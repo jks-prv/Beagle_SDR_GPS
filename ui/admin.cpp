@@ -888,18 +888,44 @@ void c2s_admin(void *param)
 
             i = strcmp(cmd, "SET network_ip_blacklist_clear");
             if (i == 0) {
-                cprintf(conn, "ip_blacklist SET network_ip_blacklist_clear\n");
+                ipbl_prf2("ip_blacklist SET network_ip_blacklist_clear busy <= 0\n");
+                net.ip_blacklist_update_busy = false;
+                continue;
+            }
+
+            i = strcmp(cmd, "SET network_ip_blacklist_lock");
+            if (i == 0) {
+                ipbl_prf2("ip_blacklist SET network_ip_blacklist_lock busy=%d\n", net.ip_blacklist_update_busy);
+                if (net.ip_blacklist_update_busy) {
+                    ipbl_prf2("ip_blacklist network_ip_blacklist_busy\n");
+                    send_msg(conn, SM_NO_DEBUG, "ADM network_ip_blacklist_busy");
+                } else {
+                    net.ip_blacklist_update_busy = true;
+                    ipbl_prf2("ip_blacklist network_ip_blacklist_locked busy <= 1\n");
+                    send_msg(conn, SM_NO_DEBUG, "ADM network_ip_blacklist_locked");
+                }
+                continue;
+            }
+
+            ipbl_dbg(static int ct);
+            i = strcmp(cmd, "SET network_ip_blacklist_start");
+            if (i == 0) {
+                ipbl_prf2("ip_blacklist SET network_ip_blacklist_start busy=%d\n", net.ip_blacklist_update_busy);
                 #ifdef USE_IPSET
                     ip_blacklist_system("ipset flush ipset-kiwi");
                 #endif
                 ip_blacklist_system("iptables -D INPUT -j KIWI; iptables -F KIWI; iptables -X KIWI; iptables -N KIWI");
                 net.ip_blacklist_len = 0;
+                ipbl_dbg(ct = 0);
+                net.ip_blacklist_update_busy = true;
+                ipbl_prf2("ip_blacklist busy <= 1\n");
                 continue;
             }
 
             char *ip_m = NULL;
             i = sscanf(cmd, "SET network_ip_blacklist=%64ms", &ip_m);
             if (i == 1) {
+                ipbl_dbg(real_printf("%d ", ct++); fflush(stdout));
                 kiwi_str_decode_inplace(ip_m);
                 //ipbl_prf("ip_blacklist %s\n", ip_m);
                 rv = ip_blacklist_add_iptables(ip_m);
@@ -910,16 +936,20 @@ void c2s_admin(void *param)
 
             i = strcmp(cmd, "SET network_ip_blacklist_disable");
             if (i == 0) {
-                ipbl_prf("ip_blacklist SET network_ip_blacklist_disable\n");
+                ipbl_prf2("ip_blacklist SET network_ip_blacklist_disable\n");
                 ip_blacklist_disable();
+                ipbl_dbg(ct = 0);
                 continue;
             }
 
             i = strcmp(cmd, "SET network_ip_blacklist_enable");
             if (i == 0) {
-                ipbl_prf("ip_blacklist SET network_ip_blacklist_enable\n");
+                ipbl_dbg(real_printf("\n"));
+                ipbl_prf2("ip_blacklist SET network_ip_blacklist_enable\n");
                 ip_blacklist_enable();
                 send_msg(conn, SM_NO_DEBUG, "ADM network_ip_blacklist_enabled");
+                net.ip_blacklist_update_busy = false;
+                ipbl_prf2("ip_blacklist SET network_ip_blacklist_enable busy=0\n");
                 continue;
             }
 
