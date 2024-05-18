@@ -43,7 +43,10 @@ static void ip_blacklist_ipset_open()
 static void ip_blacklist_ipset_close()
 {
     ipbl_prf("ip_blacklist_ipset_close\n");
-    fclose(net.isf);
+    if (net.isf != NULL) {
+        fclose(net.isf);
+        net.isf = NULL;
+    }
     ip_blacklist_system("ipset destroy ipset-kiwi-new");
     ip_blacklist_system("ipset restore -file /tmp/ipset-kiwi-new");
     //ip_blacklist_system("ipset list");
@@ -65,7 +68,7 @@ void ip_blacklist_enable()
     #endif
     ip_blacklist_system("iptables -A KIWI -j RETURN");
     #ifdef USE_IPSET
-        ip_blacklist_system("iptables -I KIWI -m set --match-set ipset-kiwi src -j DROP");
+        ip_blacklist_system("iptables -I KIWI -m set --match-set ipset-kiwi src,dst -j DROP");
     #endif
     ip_blacklist_system("iptables -A INPUT -j KIWI");
 }
@@ -154,13 +157,15 @@ int ip_blacklist_add_iptables(char *ip_s, bool use_iptables)
         lprintf("ip_blacklist_add_iptables: \"%s\" rv=%d\n", cmd_p, rv);
         kiwi_asfree(cmd_p);
     } else {
-        char *ip = whitelist? &ip_s[1] : ip_s;      // skip leading '+' of whitelist entry
-        if (net.ip_blacklist_port_only != BL_PORT_NO)
-            fprintf(net.isf, "add ipset-kiwi-new %s%s %s\n", ip,
-            (net.ip_blacklist_port_only != BL_PORT_NO)? stprintf(",%d", net.port): "",
-            whitelist? "nomatch" : "");
-        else
-            fprintf(net.isf, "add ipset-kiwi-new %s %s\n", ip, whitelist? "nomatch" : "");
+        if (net.isf != NULL) {
+            char *ip = whitelist? &ip_s[1] : ip_s;      // skip leading '+' of whitelist entry
+            if (net.ip_blacklist_port_only != BL_PORT_NO)
+                fprintf(net.isf, "add ipset-kiwi-new %s%s %s\n", ip,
+                (net.ip_blacklist_port_only != BL_PORT_NO)? stprintf(",%d", net.port): "",
+                whitelist? "nomatch" : "");
+            else
+                fprintf(net.isf, "add ipset-kiwi-new %s %s\n", ip, whitelist? "nomatch" : "");
+        }
         rv = 0;
     }
     
@@ -373,7 +378,7 @@ bool ip_blacklist_get(bool download_diff_restart)
             #endif
             ip_blacklist_system("iptables -A KIWI -j RETURN");
             #ifdef USE_IPSET
-                ip_blacklist_system("iptables -I KIWI -m set --match-set ipset-kiwi src -j DROP");
+                ip_blacklist_system("iptables -I KIWI -m set --match-set ipset-kiwi src,dst -j DROP");
             #endif
             ip_blacklist_system("iptables -A INPUT -j KIWI");
         } else {

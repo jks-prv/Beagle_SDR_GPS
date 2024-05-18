@@ -730,6 +730,10 @@ int web_request(struct mg_connection *mc, enum mg_event evt) {
 	// iptables will stop regular connection attempts from a blacklisted ip.
 	// But when proxied we need to check the forwarded ip address.
 	// Note that this code always sets ip_forwarded[] as a side-effect for later use (the real client ip).
+	//
+	// check_ip_blacklist() is always called (not just for proxied connections as done previously)
+	// since the internal blacklist is now used by the 24hr auto ban mechanism.
+
 	char ip_forwarded[NET_ADDRSTRLEN];
     check_if_forwarded("WEB", mc, ip_forwarded);
     //printf("WEB mc=%p mc->remote_ip=%s ip_unforwarded=%s ip_forwarded=%s %s\n", mc, mc->remote_ip, ip_unforwarded, ip_forwarded, mc->uri);

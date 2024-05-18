@@ -335,6 +335,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	//
 	// check_ip_blacklist() is always called (not just for proxied connections as done previously)
 	// since the internal blacklist is now used by the 24hr auto ban mechanism.
+
 	char ip_forwarded[NET_ADDRSTRLEN];
     check_if_forwarded("CONN", mc, ip_forwarded);
 	char *ip_unforwarded = ip_remote(mc);
