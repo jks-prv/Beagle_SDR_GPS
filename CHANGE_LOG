@@ -2,6 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.682  May 19, 2024
+    Fixed problem that prevented the new ipset+iptables blacklist filtering from actually working.
+    Filtering was occurring (less efficiently) in the Kiwi server instead. (thanks Stefan HB9TMC)
+    
+    Fixed problem related to the restoration of the auto proxy configuration after a re-flash.
+
 v1.681  May 16, 2024
     Antenna switch: If the "Switch to default antenna when no users connected?" option is set,
     and none of the "Default antenna" checkboxes are selected, then the switch device will be sent
