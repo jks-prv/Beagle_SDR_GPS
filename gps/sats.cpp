@@ -106,7 +106,7 @@ SATELLITE Sats[] = {
     { 3, 0, 0, E1B},    // gsat0212
     { 4, 0, 0, E1B},    // gsat0213
     { 5, 0, 0, E1B},    // gsat0214
-//  { 6, 0, 0, E1B},    // 
+//  { 6, 0, 0, E1B},    // gsat0227 Launched 2024-04-28 under commissioning
     { 7, 0, 0, E1B},    // gsat0207
     { 8, 0, 0, E1B},    // gsat0208
     { 9, 0, 0, E1B},    // gsat0209
@@ -129,7 +129,7 @@ SATELLITE Sats[] = {
     {26, 0, 0, E1B},    // gsat0203
     {27, 0, 0, E1B},    // gsat0217
 //  {28, 0, 0, E1B},    // 
-//  {29, 0, 0, E1B},    // 
+//  {29, 0, 0, E1B},    // gsat0225 Launched 2024-04-28 under commissioning
     {30, 0, 0, E1B},    // gsat0206
     {31, 0, 0, E1B},    // gsat0218
 //  {32, 0, 0, E1B},    // 
