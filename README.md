@@ -1,10 +1,10 @@
-[updated 27 October 2023]
+[updated 24 May 2024]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/kiwi2.780px.jpg)](http://www.kiwisdr.com/ks/kiwi2.1024px.jpg)
 
 Click image for full size.
 
-[![KiwiSDR](http://www.kiwisdr.com/ks/kiwi-with-headphones.130x170.png)© bluebison.net](http://bluebison.net)
+[![KiwiSDR](http://www.kiwisdr.com/ks/kiwi-with-headphones.130x170.png)](http://kiwisdr.com)
 
 KiwiSDR
 =======
@@ -17,11 +17,14 @@ An add-on board ("cape") that turns your Beagle into a web-accessible shortwave 
 ### Details
 
 * Listen live: [List](http://rx.kiwisdr.com), [Map](http://map.kiwisdr.com)
+* [Online Store](https://kiwisdr.nz)
 * [Project webpage](http://www.kiwisdr.com)
 * [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
+* [User Forum](http://forum.kiwisdr.com)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
 * [Design review document](http://kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
-* [Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf)
+* [KiwiSDR 1 Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi.schematic.pdf)
+* [KiwiSDR 2 Schematic](http://www.kiwisdr.com/docs/KiwiSDR/kiwi-2.schematic.pdf)
 
 ### Description
 This SDR is a bit different. It has a web interface that can be used by up to four separate listeners. Each one listening and tuning an independent frequency simultaneously. See the screenshots below.
