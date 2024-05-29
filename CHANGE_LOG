@@ -2,6 +2,24 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.683  May 30, 2024
+    Antenna switch: Fixed problems with Arduino Netshield backend script. (thanks N8OOU)
+
+    CAT interface: Removed newline characters (\r\n) from end of each transmitted CAT string
+    because it was reported to cause problems with some CAT software. (thanks DF6DBF)
+    
+    DX community database: UNID FSK signal at 61.84 is Inskip GBR. (thanks HB9TMC)
+
+    Added entries to satellite table for Galileo gsat0227 and gsat0225 launched 2024-04-28 and
+    currently under commissioning. (thanks F4FPR)
+
+    We have now formally purchased a license to use the Kiwi logo from Hayes Roberts at
+    bluebison.net. Previously we had an informal agreement with Hayes where he allowed us to use
+    the logo provided we always included the domain text "bluebison.net" wherever the logo was used.
+    By purchasing a licence we can now remove the text and make uses of the logo look a bit cleaner.
+    Big thanks to Hayes for giving the KiwiSDR its logo identity recognized by SDR enthusiasts
+    around the world.
+
 v1.682  May 19, 2024
     Fixed problem that prevented the new ipset+iptables blacklist filtering from actually working.
     Filtering was occurring (less efficiently) in the Kiwi server instead. (thanks Stefan HB9TMC)
