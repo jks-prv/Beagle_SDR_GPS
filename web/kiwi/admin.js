@@ -242,6 +242,7 @@ function mode_focus()
    for (i = 0; i < 3; i++) s += rx20_wf;
    w3_innerHTML('id-fw-3ch', s);
 
+   var fmt = 'w3-margin-left w3-valign w3-padding-L-8 w3-border w3-border-light-blue w3-center|width:728px';
    if (admin.is_multi_core) {
       s = rx12_afft + w3_div(fmt, '14 channels total...');
       w3_innerHTML('id-fw-14ch', s);
