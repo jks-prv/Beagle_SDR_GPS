@@ -138,31 +138,26 @@ function mode_html()
 		'<hr>',
 		w3_div('w3-container',
          w3_div('w3-flex w3-margin-B-8',
-            w3_div('w3-text-teal|width:'+ pwpx, ' '),
+            //w3_div('w3-text-teal|width:'+ pwpx, ' '),
             w3_div('w3-text-teal w3-center w3-bold|width:'+ bwpx, 'select FPGA mode'),
             w3_div('id-fw-hdr w3-flex w3-margin-left')
          ),
          
          w3_div('',
-            w3_div('w3-left',
-               w3_div('w3-flex w3-halign-center w3-margin-B-5', w3_img('', 'gfx/kiwi.73x73.jpg', 73, 73)),
-               w3_div('w3-flex w3-halign-center w3-margin-B-5', w3_img('', 'gfx/cowbelly.73x73.jpg', 73, 73)),
-               w3_div('w3-flex',                                w3_img('', 'gfx/kiwi.derp.113x73.jpg', 113, 73)),
-               admin.is_multi_core? w3_div('w3-flex',           w3_img('', 'gfx/kiwi.derp.113x73.jpg', 113, 73)) : ''
-            ),
             w3_sidenav('id-sidenav-fw|width:'+ bwpx +';border-collapse:collapse',
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', 'id-sidenav-fw', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', 'id-sidenav-fw', kiwi.RX8_WF2, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX8_WF2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', 'id-sidenav-fw', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
                admin.is_multi_core? 
-                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'MCORE rx14_wf0', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
+                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Only audio chans', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
                :
                   ''
             ),
             w3_div('w3-margin-left w3-left',
-               w3_div('id-fw-44 w3-flex w3-padding-TB-7'),
-               w3_div('id-fw-82 w3-flex w3-padding-TB-7'),
-               w3_div('id-fw-22 w3-flex w3-padding-TB-7')
+               w3_div('id-fw-4ch w3-flex w3-padding-TB-7'),
+               w3_div('id-fw-8ch w3-flex w3-padding-TB-7'),
+               w3_div('id-fw-3ch w3-flex w3-padding-TB-7'),
+               w3_div('id-fw-14ch w3-flex w3-padding-TB-7')
             )
          ),
          
@@ -228,24 +223,30 @@ function mode_focus()
    w3_innerHTML('id-fw-hdr', s);
 
    //var rx12wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, mode_icon_fft, '<br>', mode_icon_wf);
-   var rx12wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, '<br>', mode_icon_wf);
-   var rx20wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd20, '<br>', mode_icon_wf);
+   var rx12_wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, '<br>', mode_icon_wf);
+   var rx20_wf = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd20, '<br>', mode_icon_wf);
    
-   var rx = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, '<br>', mode_icon_fft);
+   var rx12_afft = w3_div('w3-margin-left w3-border w3-border-light-blue w3-center|width:'+ iwpx, mode_icon_snd12, '<br>', mode_icon_fft);
    
    s = '';
-   for (i = 0; i < 4; i++) s += rx12wf;
+   for (i = 0; i < 4; i++) s += rx12_wf;
    //for (i = 4; i < 8; i++) s += w3_div('w3-margin-left|width:50px', '&nbsp;');
-   w3_innerHTML('id-fw-44', s);
+   w3_innerHTML('id-fw-4ch', s);
 
    s = '';
-   for (i = 0; i < 2; i++) s += rx12wf;
-   for (i = 2; i < 8; i++) s += rx;
-   w3_innerHTML('id-fw-82', s);
+   for (i = 0; i < 2; i++) s += rx12_wf;
+   for (i = 2; i < 8; i++) s += rx12_afft;
+   w3_innerHTML('id-fw-8ch', s);
 
    s = '';
-   for (i = 0; i < 3; i++) s += rx20wf;
-   w3_innerHTML('id-fw-22', s);
+   for (i = 0; i < 3; i++) s += rx20_wf;
+   w3_innerHTML('id-fw-3ch', s);
+
+   var fmt = 'w3-margin-left w3-valign w3-padding-L-8 w3-border w3-border-light-blue w3-center|width:728px';
+   if (admin.is_multi_core) {
+      s = rx12_afft + w3_div(fmt, '14 channels total...');
+      w3_innerHTML('id-fw-14ch', s);
+   }
 }
 
 function firmware_sel_cb_focus(path)

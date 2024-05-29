@@ -1,6 +1,6 @@
 
 
-/* web/openwebrx/openwebrx.min.css (web/openwebrx/openwebrx.css = Tue May 14 12:51:57 2024) */
+/* web/openwebrx/openwebrx.min.css (web/openwebrx/openwebrx.css = Fri May 24 16:53:38 2024) */
 /*
 OpenWebRX (c) Copyright 2013-2014 Andras Retzler <randras@sdr.hu>
 
@@ -53,7 +53,7 @@ This file is part of OpenWebRX.
 		1010    menus
 		1020    admin password
 		1030	iOS play button
-*//* for transition compatibility with W3.CSS */*{box-sizing:border-box;}html,body{margin:0;padding:0;height:100%;font-family:"DejaVu Sans", Verdana, Geneva, sans-serif;overflow:hidden;}/*---- begin id-top-container *//* prevent mouseout generated from mouseover of segmented waterfall elements (id-wf-canvas) from prematurely ending drag */#id-wf-canvas{pointer-events:none;}#id-top-container{position:relative;z-index:129;}.class-top-bar-parts{position:absolute;top:0px;left:0px;width:100%;height:67px;}#id-top-bar-background{background-color:#808080;opacity:0.15;filter:alpha(opacity=15);}#id-top-bar{margin:0;padding:0;}#id-rx-title{position:absolute;left:80px;top:8px;white-space:nowrap;overflow:hidden;cursor:pointer;/*font-family: "DejaVu Sans", Verdana, Geneva, sans-serif;*/color:#909090;font-size:11pt;font-weight:bold;}#id-rx-desc{position:absolute;left:80px;top:29px;white-space:nowrap;overflow:hidden;cursor:pointer;font-size:10pt;color:#909090;}#id-rx-desc a{color:#909090;/*text-decoration: none;*/}#id-rx-antenna{position:absolute;left:150px;top:48px;white-space:nowrap;overflow:hidden;cursor:pointer;font-size:10pt;color:#909090;}#id-owner-info{position:absolute;top:0px;font-size:80%;color:#909090;}#id-ident{position:absolute;top:6px;right:230px;font-size:85%;color:#909090;}/*
+*//* for transition compatibility with W3.CSS */*{box-sizing:border-box;}html,body{margin:0;padding:0;height:100%;font-family:"DejaVu Sans", Verdana, Geneva, sans-serif;overflow:hidden;}/*---- begin id-top-container *//* prevent mouseout generated from mouseover of segmented waterfall elements (id-wf-canvas) from prematurely ending drag */#id-wf-canvas{pointer-events:none;}#id-top-container{position:relative;z-index:129;}.class-top-bar-parts{position:absolute;top:0px;left:0px;width:100%;height:67px;}#id-top-bar-background{background-color:#808080;opacity:0.15;filter:alpha(opacity=15);}#id-top-bar{margin:0;padding:0;}#id-rx-title{position:absolute;left:80px;top:8px;white-space:nowrap;overflow:hidden;cursor:pointer;/*font-family: "DejaVu Sans", Verdana, Geneva, sans-serif;*/color:#909090;font-size:11pt;font-weight:bold;}#id-rx-desc{position:absolute;left:80px;top:29px;white-space:nowrap;overflow:hidden;cursor:pointer;font-size:10pt;color:#909090;}#id-rx-desc a{color:#909090;/*text-decoration: none;*/}#id-rx-antenna{position:absolute;left:80px;top:48px;white-space:nowrap;overflow:hidden;cursor:pointer;font-size:10pt;color:#909090;}#id-owner-info{position:absolute;top:0px;font-size:80%;color:#909090;}#id-ident{position:absolute;top:6px;right:230px;font-size:85%;color:#909090;}/*
 .id-info-1
 {
 	position: absolute;

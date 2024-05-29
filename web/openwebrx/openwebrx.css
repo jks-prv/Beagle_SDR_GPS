@@ -143,7 +143,7 @@ html, body
 #id-rx-antenna
 {
 	position: absolute;
-	left: 150px;
+	left: 80px;
 	top: 48px;
 	white-space:nowrap;
 	overflow: hidden;

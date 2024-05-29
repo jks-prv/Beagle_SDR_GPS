@@ -740,6 +740,11 @@ input[type=range]::-moz-range-thumb {
         w3-padding-smaller  3px 6px
         w3-padding-tiny     2px 4px
         w3-padding-{4,8,12,16,24,32,48,64,128, top,bottom,left,right}
+        w3-padding-L-{8,16}
+        w3-padding-LR-{2,3,4,6,8,10}
+        w3-padding-R-0
+        w3-padding-TB-{0,7,8,10,15,24}
+        w3-padding-B-8
 */
 
 .w3-padding-smaller
@@ -750,6 +755,11 @@ input[type=range]::-moz-range-thumb {
 .w3-padding-0
 {
     padding: 0
+}
+
+.w3-padding-L-8
+{
+    padding-left: 8px
 }
 
 .w3-padding-L-16
@@ -1462,6 +1472,22 @@ input[type=range]::-moz-range-thumb {
 
 .w3-font-24px {
     font-size: 24px !important;
+}
+
+.w3-font-26px {
+    font-size: 26px !important;
+}
+
+.w3-font-28px {
+    font-size: 28px !important;
+}
+
+.w3-font-30px {
+    font-size: 30px !important;
+}
+
+.w3-font-32px {
+    font-size: 32px !important;
 }
 
 .w3-underline {

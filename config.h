@@ -28,10 +28,13 @@ Boston, MA  02110-1301, USA.
 
 typedef enum { ESPEED_AUTO = 0, ESPEED_10M = 1, ESPEED_100M = 2 } espeed_e;
 
+#define FW_CONFIGURED       -2
+#define FW_OTHER            -1
 #define FW_SEL_SDR_RX4_WF4  0
 #define FW_SEL_SDR_RX8_WF2  1
 #define FW_SEL_SDR_RX3_WF3  2
 #define FW_SEL_SDR_RX14_WF0 3
+#define N_FW_SEL            4
 
 #define MAX_RX_CHANS    16      // must be pow2, see coroutines.h:CTF_CHANNEL
 #define MAX_WF_CHANS    4

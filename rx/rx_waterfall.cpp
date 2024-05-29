@@ -935,6 +935,7 @@ void c2s_waterfall(void *param)
                     int f = roundf((wf->start + (i << (MAX_ZOOM - zoom))) * HZperStart);
                     for (j=0; j < dx.masked_len; j++) {
                         dx_mask_t *dmp = &dx.masked_list[j];
+                        //cprintf(conn, "MASKED %.2f|%.2f|%.2f %s\n", dmp->masked_lo/1e3, f/1e3, dmp->masked_hi/1e3, (f >= dmp->masked_lo && f <= dmp->masked_hi)? "Y":"N");
                         if (f >= dmp->masked_lo && f <= dmp->masked_hi) {
                             scale = 0;
                             break;

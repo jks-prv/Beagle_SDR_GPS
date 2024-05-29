@@ -67,10 +67,14 @@ AntSW_GroundAll() {
 }
 
 AntSW_SelectAntenna() {
+	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=$1
+}
+
+AntSW_AddAntenna() {
 	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=+$1
 }
 
-AntSW_DeSelectAntenna() {
+AntSW_RemoveAntenna() {
 	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=-$1
 }
 
