@@ -57,7 +57,7 @@
 [60.00, "CWN", "JJY JPN", "time signal\nID @ xx:15&45:40", {"T5":1, "p":"time,jjy-60"}],
 [60.00, "CWN", "WWVB", "time signal\nno ID, reversed bit pattern", {"T5":1, "p":"time,wwvb-phase"}],
 [60.00, "CWN", "MSF GBR", "time signal", {"T5":1, "p":"time,msf"}],
-[61.83, "CWN", "? FSK", "UNID", {"T8":1}],
+[61.84, "CWN", "Inskip GBR", "FSK", {"T8":1}],
 [62.60, "CW", "FUG FRA", "MSK", {"T8":1}],
 [63.85, "CW", "FTA63 FRA", "FSK", {"T8":1}],
 [65.80, "CW", "FUE FRA", "MSK", {"T8":1}],
