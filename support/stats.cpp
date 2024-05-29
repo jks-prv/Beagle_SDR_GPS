@@ -641,9 +641,10 @@ static void CAT_write_tty(void *param)
         if (last_freqHz != shmem->CAT_last_freqHz) {
             char *s;
             //asprintf(&s, "IF%011d     +000000 000%1d%1d00001 ;\n", shmem->CAT_last_freqHz, /* mode */ 0, /* vfo */ 0);
-            asprintf(&s, "FA%011d;\n", shmem->CAT_last_freqHz);
-            //real_printf("CAT %s", s);
+            asprintf(&s, "FA%011d;", shmem->CAT_last_freqHz);
+            //real_printf("CAT %s", s); fflush(stdout);
             write(CAT_fd, s, strlen(s));
+            fsync(CAT_fd);
             free(s);
             last_freqHz = shmem->CAT_last_freqHz;
         }
