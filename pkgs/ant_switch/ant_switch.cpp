@@ -132,6 +132,8 @@ bool ant_switch_read_denymultiuser(int rx_chan) {
 void ant_switch_check_isConfigured()
 {
 	int i;
+	
+	if (!cfg_true("ant_switch.enable")) return;
 	if (antsw.backend_s && antsw.backend_s[0] != '\0' && strcmp(antsw.backend_s, "No") != 0) {
         for (i = 1; i <= antsw.n_ch && !antsw.isConfigured; i++) {
             char *ant;
@@ -164,7 +166,11 @@ bool ant_switch_check_deny(int rx_chan)
 void ant_switch_select_default_antenna()
 {
 	int i;
-	for (i = 1; i <= antsw.n_ch; i++) {
+
+	if (!cfg_true("ant_switch.enable")) return;
+	bool thunderstorm = cfg_true("ant_switch.thunderstorm");
+	
+	for (i = 1; i <= antsw.n_ch && !thunderstorm; i++) {
 	    char *ant;
 	    asprintf(&ant, "%d", i);
 	    bool isDefault = cfg_true(stprintf("ant_switch.ant%sdefault", ant));
@@ -172,6 +178,7 @@ void ant_switch_select_default_antenna()
 	        printf("ant_switch select_default_antenna <%s>\n", ant);
 	        ant_switch_setantenna(ant);
 	        kiwi_asfree(ant);
+            antsw.thunderstorm_mode = false;
             using_default = true;
 	        break;
 	    }
@@ -179,29 +186,36 @@ void ant_switch_select_default_antenna()
 	}
 
     // if no antennas marked as default then tell switch to ground all (if switch supports)
-	if (!using_default) {
-        printf("ant_switch select_default_antenna <g>\n");
+	if (!using_default || (thunderstorm && !antsw.thunderstorm_mode)) {
+        printf("ant_switch select_default_antenna <g> Tcfg=%d\n", thunderstorm);
         ant_switch_setantenna((char *) "g");
-        using_default = true;
+        if (thunderstorm) {
+            antsw.thunderstorm_mode = true;
+            using_default = false;
+        } else {
+            antsw.thunderstorm_mode = false;
+            using_default = true;
+        }
 	}
 }
 
 void ant_switch_ReportAntenna(conn_t *conn)
 {
-    int rx_chan = conn->rx_channel;
+    int rx_chan = conn? conn->rx_channel : -1;
     char *selected_antennas = ANTSW_SHMEM_ANTS;
 
     if (cfg_true("ant_switch.thunderstorm")) {
         // admin has switched on thunderstorm mode
-        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=1");
+        if (conn)
+            send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=1");
 
         // also ground antenna if not grounded (do only once per transition)
         if (!antsw.thunderstorm_mode) {
             antsw.thunderstorm_mode = true;
-            antsw_rcprintf(rx_chan, "ant_switch rx%d PRE TSTORM-ON prev_selected_antennas=%s\n", rx_chan, selected_antennas);
+            antsw_printf("ant_switch rx%d PRE TSTORM-ON prev_selected_antennas=%s\n", rx_chan, selected_antennas);
             kiwi_strncpy(antsw.last_ant, selected_antennas, N_ANT);
             ant_switch_setantenna((char *) "g");
-            antsw_rcprintf(rx_chan, "ant_switch rx%d POST TSTORM-ON cur_selected_antennas=%s\n", rx_chan, selected_antennas);
+            antsw_printf("ant_switch rx%d POST TSTORM-ON cur_selected_antennas=%s\n", rx_chan, selected_antennas);
             NextTask("ant_switch_ReportAntenna tstorm");
         }
     } else {
@@ -209,9 +223,11 @@ void ant_switch_ReportAntenna(conn_t *conn)
             antsw.thunderstorm_mode = false;
             ant_switch_setantenna(antsw.last_ant);
         }
-        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=0");
-        antsw_rcprintf(rx_chan, "ant_switch rx%d antsw_AntennasAre=%s\n", rx_chan, selected_antennas);
-        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennasAre=%s", selected_antennas);
+        if (conn) {
+            send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=0");
+            antsw_rcprintf(rx_chan, "ant_switch rx%d antsw_AntennasAre=%s\n", rx_chan, selected_antennas);
+            send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennasAre=%s", selected_antennas);
+        }
     }
 
     // setup user notification of antenna change
@@ -229,9 +245,11 @@ void ant_switch_ReportAntenna(conn_t *conn)
         NextTask("ant_switch_ReportAntenna ant chg");
     }
 
-    ant_switch_check_deny(rx_chan);
-    int deny_mixing = ant_switch_read_denymixing()? 1:0;
-    send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennaDenyMixing=%d", deny_mixing);
+    if (conn) {
+        ant_switch_check_deny(rx_chan);
+        int deny_mixing = ant_switch_read_denymixing()? 1:0;
+        send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_AntennaDenyMixing=%d", deny_mixing);
+    }
 }
 
 // called every 10 second
@@ -240,8 +258,13 @@ void ant_switch_poll()
     ant_switch_check_isConfigured();
     
     bool no_users = (kiwi.current_nusers == 0);
-    antsw_printf("ant_switch_poll using_default=%d current_nusers=%d %s\n", using_default, kiwi.current_nusers, no_users? "NO USERS" : "");
-    if (using_default) return;
+    bool enable = cfg_true("ant_switch.enable");
+    bool thunderstorm = cfg_true("ant_switch.thunderstorm");
+
+    antsw_printf("ant_switch_poll using_default=%d enable=%d Tcfg=%d Tmode=%d current_nusers=%d %s\n",
+        using_default, enable, thunderstorm, antsw.thunderstorm_mode, kiwi.current_nusers, no_users? "NO USERS" : "");
+    if (using_default || (thunderstorm && antsw.thunderstorm_mode) || !enable) return;
+
     if (no_users && cfg_true("ant_switch.default_when_no_users")) {
         antsw_printf("ant_switch_poll SET DEFAULT ANTENNA\n");
         ant_switch_select_default_antenna();
@@ -279,6 +302,13 @@ void ant_switch_notify_users()
         if (!c || !c->valid || (c->type != STREAM_SOUND && c->type != STREAM_WATERFALL) || c->internal_connection)
             continue;
         ant_switch_ReportAntenna(c);
+    }
+    
+    // Admin selected thunderstorm mode, but no users connected,
+    // so ant_switch_ReportAntenna() above not called to handle it.
+    if (cfg_true("ant_switch.thunderstorm") && !antsw.thunderstorm_mode) {
+        ant_switch_ReportAntenna(NULL);
+        using_default = false;
     }
 }
 
