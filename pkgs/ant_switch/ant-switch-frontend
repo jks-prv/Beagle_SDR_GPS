@@ -29,6 +29,8 @@ VERSION=2.0
 BACKEND_FILE=/root/kiwi.config/ant-switch-backend
 BACKEND_DIR=/root/Beagle_SDR_GPS/pkgs/ant_switch/backends
 BACKEND_PREFIX=${BACKEND_DIR}/ant-switch-backend-
+BACKEND_DIR2=/root/kiwi.config
+BACKEND_PREFIX2=${BACKEND_DIR2}/ant-switch-backend-
 
 AntSW_LoadBackend() {
     if [ -r $BACKEND_FILE ]; then
@@ -57,7 +59,23 @@ AntSW_SelectBackendMatching() {
         rm -f ${BACKEND_FILE}
         ln -s ${BE} ${BACKEND_FILE}
     else
-        echo "Invalid selection $1. Try again."
+        if [ -d "$BACKEND_DIR2" ]; then
+            BE=$(echo ${BACKEND_PREFIX2}$1*)
+            BE=${BE%% *}
+            BE_NAME=${BE##${BACKEND_PREFIX2}}
+            #echo ${BE}
+            
+            if [ -r "${BE}" ]; then
+                echo "Selected backend: ${BE_NAME}";
+                valid_backend_selected=1
+                rm -f ${BACKEND_FILE}
+                ln -s ${BE} ${BACKEND_FILE}
+            else
+                echo "Invalid selection $1. Try again."
+            fi
+        else
+            echo "Invalid selection $1. Try again."
+        fi
     fi
 }
 
@@ -73,6 +91,17 @@ AntSW_SelectBackend() {
                 name=`echo $name | sed 's/ant-switch-backend-//'`
                 echo $name
             done
+            if [ -d "$BACKEND_DIR2" ]; then
+                be2=`echo ${BACKEND_PREFIX2}*`
+                if [[ ! ("$be2" =~ .*\*.*) ]]; then
+                    for backend in $be2; do
+                        name=`basename $backend`
+                        name=`echo $name | sed 's/ant-switch-backend-//'`
+                        echo $name
+                    done
+                fi
+            fi
+            
             echo ""
             if [[ -z "${BACKEND// }" ]]; then
                 BACKEND="ms-s7-web"
@@ -114,7 +143,21 @@ AntSW_SelectBackendNumber() {
 
 AntSW_EnumerateBackends() {
     cd $BACKEND_DIR
-    echo `echo * | sed 's/ant-switch-backend-//g' | sed 's/common//g'`
+    backends=`echo * | sed 's/ant-switch-backend-//g' | sed 's/ common//g'`
+    cd $BACKEND_DIR2
+    be2=`echo ${BACKEND_PREFIX2}*`
+    if [[ ! ("$be2" =~ .*\*.*) ]]; then
+        backends2=""
+        for backend in $be2; do
+            name=`basename $backend`
+            name=`echo $name | sed 's/ant-switch-backend-//'`
+            backends2="${backends2} ${name}"
+        done
+    else
+        backends2=""
+    fi
+    backends=`echo "${backends} ${backends2}" | xargs`
+    echo "$backends"
 }
 
 AntSW_ShowUsage() {
