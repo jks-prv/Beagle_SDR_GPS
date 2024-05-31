@@ -2,11 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.684  May 31, 2024
+v1.684,685  May 31, 2024
     Antenna switch:
         If switch selector set to disabled no default antenna commands are sent to previously
             selected switch. (thanks N8OOU)
         Setting thunderstorm mode should now override default antenna actions.
+        Custom backend scripts can now be placed in /root/kiwi.config and will be found provided
+            the name conforms to the standard "ant-switch-backend-(name)" convention. (thanks DL3LED)
 
 v1.683  May 30, 2024
     Antenna switch: Fixed problems with Arduino Netshield backend script. (thanks N8OOU)
