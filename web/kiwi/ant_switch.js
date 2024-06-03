@@ -523,21 +523,43 @@ function ant_switch_admin_msg(param)
                ext_set_cfg_param('ant_switch.backend', ant_sw.backend_s, EXT_SAVE);
                console.log('cfg.ant_switch.backend='+ ant_sw.backend_s +' ant_sw.backend='+ ant_sw.backend);
                w3_hide2('id-antsw-backend-info', false);
+               w3_hide2('id-antsw-error', true);
                w3_hide2('id-antsw-container', false);
             }
          } else
          if (!cfg.ant_switch.enable) {
             w3_select_set_if_includes('ant_sw.backend', 'disable');
+            w3_hide2('id-antsw-backend-info', true);
+            w3_hide2('id-antsw-error', true);
+            w3_hide2('id-antsw-container', true);
          }
          ant_switch_users_notify_change();
          return true;
       
+      case "antsw_backend_err":
+         ant_sw.ver = param[1];
+         var s = 'Backend script <x1>'+ ant_sw.backend_s +'</x1> function AntSW_ShowBackend() sent bad configuration data!';
+         w3_innerHTML('id-antsw-error', s);
+         w3_hide2('id-antsw-backend-info', true);
+         w3_hide2('id-antsw-error', false);
+         w3_hide2('id-antsw-container', true);
+
+         w3_select_set_if_includes('ant_sw.backend', 'disable');
+         ext_set_cfg_param('ant_switch.enable', false, EXT_SAVE);
+         ant_switch_users_notify_change();
+         return true;
+         
       case "antsw_ver":
          console.log('antsw_ver='+ param[1]);
          ant_sw.ver = param[1];
          var s = 'Backend script v'+ ant_sw.ver;
          if (ant_sw.ver == '0.0') s = '';
          w3_innerHTML('id-antsw-ver', s);
+         if (cfg.ant_switch.enable) {
+            w3_hide2('id-antsw-backend-info', false);
+            w3_hide2('id-antsw-error', true);
+            w3_hide2('id-antsw-container', false);
+         }
          return true;
          
       case "antsw_nch":
@@ -584,8 +606,11 @@ function ant_switch_backend_cb(path, val, first)
          // there won't be a "antsw_backend" returned to do the notification
          ant_switch_users_notify_change();
    }
-   w3_hide2('id-antsw-backend-info', !enable);
-   w3_hide2('id-antsw-container', !enable);
+   if (!enable) {
+      w3_hide2('id-antsw-backend-info', true);
+      w3_hide2('id-antsw-error', true);
+      w3_hide2('id-antsw-container', true);
+   }
 }
 
 function ant_switch_users_notify_change()
@@ -669,7 +694,8 @@ function ant_switch_config_html()
                   w3_div('id-antsw-ver'),
                   w3_div('id-antsw-mix'),
                   w3_div('id-antsw-ip-url')
-               )
+               ),
+               w3_div('id-antsw-error w3-hide')
             ),
 
             w3_div('id-antsw-container w3-hide',
