@@ -6,7 +6,7 @@
 PLAT="BBAI_64"
 VER="v1.665"
 DEBIAN_VER="11.9"
-CKSUM="0d6abd374a191f466b7e3b51e47c995d8c916a400416b36c13351de3be2db148"
+CKSUM="090f9eead3d478fb3384cbf89cd13df0a119e2090e3b7cbfb5180cd3d0ffc06b"
 
 HOST="http://kiwisdr.com/files"
 DISTRO="KiwiSDR_${VER}_${PLAT}_Debian_${DEBIAN_VER}.img.xz"
