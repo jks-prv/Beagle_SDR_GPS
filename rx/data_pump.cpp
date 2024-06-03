@@ -63,6 +63,13 @@ struct rx_data_t {
 } __attribute__((packed));
 static rx_data_t *rxd;
 
+// Must copy to intermediate buffer because real_printf() delay would otherwise cause
+// buffer being inspected to be overwritten.
+//#define DP_DUMP_WB
+#ifdef DP_DUMP_WB
+    static rx_data_t rxd_debug;
+#endif
+
 struct rx_trailer_t {
 	u2_t ticks[3];
 	u2_t write_ctr_stored, write_ctr_current;
@@ -70,7 +77,9 @@ struct rx_trailer_t {
 static rx_trailer_t *rxt;
 
 // rescale factor from hardware samples to what CuteSDR code is expecting
-const TYPEREAL cicf_gain_dB[] = { 4.5, 4.5, 4.5 + 8.6, 4.5 };   // empirical measurement using sig gen
+const TYPEREAL cicf_gain_dB[N_FW_SEL] = {
+    4.5, 4.5, 4.5 + 8.6, 4.5, 4.5    // empirical measurement using sig gen
+};
 static TYPEREAL rescale;
 
 static int rx_xfer_size;
@@ -86,6 +95,9 @@ static void snd_service()
 	int j;
 	SPI_MISO *miso = &SPI_SHMEM->dpump_miso;
 	u4_t diff, moved=0;
+	
+	//jksx
+	static u4_t ginc;
 
     evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", "snd_service() BEGIN");
     do {
@@ -143,7 +155,7 @@ static void snd_service()
         #endif
     
         TYPECPX *i_samps[MAX_RX_CHANS];
-        for (int ch=0; ch < rx_chans; ch++) {
+        for (int ch = 0; ch < rx_all_chans; ch++) {
             rx_dpump_t *rx = &rx_dpump[ch];
             i_samps[ch] = rx->in_samps[rx->wr_pos];
         }
@@ -155,61 +167,166 @@ static void snd_service()
             static int debug_ticks;
             if (debug_ticks >= 1024 && debug_ticks < 1024+8) {
                 for (int j=-1; j>-2; j--) {
-                    real_printf("debug_iq3 %d %d(%d*%d) %02x%04x %02x%04x\n", j, nrx_samps*rx_chans+j, nrx_samps, rx_chans,
-                        rxd->iq_t[nrx_samps*rx_chans+j].i3, rxd->iq_t[nrx_samps*rx_chans+j].i,
-                        rxd->iq_t[nrx_samps*rx_chans+j].q3, rxd->iq_t[nrx_samps*rx_chans+j].q);
+                    real_printf("debug_iq3 %d %d(%d*%d) %02x%04x %02x%04x\n", j, nrx_samps*rx_buf_chans+j, nrx_samps, rx_buf_chans,
+                        rxd->iq_t[nrx_samps*rx_buf_chans+j].i3, rxd->iq_t[nrx_samps*rx_buf_chans+j].i,
+                        rxd->iq_t[nrx_samps*rx_buf_chans+j].q3, rxd->iq_t[nrx_samps*rx_buf_chans+j].q);
                 }
                 real_printf("debug_ticks %04x[2] %04x[1] %04x[0]\n", rxt->ticks[2], rxt->ticks[1], rxt->ticks[0]);
                 real_printf("debug_bufcnt %04x\n\n", rxt->write_ctr_stored);
             }
             debug_ticks++;
         #endif
-
-        // NB: I/Q reversed below to get correct sideband polarity
-        // i.e. normal case: re=q im=i; spectral_inversion case: re=i im=q
-        // Probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin
-        // but we never took the time to verify this.
-        if (kiwi.spectral_inversion) {
+        
+        if (kiwi.isWB) {
+            #ifdef DP_DUMP_WB
+                rx_iq_t *iqd_p = rxd_debug.iq_t;
+                #define DP_DUMP_GO 100
+                static u4_t go;
+            #endif
+    
             for (j=0; j < nrx_samps; j++) {
 
-                for (int ch=0; ch < rx_chans; ch++) {
-                    if (rx_channels[ch].data_enabled) {
-                        s4_t i, q;
-                        i = S24_8_16(iqp->i3, iqp->i);
-                        q = S24_8_16(iqp->q3, iqp->q);
+                // rx0:
+                if (rx_channels[0].data_enabled) {
+                    s4_t i, q;
+                    i = S24_8_16(iqp->i3, iqp->i);
+                    q = S24_8_16(iqp->q3, iqp->q);
 
-                        i_samps[ch]->re = i * rescale + DC_offset_I;
-                        i_samps[ch]->im = q * rescale + DC_offset_Q;
-                        i_samps[ch]++;
+                    // NB: I/Q reversed to get correct sideband polarity; fixme: why?
+                    // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
+                    i_samps[0]->re = q * rescale + DC_offset_I;
+                    i_samps[0]->im = i * rescale + DC_offset_Q;
+                    i_samps[0]++;
+                }
+
+                #ifdef DP_DUMP_WB
+                    if (go == DP_DUMP_GO) {
+                        iqd_p->i = iqp->i;
+                        iqd_p->i3 = iqp->i3;
+                        iqd_p->q = iqp->q;
+                        iqd_p->q3 = iqp->q3;
+                        iqd_p++;
                     }
-            
+                #endif
+
+                iqp++;
+                
+                // rx1: wb0..wb[rx_buf_chans-2]
+                for (int wb = 0; wb < rx_buf_chans-1; wb++) {
+                    if (rx_channels[1].data_enabled) {
+                        //#define WB_PATTERN
+                        #ifdef WB_PATTERN
+                            s4_t i, q;
+                            i = S24_8_16(iqp->i3, iqp->i);
+                            q = S24_8_16(iqp->q3, iqp->q);
+
+                            i_samps[1]->re = i;     // preserve bit pattern (i.e. no scaling)
+                            i_samps[1]->im = q;
+                        #else
+                            s4_t i, q;
+                            i = S24_8_16(iqp->i3, iqp->i);
+                            q = S24_8_16(iqp->q3, iqp->q);
+        
+                            // zero fill
+                            // for RX2_BITS = 18
+                            // 2222 1111 111111
+                            // 3210 9876 54321098 76543210
+                            // Sddd dddd dddddddd dd000000
+                            // 1       1            123456
+                            // 7       0 9         0
+                            
+                            i_samps[1]->re = q >> 6;
+                            i_samps[1]->im = i >> 6;
+                        #endif
+                        i_samps[1]++;
+                    }
+
+                    #ifdef DP_DUMP_WB
+                        if (go == DP_DUMP_GO) {
+                            iqd_p->i = iqp->i;
+                            iqd_p->i3 = iqp->i3;
+                            iqd_p->q = iqp->q;
+                            iqd_p->q3 = iqp->q3;
+                            iqd_p++;
+                        }
+                    #endif
+
                     iqp++;
                 }
             }
-        } else {
-            for (j=0; j < nrx_samps; j++) {
-
-                for (int ch=0; ch < rx_chans; ch++) {
-                    if (rx_channels[ch].data_enabled) {
-                        s4_t i, q;
-                        i = S24_8_16(iqp->i3, iqp->i);
-                        q = S24_8_16(iqp->q3, iqp->q);
-
-                        // NB: I/Q reversed to get correct sideband polarity; fixme: why?
-                        // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
-                        i_samps[ch]->re = q * rescale + DC_offset_I;
-                        i_samps[ch]->im = i * rescale + DC_offset_Q;
-                        i_samps[ch]++;
+        
+            #ifdef DP_DUMP_WB
+                if (go == DP_DUMP_GO) {
+                    iqd_p = rxd_debug.iq_t;
+                    for (j=0; j < nrx_samps; j++) {
+                        real_printf("RX0 %04d: ", j);
+                        for (int ch=0; ch < rx_buf_chans; ch++) {
+                            //#define DP_DUMP_HEX
+                            #ifdef DP_DUMP_HEX
+                                real_printf("[ch%d %02x|%02x|%04x|%04x] ", ch, iqd_p->i3, iqd_p->q3, iqd_p->i, iqd_p->q);
+                            #else
+                                s4_t i, q;
+                                i = S24_8_16(iqd_p->i3, iqd_p->i);
+                                q = S24_8_16(iqd_p->q3, iqd_p->q);
+                                real_printf("[ch%d %6d|%6d] ", ch, i, q);
+                            #endif
+                            iqd_p++;
+                        }
+                        real_printf("\n"); fflush(stdout);
                     }
-            
-                    iqp++;
+                }
+                
+                go++;
+            #endif
+        } else {
+
+            // NB: I/Q reversed below to get correct sideband polarity
+            // i.e. normal case: re=q im=i; spectral_inversion case: re=i im=q
+            // Probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin
+            // but we never took the time to verify this.
+            if (kiwi.spectral_inversion) {
+                for (j=0; j < nrx_samps; j++) {
+    
+                    for (int ch=0; ch < rx_chans; ch++) {
+                        if (rx_channels[ch].data_enabled) {
+                            s4_t i, q;
+                            i = S24_8_16(iqp->i3, iqp->i);
+                            q = S24_8_16(iqp->q3, iqp->q);
+    
+                            i_samps[ch]->re = i * rescale + DC_offset_I;
+                            i_samps[ch]->im = q * rescale + DC_offset_Q;
+                            i_samps[ch]++;
+                        }
+                        
+                        iqp++;
+                    }
+                }
+            } else {
+                for (j=0; j < nrx_samps; j++) {
+    
+                    for (int ch=0; ch < rx_chans; ch++) {
+                        if (rx_channels[ch].data_enabled) {
+                            s4_t i, q;
+                            i = S24_8_16(iqp->i3, iqp->i);
+                            q = S24_8_16(iqp->q3, iqp->q);
+    
+                            // NB: I/Q reversed to get correct sideband polarity; fixme: why?
+                            // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
+                            i_samps[ch]->re = q * rescale + DC_offset_I;
+                            i_samps[ch]->im = i * rescale + DC_offset_Q;
+                            i_samps[ch]++;
+                        }
+                        iqp++;
+                    }
                 }
             }
         }
     
-        for (int ch=0; ch < rx_chans; ch++) {
+        for (int ch=0; ch < rx_all_chans; ch++) {
+            //if (ch == 1) real_printf("%d:en%d ", ch, rx_channels[ch].data_enabled); fflush(stdout);
             if (rx_channels[ch].data_enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
+                //real_printf("%d:%d ", ch, rx->wr_pos); fflush(stdout);
 
                 rx->ticks[rx->wr_pos] = S16x4_S64(0, rxt->ticks[2], rxt->ticks[1], rxt->ticks[0]);
     
@@ -217,15 +334,24 @@ static void snd_service()
                     rx->in_seq[rx->wr_pos] = snd_seq;
                 #endif
                 
-                rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
+                if (0 && kiwi.isWB && ch == 1) {
+                    for (j = 0; j < (rx_buf_chans-1); j++) {
+                        rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
+                        rx_channels[ch].wr++;
+                    }
+                } else {
+                    rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
+                    rx_channels[ch].wr++;
+                }
                 
                 diff = (rx->wr_pos >= rx->rd_pos)? rx->wr_pos - rx->rd_pos : N_DPBUF - rx->rd_pos + rx->wr_pos;
                 dpump.in_hist[diff]++;
 
                 //#define DATA_PUMP_DEBUG
                 #ifdef DATA_PUMP_DEBUG
+                    real_printf("."); fflush(stdout);
                     if (rx->wr_pos == rx->rd_pos) {
-                        real_printf("#%d ", ch); fflush(stdout);
+                        real_printf(" #%d ", ch); fflush(stdout);
                     }
                 #endif
             }
@@ -265,7 +391,7 @@ static void snd_service()
             
 		    memset(dpump.hist, 0, sizeof(dpump.hist));
             memset(dpump.in_hist, 0, sizeof(dpump.in_hist));
-            spi_set(CmdSetRXNsamps, nrx_samps);
+            spi_set(CmdSetRXNsamps, nrx_samps_wb);
             diff = 0;
         } else {
             dpump.hist[diff]++;
@@ -328,7 +454,7 @@ static void data_pump(void *param)
 
 		snd_service();
 		
-		for (int ch=0; ch < rx_chans; ch++) {
+		for (int ch=0; ch < rx_all_chans; ch++) {
 			rx_chan_t *rx = &rx_channels[ch];
 			if (!rx->chan_enabled) continue;
 			conn_t *c = rx->conn;
@@ -345,7 +471,7 @@ void data_pump_start_stop()
 {
 #ifdef USE_SDR
 	bool no_users = true;
-	for (int i = 0; i < rx_chans; i++) {
+	for (int i = 0; i < rx_all_chans; i++) {
         rx_chan_t *rx = &rx_channels[i];
 		if (rx->chan_enabled) {
 			no_users = false;
@@ -366,7 +492,7 @@ void data_pump_start_stop()
 	if (!itask_run && !no_users) {
 		itask_run = true;
 		ctrl_clr_set(CTRL_SND_INTR, 0);
-		spi_set(CmdSetRXNsamps, nrx_samps);
+		spi_set(CmdSetRXNsamps, nrx_samps_wb);
 		//real_printf("#### START dpump\n");
 		last_run_us = 0;
 	}
@@ -378,15 +504,15 @@ void data_pump_start_stop()
 void data_pump_init()
 {
     #ifdef SND_SEQ_CHECK
-        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(rx_iq_t) * nrx_samps * rx_chans);
+        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(rx_iq_t) * nrx_samps * rx_buf_chans);
     #else
-        rx_xfer_size = sizeof(rx_iq_t) * nrx_samps * rx_chans;
+        rx_xfer_size = sizeof(rx_iq_t) * nrx_samps * rx_buf_chans;
     #endif
 	rxd = (rx_data_t *) &SPI_SHMEM->dpump_miso.word[0];
 	rxt = (rx_trailer_t *) ((char *) rxd + rx_xfer_size);
 	rx_xfer_size += sizeof(rx_trailer_t);
-	//printf("rx_trailer_t=%d rx_iq_t=%d rx_xfer_size=%d rxd=%p rxt=%p\n",
-	//    sizeof(rx_trailer_t), sizeof(rx_iq_t), rx_xfer_size, rxd, rxt);
+	//printf("rx_trailer_t=%d rx_iq_t=%d rx_xfer_size=%d rxd=%p rxt=%p nrx_samps_loop=%d nrx_samps_rem=%d\n",
+	//    sizeof(rx_trailer_t), sizeof(rx_iq_t), rx_xfer_size, rxd, rxt, nrx_samps_loop, nrx_samps_rem);
 
 	// verify that audio samples will fit in hardware buffers
 	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b
@@ -398,7 +524,7 @@ void data_pump_init()
 	assert(FASTFIR_OUTBUF_SIZE > nrx_samps);
 	
 	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, cicf_gain_dB[fw_sel]/20.0) : 1);
-	//printf("data pump: rescale=%.6g VAL_USE_RX_CICF=%d\n", rescale, VAL_USE_RX_CICF);
+	//printf("data pump: fw_sel=%d RXOUT_SCALE=%d CUTESDR_SCALE=%d cicf_gain_dB=%.1f rescale=%.6g VAL_USE_RX_CICF=%d DC_offset_I=%f DC_offset_Q=%f\n", fw_sel, RXOUT_SCALE, CUTESDR_SCALE, cicf_gain_dB[fw_sel], rescale, VAL_USE_RX_CICF, DC_offset_I, DC_offset_Q);
 
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR);
 }

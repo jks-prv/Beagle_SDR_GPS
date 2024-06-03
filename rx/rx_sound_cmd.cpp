@@ -80,12 +80,19 @@ Boston, MA  02110-1301, USA.
 void rx_sound_set_freq(conn_t *conn, snd_t *s)
 {
     int rx_chan = conn->rx_channel;
+    bool isWB = (kiwi.isWB && rx_chan == 1);
+    int rx_chan_wb = isWB? 0 : rx_chan;
+
     double freq_kHz = s->freq * kHz;
     double freq_inv_kHz = ui_srate - freq_kHz;
     double f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
     u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
-    //cprintf(conn, "SND UPD freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n",
-    //    s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
+    cprintf(conn, "SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", rx_chan_wb,
+        s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
+    if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan_wb, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+    
+    //jksx
+    if (isWB)
     if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
 }
 
@@ -109,6 +116,9 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
 {
     int j, k;
 	int rx_chan = conn->rx_channel;
+    bool isWB = (kiwi.isWB && rx_chan == 1);
+    int rx_chan_wb = isWB? 0 : rx_chan;
+
 	snd_t *s = &snd_inst[rx_chan];
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
 
@@ -376,21 +386,23 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
 
     case CMD_GEN_FREQ:
         n = sscanf(cmd, "SET gen=%lf", &s->gen);
-        if (n == 1 && rx_chan == 0) {
-            //cprintf(conn, "SET gen=%lf\n", &s->gen);
+        if (n == 1) {
             did_cmd = true;
-            if (s->gen != 0 && !s->gen_enable) s->gen_enable = true;
-            rx_gen_set_freq(conn, s);
-            if (s->gen == 0 && s->gen_enable) s->gen_enable = false;
+            if (rx_chan == 0) {
+                //cprintf(conn, "SET gen=%lf\n", &s->gen);
+                if (s->gen != 0 && !s->gen_enable) s->gen_enable = true;
+                rx_gen_set_freq(conn, s);
+                if (s->gen == 0 && s->gen_enable) s->gen_enable = false;
+            }
         }
         break;
 
     case CMD_GEN_ATTN:
         int _genattn;
         n = sscanf(cmd, "SET genattn=%d", &_genattn);
-        if (n == 1 && rx_chan == 0) {
+        if (n == 1) {
             did_cmd = true;
-            if (1 || s->genattn != _genattn) {
+            if (rx_chan == 0 && s->genattn != _genattn) {
                 s->genattn = _genattn;
                 if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) s->genattn);
                 //cprintf(conn, "GEN_ATTN %d 0x%x\n", s->genattn, genattn);

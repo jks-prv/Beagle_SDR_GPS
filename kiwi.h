@@ -60,6 +60,7 @@ typedef struct {
     int restart_delay;
 
     bool ext_clk;
+    bool isWB;
     bool allow_admin_conns;
     bool spectral_inversion, spectral_inversion_lockout;
     bool require_id;

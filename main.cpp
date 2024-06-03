@@ -63,8 +63,9 @@ Boston, MA  02110-1301, USA.
 kiwi_t kiwi;
 
 int version_maj, version_min;
-int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem,
-    snd_rate, rx_decim;
+int fw_sel, fpga_id, rx_chans, rx_all_chans, rx_buf_chans, wf_chans, wb_chans, nrx_bufs,
+    nrx_samps, nrx_samps_wb, nrx_samps_loop, nrx_samps_rem,
+    snd_rate, wb_rate, rx_decim, rx1_decim, rx2_decim;
 
 int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
 	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
@@ -114,8 +115,6 @@ int main(int argc, char *argv[])
 	eeprom_action_e eeprom_action = EE_NORM;
 	bool err;
 
-	#define FW_CONFIGURED   -2  // -2 because -1 means "other" firmware and 0-N is Kiwi firmware
-	#define FW_OTHER        -1
 	int fw_sel_override = FW_CONFIGURED;
 	int fw_test = 0;
 	
@@ -356,12 +355,16 @@ int main(int argc, char *argv[])
     bool update_admcfg = false;
     if (update_admcfg) admcfg_save_json(cfg_adm.json);      // during init doesn't conflict with admin cfg
     
+    // rx_buf_chans: USE_WB uses this many equivalent buffer channels
+
     if (fw_sel == FW_SEL_SDR_RX4_WF4) {
         fpga_id = FPGA_ID_RX4_WF4;
         rx_chans = 4;
         wf_chans = 4;
         snd_rate = SND_RATE_4CH;
         rx_decim = RX_DECIM_4CH;
+        rx1_decim = RX1_STD_DECIM;
+        rx2_decim = RX2_STD_DECIM;
         nrx_bufs = RXBUF_SIZE_4CH / NRX_SPI;
         lprintf("firmware: SDR_RX4_WF4\n");
     } else
@@ -371,6 +374,8 @@ int main(int argc, char *argv[])
         wf_chans = 2;
         snd_rate = SND_RATE_8CH;
         rx_decim = RX_DECIM_8CH;
+        rx1_decim = RX1_STD_DECIM;
+        rx2_decim = RX2_STD_DECIM;
         nrx_bufs = RXBUF_SIZE_8CH / NRX_SPI;
         lprintf("firmware: SDR_RX8_WF2\n");
     } else
@@ -380,6 +385,8 @@ int main(int argc, char *argv[])
         wf_chans = 3;
         snd_rate = SND_RATE_3CH;
         rx_decim = RX_DECIM_3CH;
+        rx1_decim = RX1_WIDE_DECIM;
+        rx2_decim = RX2_WIDE_DECIM;
         nrx_bufs = RXBUF_SIZE_3CH / NRX_SPI;
         lprintf("firmware: SDR_RX3_WF3\n");
     } else
@@ -390,12 +397,42 @@ int main(int argc, char *argv[])
         gps_chans = GPS_RX14_CHANS;
         snd_rate = SND_RATE_14CH;
         rx_decim = RX_DECIM_14CH;
+        rx1_decim = RX1_STD_DECIM;
+        rx2_decim = RX2_STD_DECIM;
         nrx_bufs = RXBUF_SIZE_14CH / NRX_SPI;
         lprintf("firmware: SDR_RX14_WF0\n");
+    } else
+    if (fw_sel == FW_SEL_SDR_WB) {
+        fpga_id = FPGA_ID_WB;
+        rx_chans = 1;
+        wf_chans = 1;
+        wb_chans = 1;
+        snd_rate = SND_RATE_WB;
+        wb_rate  = WB_RATE;
+        rx_decim = RX_DECIM_WB;
+        rx1_decim = RX1_WB_DECIM;
+        rx2_decim = RX2_WB_DECIM;
+        nrx_bufs = RXBUF_SIZE_WB / NRX_SPI;
+        kiwi.isWB = true;
+        lprintf("firmware: SDR_WB\n");
     } else {
         fpga_id = FPGA_ID_OTHER;
         lprintf("firmware: OTHER\n");
     }
+    
+    //          rx_chans
+    //          |   rx_all_chans
+    //          |   |   rx_buf_chans
+    //          |   |   |   wb_chans
+    //          |   |   |   |
+    // rx4      4   4   4   0
+    // rx3      3   3   3   0
+    // rx8      8   8   8   0
+    // rx14     14  14  14  0
+    // wb       1   2   7   1
+    
+    rx_buf_chans = kiwi.isWB? V_WB_BUF_CHANS : rx_chans;
+    rx_all_chans = kiwi.isWB? 2 : rx_chans;
     
     if (fpga_id == FPGA_ID_OTHER) {
         fpga_file = strdup((char *) "other");
@@ -406,19 +443,27 @@ int main(int argc, char *argv[])
         if (err) no_wf = false;
         if (no_wf) wf_chans = 0;
 
-        lprintf("firmware: rx_chans=%d wf_chans=%d gps_chans=%d\n", rx_chans, wf_chans, gps_chans);
+        lprintf("firmware: rx_chans=%d rx_all_chans=%d rx_buf_chans=%d wb_chans=%d wf_chans=%d gps_chans=%d\n",
+            rx_chans, rx_all_chans, rx_buf_chans, wb_chans, wf_chans, gps_chans);
 
-        assert(rx_chans <= MAX_RX_CHANS);
+        assert(rx_buf_chans <= MAX_RX_CHANS);
         assert(wf_chans <= MAX_WF_CHANS);
+        assert(wb_chans <= MAX_WB_CHANS);
 
-        nrx_samps = NRX_SAMPS_CHANS(rx_chans);
-        nrx_samps_loop = nrx_samps * rx_chans / NRX_SAMPS_RPT;
-        nrx_samps_rem = (nrx_samps * rx_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
+        nrx_samps = NRX_SAMPS_CHANS(rx_buf_chans);
+        nrx_samps_loop = nrx_samps * rx_buf_chans / NRX_SAMPS_RPT;
+        nrx_samps_rem = (nrx_samps * rx_buf_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
+        //snd_intr_usec = 1e6 / ((float) (kiwi.isWB? wb_rate : snd_rate)/nrx_samps);
         snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
-        lprintf("firmware: RX rx_decim=%d RX1_STD_DECIM=%d RX2_STD_DECIM=%d USE_RX_CICF=%d\n",
-            rx_decim, RX1_STD_DECIM, RX2_STD_DECIM, VAL_USE_RX_CICF);
+        lprintf("firmware: RX rx_decim=%d RX1_DECIM=%d RX2_DECIM=%d USE_RX_CICF=%d\n",
+            rx_decim, rx1_decim, rx2_decim, VAL_USE_RX_CICF);
         lprintf("firmware: RX srate=%.3f(%d) bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
             ext_update_get_sample_rateHz(ADC_CLK_TYP), snd_rate, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
+
+        // NB: For wideband the value used by rx_audio_mem_wb.v must be (nrx_samps * V_WB_BUF_CHANS),
+        // not simply nrx_samps, because the verilog loop counts each DDC avail separately.
+        // This value is transmitted via spi_set(CmdSetRXNsamps, nrx_samps_wb) in the data_pump.
+        nrx_samps_wb = kiwi.isWB? (nrx_samps * V_WB_BUF_CHANS) : nrx_samps;
 
         assert(nrx_bufs <= MAX_NRX_BUFS);
         assert(nrx_samps <= MAX_NRX_SAMPS);
@@ -427,7 +472,7 @@ int main(int argc, char *argv[])
         lprintf("firmware: WF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
             NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);
 
-        rx_num = rx_chans, wf_num = wf_chans;
+        rx_num = rx_all_chans, wf_num = wf_chans;
         monitors_max = (rx_chans * N_CAMP) + N_QUEUERS;
     }
     

@@ -19,13 +19,20 @@ Boston, MA  02110-1301, USA.
 // Copyright (c) 2013 Phil Harman, VK6APH
 // Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
-module rx (
+module rx_wb (
 	input  wire		   adc_clk,
 	input  wire signed [IN_WIDTH-1:0] adc_data,
 	input  wire		   rd_getI,
 	input  wire		   rd_getQ,
+	input  wire		   rd_getWB,
 	output wire		   rx_avail_A,
+	output reg		   rx_avail_wb_A,
 	output wire [15:0] rx_dout_A,
+
+    // debug
+	input  wire [ 3:0] rxn_i,
+	input  wire [15:0] waddr_i,
+	input  wire [15:0] count_i,
 
 	input  wire		   cpu_clk,
     input  wire [31:0] freeze_tos_A,
@@ -87,6 +94,9 @@ cic_prune_var #(.INC_FILE("rx1"), .STAGES(RX1_STAGES), .DECIM_TYPE(RX1_DECIM), .
 		.in_data		(rx_mix_q),
 		.out_data		(rx_cic1_out_q)
     );
+    
+    always @ (posedge adc_clk)
+        rx_avail_wb_A <= rx_cic1_avail;     // delay 1 ADC clk to align with rx_cic2_avail/rx_avail_A
 
     wire rx_cic2_avail;
 
@@ -145,9 +155,51 @@ fir_iq #(.WIDTH(RXO_BITS))
 `endif
 
 	reg [15:0] rx_dout;
+	
 	always @*
-		rx_dout = rd_getI? rx_cic_out_i[15:0] : ( rd_getQ? rx_cic_out_q[15:0] : {rx_cic_out_i[RXO_BITS-1 -:8], rx_cic_out_q[RXO_BITS-1 -:8]} );
+	    if (rd_getWB)
+	    begin
+//`define WB_PATTERN
+`ifdef WB_PATTERN
+            case (rxn_i)
+                0: rx_dout = rd_getI? count_i : (rd_getQ? 16'h0def : 16'h0a0b);
+                1: rx_dout = rd_getI? count_i : (rd_getQ? 16'h1def : 16'h1a1b);
+                2: rx_dout = rd_getI? count_i : (rd_getQ? 16'h2def : 16'h2a2b);
+                3: rx_dout = rd_getI? count_i : (rd_getQ? 16'h3def : 16'h3a3b);
+                4: rx_dout = rd_getI? count_i : (rd_getQ? 16'h4def : 16'h4a4b);
+                5: rx_dout = rd_getI? count_i : (rd_getQ? 16'h5def : 16'h5a5b);
+                6: rx_dout = rd_getI? count_i : (rd_getQ? 16'h6def : 16'h6a6b);
+                7: rx_dout = rd_getI? count_i : (rd_getQ? 16'h7def : 16'h7a7b);
+                default: rx_dout = 16'hcafe;
+            endcase
+`else
+            // sign extend
+            // for RX2_BITS = 18
+            // 2222 1111 111111
+            // 3210 9876 54321098 76543210
+            // eeee eeSd dddddddd dddddddd
+            //        12 345678
+            //                 12 34567890
+            
+		    //rx_dout = rd_getI? rx_cic1_out_i[15:0] : ( rd_getQ? rx_cic1_out_q[15:0] :
+		    //    { {{6{rx_cic1_out_i[17]}}, rx_cic1_out_i[17 -:2]}, {{6{rx_cic1_out_q[17]}}, rx_cic1_out_q[17 -:2]} } );
 
+            // zero fill
+            // for RX2_BITS = 18
+            // 2222 1111 111111
+            // 3210 9876 54321098 76543210
+            // Sddd dddd dddddddd dd000000
+            // 1       1            123456
+            // 7       0 9         0
+            
+		    rx_dout = rd_getI? {rx_cic1_out_i[9:0], 6'b0} : ( rd_getQ? {rx_cic1_out_q[9:0], 6'b0} :
+		        { rx_cic1_out_i[17:10], rx_cic1_out_q[17:10] } );
+`endif
+	    end else
+	    begin
+		    rx_dout = rd_getI? rx_cic_out_i[15:0] : ( rd_getQ? rx_cic_out_q[15:0] : {rx_cic_out_i[RXO_BITS-1 -:8], rx_cic_out_q[RXO_BITS-1 -:8]} );
+        end
+        
 	assign rx_dout_A = rx_dout;
 
 endmodule

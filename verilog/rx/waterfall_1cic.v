@@ -82,7 +82,7 @@ module WATERFALL_1CIC (
 
 	SYNC_PULSE set_decim_inst (.in_clk(cpu_clk), .in(wf_sel_C && set_wf_decim_C), .out_clk(adc_clk), .out(set_wf_decim_A));
 
-	localparam MD = clog2(WF_1CIC_MAXD) + 1;		// +1 because need to represent WF_1CIC_MAXD, not WF_1CIC_MAXD-1
+	localparam MD = max(1, clog2(WF_1CIC_MAXD));    // +1 because need to represent WF_1CIC_MAXD, not WF_1CIC_MAXD-1
 	// see freeze_tos_A[] below
 	// assert_cond(WF_1CIC_MAXD <= 32768);
 	// assert_cond(MD <= 16);
@@ -103,7 +103,7 @@ module WATERFALL_1CIC (
     
     // decim = 1 .. WF_1CIC_MAXD
 
-    cic_prune_var #(.INCLUDE("wf1"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+    cic_prune_var #(.INC_FILE("wf1"), .STAGES(WF1_STAGES), .DECIM_TYPE(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
     wf_cic_i(
         .clock			(adc_clk),
         .reset			(rst_wf_samp_wr_A),
@@ -114,7 +114,7 @@ module WATERFALL_1CIC (
         .out_data		(wf_cic_out_i)
     );
 
-    cic_prune_var #(.INCLUDE("wf1"), .STAGES(WF1_STAGES), .DECIMATION(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
+    cic_prune_var #(.INC_FILE("wf1"), .STAGES(WF1_STAGES), .DECIM_TYPE(-WF_1CIC_MAXD), .GROWTH(WF1_GROWTH), .IN_WIDTH(WF1_BITS), .OUT_WIDTH(WFO_BITS))
     wf_cic_q(
         .clock			(adc_clk),
         .reset			(rst_wf_samp_wr_A),

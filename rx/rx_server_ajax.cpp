@@ -35,6 +35,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "dx.h"
 #include "rx.h"
+#include "rx_server.h"
 #include "rx_server_ajax.h"
 #include "rx_util.h"
 #include "security.h"
@@ -670,17 +671,18 @@ fail:
 		if (!admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED)) tdoa_ch = -1;
 		
 		bool has_20kHz = (snd_rate == SND_RATE_3CH);
+		bool has_WB = (fw_sel == FW_SEL_SDR_WB);
 		bool has_GPS = (clk.adc_gps_clk_corrections > 8);
 		bool has_tlimit = (inactivity_timeout_mins || ip_limit_mins);
 		bool has_masked = (dx.masked_len > 0);
 		bool has_limits = (has_tlimit || has_masked);
-		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
+		bool has_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
 		dx_db_t *dx_db = &dx.dx_db[DB_STORED];
 		
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
 			"name=%s\n"
-			"sdr_hw=KiwiSDR %d v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
+			"sdr_hw=KiwiSDR %d v%d.%d%s%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\n"
 			"bands=%.0f-%.0f\nfreq_offset=%.3f\n"
 			"users=%d\nusers_max=%d\npreempt=%d\n"
@@ -719,13 +721,14 @@ fail:
 			// Resulting hex UTF-16 field can be entered below.
 
 			has_20kHz?              " ⁣ 🎵 20 kHz" : "",
+			has_WB?                 " ⁣ 🌀 Wideband" : "",
 			has_GPS?                " ⁣ 📡 GPS" : "",
 			has_limits?             " ⁣ " : "",
 			has_tlimit?             "⏳" : "",
 			has_masked?             "🚫" : "",
-			has_limits?             " LIMITS" : "",
-			have_DRM_ext?           " ⁣ 📻 DRM" : "",
-			antsw.isConfigured?     " ⁣ 📶 ANT-SWITCH" : "",
+			has_limits?             " Limits" : "",
+			has_DRM_ext?            " ⁣ 📻 DRM" : "",
+			antsw.isConfigured?     " ⁣ 📶 Ant-Switch" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset_kHz,

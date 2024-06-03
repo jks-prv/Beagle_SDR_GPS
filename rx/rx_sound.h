@@ -64,8 +64,8 @@ typedef struct {
 		u4_t gpsnsec;           // GPS time stamp (fractional seconds in units of ns)
 	} __attribute__((packed)) h;
 	union {
-	    u1_t u1[FASTFIR_OUTBUF_SIZE * NIQ * sizeof(s2_t)];
-	    s2_t s2[FASTFIR_OUTBUF_SIZE * NIQ];
+	    u1_t u1[FASTFIR_OUTBUF_SIZE * NIQ * sizeof(s2_t) * (2 * VAL_USE_WB)];
+	    s2_t s2[FASTFIR_OUTBUF_SIZE * NIQ * (2 * VAL_USE_WB)];
 	};
 } __attribute__((packed)) snd_pkt_iq_t;
 

@@ -217,6 +217,9 @@ PVT_EXTS := $(subst ant_switch,,$(PVT_EXTS_))
 INT_EXTS = $(subst /,,$(subst extensions/,,$(wildcard $(INT_EXT_DIRS))))
 EXTS = $(INT_EXTS) $(PVT_EXTS)
 
+# package-specific makefiles
+-include $(wildcard pkgs/*/Makefile.inc)
+
 ifeq ($(OTHER_DIR),)
     GPS = gps gps/ka9q-fec gps/GNSS-SDRLIB
 -include rx/Makefile
@@ -501,7 +504,7 @@ INT_FLAGS += -DBUILD_DIR=STRINGIFY\($(BUILD_DIR)\) -DREPO_NAME=STRINGIFY\($(REPO
 
 #SRC_DEPS = Makefile
 SRC_DEPS = 
-BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit
+BIN_DEPS = KiwiSDR.rx4.wf4.bit KiwiSDR.rx8.wf2.bit KiwiSDR.rx3.wf3.bit KiwiSDR.rx14.wf0.bit KiwiSDR.rx1.wf1.bit
 #BIN_DEPS = 
 DEVEL_DEPS = $(OBJ_DIR_DEFAULT)/web_devel.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
 EMBED_DEPS = $(OBJ_DIR_DEFAULT)/web_embed.o $(OBJ_DIR)/edata_embed.o $(KEEP_DIR)/edata_always.o $(KEEP_DIR)/edata_always2.o
@@ -986,6 +989,12 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     ifeq ($(EXISTS_RX14_WF0),true)
     else
         KiwiSDR.rx14.wf0.bit:
+    endif
+
+    EXISTS_RX1_WF1 := $(shell test -f KiwiSDR.rx1.wf1.bit && echo true)
+    ifeq ($(EXISTS_RX1_WF1),true)
+    else
+        KiwiSDR.rx1.wf1.bit:
     endif
 
     EXISTS_OTHER := $(shell test -f KiwiSDR.other.bit && echo true)
@@ -1492,6 +1501,10 @@ make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
 	        install -D -o root -g root KiwiSDR.rx14.wf0.bit /usr/local/bin/KiwiSDR.rx14.wf0.bit
         endif
 
+        ifeq ($(EXISTS_RX1_WF1),true)
+	        install -D -o root -g root KiwiSDR.rx1.wf1.bit /usr/local/bin/KiwiSDR.rx1.wf1.bit
+        endif
+
         ifeq ($(EXISTS_OTHER),true)
 	        install -D -o root -g root KiwiSDR.other.bit /usr/local/bin/KiwiSDR.other.bit
         endif
@@ -1835,6 +1848,14 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	            rsync -av $(V_DIR)/KiwiSDR.rx14.wf0.bit .
         else
             KiwiSDR.rx14.wf0.bit:
+        endif
+
+        EXISTS_V_DIR_RX1_WF1 := $(shell test -f $(V_DIR)/KiwiSDR.rx1.wf1.bit && echo true)
+        ifeq ($(EXISTS_V_DIR_RX1_WF1),true)
+            KiwiSDR.rx1.wf1.bit: $(V_DIR)/KiwiSDR.rx1.wf1.bit
+	            rsync -av $(V_DIR)/KiwiSDR.rx1.wf1.bit .
+        else
+            KiwiSDR.rx1.wf1.bit:
         endif
 
         EXISTS_OTHER_BITFILE := $(shell test -f $(V_DIR)/KiwiSDR.other.bit && echo true)

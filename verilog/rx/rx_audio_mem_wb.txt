@@ -1,0 +1,127 @@
+    /*
+    
+    // C version of Verilog state machine below
+    
+    while (adc_clk) {
+    	if (reset_bufs_A) {	// reset state machine
+    		transfer = count = rd_getI = rd_getQ = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;
+    	} else
+    	
+		if (rx_avail_A) transfer = 1;	// happens at audio rate (e.g. 12 kHz, 83.3 us, => 5555 ADC clk ticks available)
+		
+		// 1/72k = 13.8bar us 
+		// 1/12k = 83.3bar us
+		// RX1_WB_DECIM 926     1 2 3 4 5 6 1 2 3 4 5 6 1
+		// RX2_WB_DECIM 6       1           1           1
+		
+		// state machine timing:
+		// for the case of nrx_samps = 170, V_WB_BUF_CHANS = 7
+    	// count rxn chn iq3
+    	// ----- --- --- ---
+    	// rx_avail_wb_A && rx_avail_A
+    	// cnt00 rx0 i  
+    	// cnt00 rx0 q  
+    	// cnt00 rx0 iq3	3w moved
+    	// cnt01 wb0 i  
+    	// cnt01 wb0 q  
+    	// cnt01 wb0 iq3
+    	// -stop transfer-
+    	//
+    	// rx_avail_wb_A && !rx_avail_A
+    	// cnt02 wb1 i  
+    	// cnt02 wb1 q  
+    	// cnt02 wb1 iq3
+    	//
+    	// rx_avail_wb_A && !rx_avail_A
+    	// -stop transfer-
+    	// cnt03 wb2 i  
+    	// cnt03 wb2 q  
+    	// cnt03 wb2 iq3
+    	// -stop transfer-
+    	// ...
+    	//
+    	// rx_avail_wb_A && !rx_avail_A
+    	// cnt06 wb5 i  
+    	// cnt06 wb5 q  
+        // cnt06 wb5 iq3	1*(1+6)*3 = 21w moved
+    	// -stop transfer-
+    	// ...
+    	// cnt?? ??? i  
+    	// cnt?? ??? q  
+        // cnt?? ??? iq3	?*(1+6)*3 = ?w moved
+    	// -stop transfer-
+        // ...
+    	// cnt???    wb1 iq3    ???*4*3 = 2040w moved
+    	// (don't stop transfer)
+    	// cnt170 ticks         +3w = 2043w moved
+    	// (don't stop transfer)
+    	// cnt170 w_ctr         +1w = 2044w moved
+    	// -stop transfer-
+    	// -inc buffer count-
+    	// -srq e_cpu-
+
+
+		//  another way of looking at the state machine timing:
+		//  for the case of nrx_samps = 170, V_WB_BUF_CHANS = 7
+		//  --FIXME--
+		//  count:  0                   1           168-FIXME(nrx-2)          169-FIXME(nrx-1)            170-FIXME     0
+		//  rxn:    rx0 rx1 rx2 rx3 rx4 rx0 ... rx4 rx0 rx1 rx2 rx3 rx4 rx0 rx1 rx2 rx3 rx4|3 rx3 rx4 rx0
+		//  iq3:    iq3 iq3 iq3 iq3     iq3 ...     iq3 iq3 iq3 iq3     iq3 iq3 iq3 iq3 XYZ   xxC
+		//  evts:  AT               S  AT       S  AT               S  AT               -         S  AT
+		//
+		//  count:  0                   1           168-FIXME(nrx-2)          169-FIXME(nrx-1)            170-FIXME     0
+		//  rxn:    rx0 wb0 wb1  rx0 wb0  wb1 ... rx4 rx0 rx1 rx2 rx3 rx4 rx0 rx1 rx2 rx3 rx4|3 rx3 rx4 rx0
+		//  iq3:    iq3 iq3 iq3  iq3 iq3i iq3 ...     iq3 iq3 iq3 iq3     iq3 iq3 iq3 iq3 XYZ   xxC
+		//  evts:  AT      S   S        S            S  AT               S  AT               -         S  AT
+		//                                                              L
+		//  A: rx_avail_A
+		//  T: transfer=1
+		//  S(stop): transfer=0
+		//  -: note no stop
+		//  L: ticks latch, the last rx_avail_A latching ticks_A before it's copied to buffer.
+		//  XYZ: ticks_A
+		//  C: buf_ctr
+		//  NB: "rx4" is a pseudo channel number that encodes "rxn == V_WB_BUF_CHANS" to signal all channel data moved.
+		
+		if (transfer) {
+            if (rxn == V_WB_BUF_CHANS) {      // after moving all channel data
+                if (count == (nrx_samps-1) && !use_ts) {       // keep going after last count and move ticks
+					move = 1;           // this state starts first move, case below moves second and third
+					wr = 1;
+                    rxn = V_WB_BUF_CHANS-1;	// ticks is only 1 channels worth of data (3w)
+                    use_ts = 1;
+                    tsel = 0;
+                } else
+                if (count == (nrx_samps-1) && use_ts) {     // keep going after last count and move buffer count
+					wr = 1;
+                    count++;            // ensures only single word moved
+                    use_ts = 0;
+                    use_ctr = 1;        // move single counter word
+                } else
+                if (count == nrx_samps) {       // all done, increment buffer count and reset
+                    move = wr = rxn = count = use_ts = use_ctr = 0;
+                    transfer = 0;   // stop until next transfer available
+                    inc_A = 1;
+                } else {        // count = 0 .. (nrx_samps-2), stop string of channel data writes until next transfer
+                    move = wr = rxn = transfer = 0;
+                    inc_A = 0;
+                    count++;
+                }
+                rd_getI = rd_getQ = 0;
+            } else {
+                // step through all channels: rxn = 0..V_WB_BUF_CHANS-1
+                switch (move) {		// move i, q, iq3 on each channel
+                    case 0: rd_getI = 1; rd_getQ = 0; move = 1; tsel = 0; break;
+                    case 1: rd_getI = 0; rd_getQ = 1; move = 2; tsel = 1; break;
+                    case 2: rd_getI = 0; rd_getQ = 0; move = 0; tsel = 2; rxn++; break;
+                    case 3: rd_getI = 0; rd_getQ = 0; move = 0; tsel = 0; break;	// unused
+                }
+                wr = 1;     // start a sequential string of iq3 * rxn channel data writes
+                inc_A = 0;
+            }
+        } else {
+            rd_getI = rd_getQ = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;       // idle when no transfer
+        }
+    
+    */
+    

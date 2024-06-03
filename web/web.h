@@ -57,17 +57,6 @@ Boston, MA  02110-1301, USA.
 
 #define NREQ_BUF (16*1024)		// the dx list can easily get longer than 1K
 
-typedef struct {
-	int type;
-	const char *uri;
-	funcP_t f;
-	funcP_t setup;
-	funcP_t shutdown;
-	int priority;
-} rx_stream_t;
-
-extern rx_stream_t rx_streams[];
-
 #define N_CONN_SND_WF_EXT   (MAX_RX_CHANS * (3 + N_CAMP))
 #define	N_CONN_EXTRA        8
 

@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "options.h"
 #include "kiwi.h"
 #include "rx.h"
+#include "rx_server.h"
 #include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
@@ -51,7 +52,7 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <signal.h>
 
-//#define CONN_PRINTF
+#define CONN_PRINTF
 #ifdef CONN_PRINTF
 	#define conn_printf(fmt, ...) \
 		printf(fmt, ## __VA_ARGS__)
@@ -282,7 +283,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	if (uri_ts[0] == '/') uri_ts++;
 	conn_printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
-	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false;
+	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false;
 	u64_t tstamp;
 	char *uri_m = NULL;
 	if (sscanf(uri_ts, "kiwi/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
@@ -291,6 +292,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	if (sscanf(uri_ts, "no_wf/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
 	    isKiwi_UI = true;
 	    isNo_WF = true;
+	} else
+	if (sscanf(uri_ts, "wb/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
+	    isWB_conn = true;
 	} else {
 	    // kiwiclient / kiwirecorder
         if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) != 2) {
@@ -391,9 +395,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 
     bool isRetry = false;
 retry:
-	conn_printf("CONN LOOKING for free conn for type=%d(%s%s%s%s%s%s) ip=%s:%d:%016llx mc=%p\n",
+	conn_printf("CONN LOOKING for free conn for type=%d(%s%s%s%s%s%s%s) ip=%s:%d:%016llx mc=%p\n",
 	    st->type, st->uri,
-	    internal? ",INTERNAL" : "", isKiwi_UI? "" : ",NON-KIWI",
+	    isWB_conn? ",WIDEBAND" : "", internal? ",INTERNAL" : "", isKiwi_UI? "" : ",NON-KIWI",
 	    (ws_flags & WS_FL_PREEMPT_AUTORUN)? ",PREEMPT" : "", (ws_flags & WS_FL_IS_AUTORUN)? ",AUTORUN" : "",
 	    isRetry? ",RETRY" : "",
 	    ip_forwarded, mc->remote_port, tstamp, mc);
@@ -501,26 +505,34 @@ retry:
 		int rx_n, heavy;
 
 		if (!cother) {
-		    // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
-		    rx_free_count_e wf_flags = ((ws_flags & WS_FL_IS_AUTORUN) && !(ws_flags & WS_FL_INITIAL))? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
-		    rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : wf_flags;
-			int inuse = rx_chans - rx_chan_free_count(flags, &rx_n, &heavy);
-            conn_printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
-                st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx_n, heavy, is_locked,
-                (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : ((flags == RX_COUNT_NO_WF_FIRST)? "RX_COUNT_NO_WF_FIRST" : "RX_COUNT_NO_WF_AT_ALL"));
+		    if (kiwi.isWB) {
+		        if (isWB_conn) {
+		            rx_n = rx_channels[1].busy? -1 : 1;
+		        } else {
+		            rx_n = rx_channels[0].busy? -1 : 0;
+		        }
+		    } else {
+                // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
+                rx_free_count_e wf_flags = ((ws_flags & WS_FL_IS_AUTORUN) && !(ws_flags & WS_FL_INITIAL))? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
+                rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : wf_flags;
+                int inuse = rx_chans - rx_chan_free_count(flags, &rx_n, &heavy);
+                conn_printf("%s cother=%p isKiwi_UI=%d isWF_conn=%d isNo_WF=%d inuse=%d/%d use_rx=%d heavy=%d locked=%d %s\n",
+                    st->uri, cother, isKiwi_UI, isWF_conn, isNo_WF, inuse, rx_chans, rx_n, heavy, is_locked,
+                    (flags == RX_COUNT_ALL)? "RX_COUNT_ALL" : ((flags == RX_COUNT_NO_WF_FIRST)? "RX_COUNT_NO_WF_FIRST" : "RX_COUNT_NO_WF_AT_ALL"));
             
-            if (is_locked) {
-                if (inuse == 0) {
-                    printf("DRM note: locked but no channels in use?\n");
-                    is_locked = 0;
-                } else {
-                    printf("DRM nreg_chans=%d inuse=%d heavy=%d (is_locked=1)\n", drm_nreg_chans, inuse, heavy);
-                    if (inuse > drm_nreg_chans) {
-                        printf("DRM (locked for exclusive use %s)\n", st->uri);
-                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
-                        mc->connection_param = NULL;
-                        conn_init(c);
-                        return NULL;
+                if (is_locked) {
+                    if (inuse == 0) {
+                        printf("DRM note: locked but no channels in use?\n");
+                        is_locked = 0;
+                    } else {
+                        printf("DRM nreg_chans=%d inuse=%d heavy=%d (is_locked=1)\n", drm_nreg_chans, inuse, heavy);
+                        if (inuse > drm_nreg_chans) {
+                            printf("DRM (locked for exclusive use %s)\n", st->uri);
+                            if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG exclusive_use");
+                            mc->connection_param = NULL;
+                            conn_init(c);
+                            return NULL;
+                        }
                     }
                 }
             }
@@ -591,14 +603,14 @@ retry:
                     }
                 }
             }
-			
-			if (rx_n != -1) {
-			    conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx_n);
-			    rx_chan_t *rxc;
-			    rxc = &rx_channels[rx_n];
-			    memset(rxc, 0, sizeof(rx_chan_t));
-			    rxc->busy = true;
-			}
+            
+            if (rx_n != -1) {
+                conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx_n);
+                rx_chan_t *rxc;
+                rxc = &rx_channels[rx_n];
+                memset(rxc, 0, sizeof(rx_chan_t));
+                rxc->busy = true;
+            }
 		} else {
             conn_printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
                 st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);

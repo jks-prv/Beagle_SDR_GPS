@@ -31,6 +31,7 @@ typedef struct {
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
 	ext_t *ext;
 	int cfg_update_seq;
+	u4_t wr, rd;
 
 	int n_camp;
 	conn_t *camp_conn[N_CAMP];

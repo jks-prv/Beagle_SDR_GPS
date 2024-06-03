@@ -639,13 +639,13 @@ void dump()
 	lprintf("rf_attn_dB=%.1f\n", kiwi.rf_attn_dB);
 	lprintf("\n");
 	
-	for (i=0; i < rx_chans; i++) {
+	for (i=0; i < rx_all_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn-%2s %2.0f %2.0f %p\n", i, rx->chan_enabled, rx->busy,
+		lprintf("RX%d en%d busy%d conn-%2s %2.0f %2.0f %p %d|w %d|r\n", i, rx->chan_enabled, rx->busy,
 			rx->conn? stprintf("%02d", rx->conn->self_idx) : "",
 			//toUnits(audio_bytes[i], 0), toUnits(waterfall_bytes[i], 1),   // %6s
 			audio_kbps[i], waterfall_kbps[i],
-			rx->conn? rx->conn : 0);
+			rx->conn? rx->conn : 0, rx->wr, rx->rd);
 	}
 
 	conn_t *cd;

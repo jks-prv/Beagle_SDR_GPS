@@ -22,27 +22,27 @@ Boston, MA  02110-1301, USA.
 
 //
 // Implements constant value decimation (R) using sequential logic comb stage to save slices.
-// Version for a real signal with un-pruned integrator stages.
+// Version for an IQ signal with un-pruned integrator stages.
 //
 // Fixed differential delay (D) = 1
 //
 
-module cic_seq_real (
+module cic_seq_iq (
 	input wire clock,
 	input wire reset,
 	input wire in_strobe,
-	output reg out_strobe,
-	input wire signed [IN_WIDTH-1:0] in_data,
+	output reg out_strobe_i, out_strobe_q,
+	input wire signed [IN_WIDTH-1:0] in_data_i, in_data_q,
 	output reg signed [OUT_WIDTH-1:0] out_data
 	);
 
 	// design parameters
 	parameter STAGES = "required";
-	parameter DECIMATION = "required";  
+	parameter DECIM_TYPE = "required";  
 	parameter IN_WIDTH = "required";
 	parameter OUT_WIDTH = "required";
 	
-	localparam GROWTH = STAGES * clog2(DECIMATION);
+	localparam GROWTH = STAGES * clog2(DECIM_TYPE);
 	localparam ACC_WIDTH = IN_WIDTH + GROWTH;
 
 // trade-off: less output width means more quantization noise, but of course this effects
@@ -57,7 +57,7 @@ reg integ_strobe;
 always @(posedge clock)
   if (in_strobe)
     begin
-    if (sample_no == (DECIMATION-1))
+    if (sample_no == (DECIM_TYPE-1))
       begin
       sample_no <= 0;
       integ_strobe <= 1;
@@ -71,20 +71,28 @@ always @(posedge clock)
   else
     integ_strobe <= 0;
 
-wire signed [ACC_WIDTH-1:0] integrator_data [0:STAGES];
+wire signed [ACC_WIDTH-1:0] integ_data_i [0:STAGES], integ_data_q [0:STAGES];
 
-assign integrator_data[0] = in_data;
+assign integ_data_i[0] = in_data_i;
+assign integ_data_q[0] = in_data_q;
 
 genvar i;
 generate
 	for (i=0; i<STAGES; i=i+1)
 	begin : cic_stages
 
-		cic_integrator #(ACC_WIDTH) cic_integrator_inst(
-		  .clock(clock),
-		  .strobe(in_strobe),
-		  .in_data(integrator_data[i]),
-		  .out_data(integrator_data[i+1])
+		cic_integrator #(ACC_WIDTH) cic_integ_i_inst(
+		  .clock		(clock),
+		  .strobe		(in_strobe),
+		  .in_data		(integ_data_i[i]),
+		  .out_data		(integ_data_i[i+1])
+		  );
+
+		cic_integrator #(ACC_WIDTH) cic_integ_q_inst(
+		  .clock		(clock),
+		  .strobe		(in_strobe),
+		  .in_data		(integ_data_q[i]),
+		  .out_data		(integ_data_q[i+1])
 		  );
 	end
 endgenerate
@@ -97,30 +105,81 @@ endgenerate
 	localparam NSTATE_b = clog2(3);
 	reg [NSTATE_b-1:0] state;
 	
-	// addr: {R/W(1), COMB/PREV(1), stage(NSTAGE_b)} => 2 + NSTAGE_b
-	localparam NADDR = 2 + NSTAGE_b;    // e.g. NADDR = 2+3 = 5 (2^5 = 32xN BRAM) for STAGES == 5
+	// addr: {Q/I(1), R/W(1), COMB/PREV(1), stage(NSTAGE_b)} => 3 + NSTAGE_b
+	localparam NADDR = 3 + NSTAGE_b;    // e.g. NADDR = 3+3 = 6 (2^6 = 64xN BRAM) for STAGES == 5
 	reg [NADDR-1:0] Raddr, Waddr;
 	
 	reg Wen, ping_pong;
 	wire R = ping_pong, W = ~ping_pong;
 	localparam COMB = 1'b0, PREV = 1'b1;
 	reg signed [ACC_WIDTH-1:0] Wdata, t;
-	wire signed [ACC_WIDTH-1:0] Rdata;
+	wire signed [ACC_WIDTH-1:0] Rdata, diff;
+	wire signed [63:0] Rdata_64;
+	wire signed [47:0] diff_48;
+	assign diff = diff_48[ACC_WIDTH-1:0];
 	
-	wire signed [ACC_WIDTH-1:0] integ = integrator_data[STAGES];
+	reg Q;
+	reg signed [ACC_WIDTH-1:0] integ_q;
+	wire signed [ACC_WIDTH-1:0] integ = Q? integ_q : integ_data_i[STAGES];
+
+    ip_add_s48b sub (
+    	.a		({{48-ACC_WIDTH{1'b0}}, t}),
+    	.b		({{48-ACC_WIDTH{1'b0}}, ~Rdata}),
+    	.s		(diff_48),
+    	.c_in	(1'b1));
+
+`ifdef NOTDEF
+	reg [11:0] cycles;
+	
+	always @(posedge clock)
+	begin
+		if (stage == 0)
+		begin
+			if (integ_strobe) cyctr <= 0; else cyctr <= cyctr + 1'b1;
+		end else
+		if stage == (STAGES+2)
+		begin
+			if (Q) cycles <= cyctr;
+			cyctr <= cyctr + 1'b1;
+		end else
+		begin
+			cyctr <= cyctr + 1'b1;
+		end
+	end
+`endif
+
+    /*
+        stage == 0
+            comb[0] <= integ
+        
+        stage == 1 .. STAGES(=5)
+            t <= comb[stage-1]
+        
+        stage == STAGES+1
+            prev[stage] <= t
+
+        stage == STAGES+2
+            out_data <= ...
+            if (Q) out_strobe_q <= 1, ping_pong <= ~ping_pong else out_strobe_i <= 1
+            Q <= ~Q
+            stage <= 0
+    
+    */
 
 	always @(posedge clock)
 	begin
 		if (stage == 0)		// comb[0] = integ
 		begin
 			// prev
-				out_strobe <= 0;
+				out_strobe_i <= 0;
+				out_strobe_q <= 0;
 			// cur
-				Waddr <= {W, COMB, FIRST_STAGE}; Wdata <= integ;
-				if (integ_strobe) Wen <= 1;
+				Waddr <= {Q, W, COMB, FIRST_STAGE}; Wdata <= integ;
+				if (integ_strobe || Q) Wen <= 1;
+				if (integ_strobe) integ_q <= integ_data_q[STAGES];
 			// next
-				//Raddr <= {R, COMB, FIRST_STAGE};
-				if (integ_strobe) begin state <= 0; stage <= stage + 1'b1; end
+				//Raddr <= {Q, R, COMB, FIRST_STAGE};
+				if (integ_strobe || Q) begin state <= 0; stage <= stage + 1'b1; end
 		end else
 		
 		if (stage <= STAGES)
@@ -133,14 +192,14 @@ endgenerate
 				// cur
 					t <= Rdata;
 				// next
-					//Raddr <= {R, PREV, stage};
+					//Raddr <= {Q, R, PREV, stage};
 					state <= state + 1'b1;
 			end else
 			
 			if (state == 1)		// comb[stage] = t - prev[stage]
 			begin
 				// cur
-					Waddr <= {W, COMB, stage}; Wen <= 1; Wdata <= t - Rdata;
+					Waddr <= {Q, W, COMB, stage}; Wen <= 1; Wdata <= diff;
 				// next
 					state <= state + 1'b1;
 			end else
@@ -148,9 +207,9 @@ endgenerate
 			// state == 2		// prev[stage] = t
 			begin
 				// cur
-					Waddr <= {W, PREV, stage}; Wdata <= t;		// Wen remains 1 because 2 writes in a row
+					Waddr <= {Q, W, PREV, stage}; Wdata <= t;		// Wen remains 1 because 2 writes in a row
 				// next
-					 //Raddr <= {R, COMB, stage};		// not stage-1 because stage about to be incremented
+					//Raddr <= {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
 					stage <= stage + 1'b1;
 					state <= 0;
 			end
@@ -161,16 +220,23 @@ endgenerate
 			// prev
 				Wen <= 0;
 			// next
-				//Raddr <= {R, COMB, LAST_STAGE};
+				//Raddr <= {Q, R, COMB, LAST_STAGE};
 				stage <= stage + 1'b1;
 		end else
 		
 		// stage == (STAGES+2)
 		begin
 			// cur
-				out_data <= Rdata[ACC_WIDTH-1 -:16] + Rdata[ACC_WIDTH-1-16];
-				out_strobe <= 1;
-				ping_pong <= ~ping_pong;
+				out_data <= Rdata[ACC_WIDTH-1 -:OUT_WIDTH] + Rdata[ACC_WIDTH-1-OUT_WIDTH];
+				if (Q)
+				begin
+					out_strobe_q <= 1;
+					ping_pong <= ~ping_pong;
+				end else
+				begin
+					out_strobe_i <= 1;
+				end
+				Q <= ~Q;
 			// next
         		stage <= 0;
 		end
@@ -188,7 +254,7 @@ endgenerate
 		if (stage == 0)		// comb[0] = integ
 		begin
 			// next
-				Raddr = {R, COMB, FIRST_STAGE};
+				Raddr = {Q, R, COMB, FIRST_STAGE};
 		end else
 		
 		if (stage <= STAGES)
@@ -197,40 +263,43 @@ endgenerate
 			if (state == 0)		// t = comb[stage-1]
 			begin
 				// next
-					Raddr = {R, PREV, stage};
+					Raddr = {Q, R, PREV, stage};
 			end else
 			
 			if (state == 1)		// comb[stage] = t - prev[stage]
 			begin
 				// next
-					Raddr = {X, X, STAGE_X};
+					Raddr = {X, X, X, STAGE_X};
 			end else
 			
 			// state == 2		// prev[stage] = t
 			begin
 				// next
-					Raddr = {R, COMB, stage};		// not stage-1 because stage about to be incremented
+					Raddr = {Q, R, COMB, stage};		// not stage-1 because stage about to be incremented
 			end
 		end else
 	
 		if (stage == (STAGES+1))
 		begin
 			// next
-				Raddr = {R, COMB, LAST_STAGE};
+				Raddr = {Q, R, COMB, LAST_STAGE};
 		end else
 		
 		// stage == (STAGES+2)
 		begin
 			// next
-				Raddr = {X, X, STAGE_X};
+				Raddr = {X, X, X, STAGE_X};
 		end
 	end
 	
+	assign Rdata = Rdata_64[ACC_WIDTH-1:0];
+	
+	// fixme: IP set READ_FIRST, is this correct?
 	ipcore_bram_64_64b iq_samp_i (
-		.clka	(clock),			.clkb	(clock),
+		.clka	(clock),							.clkb	(clock),
 		.wea	(Wen),
-		.addra	({1'b0, Waddr}),	.addrb	({1'b0, Raddr}),
-		.dina	(Wdata),			.doutb	(Rdata)
+		.addra	(Waddr),							.addrb	(Raddr),
+		.dina	({{64-ACC_WIDTH{1'b0}}, Wdata}),	.doutb	(Rdata_64)
 	);
 
 endmodule

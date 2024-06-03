@@ -17,7 +17,7 @@ Boston, MA  02110-1301, USA.
 
 // Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
-module receiver (
+module receiver_wb (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
 	input wire         adc_ovfl,
@@ -42,6 +42,11 @@ module receiver (
     input  wire        wrEvt2,
     
     input  wire        use_gen_C,
+
+    // debug
+	output wire        rx_avail_wb_A,
+	output wire        rx_avail_A,
+	output wire        awb_debug,
     
     input  wire        self_test_en_C,
     output wire        self_test
@@ -156,9 +161,9 @@ module receiver (
     wire signed [RX_IN_WIDTH-1:0] adc_ext_data = { adc_data, {RX_IN_WIDTH-ADC_BITS{1'b0}} };
 
     // only allow gen to be used on channel 0 to prevent disruption to others when multiple channels in use
-    wire [(V_RX_CHANS * RX_IN_WIDTH)-1:0] rx_data = { {V_RX_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
+    wire [RX_IN_WIDTH-1:0] rx_data = use_gen_A? gen_data : adc_ext_data;
 `ifdef USE_WF
-    wire [(V_WF_CHANS * RX_IN_WIDTH)-1:0] wf_data = { {V_WF_CHANS-1{adc_ext_data}}, use_gen_A? gen_data : adc_ext_data };
+    wire [RX_IN_WIDTH-1:0] wf_data = use_gen_A? gen_data : adc_ext_data;
 `endif
     
     assign self_test = gen_data[RX_IN_WIDTH-1] & self_test_en_C;
@@ -195,36 +200,42 @@ module receiver (
 	// rx audio channels
     //////////////////////////////////////////////////////////////////////////
 	
-    localparam L2RX = max(1, clog2(V_RX_CHANS) - 1);
-    reg [L2RX:0] rx_channel_C;
+    reg rx_channel_C;
 	
     always @ (posedge cpu_clk)
     begin
-    	if (set_rx_chan_C) rx_channel_C <= tos[L2RX:0];
+    	if (set_rx_chan_C) rx_channel_C <= tos[0];
     end
 
-	wire [V_RX_CHANS-1:0] rxn_sel_C = 1 << rx_channel_C;
+	wire rx_sel_C = 1 << rx_channel_C;
 
-	wire [V_RX_CHANS-1:0] rxn_avail_A;
-	wire [V_RX_CHANS*16-1:0] rxn_data_A;
+	//wire rx_avail_A, rx_avail_wb_A;
+	wire [15:0] rx_data_A;
 	
-	// Verilog note: if rd_getI & rd_getQ are not declared before use in arrayed module RX below
-	// then automatic fanout of single-bit signal to all RX instances doesn't occur and
-	// an "undriven" error for rd_* results.
 	wire rd_getI, rd_getQ;
+	wire rd_getWB;
+	wire [3:0] rxn;
+	wire [15:0] waddr, count;
 
-	rx #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
+	rx_wb #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst (
 		.adc_clk		(adc_clk),
 		.adc_data		(rx_data),
 		.rd_getI        (rd_getI),
 		.rd_getQ        (rd_getQ),
-		// o
-		.rx_avail_A		(rxn_avail_A),
-		.rx_dout_A		(rxn_data_A),
+        .rd_getWB       (rd_getWB),
+        // o
+		.rx_avail_A		(rx_avail_A),
+		.rx_avail_wb_A  (rx_avail_wb_A),
+		.rx_dout_A		(rx_data_A),
+		
+		// debug
+		.rxn_i          (rxn),
+		.waddr_i        (waddr),
+		.count_i        (count),
 
 		.cpu_clk		(cpu_clk),
 		.freeze_tos_A   (freeze_tos_A),
-		.rx_sel_C		(rxn_sel_C),
+		.rx_sel_C		(rx_sel_C),
 		.set_rx_freqH_C	(set_rx_freqH_C),
 		.set_rx_freqL_C	(set_rx_freqL_C)
 	);
@@ -242,26 +253,32 @@ module receiver (
 
 	wire set_nsamps_A;
 	SYNC_PULSE sync_set_nsamps_A (.in_clk(cpu_clk), .in(set_rx_nsamps_C), .out_clk(adc_clk), .out(set_nsamps_A));
-    reg [7:0] nrx_samps_A;
+    reg [15:0] nrx_samps_A;
     always @ (posedge adc_clk)
-        if (set_nsamps_A) nrx_samps_A <= freeze_tos_A;
+        if (set_nsamps_A) nrx_samps_A <= freeze_tos_A[15:0];
     
 	reg [47:0] ticks_latched_A;
 	always @ (posedge adc_clk)
-		if (rxn_avail_A[0])
+		if (rx_avail_A)
 		    ticks_latched_A <= ticks_A;
 
-	rx_audio_mem rx_audio_mem_inst (
+	rx_audio_mem_wb rx_audio_mem_inst (
 		.adc_clk		(adc_clk),
 		.nrx_samps      (nrx_samps_A),
-		.rx_avail_A     (rxn_avail_A[0]),   // all DDCs should signal available at the same time since decimation is the same
-		.rxn_din_A      (rxn_data_A),
+		.rx_avail_A     (rx_avail_A),
+		.rx_avail_wb_A  (rx_avail_wb_A),
+		.rx_din_A       (rx_data_A),
 		.ticks_A        (ticks_latched_A),
-        // o
+		// o
 		.ser            (ser),
 		.rd_getI        (rd_getI),
 		.rd_getQ        (rd_getQ),
-		
+		.rd_getWB       (rd_getWB),
+		.rxn_o          (rxn),
+		.waddr_o        (waddr),
+		.count_o        (count),
+		.debug          (awb_debug),
+
 		.cpu_clk        (cpu_clk),
 		.get_rx_srq_C   (get_rx_srq_C),
 		.get_rx_samp_C  (get_rx_samp_C),
@@ -278,18 +295,6 @@ module receiver (
     //////////////////////////////////////////////////////////////////////////
 
 `ifdef USE_WF
-    localparam L2WF = max(1, clog2(V_WF_CHANS) - 1);
-    reg [L2WF:0] wf_channel_C;
-	wire [V_WF_CHANS-1:0] wfn_sel_C = 1 << wf_channel_C;
-	
-    always @ (posedge cpu_clk)
-    begin
-    	if (set_wf_chan_C) wf_channel_C <= tos[L2WF:0];
-    end
-    
-	wire [V_WF_CHANS*16-1:0] wfn_dout_C;
-	MUX #(.WIDTH(16), .SEL(V_WF_CHANS)) wf_dout_mux(.in(wfn_dout_C), .sel(wf_channel_C), .out(wf_dout_C));
-
 	wire rst_wf_sampler_C =	wrReg2 & op_11[WF_SAMPLER_RST];
 	wire get_wf_samp_i_C =	wrEvt2 & op_11[GET_WF_SAMP_I];
 	wire get_wf_samp_q_C =	wrEvt2 & op_11[GET_WF_SAMP_Q];
@@ -299,15 +304,15 @@ module receiver (
 	wire samp_wf_sync_C   = tos[WF_SAMP_SYNC];
 
 `ifdef USE_WF_1CIC
-	WATERFALL_1CIC #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [V_WF_CHANS-1:0] (
+	WATERFALL_1CIC #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst (
 `else
-	WATERFALL #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst [V_WF_CHANS-1:0] (
+	WATERFALL #(.IN_WIDTH(RX_IN_WIDTH)) waterfall_inst (
 `endif
 		.adc_clk			(adc_clk),
 		.adc_data			(wf_data),
 		
-		.wf_sel_C			(wfn_sel_C),
-		.wf_dout_C			(wfn_dout_C),
+		.wf_sel_C			(1'b1),
+		.wf_dout_C			(wf_dout_C),
 
 		.cpu_clk			(cpu_clk),
 		.freeze_tos_A       (freeze_tos_A),

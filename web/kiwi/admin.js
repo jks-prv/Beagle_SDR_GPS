@@ -148,6 +148,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', 'id-sidenav-fw', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', 'id-sidenav-fw', kiwi.RX8_WF2, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX8_WF2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', 'id-sidenav-fw', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', '1ch + Wideband', 'id-sidenav-fw', kiwi.RX_WB, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX_WB)),
                admin.is_multi_core? 
                   w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Only audio chans', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
                :
@@ -157,6 +158,7 @@ function mode_html()
                w3_div('id-fw-4ch w3-flex w3-padding-TB-7'),
                w3_div('id-fw-8ch w3-flex w3-padding-TB-7'),
                w3_div('id-fw-3ch w3-flex w3-padding-TB-7'),
+               w3_div('id-fw-wb w3-flex w3-padding-TB-7'),
                w3_div('id-fw-14ch w3-flex w3-padding-TB-7')
             )
          ),
@@ -243,6 +245,9 @@ function mode_focus()
    w3_innerHTML('id-fw-3ch', s);
 
    var fmt = 'w3-margin-left w3-valign w3-padding-L-8 w3-border w3-border-light-blue w3-center|width:728px';
+   s = rx12_wf + w3_div(fmt, w3_div('w3-font-26px w3-margin-R-4', '🌀'), 'Wideband output');
+   w3_innerHTML('id-fw-wb', s);
+
    if (admin.is_multi_core) {
       s = rx12_afft + w3_div(fmt, '14 channels total...');
       w3_innerHTML('id-fw-14ch', s);

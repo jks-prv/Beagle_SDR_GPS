@@ -97,7 +97,7 @@ var kiwi = {
    BAND_MENU_ONLY: 5,
 
    
-   RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3,
+   RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3, RX_WB:4,
    
    NAM:0, DUC:1, PUB:2, SIP:3, REV:4,
    

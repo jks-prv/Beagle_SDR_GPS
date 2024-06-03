@@ -32,6 +32,7 @@ extern mem_t mem;
 
 // allocated directly via asprintf(), sscanf("%ms"), strdup() etc.
 #define kiwi_asfree(ptr, ...) free(ptr)
+#define kiwi_asfree_set_null(ptr, ...) free(ptr); ptr = NULL;
 
 //#define MALLOC_DEBUG
 #ifdef MALLOC_DEBUG

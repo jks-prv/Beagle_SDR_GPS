@@ -1,2 +1,2 @@
-localparam RX_CFG = 4;
+localparam RX_CFG = 1;
 `define USE_WF

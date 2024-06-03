@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "mode.h"
 #include "rx.h"
 #include "rx_cmd.h"
+#include "rx_server.h"
 #include "rx_util.h"
 #include "clk.h"
 #include "mem.h"

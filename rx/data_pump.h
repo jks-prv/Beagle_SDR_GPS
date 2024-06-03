@@ -39,12 +39,12 @@ typedef struct {
 	struct {
 		u4_t wr_pos, rd_pos;
 		// array size really nrx_samps but made pow2 FASTFIR_OUTBUF_SIZE for indexing efficiency
-		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE];
+		TYPECPX in_samps[N_DPBUF][FASTFIR_OUTBUF_SIZE * (2 * VAL_USE_WB)];
 		u64_t ticks[N_DPBUF];
 		#ifdef SND_SEQ_CHECK
 		    u4_t in_seq[N_DPBUF];
 		#endif
-		
+
 		TYPECPX agc_samples_c[FASTFIR_OUTBUF_SIZE];
 
 		TYPEREAL demod_samples_r[FASTFIR_OUTBUF_SIZE];
