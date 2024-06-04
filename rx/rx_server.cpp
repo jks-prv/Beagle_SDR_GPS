@@ -504,24 +504,43 @@ retry:
 	if (snd_or_wf) {
 		int rx_n, heavy;
 
-        if (isWB_conn) {
-            if (kiwi.isWB) {
-                printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
-                #ifdef USE_WB_RX0
-                    rx_n = (!rx_channels[1].busy)? 1 : -1;  // allow simultaneous rx0/wb connections
-                #else
-                    rx_n = (!rx_channels[0].busy && !rx_channels[1].busy)? 1 : -1;  // wb connection is exclusive use
-                #endif
-            } else {
-                rx_n = -1;
-            }
-            if (rx_n == -1) {
-                if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
-                mc->connection_param = NULL;
-                conn_init(c);
-                return NULL;
-            }
-        } else {
+        #ifdef USE_WB
+            #ifdef WB_RX0_SHARE
+                if (isWB_conn) {
+                    if (kiwi.isWB) {
+                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
+                        rx_n = rx_channels[1].busy? -1 : 1;     // allow simultaneous rx0/wb connections
+                    } else {
+                        rx_n = -1;
+                    }
+                    if (rx_n == -1) {
+                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                        mc->connection_param = NULL;
+                        conn_init(c);
+                        return NULL;
+                    }
+                } else
+                    // rx0: fall through to normal rx connect block below
+            #else
+                if (kiwi.isWB) {
+                    if (isWB_conn) {
+                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
+                        rx_n = rx_channels[1].busy? -1 : 1;     // wb firmware: allow only wb connections
+                    } else {
+                        rx_n = -1;
+                    }
+                    if (rx_n == -1) {
+                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                        mc->connection_param = NULL;
+                        conn_init(c);
+                        return NULL;
+                    }
+                } else
+                    // non-wb firmware: fall through to normal rx connect block below
+            #endif
+        #endif
+        
+        {
             if (!cother) {
                 // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
                 rx_free_count_e wf_flags = ((ws_flags & WS_FL_IS_AUTORUN) && !(ws_flags & WS_FL_INITIAL))? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
