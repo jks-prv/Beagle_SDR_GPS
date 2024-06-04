@@ -504,14 +504,21 @@ retry:
 	if (snd_or_wf) {
 		int rx_n, heavy;
 
-		if (!cother) {
-		    if (kiwi.isWB) {
-		        if (isWB_conn) {
-		            rx_n = rx_channels[1].busy? -1 : 1;
-		        } else {
-		            rx_n = rx_channels[0].busy? -1 : 0;
-		        }
-		    } else {
+        if (isWB_conn) {
+            if (kiwi.isWB) {
+                printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
+                rx_n = rx_channels[1].busy? -1 : 1;
+            } else {
+                rx_n = -1;
+            }
+            if (rx_n == -1) {
+                if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                mc->connection_param = NULL;
+                conn_init(c);
+                return NULL;
+            }
+        } else {
+            if (!cother) {
                 // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
                 rx_free_count_e wf_flags = ((ws_flags & WS_FL_IS_AUTORUN) && !(ws_flags & WS_FL_INITIAL))? RX_COUNT_NO_WF_AT_ALL : RX_COUNT_NO_WF_FIRST;
                 rx_free_count_e flags = ((isKiwi_UI || isWF_conn) && !isNo_WF)? RX_COUNT_ALL : wf_flags;
@@ -535,107 +542,107 @@ retry:
                         }
                     }
                 }
-            }
-
-            if (rx_n == -1 || force_camp) {
-                //cprintf(c, "rx=%d force_camp=%d\n", rx_n, force_camp);
-                if (force_camp) {
-                    rx_n = -1;
-                    force_camp = false;
-                } else {
-                    // Attempt to kick a channel using autorun.
-                    // Be careful not to let an autorun process kick another autorun.
-                    bool ok_kiwi = (isKiwi_UI && !internal);
-                    bool ok_non_kiwi = (!isKiwi_UI && !internal && any_preempt_autorun);    // e.g. kiwirecorder
-                    bool ok_internal = (!isKiwi_UI && internal && (ws_flags & WS_FL_PREEMPT_AUTORUN));  // e.g. SNR_meas
-                    conn_printf("CONN check preempt kick: any_preempt_autorun=%d isKiwi_UI=%d internal=%d ws_flags=%d | ok_kiwi=%d ok_non_kiwi=%d ok_internal=%d\n",
-                        any_preempt_autorun, isKiwi_UI, internal, ws_flags, ok_kiwi, ok_non_kiwi, ok_internal);
-                    if (ok_kiwi || ok_non_kiwi || ok_internal) {
-                        for (i = 0; i < rx_chans; i++) {
-                            int victim;
-                            if ((victim = rx_autorun_find_victim()) != -1) {
-                                rx_n = victim;
-                                c = rx_channels[rx_n].conn;
-                                c->preempted = true;
-                                rx_enable(rx_n, RX_CHAN_FREE);
-                                rx_server_remove(c);
-                                isRetry = true;
-                                goto retry;
+    
+                if (rx_n == -1 || force_camp) {
+                    //cprintf(c, "rx=%d force_camp=%d\n", rx_n, force_camp);
+                    if (force_camp) {
+                        rx_n = -1;
+                        force_camp = false;
+                    } else {
+                        // Attempt to kick a channel using autorun.
+                        // Be careful not to let an autorun process kick another autorun.
+                        bool ok_kiwi = (isKiwi_UI && !internal);
+                        bool ok_non_kiwi = (!isKiwi_UI && !internal && any_preempt_autorun);    // e.g. kiwirecorder
+                        bool ok_internal = (!isKiwi_UI && internal && (ws_flags & WS_FL_PREEMPT_AUTORUN));  // e.g. SNR_meas
+                        conn_printf("CONN check preempt kick: any_preempt_autorun=%d isKiwi_UI=%d internal=%d ws_flags=%d | ok_kiwi=%d ok_non_kiwi=%d ok_internal=%d\n",
+                            any_preempt_autorun, isKiwi_UI, internal, ws_flags, ok_kiwi, ok_non_kiwi, ok_internal);
+                        if (ok_kiwi || ok_non_kiwi || ok_internal) {
+                            for (i = 0; i < rx_chans; i++) {
+                                int victim;
+                                if ((victim = rx_autorun_find_victim()) != -1) {
+                                    rx_n = victim;
+                                    c = rx_channels[rx_n].conn;
+                                    c->preempted = true;
+                                    rx_enable(rx_n, RX_CHAN_FREE);
+                                    rx_server_remove(c);
+                                    isRetry = true;
+                                    goto retry;
+                                }
                             }
+                        }
+                    }
+                    
+                    #ifdef USE_SDR
+                        if (isKiwi_UI && (mon_total < monitors_max)) {
+                            // turn first connection when no channels (SND or WF) into MONITOR
+                            c->type = STREAM_MONITOR;
+                            st = &rx_streams[STREAM_MONITOR];
+                            snd_or_wf_or_ext = snd_or_wf = false;
+                            conn_printf("STREAM_MONITOR 1st OK %s conn-%ld\n", st->uri, c-conns);
+                        } else
+                    #endif
+                    {
+                        char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
+                        if (url_redirect != NULL && *url_redirect != '\0' && !internal) {
+                            conn_printf("(too many rx channels open for %s -- redirect to %s)\n", st->uri, url_redirect);
+                            send_msg_mc_encoded(mc, "MSG", "redirect", "%s", url_redirect);
+                        } else {
+                            conn_printf("(too many rx channels open for %s)\n", st->uri);
+                            if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                        }
+                        admcfg_string_free(url_redirect);
+    
+                        mc->connection_param = NULL;
+                        conn_init(c);
+                        return NULL;
+                    }
+                } else {
+                    if (st->type == STREAM_WATERFALL && rx_n >= wf_chans) {
+                
+                        // Kiwi UI handles no-WF condition differently -- don't send error
+                        if (!isKiwi_UI) {
+                            conn_printf("(case 1: too many wf channels open for %s)\n", st->uri);
+                            if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                            mc->connection_param = NULL;
+                            conn_init(c);
+                            return NULL;
                         }
                     }
                 }
                 
-                #ifdef USE_SDR
-                    if (isKiwi_UI && (mon_total < monitors_max)) {
-                        // turn first connection when no channels (SND or WF) into MONITOR
-                        c->type = STREAM_MONITOR;
-                        st = &rx_streams[STREAM_MONITOR];
-                        snd_or_wf_or_ext = snd_or_wf = false;
-                        conn_printf("STREAM_MONITOR 1st OK %s conn-%ld other conn-%d\n", st->uri, c-conns, cother->self_idx);
-                    } else
-                #endif
-                {
-                    char *url_redirect = (char *) admcfg_string("url_redirect", NULL, CFG_REQUIRED);
-                    if (url_redirect != NULL && *url_redirect != '\0' && !internal) {
-                        conn_printf("(too many rx channels open for %s -- redirect to %s)\n", st->uri, url_redirect);
-                        send_msg_mc_encoded(mc, "MSG", "redirect", "%s", url_redirect);
-                    } else {
-                        conn_printf("(too many rx channels open for %s)\n", st->uri);
-                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
-                    }
-                    admcfg_string_free(url_redirect);
-
+                if (rx_n != -1) {
+                    conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx_n);
+                    rx_chan_t *rxc;
+                    rxc = &rx_channels[rx_n];
+                    memset(rxc, 0, sizeof(rx_chan_t));
+                    rxc->busy = true;
+                }
+            } else {
+                conn_printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
+                    st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);
+    
+                if (cother->type == STREAM_MONITOR) {   // sink second connection
+                    conn_printf("STREAM_MONITOR 2nd SINK %s conn-%ld other conn-%d\n", st->uri, c-conns, cother->self_idx);
                     mc->connection_param = NULL;
                     conn_init(c);
                     return NULL;
                 }
-            } else {
-                if (st->type == STREAM_WATERFALL && rx_n >= wf_chans) {
-            
+    
+                if (st->type == STREAM_WATERFALL && cother->rx_channel >= wf_chans) {
+    
                     // Kiwi UI handles no-WF condition differently -- don't send error
                     if (!isKiwi_UI) {
-                        conn_printf("(case 1: too many wf channels open for %s)\n", st->uri);
-                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                        conn_printf("(case 2: too many wf channels open for %s)\n", st->uri);
                         mc->connection_param = NULL;
                         conn_init(c);
                         return NULL;
                     }
                 }
+                
+                rx_n = -1;
+                cother->other = c;
             }
-            
-            if (rx_n != -1) {
-                conn_printf("CONN-%02d no other, new alloc rx%d\n", cn, rx_n);
-                rx_chan_t *rxc;
-                rxc = &rx_channels[rx_n];
-                memset(rxc, 0, sizeof(rx_chan_t));
-                rxc->busy = true;
-            }
-		} else {
-            conn_printf("### %s cother=%p isKiwi_UI=%d isNo_WF=%d isWF_conn=%d\n",
-                st->uri, cother, isKiwi_UI, isNo_WF, isWF_conn);
-
-            if (cother->type == STREAM_MONITOR) {   // sink second connection
-                conn_printf("STREAM_MONITOR 2nd SINK %s conn-%ld other conn-%d\n", st->uri, c-conns, cother->self_idx);
-                mc->connection_param = NULL;
-                conn_init(c);
-                return NULL;
-            }
-
-			if (st->type == STREAM_WATERFALL && cother->rx_channel >= wf_chans) {
-
-				// Kiwi UI handles no-WF condition differently -- don't send error
-				if (!isKiwi_UI) {
-                    conn_printf("(case 2: too many wf channels open for %s)\n", st->uri);
-                    mc->connection_param = NULL;
-                    conn_init(c);
-                    return NULL;
-                }
-			}
-			
-			rx_n = -1;
-			cother->other = c;
-		}
+        }
 		
 		c->rx_channel = cother? cother->rx_channel : rx_n;
 		if (st->type == STREAM_SOUND && c->rx_channel != -1) {

@@ -363,15 +363,12 @@ void c2s_sound(void *param)
 
 		if (nb) web_to_app_done(conn, nb);
 		n = web_to_app(conn, &nb);
-//real_printf("W2A RTN\n");
 		if (n) {
 		    rx_sound_cmd(conn, frate, n, nb->buf);
-//real_printf("RSC CONT %d<%s>\n", n, nb->buf);
 		    continue;
 		}
         check(nb == NULL);
 
-//real_printf("LOOP\n");
 		if (!do_sdr) {
 			NextTask("SND skip");
 			continue;
@@ -436,7 +433,6 @@ void c2s_sound(void *param)
 
 		// don't process any audio data until we've received all necessary commands
 		if (s->cmd_recv != CMD_ALL) {
-//real_printf("WAIT CMD_ALL 0x%x|0x%x\n", s->cmd_recv, CMD_ALL);
 			TaskSleepMsec(100);
 			continue;
 		}
@@ -545,7 +541,6 @@ void c2s_sound(void *param)
                         cps++;
                     }
                 #else
-//real_printf("[SS%d] ", rx->rd_pos); fflush(stdout);
 				    TaskSleepReason("check pointers");
                 #endif
 			}
@@ -553,7 +548,6 @@ void c2s_sound(void *param)
         	TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
 			TYPECPX *in_samps_c = rx->in_samps[rx->rd_pos];
-//real_printf("[rd%d %p] ", rx->rd_pos, in_samps_c); fflush(stdout);
 			TYPECPX *fir_samps_c;
             TYPEMONO16 *out_samps_s2;
 
@@ -597,7 +591,6 @@ void c2s_sound(void *param)
 		    
 			rx->rd_pos = (rx->rd_pos+1) & (N_DPBUF-1);
             rx_channels[rx_chan].rd++;
-//real_printf("rd_pos++\n");
 			
             if (!isWB) {
                 const int ns_in = nrx_samps;
@@ -1344,9 +1337,7 @@ void c2s_sound(void *param)
                 s->out_pkt_iq.h.gpsnsec = 0;
             }
             const int bytes = sizeof(s->out_pkt_iq.h) + bc;
-//real_printf("A2W bytes=%d\n", bytes);
             app_to_web(conn, (char*) &s->out_pkt_iq, bytes);
-//real_printf("A2W RTN\n");
             aud_bytes = sizeof(s->out_pkt_iq.h.smeter) + bc;
             if (rxc->n_camp)
                 aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &s->out_pkt_iq, bytes, aud_bytes, masked_area);
