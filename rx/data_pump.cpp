@@ -190,33 +190,35 @@ static void snd_service()
     
             for (j=0; j < nrx_samps; j++) {
 
-                // rx0:
-                if (rx_channels[0].data_enabled) {
-                    s4_t i, q;
-                    i = S24_8_16(iqp->i3, iqp->i);
-                    q = S24_8_16(iqp->q3, iqp->q);
-
-                    // NB: I/Q reversed to get correct sideband polarity; fixme: why?
-                    // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
-                    i_samps[0]->re = q * rescale + DC_offset_I;
-                    i_samps[0]->im = i * rescale + DC_offset_Q;
-                    i_samps[0]++;
-                }
-
-                #ifdef DP_DUMP_WB
-                    if (go == DP_DUMP_GO) {
-                        iqd_p->i = iqp->i;
-                        iqd_p->i3 = iqp->i3;
-                        iqd_p->q = iqp->q;
-                        iqd_p->q3 = iqp->q3;
-                        iqd_p++;
+                #ifdef WB_SHARE_RX0
+                    // rx0:
+                    if (rx_channels[0].data_enabled) {
+                        s4_t i, q;
+                        i = S24_8_16(iqp->i3, iqp->i);
+                        q = S24_8_16(iqp->q3, iqp->q);
+    
+                        // NB: I/Q reversed to get correct sideband polarity; fixme: why?
+                        // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
+                        i_samps[0]->re = q * rescale + DC_offset_I;
+                        i_samps[0]->im = i * rescale + DC_offset_Q;
+                        i_samps[0]++;
                     }
+    
+                    #ifdef DP_DUMP_WB
+                        if (go == DP_DUMP_GO) {
+                            iqd_p->i = iqp->i;
+                            iqd_p->i3 = iqp->i3;
+                            iqd_p->q = iqp->q;
+                            iqd_p->q3 = iqp->q3;
+                            iqd_p++;
+                        }
+                    #endif
+    
+                    iqp++;
                 #endif
-
-                iqp++;
                 
-                // rx1: wb0..wb[rx_buf_chans-2]
-                for (int wb = 0; wb < rx_buf_chans-1; wb++) {
+                // rx1: wb0..wb[rx_wb_buf_chans-1]
+                for (int wb = 0; wb < rx_wb_buf_chans; wb++) {
                     if (rx_channels[1].data_enabled) {
                         //#define WB_PATTERN
                         #ifdef WB_PATTERN

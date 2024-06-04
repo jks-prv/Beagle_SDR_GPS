@@ -424,7 +424,7 @@ retry:
 			continue;
 		}
 		
-		conn_printf("CONN-%02d IS %p type=%d(%s) ip=%s:%d:%016llx rx=%d auth=%d other=%s%ld mc=%p\n", cn, c, c->type, rx_conn_type(c),
+		conn_printf("search CONN-%02d is %p type=%d(%s) ip=%s:%d:%016llx rx=%d auth=%d other=%s%ld mc=%p\n", cn, c, c->type, rx_conn_type(c),
 		    c->remote_ip, c->remote_port, c->tstamp, c->rx_channel, c->auth, c->other? "CONN-":"", c->other? c->other-conns:-1, c->mc);
 
         // Link streams to each other, e.g. snd <=> wf, snd => ext
@@ -530,7 +530,7 @@ retry:
                         rx_n = -1;
                     }
                     if (rx_n == -1) {
-                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
+                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG wb_only");
                         mc->connection_param = NULL;
                         conn_init(c);
                         return NULL;

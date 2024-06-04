@@ -2303,6 +2303,14 @@ function kiwi_too_busy(rx_chans)
 	kiwi_show_msg(s);
 }
 
+function kiwi_wb_only()
+{
+	var s = 'Sorry, this KiwiSDR is configured to use non-web wideband connections only. <br>' +
+	'See the Kiwi forum for details about wideband mode. <br>' +
+	'Please check <a href="http://rx.kiwisdr.com" target="_self">rx.kiwisdr.com</a> for more KiwiSDR receivers available world-wide.';
+	kiwi_show_msg(s);
+}
+
 function kiwi_exclusive_use()
 {
 	var s = 'Sorry, this Kiwi has been locked for special use. <br>' +
@@ -3239,6 +3247,10 @@ function kiwi_msg(param, ws)
 
 		case "too_busy":
 			kiwi_too_busy(parseInt(param[1]));
+			break;
+
+		case "wb_only":
+			kiwi_wb_only();
 			break;
 
 		case "monitor":

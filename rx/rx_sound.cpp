@@ -247,7 +247,7 @@ void c2s_sound(void *param)
 	double z1 = 0;
 
 	double frate = ext_update_get_sample_rateHz(rx_chan);       // FIXME: do this in loop to get incremental changes
-    double frate_wb = isWB? (snd_rate * (rx_buf_chans - 1)) : frate;
+    double frate_wb = isWB? (snd_rate * rx_wb_buf_chans) : frate;
     send_msg(conn, SM_SND_DEBUG, "MSG sample_rate=%.6f", frate_wb);
     printf("### frate_wb %.6f\n", frate_wb);
 
@@ -1062,7 +1062,7 @@ void c2s_sound(void *param)
             // Wideband output
             if (isWB) {
                 TYPECPX *out_samps_c = in_samps_c;
-                int nsamps = nrx_samps * (rx_buf_chans-1);
+                int nsamps = nrx_samps * rx_wb_buf_chans;
 //real_printf("[out %p] ", in_samps_c); fflush(stdout);
 //real_printf("isWB rx_chan=%d rx_chan_wb=%d nsamps=%d rd_pos=%d bc=%d\n", rx_chan, rx_chan_wb, nsamps, rx->rd_pos, nsamps * NIQ * sizeof(s2_t));
                 if (s->little_endian) {
