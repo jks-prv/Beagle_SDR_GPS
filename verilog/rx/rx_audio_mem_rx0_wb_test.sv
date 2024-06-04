@@ -1,7 +1,7 @@
 
 `timescale 10ns / 10ns
 
-module rx_audio_mem_wb_test (
+module rx_audio_mem_rx0_wb_test (
 
     );
     
@@ -30,17 +30,17 @@ module rx_audio_mem_wb_test (
     wire rx_rd_C;
     wire [15:0] rx_dout_C;
 
-    localparam WB_CYCLES = 16;
-    localparam WB_ONLY_CYCLES = WB_CYCLES;
-    localparam ALL_CYCLES = WB_CYCLES;
+    localparam WB_CYCLES = 6;
+    localparam WB_ONLY_CYCLES = (WB_CYCLES-1);
+    localparam ALL_CYCLES = (WB_CYCLES+1);
 
 //`define SHORT
 `ifdef SHORT
-    localparam N_SAMPS = 16'd16;
+    localparam N_SAMPS = 16'd7;
     localparam CYCLES = 3;
 `else
-    localparam N_SAMPS = 16'd672;           // 672 (0x2a0) = 42*(0+16)
-    localparam CYCLES = (672/ALL_CYCLES+3); // 672/16 + ceil/slop
+    localparam N_SAMPS = 16'd679;           // 679 (0x2a7) = 97*(1+6)
+    localparam CYCLES = (679/ALL_CYCLES+3); // 679/7 + ceil/slop
 `endif
 
     integer i, j;
@@ -52,6 +52,9 @@ module rx_audio_mem_wb_test (
         
         for (i = 0; i < CYCLES; i++)
         begin
+            #(2); rx_avail_wb_A = 1; rx_avail_A = 1;
+            #(2); rx_avail_wb_A = 0; rx_avail_A = 0;
+            #(30);
             for (j = 0; j < WB_ONLY_CYCLES; j++)
             begin
                 #(2); rx_avail_wb_A = 1;
@@ -61,7 +64,7 @@ module rx_audio_mem_wb_test (
         end
     end
     
-    rx_audio_mem_wb rx_audio_mem_wb_inst (
+    rx_audio_mem_rx0_wb rx_audio_mem_wb_inst (
 		.adc_clk		(adc_clk),
 		.nrx_samps      (nrx_samps_A),
 		.rx_avail_A     (rx_avail_A),

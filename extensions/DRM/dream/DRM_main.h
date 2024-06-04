@@ -29,14 +29,6 @@
 // NB v1.470: Because of the C_LINKAGE() change
 
 #include "DRM.h"
-#include "types.h"
-#include "misc.h"
-#include "str.h"
-#include "printf.h"
-#include "kiwi_assert.h"
-#include "coroutines.h"
-#include "data_pump.h"
-#include "timer.h"
 
 #ifdef DRM_SHMEM_DISABLE
     void drm_next_task(const char *id);

@@ -429,7 +429,8 @@ int main(int argc, char *argv[])
     // rx3      3   3   3   0
     // rx8      8   8   8   0
     // rx14     14  14  14  0
-    // wb       1   2   7   1
+    // wb       1   2   7   1   72k
+    // wb       1   2   16  1   192k
     
     rx_buf_chans = kiwi.isWB? V_WB_BUF_CHANS : rx_chans;
     rx_all_chans = kiwi.isWB? 2 : rx_chans;
@@ -446,10 +447,6 @@ int main(int argc, char *argv[])
         lprintf("firmware: rx_chans=%d rx_all_chans=%d rx_buf_chans=%d wb_chans=%d wf_chans=%d gps_chans=%d\n",
             rx_chans, rx_all_chans, rx_buf_chans, wb_chans, wf_chans, gps_chans);
 
-        check(rx_buf_chans <= MAX_RX_CHANS);
-        check(wf_chans <= MAX_WF_CHANS);
-        check(wb_chans <= MAX_WB_CHANS);
-
         nrx_samps = NRX_SAMPS_CHANS(rx_buf_chans);
         nrx_samps_loop = nrx_samps * rx_buf_chans / NRX_SAMPS_RPT;
         nrx_samps_rem = (nrx_samps * rx_buf_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
@@ -457,8 +454,12 @@ int main(int argc, char *argv[])
         snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
         lprintf("firmware: RX rx_decim=%d RX1_DECIM=%d RX2_DECIM=%d USE_RX_CICF=%d\n",
             rx_decim, rx1_decim, rx2_decim, VAL_USE_RX_CICF);
-        lprintf("firmware: RX srate=%.3f(%d) bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
-            ext_update_get_sample_rateHz(ADC_CLK_TYP), snd_rate, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
+        lprintf("firmware: RX rx_srate=%.3f(%d) wb_srate=%d bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
+            ext_update_get_sample_rateHz(ADC_CLK_TYP), snd_rate, WB_RATE, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
+
+        check(rx_buf_chans <= MAX_RX_CHANS);
+        check(wf_chans <= MAX_WF_CHANS);
+        check(wb_chans <= MAX_WB_CHANS);
 
         // NB: For wideband the value used by rx_audio_mem_wb.v must be (nrx_samps * V_WB_BUF_CHANS),
         // not simply nrx_samps, because the verilog loop counts each DDC avail separately.

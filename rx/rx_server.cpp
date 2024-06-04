@@ -507,7 +507,11 @@ retry:
         if (isWB_conn) {
             if (kiwi.isWB) {
                 printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
-                rx_n = rx_channels[1].busy? -1 : 1;
+                #ifdef USE_WB_RX0
+                    rx_n = (!rx_channels[1].busy)? 1 : -1;  // allow simultaneous rx0/wb connections
+                #else
+                    rx_n = (!rx_channels[0].busy && !rx_channels[1].busy)? 1 : -1;  // wb connection is exclusive use
+                #endif
             } else {
                 rx_n = -1;
             }

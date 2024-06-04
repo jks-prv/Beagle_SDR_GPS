@@ -25,7 +25,7 @@ Boston, MA  02110-1301, USA.
 	
 `timescale 10ns / 10ns
 
-module rx_audio_mem_wb (
+module rx_audio_mem_rx0_wb (
 	input wire		   adc_clk,
     input  wire [15:0] nrx_samps,
 	input  wire		   rx_avail_A,
@@ -58,9 +58,10 @@ module rx_audio_mem_wb (
     reg [1:0] done;
     reg [15:0] count;
 	reg inc_A, wr, use_ts, use_ctr;
-	reg transfer;
+	reg transfer, rx0;
 	reg [1:0] move;
 	reg [1:0] tsel;
+	reg init;
 
 `ifdef SYNTHESIS
 	wire reset = reset_bufs_A;
@@ -82,16 +83,28 @@ module rx_audio_mem_wb (
 			wr <= 0;
 			done <= 0;
 			rxn <= 0;
+			rx0 <= 0;
 			inc_A <= 0;
 			use_ts <= 0;
             use_ctr <= 0;
             tsel <= 0;
+            init <= 1;      // after reset force alignment to both rx_avail_wb_A && rx_avail_A
 		end
 		else
 		
-		if (rx_avail_wb_A)
+		if (rx_avail_wb_A && rx_avail_A)
 		begin
-			done <= 1;      // transfer wb[0..N-1]
+			done <= 2;      // transfer rx0, wb0
+			rxn <= 0;
+			rx0 <= 1;
+			init <= 0;
+		    transfer <= 1;
+		end else
+		
+		if (rx_avail_wb_A && !rx_avail_A && !init)
+		begin
+			done <= 1;      // transfer wb[N-1]
+			rx0 <= 0;
 		    transfer <= 1;
 		end
 		
@@ -104,6 +117,7 @@ module rx_audio_mem_wb (
 					move <= 1;      // this state starts first move, below moves second and third
 					wr <= 1;
 					done <= 1;      // ticks is only 1 channels worth of data (3w)
+					rx0 <= 0;
 					use_ts <= 1;
 				    tsel <= 0;
 `ifndef SYNTHESIS
@@ -163,10 +177,10 @@ debug_3 <= 1;
 					1: begin rd_getI <= 0; rd_getQ <= 1; wr <= 1; move <= 2; tsel <= 1; end
 					2: begin rd_getI <= 0; rd_getQ <= 0; wr <= 1; move <= 3; tsel <= 2; end
 					3: begin rd_getI <= 0; rd_getQ <= 0; wr <= 0; move <= 0; tsel <= 0;
-					         done <= done - 1; rxn <= rxn + 1; count <= count + 1; end
+					         done <= done - 1; rxn <= rxn + 1; count <= count + 1; rx0 <= 0; end
 				endcase
 				inc_A <= 0;
-				rd_getWB <= !use_ts && !use_ctr;
+				rd_getWB <= !rx0 && !use_ts && !use_ctr;
 			end
 		end
 		else

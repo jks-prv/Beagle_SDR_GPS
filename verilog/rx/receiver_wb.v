@@ -262,7 +262,11 @@ module receiver_wb (
 		if (rx_avail_A)
 		    ticks_latched_A <= ticks_A;
 
-	rx_audio_mem_wb rx_audio_mem_inst (
+`ifdef USE_WB_RX0
+	rx_audio_mem_rx0_wb rx_audio_mem_wb_inst (
+`else
+	rx_audio_mem_wb     rx_audio_mem_wb_inst (
+`endif
 		.adc_clk		(adc_clk),
 		.nrx_samps      (nrx_samps_A),
 		.rx_avail_A     (rx_avail_A),
