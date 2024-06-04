@@ -10,13 +10,20 @@
 //#define ADC_CLOCK 66665900    // 66.6659
 
 // action
-#define ACTION_FIND_DECIM12_EXACT
+#define ACTION_FIND_WIDEBAND
+//#define ACTION_FIND_DECIM12_EXACT
 //#define ACTION_FIND_DECIM_MOD_WSPR
+
+#ifdef ACTION_FIND_WIDEBAND
+    #define AUDIO_RATE_WIDE (24 * 12000)
+    #define AUDIO_RATE_STD  12000
+    #define FIR_DECIM_2 0
+#endif
 
 #ifdef ACTION_FIND_DECIM12_EXACT
     //#define USE_RX_CICF
     //#define WB (6 * 12000)
-    #define WB (3 * 12000)
+    #define WB (12 * 12000)
 
     #ifdef USE_RX_CICF
         #define FIR_DECIM_2 1
@@ -26,7 +33,7 @@
         #define AUDIO_RATE_STD (12000 * 2)
     #else
         #define FIR_DECIM_2 0
-        #define AUDIO_RATE_WIDE (WB * 2)
+        #define AUDIO_RATE_WIDE (WB * 1)
         //#define AUDIO_RATE_WIDE 26625
         //#define AUDIO_RATE_WIDE 20250
         #define AUDIO_RATE_STD 12000
@@ -94,7 +101,7 @@ void decim_search(int in_rate, int decim1, int decim2, int out_rate1, int out_ra
 double min_decim_rem;
 int min_decim1, min_decim2;
 
-void decim_2stage(int in_rate, int out_rate, double target_rem)
+void decim_2stage(int in_rate, int out_rate, double target_rem, int target_ppm = 0)
 {
 	int decim1, decim2_i;
 	double irate = (double)in_rate/1e6, decim2, decim_rem, decim2_round, decim_rate, err;
@@ -113,17 +120,33 @@ void decim_2stage(int in_rate, int out_rate, double target_rem)
 			min_decim1 = decim1;
 			min_decim2 = decim2_i;
 		}
-		if (decim_rem < target_rem) {
-	        decim_rate = (double) in_rate/decim1/decim2_round;
-	        err = decim_rate - out_rate;
-			printf("OKAY  decim_rem %.6f %.3f (%+8.3f %4d ppm): %d = decim1 %d (%.4f kHz) decim2 %d (%.4f MHz) ",
-				decim_rem, decim_rate, err, (int) round(abs(err)/decim_rate*1e6),
-				decim1 * decim2_i, decim1, in_rate/decim1/1e3, decim2_i, in_rate/decim2_i/1e6);
-            if (decim_rem == 0) {
-                printf("EXACT MATCH\n");
-                //return;
-            } else printf("\n");
-		}
+		if (target_rem != 0) {
+            if (decim_rem < target_rem) {
+                decim_rate = (double) in_rate/decim1/decim2_round;
+                err = decim_rate - out_rate;
+                int ppm = (int) round(abs(err) / decim_rate*1e6);
+                printf("OKAY  decim_rem %.6f %.3f (%+11.3f %6d ppm): %4d = decim1 %4d (%10.4f kHz) decim2 %4d (%10.4f MHz) ",
+                    decim_rem, decim_rate, err, ppm,
+                    decim1 * decim2_i, decim1, in_rate/decim1/1e3, decim2_i, in_rate/decim2_i/1e6);
+                if (decim_rem == 0) {
+                    printf("EXACT MATCH\n");
+                    //return;
+                } else printf("\n");
+            }
+        } else {
+            decim_rate = (double) in_rate/decim1/decim2_round;
+            err = decim_rate - out_rate;
+            int ppm = (int) round(abs(err) / decim_rate*1e6);
+            if (ppm < target_ppm) {
+                printf("OKAY  decim_rem %.6f %.3f (%+11.3f %6d ppm): %4d = decim1 %4d (%10.4f kHz) decim2 %4d (%10.4f MHz) ",
+                    decim_rem, decim_rate, err, ppm,
+                    decim1 * decim2_i, decim1, in_rate/decim1/1e3, decim2_i, in_rate/decim2_i/1e6);
+                if (decim_rem == 0) {
+                    printf("EXACT MATCH\n");
+                    //return;
+                } else printf("\n");
+            }
+        }
 	}
 	decim_rate = (double) in_rate/min_decim1/min_decim2;
     err = decim_rate - out_rate;
@@ -139,6 +162,11 @@ int main()
 #if 0
 	printf("integer interp/decim for exact AUDIO out_rate\n");
 	interp_decim(AUDIO_RATE_NOM, out_rate, DECIM_REM);
+#endif
+
+#ifdef ACTION_FIND_WIDEBAND
+    printf("\nDDC decim1/decim2 for ACTION_FIND_WIDEBAND\n");
+    decim_2stage(ADC_CLOCK, AUDIO_RATE_STD, 0, 1000);
 #endif
 
 #ifdef ACTION_FIND_DECIM12_EXACT

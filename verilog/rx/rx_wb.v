@@ -170,6 +170,10 @@ fir_iq #(.WIDTH(RXO_BITS))
                 5: rx_dout = rd_getI? count_i : (rd_getQ? 16'h5def : 16'h5a5b);
                 6: rx_dout = rd_getI? count_i : (rd_getQ? 16'h6def : 16'h6a6b);
                 7: rx_dout = rd_getI? count_i : (rd_getQ? 16'h7def : 16'h7a7b);
+                8: rx_dout = rd_getI? count_i : (rd_getQ? 16'h8def : 16'h8a8b);
+                9: rx_dout = rd_getI? count_i : (rd_getQ? 16'h9def : 16'h9a9b);
+               10: rx_dout = rd_getI? count_i : (rd_getQ? 16'hadef : 16'haaab);
+               11: rx_dout = rd_getI? count_i : (rd_getQ? 16'hbdef : 16'hbacb);
                 default: rx_dout = 16'hcafe;
             endcase
 `else
@@ -182,7 +186,7 @@ fir_iq #(.WIDTH(RXO_BITS))
             //                 12 34567890
             
 		    //rx_dout = rd_getI? rx_cic1_out_i[15:0] : ( rd_getQ? rx_cic1_out_q[15:0] :
-		    //    { {{6{rx_cic1_out_i[17]}}, rx_cic1_out_i[17 -:2]}, {{6{rx_cic1_out_q[17]}}, rx_cic1_out_q[17 -:2]} } );
+		    //    { {{6{rx_cic1_out_i[17]}}, rx_cic1_out_i[17:16]}, {{6{rx_cic1_out_q[17]}}, rx_cic1_out_q[17:16]} } );
 
             // zero fill
             // for RX2_BITS = 18

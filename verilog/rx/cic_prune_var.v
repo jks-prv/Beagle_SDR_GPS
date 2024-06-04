@@ -89,12 +89,12 @@ module cic_prune_var (
             if (RX1_DECIM == RX1_STD_DECIM)
             begin : rx1_12k
                 `include "cic_rx1_12k.vh"
-            end
+            end else
         
             if (RX1_DECIM == RX1_WIDE_DECIM)
             begin : rx1_20k
                 `include "cic_rx1_20k.vh"
-            end
+            end else
             
             if (RX1_DECIM == RX1_WB_DECIM)
             begin : rx1_wb

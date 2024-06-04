@@ -58,17 +58,23 @@
 `define DEF_SPIBUF_B 1
 	localparam SPIBUF_BMAX = 4094;    // DEFp 0xffe
 `define DEF_SPIBUF_BMAX 1
-	localparam RX1_WB_DECIM = 926;    // DEFp 0x39e
+	localparam RX1_WB_DECIM = 463;    // DEFp 0x1cf
 `define DEF_RX1_WB_DECIM 1
-	localparam RX2_WB_DECIM = 6;    // DEFp 0x6
+	localparam RX2_WB_DECIM = 12;    // DEFp 0xc
 `define DEF_RX2_WB_DECIM 1
+	localparam SND_RATE_WB = 12000;    // DEFp 0x2ee0
+`define DEF_SND_RATE_WB 1
+	localparam V_WB_BUF_CHANS = 13;    // DEFp 0xd
+`define DEF_V_WB_BUF_CHANS 1
+	localparam WB_RATE = 144000;    // DEFp 0x23280
+`define DEF_WB_RATE 1
 	localparam RX1_WIDE_DECIM = 823;    // DEFp 0x337
 `define DEF_RX1_WIDE_DECIM 1
 	localparam RX2_WIDE_DECIM = 4;    // DEFp 0x4
 `define DEF_RX2_WIDE_DECIM 1
-	localparam RX1_STD_DECIM = 505;    // DEFp 0x1f9
+	localparam RX1_STD_DECIM = 463;    // DEFp 0x1cf
 `define DEF_RX1_STD_DECIM 1
-	localparam RX2_STD_DECIM = 11;    // DEFp 0xb
+	localparam RX2_STD_DECIM = 12;    // DEFp 0xc
 `define DEF_RX2_STD_DECIM 1
 `define CICF_DECIM_BY_2 1    // DEFh 0x1
 	localparam MAX_SND_RATE = 20250;    // DEFp 0x4f1a
@@ -83,19 +89,13 @@
 `define DEF_SND_RATE_8CH 1
 	localparam SND_RATE_14CH = 12000;    // DEFp 0x2ee0
 `define DEF_SND_RATE_14CH 1
-	localparam SND_RATE_WB = 12000;    // DEFp 0x2ee0
-`define DEF_SND_RATE_WB 1
-	localparam V_WB_BUF_CHANS = 7;    // DEFp 0x7
-`define DEF_V_WB_BUF_CHANS 1
-	localparam WB_RATE = 72000;    // DEFp 0x11940
-`define DEF_WB_RATE 1
 	localparam RX_DECIM_3CH = 3292;    // DEFp 0xcdc
 `define DEF_RX_DECIM_3CH 1
-	localparam RX_DECIM_4CH = 5555;    // DEFp 0x15b3
+	localparam RX_DECIM_4CH = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_4CH 1
-	localparam RX_DECIM_8CH = 5555;    // DEFp 0x15b3
+	localparam RX_DECIM_8CH = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_8CH 1
-	localparam RX_DECIM_14CH = 5555;    // DEFp 0x15b3
+	localparam RX_DECIM_14CH = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_14CH 1
 	localparam RX_DECIM_WB = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_WB 1

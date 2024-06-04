@@ -547,7 +547,7 @@ void c2s_sound(void *param)
 			
         	TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "aud");
 
-			TYPECPX *in_samps_c = rx->in_samps[rx->rd_pos];
+			TYPECPX *in_samps_c = isWB? rx->wb_samps[rx->rd_pos] : rx->in_samps[rx->rd_pos];
 			TYPECPX *fir_samps_c;
             TYPEMONO16 *out_samps_s2;
 
@@ -1076,26 +1076,24 @@ void c2s_sound(void *param)
                         out_samps_c++;
                     }
                 } else {
-//real_printf("#"); fflush(stdout);
                     //#define WB_PATTERN
                     #ifdef WB_PATTERN
                         for (j=0; j < nsamps; j++) {
                             // send full 24-bit data pattern
                             s4_t re = (s4_t) out_samps_c->re, im = (s4_t) out_samps_c->im;
                             *bp_iq_u1++ = (re >> 16) & 0xff; bc++;
-                            *bp_iq_u1++ = (re >> 8) & 0xff; bc++;
-                            *bp_iq_u1++ = (re >> 0) & 0xff; bc++;
+                            *bp_iq_u1++ = (re >>  8) & 0xff; bc++;
+                            *bp_iq_u1++ = (re >>  0) & 0xff; bc++;
                             
                             *bp_iq_u1++ = (im >> 16) & 0xff; bc++;
-                            *bp_iq_u1++ = (im >> 8) & 0xff; bc++;
-                            *bp_iq_u1++ = (im >> 0) & 0xff; bc++;
+                            *bp_iq_u1++ = (im >>  8) & 0xff; bc++;
+                            *bp_iq_u1++ = (im >>  0) & 0xff; bc++;
                             out_samps_c++;
                         }
                     #else
                         for (j=0; j < nsamps; j++) {
                             // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
                             s2_t re = (s2_t) out_samps_c->re, im = (s2_t) out_samps_c->im;
-                            //re = 50; im = 1;
                             *bp_iq_u1++ = (re >> 8) & 0xff; bc++;  // choose a network byte-order (big-endian)
                             *bp_iq_u1++ = (re >> 0) & 0xff; bc++;
                             *bp_iq_u1++ = (im >> 8) & 0xff; bc++;

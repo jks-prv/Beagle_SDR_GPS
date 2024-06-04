@@ -446,9 +446,9 @@ int main(int argc, char *argv[])
         lprintf("firmware: rx_chans=%d rx_all_chans=%d rx_buf_chans=%d wb_chans=%d wf_chans=%d gps_chans=%d\n",
             rx_chans, rx_all_chans, rx_buf_chans, wb_chans, wf_chans, gps_chans);
 
-        assert(rx_buf_chans <= MAX_RX_CHANS);
-        assert(wf_chans <= MAX_WF_CHANS);
-        assert(wb_chans <= MAX_WB_CHANS);
+        check(rx_buf_chans <= MAX_RX_CHANS);
+        check(wf_chans <= MAX_WF_CHANS);
+        check(wb_chans <= MAX_WB_CHANS);
 
         nrx_samps = NRX_SAMPS_CHANS(rx_buf_chans);
         nrx_samps_loop = nrx_samps * rx_buf_chans / NRX_SAMPS_RPT;
@@ -465,9 +465,10 @@ int main(int argc, char *argv[])
         // This value is transmitted via spi_set(CmdSetRXNsamps, nrx_samps_wb) in the data_pump.
         nrx_samps_wb = kiwi.isWB? (nrx_samps * V_WB_BUF_CHANS) : nrx_samps;
 
-        assert(nrx_bufs <= MAX_NRX_BUFS);
-        assert(nrx_samps <= MAX_NRX_SAMPS);
-        assert(nrx_samps < FASTFIR_OUTBUF_SIZE);    // see data_pump.h
+        check(nrx_bufs <= MAX_NRX_BUFS);
+        check(nrx_samps <= MAX_NRX_SAMPS);
+        check(nrx_samps < FASTFIR_OUTBUF_SIZE);    // see data_pump.h
+        check(nrx_samps_wb < MAX_WB_SAMPS);        // see data_pump.h
 
         lprintf("firmware: WF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
             NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);

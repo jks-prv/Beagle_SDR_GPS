@@ -155,11 +155,15 @@ static void snd_service()
         #endif
     
         TYPECPX *i_samps[MAX_RX_CHANS];
-        for (int ch = 0; ch < rx_all_chans; ch++) {
+        for (int ch = 0; ch < rx_chans; ch++) {
             rx_dpump_t *rx = &rx_dpump[ch];
             i_samps[ch] = rx->in_samps[rx->wr_pos];
         }
-    
+        if (kiwi.isWB) {
+            rx_dpump_t *rx = &rx_dpump[1];
+            i_samps[1] = rx->wb_samps[rx->wr_pos];
+        }
+            
         rx_iq_t *iqp = (rx_iq_t *) &rxd->iq_t;
     
         #if 0
@@ -334,24 +338,19 @@ static void snd_service()
                     rx->in_seq[rx->wr_pos] = snd_seq;
                 #endif
                 
-                if (0 && kiwi.isWB && ch == 1) {
-                    for (j = 0; j < (rx_buf_chans-1); j++) {
-                        rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
-                        rx_channels[ch].wr++;
-                    }
-                } else {
-                    rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
-                    rx_channels[ch].wr++;
-                }
+                rx->wr_pos = (rx->wr_pos+1) & (N_DPBUF-1);
+                rx_channels[ch].wr++;
                 
                 diff = (rx->wr_pos >= rx->rd_pos)? rx->wr_pos - rx->rd_pos : N_DPBUF - rx->rd_pos + rx->wr_pos;
                 dpump.in_hist[diff]++;
 
                 //#define DATA_PUMP_DEBUG
                 #ifdef DATA_PUMP_DEBUG
-                    real_printf("."); fflush(stdout);
-                    if (rx->wr_pos == rx->rd_pos) {
-                        real_printf(" #%d ", ch); fflush(stdout);
+                    if (ch == 1) {
+                        real_printf("."); fflush(stdout);
+                        if (rx->wr_pos == rx->rd_pos) {
+                            real_printf(" #%d ", ch); fflush(stdout);
+                        }
                     }
                 #endif
             }
@@ -518,10 +517,11 @@ void data_pump_init()
 	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b
 	
 	// does a single nrx_samps transfer fit in the SPI buf?
-	assert(rx_xfer_size <= SPIBUF_BMAX);	// in bytes
+	check(rx_xfer_size <= SPIBUF_BMAX);	// in bytes
 	
 	// see rx_dpump_t.in_samps[][]
-	assert(FASTFIR_OUTBUF_SIZE > nrx_samps);
+	check(FASTFIR_OUTBUF_SIZE > nrx_samps);
+	check(MAX_WB_SAMPS > nrx_samps_wb);
 	
 	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, cicf_gain_dB[fw_sel]/20.0) : 1);
 	//printf("data pump: fw_sel=%d RXOUT_SCALE=%d CUTESDR_SCALE=%d cicf_gain_dB=%.1f rescale=%.6g VAL_USE_RX_CICF=%d DC_offset_I=%f DC_offset_Q=%f\n", fw_sel, RXOUT_SCALE, CUTESDR_SCALE, cicf_gain_dB[fw_sel], rescale, VAL_USE_RX_CICF, DC_offset_I, DC_offset_Q);
