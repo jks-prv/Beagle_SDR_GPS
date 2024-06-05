@@ -67,6 +67,7 @@
 
 typedef struct {
     char *backend_s;
+    bool backend_ok;
     int ver_maj, ver_min;
 	int n_ch;
 	char *mix;

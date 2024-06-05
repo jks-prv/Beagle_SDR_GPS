@@ -409,15 +409,21 @@ void ant_switch_get_backend_info()
 {
 	char *reply = non_blocking_cmd(FRONTEND " bi", NULL, poll_msec);
 	if (reply) {
-        kiwi_asfree(antsw.backend_s);
-        kiwi_asfree(antsw.mix);
-        kiwi_asfree(antsw.ip_or_url);
+        kiwi_asfree_set_null(antsw.backend_s);
+        kiwi_asfree_set_null(antsw.mix);
+        kiwi_asfree_set_null(antsw.ip_or_url);
         char *sp = kstr_sp(reply);
         int n = sscanf(sp, "%63ms v%d.%d %dch %7ms %63ms",
             &antsw.backend_s, &antsw.ver_maj, &antsw.ver_min, &antsw.n_ch, &antsw.mix, &antsw.ip_or_url);
-        printf("ant_switch GET backend info: n=%d %s version=%d.%d channels=%d mix=%s ip_url=%s\n",
-            n, antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.mix, antsw.ip_or_url);
+        if (n != 6) {
+            snd_send_msg(SM_ADMIN_ALL, ANT_SWITCH_DEBUG_MSG, "ADM antsw_backend_err");                 
+            antsw.backend_ok = false;
+        } else {
+            printf("ant_switch GET backend info: n=%d %s version=%d.%d channels=%d mix=%s ip_url=%s\n",
+                n, antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.mix, antsw.ip_or_url);
+            antsw.backend_ok = true;
         }
+    }
 	kstr_free(reply);
 }
 
@@ -490,9 +496,11 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
     }
     
     if (strcmp(cmd, "ADM antsw_GetInfo") == 0) {
-        printf("ant_switch ADM antsw_GetInfo antsw.backend_s=%s\n", antsw.backend_s);
-        send_msg(conn, SM_NO_DEBUG, "ADM antsw_backend=%s antsw_ver=%d.%d antsw_nch=%d antsw_mix=%s antsw_ip_or_url=%s",
-            antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.mix, antsw.ip_or_url);
+        printf("ant_switch ADM antsw_GetInfo antsw.backend_s=%s antsw.backend_ok=%d\n", antsw.backend_s, antsw.backend_ok);
+        if (antsw.backend_ok) {
+            send_msg(conn, SM_NO_DEBUG, "ADM antsw_backend=%s antsw_ver=%d.%d antsw_nch=%d antsw_mix=%s antsw_ip_or_url=%s",
+                antsw.backend_s, antsw.ver_maj, antsw.ver_min, antsw.n_ch, antsw.mix, antsw.ip_or_url);
+        }
         return true;
     }
 
