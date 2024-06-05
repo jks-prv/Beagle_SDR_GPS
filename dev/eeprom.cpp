@@ -435,9 +435,13 @@ void eeprom_update(eeprom_action_e action)
                 admcfg_set_bool("rev_auto", true);
                 lprintf("EEPROM rev_auto SET TRUE\n");
 
-                // set admin password to serno (is blank from re-flash)
-                admcfg_set_string("admin_password", stprintf("%d", serno));
-                lprintf("EEPROM admin password set to serial number\n");
+                // set admin password to serno if unset/blank (is blank from re-flash)
+                const char *apw = admcfg_string("admin_password", NULL, CFG_OPTIONAL);
+                if (apw == NULL || apw[0] == '\0') {
+                    admcfg_set_string("admin_password", stprintf("%d", serno));
+                    lprintf("EEPROM admin password unset/blank, set to serial number\n");
+                }
+                admcfg_string_free(apw);
             }
             admcfg_save_json(cfg_adm.json);
             
