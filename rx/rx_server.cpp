@@ -560,7 +560,7 @@ retry:
                         c->type = STREAM_MONITOR;
                         st = &rx_streams[STREAM_MONITOR];
                         snd_or_wf_or_ext = snd_or_wf = false;
-                        conn_printf("STREAM_MONITOR 1st OK %s conn-%ld other conn-%d\n", st->uri, c-conns, cother->self_idx);
+                        conn_printf("STREAM_MONITOR 1st OK %s conn-%ld\n", st->uri, c-conns);
                     } else
                 #endif
                 {
