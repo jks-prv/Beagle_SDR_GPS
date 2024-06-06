@@ -518,9 +518,8 @@ void data_pump_init()
 	// does a single nrx_samps transfer fit in the SPI buf?
 	check(rx_xfer_size <= SPIBUF_BMAX);	// in bytes
 	
-	// see rx_dpump_t.in_samps[][]
-	check(FASTFIR_OUTBUF_SIZE > nrx_samps);
-	check(MAX_WB_SAMPS > nrx_samps_wb);
+    check(nrx_samps < FASTFIR_OUTBUF_SIZE);     // see rx_dpump_t.in_samps[][]
+    check(nrx_samps_wb < MAX_WB_SAMPS);         // see rx_dpump_t.wb_samps[][]
 	
 	rescale = MPOW(2, -RXOUT_SCALE + CUTESDR_SCALE) * (VAL_USE_RX_CICF? MPOW(10, cicf_gain_dB[fw_sel]/20.0) : 1);
 	//printf("data pump: fw_sel=%d RXOUT_SCALE=%d CUTESDR_SCALE=%d cicf_gain_dB=%.1f rescale=%.6g VAL_USE_RX_CICF=%d DC_offset_I=%f DC_offset_Q=%f\n", fw_sel, RXOUT_SCALE, CUTESDR_SCALE, cicf_gain_dB[fw_sel], rescale, VAL_USE_RX_CICF, DC_offset_I, DC_offset_Q);

@@ -42,6 +42,7 @@ var kiwi = {
    tlimit_exempt_by_pwd: [],
    admin_save_pwd: false,
 
+   stats_interval: 10000,
    conn_tstamp: 0,
    isOffset: false,
    loaded_files: {},
@@ -2396,8 +2397,6 @@ function kiwi_down(type, reason)
 	kiwi_show_msg(s);
 }
 
-var stats_interval = 10000;
-
 function stats_init()
 {
    msg_send('SET GET_CONFIG');
@@ -2408,9 +2407,11 @@ function stats_update()
 {
    //console.log('SET STATS_UPD ch='+ rx_chan);
 	msg_send('SET STATS_UPD ch='+ rx_chan);
+	
+   // align requesting stats until stats interval
 	var now = new Date();
-	var aligned_interval = Math.ceil(now/stats_interval)*stats_interval - now;
-	if (aligned_interval < stats_interval/2) aligned_interval += stats_interval;
+	var aligned_interval = Math.ceil(now/kiwi.stats_interval) * kiwi.stats_interval - now;
+	if (aligned_interval < kiwi.stats_interval/2) aligned_interval += kiwi.stats_interval;
 	//console.log('STATS_UPD aligned_interval='+ aligned_interval);
 	setTimeout(stats_update, aligned_interval);
 }
@@ -3179,6 +3180,8 @@ function kiwi_msg(param, ws)
 				   cpu_stats_cb(o, o.ct, o.ce, o.fc);
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint.srate = o.sr;
+				extint.wb_srate = Math.round(o.wsr / 1e3);
+				mode_wb_srate(extint.wb_srate);
 				extint.nom_srate = o.nsr;
 
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);

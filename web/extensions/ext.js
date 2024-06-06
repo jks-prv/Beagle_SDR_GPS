@@ -18,6 +18,7 @@ var extint = {
    
    isAdmin_cb: null,
    srate: 0,
+   wb_srate: 0,
    nom_srate: 0,
    param: null,
    override_pb: false,

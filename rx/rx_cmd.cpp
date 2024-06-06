@@ -1741,9 +1741,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             sb = kstr_asprintf(NULL, cpu_stats_buf? "{%s," : "{", kstr_sp(cpu_stats_buf));
 
             float sum_kbps = audio_kbps[rx_chans] + waterfall_kbps[rx_chans] + http_kbps;
-            sb = kstr_asprintf(sb, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f,\"nsr\":%d",
+            sb = kstr_asprintf(sb, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f,\"wsr\":%d,\"nsr\":%d",
                 audio_kbps[ch], waterfall_kbps[ch], waterfall_fps[ch], http_kbps, sum_kbps,
-                ext_update_get_sample_rateHz(ADC_CLK_SYS), snd_rate);
+                ext_update_get_sample_rateHz(ADC_CLK_SYS), snd_rate * V_WB_BUF_CHANS, snd_rate);
 
             #ifdef USE_GPS
                 sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",

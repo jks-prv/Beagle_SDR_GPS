@@ -432,6 +432,7 @@ int main(int argc, char *argv[])
     // rx14     14  14  14  0   0
     // wb       1   2   7   6   1    72k
     // wb       1   2   16  16  1   192k
+    // wb       1   2   17  17  1   204k
     
     rx_all_chans = kiwi.isWB? 2 : rx_chans;
     rx_buf_chans = kiwi.isWB? V_WB_BUF_CHANS : rx_chans;
@@ -464,7 +465,6 @@ int main(int argc, char *argv[])
         lprintf("firmware: RX rx_srate=%.3f(%d) wb_srate=%d bufs=%d samps=%d loop=%d rem=%d intr_usec=%d\n",
             ext_update_get_sample_rateHz(ADC_CLK_TYP), snd_rate, WB_RATE, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem, snd_intr_usec);
 
-        check(rx_buf_chans <= MAX_RX_CHANS);
         check(wf_chans <= MAX_WF_CHANS);
         check(wb_chans <= MAX_WB_CHANS);
 

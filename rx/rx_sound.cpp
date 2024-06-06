@@ -86,6 +86,8 @@ Boston, MA  02110-1301, USA.
 
 snd_t snd_inst[MAX_RX_CHANS];
 
+snd_pkt_wb_t out_pkt_wb;
+
 #ifdef USE_SDR
 
 // 1st estimate of processing delay
@@ -257,6 +259,7 @@ void c2s_sound(void *param)
 	
     strncpy(s->out_pkt_real.h.id, "SND", 3);
     strncpy(s->out_pkt_iq.h.id,   "SND", 3);
+    strncpy(out_pkt_wb.h.id,      "SND", 3);
 		
 	s->seq = 0;
 	
@@ -492,9 +495,26 @@ void c2s_sound(void *param)
 		s2_t *bp_real_s2  = s->out_pkt_real.s2;
 		u1_t *bp_iq_u1    = s->out_pkt_iq.u1;
 		s2_t *bp_iq_s2    = s->out_pkt_iq.s2;
-		u1_t *flags    = (IQ_or_DRM_or_stereo? &s->out_pkt_iq.h.flags : &s->out_pkt_real.h.flags);
-		u1_t *seq      = (IQ_or_DRM_or_stereo? s->out_pkt_iq.h.seq    : s->out_pkt_real.h.seq);
-		u1_t *smeter   = (IQ_or_DRM_or_stereo? s->out_pkt_iq.h.smeter : s->out_pkt_real.h.smeter);
+		u1_t *bp_wb_u1    = out_pkt_wb.u1;
+		s2_t *bp_wb_s2    = out_pkt_wb.s2;
+		u1_t *flags;
+		u1_t *seq;
+		u1_t *smeter;
+		
+		if (isWB) {
+		    flags    = &out_pkt_wb.h.flags;
+		    seq      = out_pkt_wb.h.seq;
+		    smeter   = out_pkt_wb.h.smeter;
+		} else
+		if (IQ_or_DRM_or_stereo) {
+		    flags    = &s->out_pkt_iq.h.flags;
+		    seq      = s->out_pkt_iq.h.seq;
+		    smeter   = s->out_pkt_iq.h.smeter;
+		} else {
+		    flags    = &s->out_pkt_real.h.flags;
+		    seq      = s->out_pkt_real.h.seq;
+		    smeter   = s->out_pkt_real.h.smeter;
+		}
 
 		bool do_de_emp = (!IQ_or_DRM_or_stereo && ((isNBFM && s->deemp_nfm) || (!isNBFM && s->deemp)));
 		
@@ -1068,8 +1088,8 @@ void c2s_sound(void *param)
                     for (j=0; j < nsamps; j++) {
                         // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
                         s2_t re = (s2_t) out_samps_c->re, im = (s2_t) out_samps_c->im;
-                        *bp_iq_s2++ = re;      // arm native little-endian (put any swap burden on client)
-                        *bp_iq_s2++ = im;
+                        *bp_wb_s2++ = re;      // arm native little-endian (put any swap burden on client)
+                        *bp_wb_s2++ = im;
                         out_samps_c++;
                     }
                 } else {
@@ -1078,23 +1098,23 @@ void c2s_sound(void *param)
                         for (j=0; j < nsamps; j++) {
                             // send full 24-bit data pattern
                             s4_t re = (s4_t) out_samps_c->re, im = (s4_t) out_samps_c->im;
-                            *bp_iq_u1++ = (re >> 16) & 0xff; bc++;
-                            *bp_iq_u1++ = (re >>  8) & 0xff; bc++;
-                            *bp_iq_u1++ = (re >>  0) & 0xff; bc++;
+                            *bp_wb_u1++ = (re >> 16) & 0xff; bc++;
+                            *bp_wb_u1++ = (re >>  8) & 0xff; bc++;
+                            *bp_wb_u1++ = (re >>  0) & 0xff; bc++;
                             
-                            *bp_iq_u1++ = (im >> 16) & 0xff; bc++;
-                            *bp_iq_u1++ = (im >>  8) & 0xff; bc++;
-                            *bp_iq_u1++ = (im >>  0) & 0xff; bc++;
+                            *bp_wb_u1++ = (im >> 16) & 0xff; bc++;
+                            *bp_wb_u1++ = (im >>  8) & 0xff; bc++;
+                            *bp_wb_u1++ = (im >>  0) & 0xff; bc++;
                             out_samps_c++;
                         }
                     #else
                         for (j=0; j < nsamps; j++) {
                             // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
                             s2_t re = (s2_t) out_samps_c->re, im = (s2_t) out_samps_c->im;
-                            *bp_iq_u1++ = (re >> 8) & 0xff; bc++;  // choose a network byte-order (big-endian)
-                            *bp_iq_u1++ = (re >> 0) & 0xff; bc++;
-                            *bp_iq_u1++ = (im >> 8) & 0xff; bc++;
-                            *bp_iq_u1++ = (im >> 0) & 0xff; bc++;
+                            *bp_wb_u1++ = (re >> 8) & 0xff; bc++;  // choose a network byte-order (big-endian)
+                            *bp_wb_u1++ = (re >> 0) & 0xff; bc++;
+                            *bp_wb_u1++ = (im >> 8) & 0xff; bc++;
+                            *bp_wb_u1++ = (im >> 0) & 0xff; bc++;
                             out_samps_c++;
                         }
                     #endif
@@ -1323,7 +1343,19 @@ void c2s_sound(void *param)
         int aud_bytes;
         int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes, bool masked_area);
 
-        if (IQ_or_DRM_or_stereo || isWB) {
+        if (isWB) {
+            // allow GPS timestamps to be seen by internal extensions
+            // but selectively remove from external connections (see admin page security tab)
+            if (!allow_gps_tstamp) {
+                out_pkt_wb.h.last_gps_solution = 0;
+                out_pkt_wb.h.gpssec = 0;
+                out_pkt_wb.h.gpsnsec = 0;
+            }
+            const int bytes = sizeof(out_pkt_wb.h) + bc;
+            app_to_web(conn, (char*) &out_pkt_wb, bytes);
+            aud_bytes = sizeof(out_pkt_wb.h.smeter) + bc;
+        } else
+        if (IQ_or_DRM_or_stereo) {
             // allow GPS timestamps to be seen by internal extensions
             // but selectively remove from external connections (see admin page security tab)
             if (!allow_gps_tstamp) {

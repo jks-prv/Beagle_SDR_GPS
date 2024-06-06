@@ -26,6 +26,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "spi.h"
 
+//#include "data_pump_shmem.h"
 #include "data_pump.h"
 #include "spi_dev.h"
 #include "rx_waterfall.h"

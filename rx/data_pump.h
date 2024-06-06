@@ -15,10 +15,9 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2024 John Seamons, ZL4VO/KF6VO
 
-#ifndef _DATA_PUMP_H_
-#define _DATA_PUMP_H_
+#pragma once
 
 #include "types.h"
 #include "spi.h"
@@ -45,7 +44,6 @@ typedef struct {
 		    u4_t in_seq[N_DPBUF];
 		#endif
 		
-		#define MAX_WB_SAMPS 1024
 		TYPECPX wb_samps[N_DPBUF][MAX_WB_SAMPS];
 
 		TYPECPX agc_samples_c[FASTFIR_OUTBUF_SIZE];
@@ -70,36 +68,7 @@ typedef struct {
     TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 } iq_buf_t;
 
-typedef struct {
-    iq_buf_t iq_buf[MAX_RX_CHANS];
-} rx_shmem_t;
-
-#include "shmem_config.h"
-
-#ifdef DRM
-    // RX_SHMEM_DISABLE defined by DRM.h
-#else
-    #ifdef MULTI_CORE
-        //#define RX_SHMEM_DISABLE_TEST
-        #ifdef RX_SHMEM_DISABLE_TEST
-            #warning dont forget to remove RX_SHMEM_DISABLE_TEST
-            #define RX_SHMEM_DISABLE
-        #else
-            // shared memory enabled
-        #endif
-    #else
-        #define RX_SHMEM_DISABLE
-    #endif
-#endif
-
-#include "shmem.h"
-
-#ifdef RX_SHMEM_DISABLE
-    extern rx_shmem_t *rx_shmem_p;
-    #define RX_SHMEM rx_shmem_p
-#else
-    #define RX_SHMEM (&shmem->rx_shmem)
-#endif
+#include "data_pump_shmem.h"
 
 typedef struct {
     u4_t resets, hist[MAX_NRX_BUFS];
@@ -114,5 +83,3 @@ extern dpump_t dpump;
 
 void data_pump_start_stop();
 void data_pump_init();
-
-#endif

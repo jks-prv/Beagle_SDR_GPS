@@ -44,6 +44,8 @@ typedef enum { ESPEED_AUTO = 0, ESPEED_10M = 1, ESPEED_100M = 2 } espeed_e;
 #define MAX_NRX_SAMPS   226     // for nch = 3
 #define NRX_SAMPS_CHANS(nch)    ((NRX_SPI - NRX_OVHD) / NRX_IQW / nch);
 //                              (((2048-1) - (3+1+1)) / 3 / nch) = 680 / nch
+#define MAX_WB_SAMPS    1024
+
 
 #define N_CONN_ADMIN        8   // simultaneous admin connections
 

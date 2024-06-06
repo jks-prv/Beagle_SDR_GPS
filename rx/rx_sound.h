@@ -64,10 +64,29 @@ typedef struct {
 		u4_t gpsnsec;           // GPS time stamp (fractional seconds in units of ns)
 	} __attribute__((packed)) h;
 	union {
-	    u1_t u1[FASTFIR_OUTBUF_SIZE * NIQ * sizeof(s2_t) * (2 * VAL_USE_WB)];
-	    s2_t s2[FASTFIR_OUTBUF_SIZE * NIQ * (2 * VAL_USE_WB)];
+	    u1_t u1[FASTFIR_OUTBUF_SIZE * NIQ * sizeof(s2_t)];
+	    s2_t s2[FASTFIR_OUTBUF_SIZE * NIQ];
 	};
 } __attribute__((packed)) snd_pkt_iq_t;
+
+typedef struct {
+	struct {
+		char id[3];
+		u1_t flags;
+		u1_t seq[4];            // waterfall syncs to this sequence number on the client-side
+		u1_t smeter[2];
+		u1_t last_gps_solution; // time difference to last gps solution in seconds
+		u1_t dummy;
+		u4_t gpssec;            // GPS time stamp (GPS seconds)
+		u4_t gpsnsec;           // GPS time stamp (fractional seconds in units of ns)
+	} __attribute__((packed)) h;
+	union {
+	    u1_t u1[MAX_WB_SAMPS * NIQ * sizeof(s2_t)];
+	    s2_t s2[MAX_WB_SAMPS * NIQ];
+	};
+} __attribute__((packed)) snd_pkt_wb_t;
+
+extern snd_pkt_wb_t out_pkt_wb;
 
 #define WINF_SND_BLACKMAN_NUTTALL   0
 #define WINF_SND_BLACKMAN_HARRIS    1
