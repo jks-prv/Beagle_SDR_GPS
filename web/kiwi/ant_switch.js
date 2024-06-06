@@ -497,6 +497,7 @@ function ant_switch_help()
 
 function ant_switch_admin_msg(param)
 {
+   var s;
    ant_switch_log('ant_switch_admin_msg '+ param.join('='));
    
    switch (param[0]) {
@@ -538,7 +539,7 @@ function ant_switch_admin_msg(param)
       
       case "antsw_backend_err":
          ant_sw.ver = param[1];
-         var s = 'Backend script <x1>'+ ant_sw.backend_s +'</x1> function AntSW_ShowBackend() sent bad configuration data!';
+         s = 'Backend script <x1>'+ ant_sw.backend_s +'</x1> function AntSW_ShowBackend() sent bad configuration data!';
          w3_innerHTML('id-antsw-error', s);
          w3_hide2('id-antsw-backend-info', true);
          w3_hide2('id-antsw-error', false);
@@ -552,7 +553,7 @@ function ant_switch_admin_msg(param)
       case "antsw_ver":
          console.log('antsw_ver='+ param[1]);
          ant_sw.ver = param[1];
-         var s = 'Backend script v'+ ant_sw.ver;
+         s = 'Backend script v'+ ant_sw.ver;
          if (ant_sw.ver == '0.0') s = '';
          w3_innerHTML('id-antsw-ver', s);
          if (cfg.ant_switch.enable) {

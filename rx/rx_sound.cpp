@@ -249,7 +249,7 @@ void c2s_sound(void *param)
 	double frate = ext_update_get_sample_rateHz(rx_chan);       // FIXME: do this in loop to get incremental changes
     double frate_wb = isWB? (snd_rate * rx_wb_buf_chans) : frate;
     send_msg(conn, SM_SND_DEBUG, "MSG sample_rate=%.6f", frate_wb);
-    printf("### frate_wb %.6f\n", frate_wb);
+    //printf("### frate_wb %.6f\n", frate_wb);
 
 	#define ATTACK_TIMECONST .01	// attack time in seconds
 	float sMeterAlpha = 1.0 - expf(-1.0/((float) frate * ATTACK_TIMECONST));
@@ -1063,12 +1063,9 @@ void c2s_sound(void *param)
             if (isWB) {
                 TYPECPX *out_samps_c = in_samps_c;
                 int nsamps = nrx_samps * rx_wb_buf_chans;
-//real_printf("[out %p] ", in_samps_c); fflush(stdout);
-//real_printf("isWB rx_chan=%d rx_chan_wb=%d nsamps=%d rd_pos=%d bc=%d\n", rx_chan, rx_chan_wb, nsamps, rx->rd_pos, nsamps * NIQ * sizeof(s2_t));
                 if (s->little_endian) {
                     bc += nsamps * NIQ * sizeof(s2_t);
                     for (j=0; j < nsamps; j++) {
-//real_printf("WB j=%d nrx=%d FASTFIR_OUTBUF_SIZE=%d bc=%d bp_iq_s2=%d\n", j, nsamps, FASTFIR_OUTBUF_SIZE, bc, bp_iq_s2 - s->out_pkt_iq.s2);
                         // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
                         s2_t re = (s2_t) out_samps_c->re, im = (s2_t) out_samps_c->im;
                         *bp_iq_s2++ = re;      // arm native little-endian (put any swap burden on client)

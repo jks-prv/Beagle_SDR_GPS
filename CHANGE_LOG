@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.686  June 6, 2024
+    If the auto proxy configuration needs to be restored after a re-flash then the admin password is
+    now set to the Kiwi serial number. Previously the admin password restored to being blank which
+    prevented the proxy URL from working to connect to the admin page (even from the local network).
+
+    Antenna switch: Added backend script initialization error checking.
+
 v1.684,685  May 31, 2024
     Antenna switch:
         If switch selector set to disabled no default antenna commands are sent to previously

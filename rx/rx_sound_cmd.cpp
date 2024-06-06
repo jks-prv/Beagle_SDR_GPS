@@ -89,11 +89,12 @@ void rx_sound_set_freq(conn_t *conn, snd_t *s)
     u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
     cprintf(conn, "SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", rx_chan_wb,
         s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
-    if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan_wb, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-    
-    //jksx
-    if (isWB)
-    if (do_sdr) spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+
+    if (do_sdr) {
+        spi_set3(CmdSetRXFreq, rx_chan_wb, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+        if (rx_chan != rx_chan_wb)
+            spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
+    }
 }
 
 void rx_gen_set_freq(conn_t *conn, snd_t *s)

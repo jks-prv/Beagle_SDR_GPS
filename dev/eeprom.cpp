@@ -398,7 +398,8 @@ void eeprom_update(eeprom_action_e action)
 	    update = true;
 	}
 	
-	// recover cfg values of rev_{auto,user,host} from EEPROM
+	// Recover cfg values of rev_{auto,user,host} from EEPROM.
+	// In re-flash image rev_auto is always set false, rev_{user,host} and admin password blank.
 	if (action == EE_NORM && model != KiwiSDR_1) {
 	    bool upd_cfg = false;
 	    int ok = 0;
@@ -409,7 +410,6 @@ void eeprom_update(eeprom_action_e action)
                     break;
             }
             if (i == 29 && e->key[0][29] == '\0') {
-                admcfg_string_free(auto_user);
                 admcfg_set_string("rev_auto_user", e->key[0]);
                 lprintf("EEPROM rev_auto_user RECOVERED TO %s\n", e->key[0]);
                 upd_cfg = true;
@@ -420,19 +420,28 @@ void eeprom_update(eeprom_action_e action)
         } else {
             ok++;       // found existing auto_user
         }
+        admcfg_string_free(auto_user);
         
         const char *auto_host = admcfg_string("rev_auto_host", NULL, CFG_OPTIONAL);
         if (auto_host == NULL || auto_host[0] == '\0') {
-            admcfg_string_free(auto_host);
             admcfg_set_string("rev_auto_host", stprintf("%d", serno));
             lprintf("EEPROM rev_auto_host RECOVERED TO %d\n", serno);
             upd_cfg = true;
         }
+        admcfg_string_free(auto_host);
         
         if (upd_cfg) {
             if (ok) {   // don't use auto if user key wasn't good
                 admcfg_set_bool("rev_auto", true);
                 lprintf("EEPROM rev_auto SET TRUE\n");
+
+                // set admin password to serno if unset/blank (is blank from re-flash)
+                const char *apw = admcfg_string("admin_password", NULL, CFG_OPTIONAL);
+                if (apw == NULL || apw[0] == '\0') {
+                    admcfg_set_string("admin_password", stprintf("%d", serno));
+                    lprintf("EEPROM admin password unset/blank, set to serial number\n");
+                }
+                admcfg_string_free(apw);
             }
             admcfg_save_json(cfg_adm.json);
             

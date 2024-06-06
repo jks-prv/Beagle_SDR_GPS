@@ -96,9 +96,6 @@ static void snd_service()
 	SPI_MISO *miso = &SPI_SHMEM->dpump_miso;
 	u4_t diff, moved=0;
 	
-	//jksx
-	static u4_t ginc;
-
     evLatency(EC_EVENT, EV_DPUMP, 0, "DATAPUMP", "snd_service() BEGIN");
     do {
 
