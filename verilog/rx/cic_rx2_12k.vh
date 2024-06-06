@@ -1,16 +1,16 @@
 // generated file
 
-// CIC: INTEG_COMB|MODE_REAL N=5 R=17 M=1 Bin=18 Bout=24
-// growth 21 = ceil(N=5 * log2(R=17)=4)
-// Bin 18 + growth 21 = acc_max 39 
+// CIC: INTEG_COMB|MODE_REAL N=5 R=25 M=1 Bin=18 Bout=24
+// growth 24 = ceil(N=5 * log2(R=25)=5)
+// Bin 18 + growth 24 = acc_max 42 
 
-wire signed [38:0] integrator0_data;
-wire signed [38:0] integrator1_data;
-wire signed [38:0] integrator2_data;
-wire signed [36:0] integrator3_data;
-wire signed [33:0] integrator4_data;
-wire signed [30:0] integrator5_data;
-wire signed [30:0] comb0_data;
+wire signed [41:0] integrator0_data;
+wire signed [41:0] integrator1_data;
+wire signed [41:0] integrator2_data;
+wire signed [37:0] integrator3_data;
+wire signed [34:0] integrator4_data;
+wire signed [31:0] integrator5_data;
+wire signed [31:0] comb0_data;
 wire signed [29:0] comb1_data;
 wire signed [28:0] comb2_data;
 wire signed [27:0] comb3_data;
@@ -21,43 +21,43 @@ wire signed [26:0] comb5_data;
 // so this assignment will sign-extend:
 assign integrator0_data = in;
 
-cic_integrator #(.WIDTH(39)) cic_integrator1_inst(
+cic_integrator #(.WIDTH(42)) cic_integrator1_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator0_data[38 -:39]),	// trunc 0 bits (should always be zero)
+	.in_data(integrator0_data[41 -:42]),	// trunc 0 bits (should always be zero)
 	.out_data(integrator1_data)
 );
 
-cic_integrator #(.WIDTH(39)) cic_integrator2_inst(
+cic_integrator #(.WIDTH(42)) cic_integrator2_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator1_data[38 -:39]),	// trunc 0 bits 
+	.in_data(integrator1_data[41 -:42]),	// trunc 0 bits 
 	.out_data(integrator2_data)
 );
 
-cic_integrator #(.WIDTH(37)) cic_integrator3_inst(
+cic_integrator #(.WIDTH(38)) cic_integrator3_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator2_data[38 -:37]),	// trunc 2 bits 
+	.in_data(integrator2_data[41 -:38]),	// trunc 4 bits 
 	.out_data(integrator3_data)
 );
 
-cic_integrator #(.WIDTH(34)) cic_integrator4_inst(
+cic_integrator #(.WIDTH(35)) cic_integrator4_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator3_data[36 -:34]),	// trunc 3 bits 
+	.in_data(integrator3_data[37 -:35]),	// trunc 3 bits 
 	.out_data(integrator4_data)
 );
 
-cic_integrator #(.WIDTH(31)) cic_integrator5_inst(
+cic_integrator #(.WIDTH(32)) cic_integrator5_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(in_strobe),
-	.in_data(integrator4_data[33 -:31]),	// trunc 3 bits 
+	.in_data(integrator4_data[34 -:32]),	// trunc 3 bits 
 	.out_data(integrator5_data)
 );
 
@@ -67,7 +67,7 @@ cic_comb #(.WIDTH(30)) cic_comb1_inst(
 	.clock(clock),
 	.reset(reset),
 	.strobe(out_strobe),
-	.in_data(comb0_data[30 -:30]),	// trunc 1 bits 
+	.in_data(comb0_data[31 -:30]),	// trunc 2 bits 
 	.out_data(comb1_data)
 );
 
