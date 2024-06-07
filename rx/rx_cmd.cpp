@@ -195,6 +195,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET DX_SET", CMD_DX_SET },
     { "SET GET_CO", CMD_GET_CONFIG },
     { "SET STATS_", CMD_STATS_UPD },
+    { "SET xfer_s", CMD_XFER_STATS },
     { "SET GET_US", CMD_GET_USERS },
     { "SET requir", CMD_REQUIRE_ID },
     { "SET ident_", CMD_IDENT_USER },
@@ -1725,19 +1726,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             // ch == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
             if (n != 1 || ch < 0 || ch > rx_chans) return true;
 
-            rx_chan_t *rx;
-            int underruns = 0, seq_errors = 0;
-        
-            for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
-                if (rx->busy) {
-                    conn_t *c = rx->conn;
-                    if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->ident_user != NULL) {
-                        underruns += c->audio_underrun;
-                        seq_errors += c->sequence_errors;
-                    }
-                }
-            }
-        
             sb = kstr_asprintf(NULL, cpu_stats_buf? "{%s," : "{", kstr_sp(cpu_stats_buf));
 
             float sum_kbps = audio_kbps[rx_chans] + waterfall_kbps[rx_chans] + http_kbps;
@@ -1776,11 +1764,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
                 //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
         
-                sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
-                    dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
-                sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
-                sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
-            
                 sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset_kHz? -1 : snr_HF,
                     kiwi.spectral_inversion_lockout? 1:0);
             #endif

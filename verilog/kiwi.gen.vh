@@ -107,7 +107,7 @@
 `define DEF_RXBUF_SIZE_8CH 1
 	localparam RXBUF_SIZE_14CH = 32768;    // DEFp 0x8000
 `define DEF_RXBUF_SIZE_14CH 1
-	localparam RXBUF_SIZE_WB = 16384;    // DEFp 0x4000
+	localparam RXBUF_SIZE_WB = 32768;    // DEFp 0x8000
 `define DEF_RXBUF_SIZE_WB 1
 	localparam RXBUF_LARGE_4CH = 0;    // DEFp 0x0
 //`define DEF_RXBUF_LARGE_4CH
@@ -117,7 +117,7 @@
 `define DEF_RXBUF_LARGE_8CH 1
 	localparam RXBUF_LARGE_14CH = 2;    // DEFp 0x2
 `define DEF_RXBUF_LARGE_14CH 1
-	localparam RXBUF_LARGE_WB = 1;    // DEFp 0x1
+	localparam RXBUF_LARGE_WB = 2;    // DEFp 0x2
 `define DEF_RXBUF_LARGE_WB 1
 	localparam NRX_IQW = 3;    // DEFp 0x3
 `define DEF_NRX_IQW 1

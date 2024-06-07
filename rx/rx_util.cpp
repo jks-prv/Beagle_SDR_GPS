@@ -666,6 +666,7 @@ void dump()
 	lock_dump();
 	ip_blacklist_dump(false);
 	mt_dump();
+	data_pump_dump();
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler

@@ -2266,36 +2266,6 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	}
 }
 
-function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist_cnt, dp_hist, in_hist_cnt, in_hist)
-{
-   if (audio_dropped == undefined) return;
-   
-	var el = w3_el('id-msg-errors');
-	if (el) el.innerHTML = 'Stats: '+
-	   audio_dropped.toUnits() +' dropped, '+
-	   underruns.toUnits() +' underruns, '+
-	   seq_errors.toUnits() +' sequence, '+
-	   dp_resets.toUnits() +' realtime';
-
-	el = w3_el('id-status-dp-hist');
-	if (el) {
-	   var s = 'Datapump: ';
-		for (var i = 0; i < dp_hist_cnt; i++) {
-		   s += (i? ', ':'') + dp_hist[i].toUnits();
-		}
-      el.innerHTML = s;
-	}
-
-	el = w3_el('id-status-in-hist');
-	if (el) {
-	   var s = 'SoundInQ: ';
-		for (var i = 0; i < in_hist_cnt; i++) {
-		   s += (i? ', ':'') + in_hist[i].toUnits();
-		}
-      el.innerHTML = s;
-	}
-}
-
 function kiwi_too_busy(rx_chans)
 {
 	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans +' users max). <br>' +
@@ -3193,7 +3163,6 @@ function kiwi_msg(param, ws)
 				
 				kiwi_snr_stats(o.sa, o.sh);
 				
-				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				w3_call('config_status_cb', o);
 				time_display_cb(o);
 			}

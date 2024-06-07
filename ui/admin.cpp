@@ -392,10 +392,36 @@ void c2s_admin(void *param)
 ////////////////////////////////
 
 #ifdef USE_SDR
+            i = strcmp(cmd, "SET xfer_stats");
+            if (i == 0) {
+                rx_chan_t *rx;
+                int underruns = 0, seq_errors = 0;
+            
+                for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
+                    if (rx->busy) {
+                        conn_t *c = rx->conn;
+                        if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->ident_user != NULL) {
+                            underruns += c->audio_underrun;
+                            seq_errors += c->sequence_errors;
+                        }
+                    }
+                }
+        
+                sb = kstr_asprintf(NULL, "{\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"ar2\":%d,\"an\":%d,\"an2\":%d,",
+                    dpump.audio_dropped, underruns, seq_errors, dpump.resets, dpump.in_hist_resets, nrx_bufs, N_IN_HIST);
+                sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
+                sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_IN_HIST));
+                sb = kstr_cat(sb, "}");
+                send_msg(conn, false, "ADM xfer_stats_cb=%s", kstr_sp(sb));
+                kstr_free(sb);
+                continue;
+            }
+
             i = strcmp(cmd, "SET dpump_hist_reset");
             if (i == 0) {
-                dpump.force_reset = true;
-                dpump.resets = 0;
+                memset(dpump.hist, 0, sizeof(dpump.hist));
+                memset(dpump.in_hist, 0, sizeof(dpump.in_hist));
+                dpump.resets = dpump.in_hist_resets = 0;
                 continue;
             }
 #endif

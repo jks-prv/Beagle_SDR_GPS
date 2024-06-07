@@ -509,7 +509,7 @@ retry:
                 if (isWB_conn) {
                     if (kiwi.isWB) {
                         printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
-                        rx_n = rx_channels[1].busy? -1 : 1;     // allow simultaneous rx0/wb connections
+                        rx_n = rx_channels[1].busy? -1 : 1;     // allow simultaneous rx0/wb1 connections
                     } else {
                         rx_n = -1;
                     }
@@ -521,11 +521,12 @@ retry:
                     }
                 } else
                     // rx0: fall through to normal rx connect block below
+                    // which should succeed if rx0 is available
             #else
                 if (kiwi.isWB) {
                     if (isWB_conn) {
                         printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
-                        rx_n = rx_channels[1].busy? -1 : 1;     // wb firmware: allow only wb connections
+                        rx_n = rx_channels[1].busy? -1 : 1;     // wb firmware: allow only wb1 connections
                     } else {
                         rx_n = -1;
                     }
@@ -537,6 +538,7 @@ retry:
                     }
                 } else
                     // non-wb firmware: fall through to normal rx connect block below
+                    // which will always fail because rx_n == -1
             #endif
         #endif
         

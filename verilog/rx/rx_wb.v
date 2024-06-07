@@ -185,8 +185,8 @@ fir_iq #(.WIDTH(RXO_BITS))
             //        12 345678
             //                 12 34567890
             
-		    //rx_dout = rd_getI? rx_cic1_out_i[15:0] : ( rd_getQ? rx_cic1_out_q[15:0] :
-		    //    { {{6{rx_cic1_out_i[17]}}, rx_cic1_out_i[17:16]}, {{6{rx_cic1_out_q[17]}}, rx_cic1_out_q[17:16]} } );
+		    rx_dout = rd_getI? rx_cic1_out_i[15:0] : ( rd_getQ? rx_cic1_out_q[15:0] :
+		        { {{6{rx_cic1_out_i[17]}}, rx_cic1_out_i[17:16]}, {{6{rx_cic1_out_q[17]}}, rx_cic1_out_q[17:16]} } );
 
             // zero fill
             // for RX2_BITS = 18
@@ -196,8 +196,8 @@ fir_iq #(.WIDTH(RXO_BITS))
             // 1       1            123456
             // 7       0 9         0
             
-		    rx_dout = rd_getI? {rx_cic1_out_i[9:0], 6'b0} : ( rd_getQ? {rx_cic1_out_q[9:0], 6'b0} :
-		        { rx_cic1_out_i[17:10], rx_cic1_out_q[17:10] } );
+		    //rx_dout = rd_getI? {rx_cic1_out_i[9:0], 6'b0} : ( rd_getQ? {rx_cic1_out_q[9:0], 6'b0} :
+		    //    { rx_cic1_out_i[17:10], rx_cic1_out_q[17:10] } );
 `endif
 	    end else
 	    begin

@@ -32,7 +32,10 @@ typedef struct {
 	u2_t i, q;
 } __attribute__((packed)) wf_iq_t;
 
-#define N_DPBUF	32
+#define N_DPBUF	    32
+#define N_WB_DPBUF  256
+
+#define N_IN_HIST   N_WB_DPBUF
 
 typedef struct {
 	struct {
@@ -44,7 +47,8 @@ typedef struct {
 		    u4_t in_seq[N_DPBUF];
 		#endif
 		
-		TYPECPX wb_samps[N_DPBUF][MAX_WB_SAMPS];
+		//TYPECPX wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
+		TYPESTEREO24 wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
 
 		TYPECPX agc_samples_c[FASTFIR_OUTBUF_SIZE];
 
@@ -72,8 +76,7 @@ typedef struct {
 
 typedef struct {
     u4_t resets, hist[MAX_NRX_BUFS];
-    bool force_reset;
-    u4_t in_hist[N_DPBUF];
+    u4_t in_hist_resets, in_hist[N_IN_HIST];
     int rx_adc_ovfl;
     u4_t rx_adc_ovfl_cnt;
     int audio_dropped;
@@ -83,3 +86,4 @@ extern dpump_t dpump;
 
 void data_pump_start_stop();
 void data_pump_init();
+void data_pump_dump();

@@ -8,6 +8,7 @@ var admin = {
    current_tab_name: '',
    ext_configs_done: false,
    console_open: false,
+   status_interval: null,
    
    long_running: false,
    is_multi_core: false,
@@ -106,6 +107,48 @@ function status_focus()
       setTimeout(function() { cfg_save_json('test_cfg_save_seq 3', 'cfg'); }, 200);
       setTimeout(function() { cfg_save_json('test_cfg_save_seq 4', 'cfg'); }, 300);
    }
+
+   kiwi_clearInterval(admin.status_interval);
+	admin.status_interval = setInterval(function() { msg_send('SET xfer_stats'); }, 1000);
+}
+
+function status_blur()
+{
+   kiwi_clearInterval(admin.status_interval);
+}
+
+var seqqq=0;
+function status_xfer_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_in_hist_resets, dp_hist_cnt, dp_hist, in_hist_cnt, in_hist)
+{
+   if (audio_dropped == undefined) return;
+   
+	var el = w3_el('id-msg-errors');
+	if (el) el.innerHTML = 'Stats: '+
+	   audio_dropped.toUnits() +' dropped, '+
+	   underruns.toUnits() +' underruns, '+
+	   seq_errors.toUnits() +' sequence, '+
+	   dp_resets.toUnits() +' realtime_D, '+
+	   dp_in_hist_resets.toUnits() +' realtime_S'+
+	   ' #'+seqqq;
+	seqqq++;
+
+	el = w3_el('id-status-dp-hist');
+	if (el) {
+	   var s = 'Datapump: ';
+		for (var i = 0; i < dp_hist_cnt; i++) {
+		   s += (i? ', ':'') + dp_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
+
+	el = w3_el('id-status-in-hist');
+	if (el) {
+	   var s = 'SoundInQ: ';
+		for (var i = 0; i < in_hist_cnt; i++) {
+		   s += (i? ', ':'') + in_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
 }
 
 function status_dpump_hist_reset_cb(id, idx)
@@ -151,7 +194,7 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', 'id-sidenav-fw', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Wideband', 'id-sidenav-fw', kiwi.RX_WB, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX_WB)),
                admin.is_multi_core? 
-                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'All audio', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
+                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Max rx chans', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
                :
                   ''
             ),
@@ -253,7 +296,7 @@ function mode_focus()
    w3_innerHTML('id-fw-3ch', s);
 
    if (admin.is_multi_core) {
-      s = rx12_afft + w3_div(admin.mode_fmt +'|width:728px', '14 channels total...');
+      s = rx12_afft + w3_div(admin.mode_fmt +'|width:728px', '14 rx channels total...');
       w3_innerHTML('id-fw-14ch', s);
    }
 }
@@ -4509,6 +4552,15 @@ function admin_recv(data)
 			
          case "user_list":
             users_list_cb(decodeURIComponent(param[1]));
+            break;
+
+         case "xfer_stats_cb":   // in response to "SET xfer_stats"
+            //console.log('xfer_stats_cb='+ param[1]);
+            var o = kiwi_JSON_parse('xfer_stats_cb', param[1]);
+            if (o) {
+               //console.log(o);
+				   status_xfer_cb(o.ad, o.au, o.ae, o.ar, o.ar2, o.an, o.ap, o.an2, o.ai);
+            }
             break;
 
 			default:
