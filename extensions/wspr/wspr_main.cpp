@@ -967,7 +967,7 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
     s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
 	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
 	cfg_string_free(s);
-    set_reporter_grid((char *) wspr_c.rgrid);
+    wspr_set_latlon_from_grid((char *) wspr_c.rgrid);
 
     // Make sure WSPR.autorun holds *correct* count of non-preemptible autorun processes.
     // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth

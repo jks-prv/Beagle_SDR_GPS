@@ -59,7 +59,6 @@ typedef struct {
     char *rcall;
     char rgrid[LEN_GRID];
     latLon_t r_loc;
-	bool GPS_update_grid;
 	bool syslog, spot_log;
 } ft8_conf2_t;
 
@@ -276,8 +275,8 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
 	cfg_string_free(s);
     s = (char *) cfg_string("ft8.grid", NULL, CFG_REQUIRED);
 	kiwi_strncpy(ft8_conf2.rgrid, s, LEN_GRID);
+    wspr_set_latlon_from_grid(s);
 	cfg_string_free(s);
-    set_reporter_grid((char *) ft8_conf2.rgrid);
 	grid_to_latLon(ft8_conf2.rgrid, &ft8_conf2.r_loc);
 	if (ft8_conf2.r_loc.lat != 999.0)
 		latLon_deg_to_rad(ft8_conf2.r_loc);
@@ -324,11 +323,11 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
         update_cfg = true;
     }
 
-    ft8_conf2.GPS_update_grid = cfg_default_bool("ft8.GPS_update_grid", false, &update_cfg);
+    ft8_conf.GPS_update_grid = cfg_default_bool("ft8.GPS_update_grid", false, &update_cfg);
     ft8_conf2.syslog = ft8_conf.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
     ft8_conf2.spot_log = cfg_default_bool("ft8.spot_log", false, &update_cfg);
 
-	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf2.rgrid=<%s> ft8_conf2.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf2.rgrid, ft8_conf2.GPS_update_grid);
+	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf2.rgrid=<%s> ft8_conf.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf2.rgrid, ft8_conf.GPS_update_grid);
     return update_cfg;
 }
 

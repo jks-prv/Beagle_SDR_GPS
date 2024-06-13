@@ -18,6 +18,7 @@ typedef struct {
     s2_t *s2p_start, *s2p_end;
     int tsamps;
     
+	bool GPS_update_grid;
     int syslog;
 } ft8_conf_t;
 

@@ -40,6 +40,7 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "debug.h"
 #include "ext_int.h"
+#include "FT8.h"
 #include "wspr.h"
 #include "security.h"
 #include "options.h"
@@ -1739,8 +1740,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             #endif
 
             #ifdef USE_SDR
-                //printf("ch=%d ug=%d haveLat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
-                if (wspr_c.GPS_update_grid && gps.StatLat) {
+                //printf("ch=%d WSPR_auto=%d FT8_auto=%d haveLat=%d\n", ch, wspr_c.GPS_update_grid, ft8_conf.GPS_update_grid, (gps.StatLat != 0));
+                if ((wspr_c.GPS_update_grid || ft8_conf.GPS_update_grid) && gps.StatLat) {
                     latLon_t loc;
                     loc.lat = gps.sgnLat;
                     loc.lon = gps.sgnLon;
@@ -1755,7 +1756,10 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 printf("TEST_GPS_GRID %s\n", grid6);
                             }
                         #endif
-                        kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+                        if (wspr_c.GPS_update_grid)
+                            kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
+                        if (ft8_conf.GPS_update_grid)
+                            kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
                     }
                 }
         

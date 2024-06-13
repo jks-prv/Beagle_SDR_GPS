@@ -389,4 +389,4 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
 int snr_comp(const void *elem1, const void *elem2);
 int freq_comp(const void *elem1, const void *elem2);
 
-void set_reporter_grid(char *grid);
+void wspr_set_latlon_from_grid(char *grid);
