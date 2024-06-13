@@ -59,7 +59,8 @@ bool kiwi_str_begins_with(char *s, const char *cs);
 char *kiwi_str_ends_with(char *s, const char *cs);
 char *kiwi_skip_over(char *s, const char *skip);
 char *kstr_sp_less_trailing_nl(char *s_kstr_cstr);
-
+void kiwi_remove_double_dots_and_double_slashes(char *s);
+void kiwi_bin2str(char *to, const unsigned char *p, size_t len);
 char *kiwi_overlap_strcpy(char *dst, const char *src);
 int kiwi_strnlen(const char *s, int limit);
 char *kiwi_strncpy(char *dst, const char *src, size_t n);

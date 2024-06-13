@@ -59,7 +59,7 @@ struct rx_data_t {
             u2_t snd_seq;
         } hdr;
     #endif
-	rx_iq_t iq_t[MAX_NRX_SAMPS * MAX_RX_CHANS];
+	iq3_t iq_t[MAX_NRX_SAMPS * MAX_RX_CHANS];
 } __attribute__((packed));
 static rx_data_t *rxd;
 
@@ -163,7 +163,7 @@ static void snd_service()
             i_wb_samps = rx->wb_samps[rx->wr_pos];
         }
             
-        rx_iq_t *iqp = (rx_iq_t *) &rxd->iq_t;
+        iq3_t *iqp = (iq3_t *) &rxd->iq_t;
     
         #if 0
             // check 48-bit ticks counter timestamp
@@ -182,7 +182,7 @@ static void snd_service()
         
         if (kiwi.isWB) {
             #ifdef DP_DUMP_WB
-                rx_iq_t *iqd_p = rxd_debug.iq_t;
+                iq3_t *iqd_p = rxd_debug.iq_t;
                 #define DP_DUMP_GO 100
                 static u4_t go;
             #endif
@@ -523,15 +523,15 @@ void data_pump_start_stop()
 void data_pump_init()
 {
     #ifdef SND_SEQ_CHECK
-        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(rx_iq_t) * nrx_samps * rx_buf_chans);
+        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(iq3_t) * nrx_samps * rx_buf_chans);
     #else
-        rx_xfer_size = sizeof(rx_iq_t) * nrx_samps * rx_buf_chans;
+        rx_xfer_size = sizeof(iq3_t) * nrx_samps * rx_buf_chans;
     #endif
 	rxd = (rx_data_t *) &SPI_SHMEM->dpump_miso.word[0];
 	rxt = (rx_trailer_t *) ((char *) rxd + rx_xfer_size);
 	rx_xfer_size += sizeof(rx_trailer_t);
-	//printf("rx_trailer_t=%d rx_iq_t=%d rx_xfer_size=%d rxd=%p rxt=%p nrx_samps_loop=%d nrx_samps_rem=%d\n",
-	//    sizeof(rx_trailer_t), sizeof(rx_iq_t), rx_xfer_size, rxd, rxt, nrx_samps_loop, nrx_samps_rem);
+	//printf("rx_trailer_t=%d iq3_t=%d rx_xfer_size=%d rxd=%p rxt=%p nrx_samps_loop=%d nrx_samps_rem=%d\n",
+	//    sizeof(rx_trailer_t), sizeof(iq3_t), rx_xfer_size, rxd, rxt, nrx_samps_loop, nrx_samps_rem);
 
 	// verify that audio samples will fit in hardware buffers
 	#define WORDS_PER_SAMP 3	// 2 * 24b IQ = 3 * 16b

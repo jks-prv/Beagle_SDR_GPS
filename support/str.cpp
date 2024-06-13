@@ -895,6 +895,41 @@ int _kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...) {
     return n;
 }
 
+// From mongoose 5.6 because removed in 7.14
+// Protect against directory disclosure attack by removing '..',
+// excessive '/' and '\' characters
+void kiwi_remove_double_dots_and_double_slashes(char *s) {
+  char *p = s;
+
+  while (*s != '\0') {
+    *p++ = *s++;
+    if (s[-1] == '/' || s[-1] == '\\') {
+      // Skip all following slashes, backslashes and double-dots
+      while (s[0] != '\0') {
+        if (s[0] == '/' || s[0] == '\\') { s++; }
+        else if (s[0] == '.' && (s[1] == '/' || s[1] == '\\')) { s += 2; }
+        else if (s[0] == '.' && s[1] == '.' && s[2] == '\0') { s += 2; }
+        else if (s[0] == '.' && s[1] == '.' && (s[2] == '/' || s[2] == '\\')) { s += 3; }
+        else { break; }
+      }
+    }
+  }
+  *p = '\0';
+}
+
+// From mongoose 5.6 because removed in 7.14
+// Stringify binary data. Output buffer must be twice as big as input,
+// because each byte takes 2 bytes in string representation
+void kiwi_bin2str(char *to, const unsigned char *p, size_t len) {
+  static const char *hex = "0123456789abcdef";
+
+  for (; len--; p++) {
+    *to++ = hex[p[0] >> 4];
+    *to++ = hex[p[0] & 0x0f];
+  }
+  *to = '\0';
+}
+
 // SECURITY: zeros stack vars
 bool kiwi_sha256_strcmp(char *str, const char *key)
 {
@@ -908,7 +943,7 @@ bool kiwi_sha256_strcmp(char *str, const char *key)
     bzero(&ctx, sizeof(ctx));
 
     char str_s[SHA256_BLOCK_SIZE*2 + SPACE_FOR_NULL];
-    mg_bin2str(str_s, str_bin, SHA256_BLOCK_SIZE);
+    kiwi_bin2str(str_s, str_bin, SHA256_BLOCK_SIZE);
     bzero(str_bin, sizeof(str_bin));
     
     int r = strcmp(str_s, key);

@@ -239,7 +239,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 
     //#ifdef CONN_PRINTF
     #if 0
-        printf("rx_server_websocket(%s): mc: %p %s:%d %s %s\n", ws_mode_s[mode], mc, mc->remote_ip, mc->remote_port, mc->uri, mc->query_string);
+        printf("rx_server_websocket(%s): mc: %p %s:%d %s %s\n", ws_mode_s[mode], mc, mc->remote_ip, mc->remote_port, mc->uri, mc->query);
         if (c != NULL)
             printf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
                 mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
@@ -264,8 +264,9 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
         
         if (mode == WS_MODE_CLOSE) {
             //cprintf(c, "WS_MODE_CLOSE %s KICK KA=%02d/60 KC=%05d\n", rx_conn_type(c), c->keep_alive, c->keepalive_count);
-            if (!c->internal_connection)
-                mg_websocket_write(mc, WEBSOCKET_OPCODE_CONNECTION_CLOSE, "", 0);
+            if (!c->internal_connection) {
+                mg_ws_send(mc, "", 0, WEBSOCKET_OP_CLOSE);
+            }
             c->mc = NULL;
             c->kick = true;
             return NULL;
@@ -283,32 +284,53 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	if (uri_ts[0] == '/') uri_ts++;
 	conn_printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
-	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false;
+	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false, isWS, isKrec = false;
 	u64_t tstamp;
-	char *uri_m = NULL;
-	if (sscanf(uri_ts, "kiwi/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
-	    isKiwi_UI = true;
+	char *type_m = NULL, *uri_m = NULL;
+	int n;
+	
+	if ((n=sscanf(uri_ts, "ws/%8m[^/]/%lld/%256m[^\?]", &type_m, &tstamp, &uri_m)) == 3) {
+	    isWS = true;
 	} else
-	if (sscanf(uri_ts, "no_wf/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
+	if (sscanf(uri_ts, "%8m[^/]/%lld/%256m[^\?]", &type_m, &tstamp, &uri_m) == 3) {
+	    isWS = false;
+	} else
+    // kiwiclient / kiwirecorder
+    if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
+        type_m = strdup("krec");
+        isWS = false;
+        isKrec = true;
+    } else {
+        printf("bad URI_TS format n=%d <%s>\n", n, uri_ts);
+        kiwi_asfree(type_m);
+        kiwi_asfree(uri_m);
+        return NULL;
+    }
+    printf("URI_TS <%s> <%s> %lld <%s>\n", uri_ts, type_m, tstamp, uri_m);
+    
+    if (strcmp(type_m, "kiwi") == 0) {
+	    isKiwi_UI = true;
+    } else
+    if (strcmp(type_m, "no_wf") == 0) {
 	    isKiwi_UI = true;
 	    isNo_WF = true;
-	} else
-	if (sscanf(uri_ts, "wb/%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
+    } else
+    if (strcmp(type_m, "wb") == 0) {
 	    isWB_conn = true;
-	} else {
-	    // kiwiclient / kiwirecorder
-        if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) != 2) {
-            printf("bad URI_TS format\n");
-            kiwi_asfree(uri_m);
-            return NULL;
-        }
+    } else
+    if (!isKrec) {
+        printf("bad URI_TS type <%s> <%s>\n", type_m, uri_ts);
+        kiwi_asfree(type_m);
+        kiwi_asfree(uri_m);
+        return NULL;
     }
+    kiwi_asfree(type_m);
     
     // specifically asked for waterfall-containing channel (e.g. kiwirecorder WF-only mode)
     if (strstr(uri_m, "W/F"))
         isWF_conn = true;
 	
-    //printf("URL <%s> <%s> <%s>\n", mc->uri, mc->query_string, uri_m);
+    //printf("URL <%s> <%s> <%s>\n", mc->uri, mc->query, uri_m);
 	for (i=0; rx_streams[i].uri; i++) {
 		st = &rx_streams[i];
 		
@@ -353,7 +375,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
     
 	if (down || update_in_progress || backup_in_progress) {
 		conn_printf("down=%d UIP=%d BIP=%d stream=%s\n", down, update_in_progress, backup_in_progress, st->uri);
-        conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query_string, ip_forwarded);
+        conn_printf("URL <%s> <%s> %s\n", mc->uri, mc->query, ip_forwarded);
         bool update_backup = (update_in_progress || backup_in_progress);
 
         // internal STREAM_SOUND connections don't understand "reason_disabled" API, see below
@@ -683,7 +705,7 @@ retry:
 		}
 
         const char *cp;
-        if (mc->query_string && (cp = strstr(mc->query_string, "foff=")) != NULL && sscanf(cp, "foff=%lf", &c->foff) == 1) {
+        if (mc->query && (cp = strstr(mc->query, "foff=")) != NULL && sscanf(cp, "foff=%lf", &c->foff) == 1) {
             if (c->foff < 0 || c->foff > 100e9) c->foff = 0;
             c->foff_set = true;
         }

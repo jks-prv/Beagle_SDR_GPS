@@ -3151,7 +3151,7 @@ function kiwi_msg(param, ws)
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint.srate = o.sr;
 				extint.wb_srate = Math.round(o.wsr / 1e3);
-				mode_wb_srate(extint.wb_srate);
+				w3_call('mode_wb_srate', extint.wb_srate);
 				extint.nom_srate = o.nsr;
 
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
@@ -3248,6 +3248,7 @@ function kiwi_msg(param, ws)
 
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
+		   //console.log('reason_disabled param1=<'+ param[1] +'>');
 			reason_disabled = 'User connections disabled.'+
 			   ((param[1] != '')? ('<br>Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
 			break;
@@ -3280,8 +3281,9 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'kiwi_kick':
-		   var p = param[1].split(',');
+		   var p = decodeURIComponent(param[1]).split(',');
 		   var kicked = +p[0];
+		   //console.log('kiwi_kick kicked='+ kicked);
 		   var s = ext_get_cfg_param_string(kicked? 'cfg.reason_kicked' : 'cfg.reason_disabled');
 		   //console.log('kick_kick p1=<'+ p[1] +'> s=<'+ s +'>');
 		   var s = w3_json_to_html('kiwi_kick', p[1]) + ((s != '')? ('<br>Reason: '+ s) : '');

@@ -54,7 +54,7 @@ Boston, MA  02110-1301, USA.
 
 // process non-websocket connections
 // check_ip_blacklist() done by caller
-char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
+char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data)
 {
 	int i, j, n;
 	char *sb, *sb2, *sb3;
@@ -83,10 +83,10 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 		)
 			return NULL;
 
-	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query_string);
+	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query);
 	
 	// these require a query string
-	if (mc->query_string == NULL && (st->type == AJAX_PHOTO || st->type == AJAX_DX)) {
+	if (mc->query == NULL && (st->type == AJAX_PHOTO || st->type == AJAX_DX)) {
 		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", uri);
 		return NULL;
 	}
@@ -110,19 +110,19 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	// Using AJAX to upload a file to the server is required because browser javascript doesn't have access to the
 	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_PHOTO: {
-		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
+		char *vname, *fname;
 		const char *data = NULL;
 		int data_len = 0, rc = 0;
 		
-		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", ip_unforwarded, mc->content_len);
-		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
+		printf("PHOTO UPLOAD REQUESTED from %s\n", ip_unforwarded);
+		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query, current_authkey);
 		
 		if (!isLocalIP) rc = 5;
 
 		if (rc == 0) {
             int key_cmp = -1;
-            if (mc->query_string && current_authkey) {
-                key_cmp = strcmp(mc->query_string, current_authkey);
+            if (mc->query && current_authkey) {
+                key_cmp = strcmp(mc->query, current_authkey);
                 kiwi_asfree(current_authkey);
                 current_authkey = NULL;
             }
@@ -131,8 +131,21 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
         }
 		
 		if (rc == 0) {
-			mg_parse_multipart(mc->content, mc->content_len,
-				vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
+            #ifdef MONGOOSE_NEW_API
+                struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+                struct mg_http_part part;
+                mg_http_next_multipart(hm->body, 0, &part);
+                vname = mg_str_to_cstr(&part.name);
+                fname = mg_str_to_cstr(&part.filename);
+                data = part.body.buf;
+                data_len = part.body.len;
+            #else
+		        char _vname[64], _fname[64];		// mg_parse_multipart() checks size of these
+                mg_parse_multipart(mc->content, mc->content_len,
+                	_vname, sizeof(_vname), _fname, sizeof(_fname), &data, &data_len);
+                vname = _vname;
+		        fname = _fname;
+            #endif
 			
 			if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
 				FILE *fp;
@@ -161,6 +174,9 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 			system("mv " DIR_CFG "/photo.upload.tmp " DIR_CFG "/photo.upload");
 		
 		printf("AJAX_PHOTO: data=%p data_len=%d \"%s\" rc=%d\n", data, data_len, fname, rc);
+        #ifdef MONGOOSE_NEW_API
+		    kiwi_asfree(vname); kiwi_asfree(fname);
+		#endif
 		asprintf(&sb, "{\"r\":%d}", rc);
 		break;
 	}
@@ -176,17 +192,18 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 	// Using AJAX to upload a file to the server is required because browser javascript doesn't have access to the
 	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_DX: {
-		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
-		const char *data;
-		int type, idx, rc = 0, line, status, key_cmp, data_len;
+		char *vname, *fname;
+		const char *data = NULL;
+		int type, idx, rc = 0, line = 0, status, key_cmp, data_len;
         char **s_a = NULL;
         int s_size = 0;
 		char *r_buf = NULL;
+		n = 0;
 		
 		key_cmp = -1;
-		if (mc->query_string && current_authkey) {
-			key_cmp = strcmp(mc->query_string, current_authkey);
-            //printf("DX UPLOAD: AUTH key=%s ckey=%s %s\n", mc->query_string, current_authkey, key_cmp? "FAIL" : "OK");
+		if (mc->query && current_authkey) {
+			key_cmp = strcmp(mc->query, current_authkey);
+            //printf("DX UPLOAD: AUTH key=%s ckey=%s %s\n", mc->query, current_authkey, key_cmp? "FAIL" : "OK");
 		}
         kiwi_asfree(current_authkey);
         current_authkey = NULL;
@@ -200,9 +217,22 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
         TMEAS(u4_t start = timer_ms();)
         TMEAS(printf("DX UPLOAD: START saving to dx.json\n");)
 
-        mg_parse_multipart(mc->content, mc->content_len,
-            vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
-		//printf("DX UPLOAD: vname=%s fname=%s\n", vname, fname);
+        #ifdef MONGOOSE_NEW_API
+            struct mg_http_message *hm = (struct mg_http_message *) ev_data;
+            struct mg_http_part part;
+            mg_http_next_multipart(hm->body, 0, &part);
+            vname = mg_str_to_cstr(&part.name);
+            fname = mg_str_to_cstr(&part.filename);
+            data = part.body.buf;
+            data_len = part.body.len;
+        #else
+            char _vname[64], _fname[64];		// mg_parse_multipart() checks size of these
+            mg_parse_multipart(mc->content, mc->content_len,
+                _vname, sizeof(_vname), _fname, sizeof(_fname), &data, &data_len);
+            vname = _vname;
+            fname = _fname;
+        #endif
+		printf("DX UPLOAD: vname=%s fname=%s data=%p data_len=%d\n", vname, fname, data, data_len);
         
         if (data_len >= DX_UPLOAD_MAX_SIZE) { rc = 2; goto fail; }
         
@@ -377,6 +407,9 @@ fail:
 		printf("DX UPLOAD: \"%s\" \"%s\" data_len=%d %s %s rc=%d line=%d nfields=%d\n",
 		    vname, fname, data_len, ip_unforwarded, rc? "ERROR" : "OK", rc, line, n);
 		asprintf(&sb, "{\"rc\":%d, \"line\":%d, \"nfields\":%d}", rc, line, n);
+        #ifdef MONGOOSE_NEW_API
+		    kiwi_asfree(vname); kiwi_asfree(fname);
+		#endif
 	    TMEAS(u4_t now = timer_ms(); printf("DX UPLOAD: DONE %.3f sec\n", TIME_DIFF_MS(now, start));)
 		break;
 	}
@@ -409,8 +442,8 @@ fail:
 	//  Measurement request restricted to the local network.
 	//	Returns JSON
 	case AJAX_SNR: {
-        //printf("/snr qs=<%s>\n", mc->query_string);
-        if (mc->query_string && strncmp(mc->query_string, "meas", 4) == 0) {
+        //printf("/snr qs=<%s>\n", mc->query);
+        if (mc->query && strncmp(mc->query, "meas", 4) == 0) {
             if (isLocalIP) {
                 if (SNR_meas_tid) {
                     TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));
@@ -474,10 +507,10 @@ fail:
         c = (ctr_t*) &adc_ctr->word[0];
         u4_t adc_count = (c->d3 << 24) | (c->d2 << 16) | (c->d1 << 8) | c->d0;
         
-        //printf("/adc qs=<%s>\n", mc->query_string);
+        //printf("/adc qs=<%s>\n", mc->query);
         u4_t level = 0;
         // "%i" so decimal or hex beginning with 0x can be specified
-        if (mc->query_string && sscanf(mc->query_string, "level=%i", &level) == 1) {
+        if (mc->query && sscanf(mc->query, "level=%i", &level) == 1) {
             adc_level = level & ((1 << (ADC_BITS-1)) - 1);
             //printf("/adc SET level=%d(0x%x)\n", adc_level, adc_level);
             #define COUNT_ADC_OVFL 0x2000
@@ -501,7 +534,7 @@ fail:
 		//printf("/adc_ov REQUESTED from %s\n", ip_unforwarded);
 		
         sb = kstr_asprintf(NULL, "{\"adc_ov\":%u}\n", dpump.rx_adc_ovfl_cnt);
-		if (mc->query_string && strcmp(mc->query_string, "reset") == 0)
+		if (mc->query && strcmp(mc->query, "reset") == 0)
 		    dpump.rx_adc_ovfl_cnt = 0;
         return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
     }
@@ -509,21 +542,21 @@ fail:
 	// SECURITY:
 	//	Returns simple S-meter value
 	case AJAX_S_METER: {
-	    if (mc->query_string == NULL) {
+	    if (mc->query == NULL) {
             asprintf(&sb, "/s_meter: missing freq, try my_kiwi:8073/s-meter/?(freq in kHz)\n");
             printf("%s", sb);
             break;
 	    }
 	    
         double dial_freq_kHz;
-        n = sscanf(mc->query_string, "%lf", &dial_freq_kHz);
+        n = sscanf(mc->query, "%lf", &dial_freq_kHz);
         if (n == 1) {
             printf("/s_meter dial=%.2f freq_offset_kHz=%.2f ui_srate_kHz=%.2f ", dial_freq_kHz, freq_offset_kHz, ui_srate_kHz);
             dial_freq_kHz -= freq_offset_kHz;
             dial_freq_kHz = CLAMP(dial_freq_kHz, 0, ui_srate_kHz);
             printf("FINAL=%.2f\n", dial_freq_kHz);
         } else {
-            asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query_string);
+            asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query);
             printf("%s", sb);
             break;
         }

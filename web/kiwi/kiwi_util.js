@@ -1311,8 +1311,8 @@ function kiwi_open_or_reload_page(obj)   // { url, hp, path, qs, tab }
    if (isNull(url)) {
       var host_port = w3_opt(obj, 'hp', kiwi_host_port());
       var pathname = w3_opt(obj, 'path', '', '/');
-      var query_string = w3_opt(obj, 'qs', '', '/?');
-      url = kiwi_SSL() + host_port + pathname + query_string;
+      var query = w3_opt(obj, 'qs', '', '/?');
+      url = kiwi_SSL() + host_port + pathname + query;
    }
    console.log('kiwi_open_or_reload_page: '+ url);
    var rv;
@@ -2249,7 +2249,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	var no_wf = kiwi_url_param('no_wf');
 	var tstamp = (w3_opt(opt, 'new_ts') == true)? ((new Date()).getTime()) : kiwi.conn_tstamp;
-	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + tstamp +'/'+ stream;
+	ws_url = ws_protocol + ws_url +'/ws/'+ (no_wf? 'no_wf/':'kiwi/') + tstamp +'/'+ stream;
 	var qs = w3_opt(opt, 'qs');
 	if (isString(qs))
 	   ws_url += '?'+ qs;
@@ -2258,7 +2258,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	   ws_url += window.location.search;      // pass query string to support "&foff="
 	if (no_wf) wf.no_wf = true;
 	
-	//console.log('open_websocket '+ ws_url);
+	console.log('$$open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);
 	wsockets.push( { 'ws':ws, 'name':stream } );
 	ws.up = false;

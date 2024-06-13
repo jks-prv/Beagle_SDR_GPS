@@ -93,10 +93,6 @@ static const char *interp_s[] = { "max", "min", "last", "drop", "cma" };
     #define WFNextTask(r)
 #endif
 
-struct iq_t {
-	u2_t i, q;
-} __attribute__((packed));
-
 #define	WF_OUT_HDR	((int) (sizeof(wf_pkt_t) - sizeof(out->un)))
 #define	WF_OUT_NOM	((int) (WF_OUT_HDR + sizeof(out->un.buf)))
 		

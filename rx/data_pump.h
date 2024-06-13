@@ -26,11 +26,11 @@ Boston, MA  02110-1301, USA.
 typedef struct {
 	u2_t i, q;
 	u1_t q3, i3;	// NB: endian swap
-} __attribute__((packed)) rx_iq_t;
+} __attribute__((packed)) iq3_t;
 			
 typedef struct {
 	u2_t i, q;
-} __attribute__((packed)) wf_iq_t;
+} __attribute__((packed)) iq_t;
 
 #define N_DPBUF	    32
 #define N_WB_DPBUF  256
