@@ -239,12 +239,14 @@ void mg_ev_setup_api_compat(struct mg_connection *mc)
     mg_snprintf(mc->local_ip, sizeof(mc->local_ip), "%M", mg_print_ip, mc->loc.ip);
     if (kiwi_str_begins_with(mc->local_ip, "[0:0:0:0:0:ffff:"))
         mg_snprintf(mc->local_ip, sizeof(mc->local_ip), "%M", mg_print_ip4, &mc->loc.ip[12]);
+    mc->local_port = mg_ntohs(mc->loc.port);
+
     mg_snprintf(mc->remote_ip, sizeof(mc->remote_ip), "%M", mg_print_ip, mc->rem.ip);
     if (kiwi_str_begins_with(mc->remote_ip, "[0:0:0:0:0:ffff:"))
         mg_snprintf(mc->remote_ip, sizeof(mc->remote_ip), "%M", mg_print_ip4, &mc->rem.ip[12]);
-    mc->local_port = mg_ntohs(mc->loc.port);
     mc->remote_port = mg_ntohs(mc->rem.port);
-    printf("remote: %s:%d local: %s:%d\n", mc->remote_ip, mc->remote_port, mc->local_ip, mc->local_port);
+
+    //printf("remote: %s:%d local: %s:%d\n", mc->remote_ip, mc->remote_port, mc->local_ip, mc->local_port);
 }
 
 //#define EV_HTTP_PRINTF
@@ -314,13 +316,13 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
                 mc->query = mg_str_to_cstr(&hm->query);
                 wm->init = true;
             }
-            printf("ev_handler_http %s uri=<%s> qs=<%s>\n", mg_ev_names[ev], mc->uri, mc->query);
+            //printf("ev_handler_http %s uri=<%s> qs=<%s>\n", mg_ev_names[ev], mc->uri, mc->query);
 	        u64_t tstamp;
             if (kiwi_str_begins_with(mc->uri, "/ws/") ||
                 // kiwirecorder
                 sscanf(mc->uri, "/%lld/", &tstamp) == 1 || kiwi_str_begins_with(mc->uri, "/wb/")) {
                 mg_ws_upgrade(mc, hm, NULL);
-                printf("WEBSOCKET upgrade <%s>\n", mc->uri);
+                //printf("WEBSOCKET upgrade <%s>\n", mc->uri);
             } else {
                 web_request(mc, ev, ev_data);
             }
@@ -399,7 +401,7 @@ static void ev_handler_udp(struct mg_connection *mc, int ev, void *ev_data)
     switch (ev) {
         case MG_EV_CONNECT:
             char ip_s[48+5+1];
-            mg_snprintf(ip_s, sizeof(ip_s), "%M:%d", mc->rem.is_ip6? mg_print_ip6 : mg_print_ip4, mc->rem.ip, mc->rem.port);
+            mg_snprintf(ip_s, sizeof(ip_s), "%M:%d", mc->rem.is_ip6? mg_print_ip6 : mg_print_ip4, mc->rem.ip, mg_ntohs(mc->rem.port));
             printf("udp_connect %s\n", ip_s);
             return;
     }
