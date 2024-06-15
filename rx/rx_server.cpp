@@ -284,21 +284,21 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	if (uri_ts[0] == '/') uri_ts++;
 	conn_printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
-	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false, isWS, isKrec = false;
+	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false, old_fmt, isKrec = false;
 	u64_t tstamp;
 	char *type_m = NULL, *uri_m = NULL;
-	int n;
+	int n = 0;
 	
 	if ((n=sscanf(uri_ts, "ws/%8m[^/]/%lld/%256m[^\?]", &type_m, &tstamp, &uri_m)) == 3) {
-	    isWS = true;
+	    old_fmt = false;
 	} else
 	if (sscanf(uri_ts, "%8m[^/]/%lld/%256m[^\?]", &type_m, &tstamp, &uri_m) == 3) {
-	    isWS = false;
+	    old_fmt = true;
 	} else
     // kiwiclient / kiwirecorder
     if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
         type_m = strdup("krec");
-        isWS = false;
+        old_fmt = false;
         isKrec = true;
     } else {
         printf("bad URI_TS format n=%d <%s>\n", n, uri_ts);
@@ -306,7 +306,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
         kiwi_asfree(uri_m);
         return NULL;
     }
-    printf("URI_TS <%s> <%s> %lld <%s>\n", uri_ts, type_m, tstamp, uri_m);
+    printf("URI_TS <%s> old_fmt=%d <%s> %lld <%s>\n", uri_ts, old_fmt, type_m, tstamp, uri_m);
     
     if (strcmp(type_m, "kiwi") == 0) {
 	    isKiwi_UI = true;
@@ -527,11 +527,12 @@ retry:
 		int rx_n, heavy;
 
         #ifdef USE_WB
+            rx_chan_t *rxc = &rx_channels[RX_CHAN1];
             #ifdef WB_RX0_SHARE
                 if (isWB_conn) {
                     if (kiwi.isWB) {
-                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
-                        rx_n = rx_channels[1].busy? -1 : 1;     // allow simultaneous rx0/wb1 connections
+                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rxc->chan_enabled, rxc->data_enabled, rxc->busy);
+                        rx_n = rxc->busy? -1 : 1;     // allow simultaneous rx0/wb1 connections
                     } else {
                         rx_n = -1;
                     }
@@ -541,14 +542,15 @@ retry:
                         conn_init(c);
                         return NULL;
                     }
+                    rxc->busy = 1;
                 } else
                     // rx0: fall through to normal rx connect block below
                     // which should succeed if rx0 is available
             #else
                 if (kiwi.isWB) {
                     if (isWB_conn) {
-                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rx_channels[1].chan_enabled, rx_channels[1].data_enabled, rx_channels[1].busy);
-                        rx_n = rx_channels[1].busy? -1 : 1;     // wb firmware: allow only wb1 connections
+                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rxc->chan_enabled, rxc->data_enabled, rxc->busy);
+                        rx_n = rxc->busy? -1 : 1;     // wb firmware: allow only wb1 connections
                     } else {
                         rx_n = -1;
                     }
@@ -558,6 +560,7 @@ retry:
                         conn_init(c);
                         return NULL;
                     }
+                    rxc->busy = 1;
                 } else
                     // non-wb firmware: fall through to normal rx connect block below
                     // which will always fail because rx_n == -1

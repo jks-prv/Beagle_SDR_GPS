@@ -2276,7 +2276,7 @@ function kiwi_too_busy(rx_chans)
 
 function kiwi_wb_only()
 {
-	var s = 'Sorry, this KiwiSDR is configured for non-web wideband connections only. <br>' +
+	var s = 'Sorry, this KiwiSDR is configured for non-web, wideband connections only. <br>' +
 	'See the Kiwi forum for details about wideband mode. <br>' +
 	'Please check <a href="http://rx.kiwisdr.com" target="_self">rx.kiwisdr.com</a> for more KiwiSDR receivers available world-wide.';
 	kiwi_show_msg(s);

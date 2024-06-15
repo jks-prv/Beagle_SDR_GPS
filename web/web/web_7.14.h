@@ -116,6 +116,7 @@ void services_start();
 int web_served(conn_t *c);
 void web_served_clear_cache(conn_t *c);
 struct mg_connection *web_connect(const char *url);
+void web_connection_close(struct mg_connection *mc);
 void reload_index_params();
 void iparams_add(const char *id, char *val);
 

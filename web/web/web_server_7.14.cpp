@@ -296,11 +296,11 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             return;
             
         case MG_EV_HTTP_HDRS:
-            printf("ev_handler_http %s mc=%p\n", mg_ev_names[ev], mc);
+            //printf("ev_handler_http %s mc=%p\n", mg_ev_names[ev], mc);
             if (mc->fn_data == NULL) {
                 mc->fn_data = malloc(sizeof(web_mg_t));
                 wm = (web_mg_t *) mc->fn_data;
-                printf("ev_handler_http %s wm=%p\n", mg_ev_names[ev], wm);
+                //printf("ev_handler_http %s wm=%p\n", mg_ev_names[ev], wm);
                 memset(wm, 0, sizeof(web_mg_t));
             }
             return;
@@ -315,7 +315,10 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
                 wm->init = true;
             }
             printf("ev_handler_http %s uri=<%s> qs=<%s>\n", mg_ev_names[ev], mc->uri, mc->query);
-            if (kiwi_str_begins_with(mc->uri, "/ws/")) {
+	        u64_t tstamp;
+            if (kiwi_str_begins_with(mc->uri, "/ws/") ||
+                // kiwirecorder
+                sscanf(mc->uri, "/%lld/", &tstamp) == 1 || kiwi_str_begins_with(mc->uri, "/wb/")) {
                 mg_ws_upgrade(mc, hm, NULL);
                 printf("WEBSOCKET upgrade <%s>\n", mc->uri);
             } else {

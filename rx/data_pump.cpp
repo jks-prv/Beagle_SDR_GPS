@@ -152,15 +152,16 @@ static void snd_service()
         #endif
     
         TYPECPX *i_samps[MAX_RX_CHANS];
-        TYPESTEREO24 *i_wb_samps;
+        TYPECPX24 *i_wb_samps;
         
         for (int ch = 0; ch < rx_chans; ch++) {
             rx_dpump_t *rx = &rx_dpump[ch];
             i_samps[ch] = rx->in_samps[rx->wr_pos];
         }
         if (kiwi.isWB) {
-            rx_dpump_t *rx = &rx_dpump[1];
+            rx_dpump_t *rx = &rx_dpump[RX_CHAN1];
             i_wb_samps = rx->wb_samps[rx->wr_pos];
+            //real_printf("[%d=%p] ", rx->wr_pos, i_wb_samps); fflush(stdout);
         }
             
         iq3_t *iqp = (iq3_t *) &rxd->iq_t;
@@ -187,6 +188,8 @@ static void snd_service()
                 static u4_t go;
             #endif
     
+            //if (rx_channels[RX_CHAN1].data_enabled) { real_printf("."); fflush(stdout); }
+
             for (j=0; j < nrx_samps; j++) {
 
                 #ifdef WB_SHARE_RX0
@@ -218,17 +221,24 @@ static void snd_service()
                 
                 // rx1: wb0..wb[rx_wb_buf_chans-1]
                 for (int wb = 0; wb < rx_wb_buf_chans; wb++) {
-                    if (rx_channels[1].data_enabled) {
+                    if (rx_channels[RX_CHAN1].data_enabled) {
+                        s4_t i, q;
                         //#define WB_PATTERN
                         #ifdef WB_PATTERN
-                            s4_t i, q;
-                            i = S24_8_16(iqp->i3, iqp->i);
-                            q = S24_8_16(iqp->q3, iqp->q);
+                            #define PICKET
+                            #ifdef PICKET
+                                static u4_t ctr;
+                                if ((ctr % 1024) == 0) i = 0x3fff; else i = 0;
+                                ctr++;
+                                q = 0;
+                            #else
+                                i = S24_8_16(iqp->i3, iqp->i);
+                                q = S24_8_16(iqp->q3, iqp->q);
+                            #endif
 
-                            i_wb_samps[1]->re = i;     // preserve bit pattern (i.e. no scaling)
-                            i_wb_samps[1]->im = q;
+                            i_wb_samps->re = q;     // preserve bit pattern (i.e. no scaling)
+                            i_wb_samps->im = i;
                         #else
-                            s4_t i, q;
                             i = S24_8_16(iqp->i3, iqp->i);
                             q = S24_8_16(iqp->q3, iqp->q);
         
@@ -241,8 +251,8 @@ static void snd_service()
                                 //        12 345678
                                 //                 12 34567890
                                 
-                                i_wb_samps->left = q;
-                                i_wb_samps->right = i;
+                                i_wb_samps->re = q;
+                                i_wb_samps->im = i;
                             #else
                                 // zero fill
                                 // for RX2_BITS = 18
@@ -252,8 +262,8 @@ static void snd_service()
                                 // 1       1            123456
                                 // 7       0 9         0
                                 
-                                i_wb_samps[1]->re = q >> 6;
-                                i_wb_samps[1]->im = i >> 6;
+                                i_wb_samps->re = q >> 6;
+                                i_wb_samps->im = i >> 6;
                             #endif
                         #endif
                         i_wb_samps++;
@@ -358,7 +368,7 @@ static void snd_service()
                 rx_channels[ch].wr++;
                 
                 diff = (rx->wr_pos >= rx->rd_pos)? (rx->wr_pos - rx->rd_pos) : (n_dpbuf - rx->rd_pos + rx->wr_pos);
-                if (diff > (n_dpbuf-1)) {
+                if (diff >= n_dpbuf) {
                     dpump.in_hist_resets++;
                     #if 1
                         real_printf("#"); fflush(stdout);
@@ -400,9 +410,7 @@ static void snd_service()
                 #endif
             #endif
             
-            #if 1
-                real_printf("."); fflush(stdout);
-            #endif
+            //real_printf("."); fflush(stdout);
             
             spi_set(CmdSetRXNsamps, nrx_samps_wb);
             diff = 0;
@@ -468,14 +476,18 @@ static void data_pump(void *param)
 		snd_service();
 		
 		for (int ch=0; ch < rx_all_chans; ch++) {
-			rx_chan_t *rx = &rx_channels[ch];
-			if (!rx->chan_enabled) continue;
-			conn_t *c = rx->conn;
-			assert(c != NULL);
-			assert(c->type == STREAM_SOUND);
-			if (c->task) {
-				TaskWakeup(c->task);
+			rx_chan_t *rxc = &rx_channels[ch];
+			if (!rxc->chan_enabled) continue;
+			if (rxc->wb_task) {
+                TaskWakeup(rxc->wb_task);
 			}
+            conn_t *c = rxc->conn;
+            if (c != NULL) {
+                assert(c->type == STREAM_SOUND);
+                if (c->task) {
+                    TaskWakeup(c->task);
+                }
+            }
 		}
 	}
 }
@@ -497,7 +509,7 @@ void data_pump_start_stop()
 		itask_run = false;
 		spi_set(CmdSetRXNsamps, 0);
 		ctrl_clr_set(CTRL_SND_INTR, 0);
-		//real_printf("#### STOP dpump\n");
+		real_printf("#### STOP dpump\n");
 		last_run_us = 0;
 	}
 
@@ -512,7 +524,7 @@ void data_pump_start_stop()
 		
 		ctrl_clr_set(CTRL_SND_INTR, 0);
 		spi_set(CmdSetRXNsamps, nrx_samps_wb);
-		//real_printf("#### START dpump\n");
+		real_printf("#### START dpump %d\n", nrx_samps_wb);
 		last_run_us = 0;
 	}
 	
@@ -548,13 +560,23 @@ void data_pump_init()
 	CreateTaskF(data_pump, 0, DATAPUMP_PRIORITY, CTF_POLL_INTR);
 }
 
+void data_pump_startup()
+{
+	// don't start data pump until first connection so GPS search can run at full speed on startup
+	static bool data_pump_started;
+	if (!data_pump_started) {
+		data_pump_init();
+		data_pump_started = true;
+	}
+}
+
 void data_pump_dump()
 {
-    rx_dpump_t *rx = &rx_dpump[1];
+    rx_dpump_t *rx = &rx_dpump[RX_CHAN1];
     int n_dpbuf = kiwi.isWB? N_WB_DPBUF : N_DPBUF;
     
     u4_t diff = (rx->wr_pos >= rx->rd_pos)? (rx->wr_pos - rx->rd_pos) : (n_dpbuf - rx->rd_pos + rx->wr_pos);
-    printf("data_pump isWB=%d n_dpbuf=%d rd|wr_pos=%d|%d|%d \n",
+    printf("data_pump RX_CHAN1 isWB=%d n_dpbuf=%d rd|wr_pos=%d|%d|%d \n",
         kiwi.isWB, n_dpbuf, rx->rd_pos, rx->wr_pos, diff);
 }
 

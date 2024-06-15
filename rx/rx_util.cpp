@@ -641,7 +641,8 @@ void dump()
 	
 	for (i=0; i < rx_all_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn-%2s %2.0f %2.0f %p %d|w %d|r\n", i, rx->chan_enabled, rx->busy,
+		lprintf("RX%d chan_en=%d data_en=%d busy=%d conn-%2s %2.0f %2.0f %p %d|w %d|r\n",
+		    i, rx->chan_enabled, rx->data_enabled, rx->busy,
 			rx->conn? stprintf("%02d", rx->conn->self_idx) : "",
 			//toUnits(audio_bytes[i], 0), toUnits(waterfall_bytes[i], 1),   // %6s
 			audio_kbps[i], waterfall_kbps[i],

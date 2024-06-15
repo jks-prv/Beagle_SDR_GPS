@@ -688,6 +688,7 @@ int web_request(struct mg_connection *mc, int ev)
         // This handler is called for each incoming websocket frame, one or more
         // times for connection lifetime.
         
+        //web_printf_all("%-16s %s %s\n", "WEBSOCKET", mc->uri, mc->query);
         if (isPort80) return MG_FALSE;
     
         if ((mc->wsbits & 0x0F) == WEBSOCKET_OP_CLOSE) { // close request from client

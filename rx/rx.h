@@ -32,6 +32,7 @@ typedef struct {
 	ext_t *ext;
 	int cfg_update_seq;
 	u4_t wr, rd;
+    tid_t wb_task;
 
 	int n_camp;
 	conn_t *camp_conn[N_CAMP];

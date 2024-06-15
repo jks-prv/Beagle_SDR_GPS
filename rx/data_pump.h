@@ -48,7 +48,7 @@ typedef struct {
 		#endif
 		
 		//TYPECPX wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
-		TYPESTEREO24 wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
+		TYPECPX24 wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
 
 		TYPECPX agc_samples_c[FASTFIR_OUTBUF_SIZE];
 
@@ -86,4 +86,5 @@ extern dpump_t dpump;
 
 void data_pump_start_stop();
 void data_pump_init();
+void data_pump_startup();
 void data_pump_dump();

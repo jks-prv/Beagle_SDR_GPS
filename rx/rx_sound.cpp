@@ -15,8 +15,8 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
-// Copyright (c) 2018-2023 Christoph Mayer, DL1CH
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2018-2024 Christoph Mayer, DL1CH
 
 #include "types.h"
 #include "options.h"
@@ -39,10 +39,6 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "rx_noise.h"
 #include "teensy.h"
-#include "agc.h"
-#include "fir.h"
-#include "iir.h"
-#include "squelch.h"
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
@@ -50,8 +46,6 @@ Boston, MA  02110-1301, USA.
 #include "ima_adpcm.h"
 #include "ext_int.h"
 #include "rx.h"
-#include "fastfir.h"
-#include "noiseproc.h"
 #include "lms.h"
 #include "dx.h"
 #include "noise_blank.h"
@@ -270,12 +264,7 @@ void c2s_sound(void *param)
 	m_Squelch[rx_chan].SetupParameters(rx_chan, frate);
 	m_Squelch[rx_chan].SetSquelch(0, 0);
 	
-	// don't start data pump until first connection so GPS search can run at full speed on startup
-	static bool data_pump_started;
-	if (do_sdr && !data_pump_started) {
-		data_pump_init();
-		data_pump_started = true;
-	}
+    data_pump_startup();
 	
 	if (do_sdr) {
 		//printf("SOUND ENABLE channel %d\n", rx_chan);
@@ -347,7 +336,7 @@ void c2s_sound(void *param)
 		    //cprintf(conn, "SND UPD adc_clock_corrected=%lf conn->adc_clock_corrected=%lf\n", adc_clock_corrected, conn->adc_clock_corrected);
 			adc_clock_corrected = conn->adc_clock_corrected;
             s->spectral_inversion = kiwi.spectral_inversion;
-            rx_sound_set_freq(conn, s);
+            rx_sound_set_freq(conn, s->freq, s->spectral_inversion);
 		    //cprintf(conn, "SND freq updated due to ADC clock correction\n");
 		    
             rx_gen_set_freq(conn, s);
@@ -358,7 +347,7 @@ void c2s_sound(void *param)
                 //#define DOUBLE_SET_DELAY 500        // only 90% reliable!
                 #define DOUBLE_SET_DELAY 1500
                 if (timer_ms() > first_freq_time + DOUBLE_SET_DELAY) {
-                    rx_sound_set_freq(conn, s);
+                    rx_sound_set_freq(conn, s->freq, s->spectral_inversion);
                     first_freq_set = false;
                 }
             }
@@ -569,7 +558,7 @@ void c2s_sound(void *param)
                 TaskStat2(TSTAT_INCR|TSTAT_ZERO, 0, "aud");
     
                 TYPECPX *in_samps_c = rx->in_samps[rx->rd_pos];
-                TYPESTEREO24 *in_wb_samps = rx->wb_samps[rx->rd_pos];
+                TYPECPX24 *in_wb_samps = rx->wb_samps[rx->rd_pos];
                 TYPECPX *fir_samps_c;
                 TYPEMONO16 *out_samps_s2;
     
@@ -1083,13 +1072,13 @@ void c2s_sound(void *param)
     
                 // Wideband output
                 if (isWB) {
-                    TYPESTEREO24 *out_samps = in_wb_samps;
-                    int nsamps = nrx_samps * rx_wb_buf_chans;
+                    TYPECPX24 *out_samps = in_wb_samps;
+                    int nsamps = nrx_samps_wb;
                     if (s->little_endian) {
                         bc += nsamps * NIQ * sizeof(s2_t);
                         for (j=0; j < nsamps; j++) {
                             // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
-                            s2_t re = (s2_t) out_samps->left, im = (s2_t) out_samps->right;
+                            s2_t re = (s2_t) out_samps->re, im = (s2_t) out_samps->im;
                             *bp_wb_s2++ = re;      // arm native little-endian (put any swap burden on client)
                             *bp_wb_s2++ = im;
                             out_samps++;
@@ -1099,7 +1088,7 @@ void c2s_sound(void *param)
                         #ifdef WB_PATTERN
                             for (j=0; j < nsamps; j++) {
                                 // send full 24-bit data pattern
-                                s4_t re = (s4_t) out_samps->left, im = (s4_t) out_samps->right;
+                                s4_t re = (s4_t) out_samps->re, im = (s4_t) out_samps->im;
                                 *bp_wb_u1++ = (re >> 16) & 0xff; bc++;
                                 *bp_wb_u1++ = (re >>  8) & 0xff; bc++;
                                 *bp_wb_u1++ = (re >>  0) & 0xff; bc++;
@@ -1112,7 +1101,7 @@ void c2s_sound(void *param)
                         #else
                             for (j=0; j < nsamps; j++) {
                                 // can cast TYPEREAL directly to s2_t due to choice of CUTESDR_SCALE
-                                s2_t re = (s2_t) out_samps->left, im = (s2_t) out_samps->right;
+                                s2_t re = (s2_t) out_samps->re, im = (s2_t) out_samps->im;
                                 *bp_wb_u1++ = (re >> 8) & 0xff; bc++;  // choose a network byte-order (big-endian)
                                 *bp_wb_u1++ = (re >> 0) & 0xff; bc++;
                                 *bp_wb_u1++ = (im >> 8) & 0xff; bc++;

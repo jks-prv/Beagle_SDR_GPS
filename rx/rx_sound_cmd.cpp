@@ -38,10 +38,6 @@ Boston, MA  02110-1301, USA.
 #include "cuteSDR.h"
 #include "rx_noise.h"
 #include "teensy.h"
-#include "agc.h"
-#include "fir.h"
-#include "iir.h"
-#include "squelch.h"
 #include "debug.h"
 #include "data_pump.h"
 #include "cfg.h"
@@ -49,8 +45,6 @@ Boston, MA  02110-1301, USA.
 #include "ima_adpcm.h"
 #include "ext_int.h"
 #include "rx.h"
-#include "fastfir.h"
-#include "noiseproc.h"
 #include "lms.h"
 #include "dx.h"
 #include "noise_blank.h"
@@ -77,18 +71,19 @@ Boston, MA  02110-1301, USA.
 
 #include <algorithm>
 
-void rx_sound_set_freq(conn_t *conn, snd_t *s)
+void rx_sound_set_freq(conn_t *conn, double freq, bool spectral_inversion)
 {
-    int rx_chan = conn->rx_channel;
+    int rx_chan = conn? conn->rx_channel : 1;
     bool isWB = (kiwi.isWB && rx_chan == 1);
     int rx_chan_wb = isWB? 0 : rx_chan;
 
-    double freq_kHz = s->freq * kHz;
+    double freq_kHz = freq * kHz;
     double freq_inv_kHz = ui_srate - freq_kHz;
-    double f_phase = (s->spectral_inversion? freq_inv_kHz : freq_kHz) / conn->adc_clock_corrected;
+    double adc_clock_corrected = conn? conn->adc_clock_corrected : clk.adc_clock_corrected;
+    double f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / adc_clock_corrected;
     u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
-    cprintf(conn, "SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", rx_chan_wb,
-        s->freq, PRINTF_U64_ARG(i_phase), conn->adc_clock_corrected, clk.adc_clk_corrections);
+    printf("SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", rx_chan_wb,
+        freq, PRINTF_U64_ARG(i_phase), adc_clock_corrected, clk.adc_clk_corrections);
 
     if (do_sdr) {
         spi_set3(CmdSetRXFreq, rx_chan_wb, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
@@ -178,7 +173,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
             bool new_freq = false;
             if (s->freq != _freq) {
                 s->freq = _freq;
-                rx_sound_set_freq(conn, s);
+                rx_sound_set_freq(conn, s->freq, s->spectral_inversion);
                 if (do_sdr) {
                     #ifdef SND_FREQ_SET_IQ_ROTATION_BUG_WORKAROUND
                         if (first_freq_trig) {
