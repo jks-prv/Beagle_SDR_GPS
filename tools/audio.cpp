@@ -4,9 +4,9 @@
 
 //#define ADC_CLOCK 66000000
 
-//#define ADC_CLOCK 66672000    // 66.672
+#define ADC_CLOCK 66672000    // 66.672
 //#define ADC_CLOCK 66660000    // 66.66
-#define ADC_CLOCK 66666600    // 66.6666
+//#define ADC_CLOCK 66666600    // 66.6666
 //#define ADC_CLOCK 66665900    // 66.6659
 
 // action
