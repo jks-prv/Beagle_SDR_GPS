@@ -294,6 +294,7 @@ static void called_every_second()
 		    (c->type != STREAM_SOUND && c->type != STREAM_WATERFALL)) {
             c->ext_api = false;
             c->ext_api_determined = true;
+		    web_served_clear_cache(c);
 		    //cprintf(c, "API: connection is exempt\n");
             continue;
 		}

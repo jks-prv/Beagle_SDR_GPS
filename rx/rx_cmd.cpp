@@ -1797,8 +1797,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
     case CMD_GET_USERS:
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
-		bool include_ip = (conn->type == STREAM_ADMIN);
-		sb = rx_users(include_ip);
+		sb = rx_users(conn->type == STREAM_ADMIN);
 		send_msg(conn, false, "MSG user_cb=%s", kstr_sp(sb));
 		kstr_free(sb);
 		return true;

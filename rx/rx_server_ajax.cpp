@@ -432,7 +432,7 @@ fail:
 			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", ip_unforwarded);
 			return (char *) -1;
 		}
-		sb = rx_users(true);
+		sb = rx_users(IS_ADMIN);
 		printf("/users REQUESTED from %s\n", ip_unforwarded);
 		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
 		break;

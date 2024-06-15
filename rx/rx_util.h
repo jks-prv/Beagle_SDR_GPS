@@ -103,7 +103,8 @@ int rx_autorun_find_victim();
 void rx_autorun_restart_victims(bool initial);
 void rx_server_send_config(conn_t *conn);
 bool save_config(u2_t key, conn_t *conn, char *cmd);
-char *rx_users(bool include_ip);
+#define IS_ADMIN true
+char *rx_users(bool isAdmin = false);
 void geoloc_task(void *param);
 int rx_mode2enum(const char *mode);
 const char * rx_enum2mode(int e);

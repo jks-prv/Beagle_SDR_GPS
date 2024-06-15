@@ -339,6 +339,7 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("ident_len", IDENT_LEN_MIN, &up_cfg);
     cfg_default_bool("show_geo", true, &up_cfg);
     cfg_default_bool("show_geo_city", true, &up_cfg);
+    cfg_default_bool("show_user", true, &up_cfg);
     cfg_default_bool("show_1Hz", false, &up_cfg);
     cfg_default_int("dx_default_db", 0, &up_cfg);
     cfg_default_int("spec_min_range", 50, &up_cfg);

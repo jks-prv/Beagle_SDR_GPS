@@ -430,9 +430,11 @@ int main(int argc, char *argv[])
     // rx3      3   3   3   0   0
     // rx8      8   8   8   0   0
     // rx14     14  14  14  0   0
-    // wb       1   2   7   6   1    72k
+    // wb+rx0   1   2   7   6   1    72k  WB_RX0_SHARE
+    // wb       1   2   6   6   1    72k
     // wb       1   2   16  16  1   192k
     // wb       1   2   17  17  1   204k
+    // wb       1   2   25  25  1   300k
     
     rx_all_chans = kiwi.isWB? 2 : rx_chans;
     rx_buf_chans = kiwi.isWB? V_WB_BUF_CHANS : rx_chans;

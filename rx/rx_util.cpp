@@ -834,11 +834,12 @@ void geoloc_task(void *param)
         clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
 }
 
-char *rx_users(bool include_ip)
+char *rx_users(bool isAdmin)
 {
     int i, n;
     rx_chan_t *rx;
-    bool show_geo = include_ip || cfg_bool("show_geo", NULL, CFG_REQUIRED);
+    bool show_geo = isAdmin || cfg_true("show_geo");
+    bool show_user = isAdmin || cfg_true("show_user");
     bool need_comma = false;
     char *sb = (char *) "[", *sb2;
     
@@ -900,11 +901,20 @@ char *rx_users(bool include_ip)
                 u4_t r_min = t % 60; t /= 60;
                 u4_t r_hr = t;
 
-                char *user = (c->isUserIP || !c->ident_user)? NULL : kiwi_str_encode(c->ident_user);
+                //printf("rx%d ext_api=%d ident_user=<%s>\n", i, c->ext_api, c->ident_user);
+                char *user;
+                if (c->isUserIP || !c->ident_user)
+                    user = NULL;
+                else
+                if (!show_user && !c->ext_api)
+                    user = strdup("(private)");
+                else
+                    user = kiwi_str_encode(c->ident_user);
+                
                 bool show = show_geo || c->internal_connection;
                 char *geo = show? (c->geo? kiwi_str_encode(c->geo) : NULL) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
-                const char *ip = include_ip? c->remote_ip : "";
+                const char *ip = isAdmin? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,"
                     "\"m\":\"%s\",\"z\":%d,"
                     "\"wf\":%d,"
