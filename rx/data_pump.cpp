@@ -192,7 +192,7 @@ static void snd_service()
 
             for (j=0; j < nrx_samps; j++) {
 
-                #ifdef WB_SHARE_RX0
+                #ifdef WB_RX0_SHARE
                     // rx0:
                     if (rx_channels[0].data_enabled) {
                         s4_t i, q;

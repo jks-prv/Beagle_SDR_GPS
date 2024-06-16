@@ -502,10 +502,12 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
                 u2_t i = in->i;
                 u2_t q = in->q;
             #endif
+            
             #ifdef FLIP_IQ
                 i = FLIP16(i);
                 q = FLIP16(q);
             #endif
+            
             #ifdef SWAP_IQ
                 out->buf16[j].i = q;
                 out->buf16[j].q = i;
@@ -519,6 +521,7 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
         for (int j = 0; j < num_samps; j++, in++) {
             u1_t i = in->i & 0xff;
             u1_t q = in->q & 0xff;
+            
             #ifdef SWAP_IQ
                 out->buf8[j].i = q;
                 out->buf8[j].q = i;
