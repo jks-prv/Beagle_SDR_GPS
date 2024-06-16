@@ -32,8 +32,9 @@ Boston, MA  02110-1301, USA.
 #define	Q	1
 #define	NIQ	2
 
-#define RX_CHANS 32
+#define RX_CHAN0  0
 #define RX_CHAN1  1
+#define RX_CHANS 32
 
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
 // will convert this to a +/- 1.0 float.

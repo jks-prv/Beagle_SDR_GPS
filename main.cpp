@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
 	int fw_sel_override = FW_CONFIGURED;
 	int fw_test = 0;
-	int wb_sel = 0;
+	int wb_sel, wb_sel_override = 0;
 	
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 	
 		if (ARG("-fw")) { ARGL(fw_sel_override); printf("firmware select override: %d\n", fw_sel_override); } else
 		if (ARG("-fw_test")) { ARGL(fw_test); printf("firmware test: %d\n", fw_test); } else
-		if (ARG("-wb")) { ARGL(wb_sel); printf("wideband rate select: %d\n", wb_sel); } else
+		if (ARG("-wb")) { ARGL(wb_sel_override); printf("wideband rate override: %d\n", wb_sel_override); } else
 
 		if (ARG("-kiwi_reg")) kiwi_reg_debug = TRUE; else
 		if (ARG("-cmd_debug")) cmd_debug = TRUE; else
@@ -354,6 +354,13 @@ int main(int argc, char *argv[])
         if (err) fw_sel = FW_SEL_SDR_RX4_WF4;
     }
     
+    if (wb_sel_override) {
+        wb_sel = wb_sel_override;
+    } else {
+        wb_sel = admcfg_int("wb_sel", &err, CFG_OPTIONAL);
+        if (err) wb_sel = 0;
+    }
+    
     bool update_admcfg = false;
     if (update_admcfg) admcfg_save_json(cfg_adm.json);      // during init doesn't conflict with admin cfg
     
@@ -419,8 +426,9 @@ int main(int argc, char *argv[])
             case 144: rx1_decim =          463; rx2_decim =           12; break;
             case 192: rx1_decim =          347; rx2_decim =           16; break;
             case 204: rx1_decim =          327; rx2_decim =           17; break;
+            case 240: rx1_decim =          278; rx2_decim =           20; break;
             case 300: rx1_decim =          222; rx2_decim =           25; break;
-            default: printf("-wb %d\n", wb_sel); panic("bad -wb"); break;
+            default: printf("wb_sel=%d\n", wb_sel); panic("bad wb_sel"); break;
         }
         
         if (wb_sel) v_wb_buf_chans = rx2_decim;

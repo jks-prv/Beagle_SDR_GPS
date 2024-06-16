@@ -257,6 +257,7 @@ void clock_correction(double t_rx, u64_t ticks)
     static u4_t last;
     if (now > (last + 10) || clk.do_corrections > ADC_CLK_CORR_CONTINUOUS) {
         clk_printf("%-12s CONN ", "CLK");
+        clk.adc_clock_corrected = clk.adc_clock_base;
         for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
             if (!c->valid || (!c->adjust_clock && !first_time_temp_correction)) continue;
 

@@ -47,14 +47,18 @@ typedef struct {
     75/1472 = 96/x, 1472*96/75 = 1884.16
 */
 
+#define FNAME DIR_CFG "/samples/CQWW_CW_2005.iq16b.fs96k.cf7040.full.iq"
+
 // options
 //#define FILE_IN
 #ifdef FILE_IN
     #define PACER
+    #define SWAP_IQ         // CQWW file is IQ swapped
 #else
     //#define SOURCE_MMAP
     #ifdef SOURCE_MMAP
         #define PACER
+        #define SWAP_IQ     // CQWW file is IQ swapped
     #else
         #define DIRECT
         //#define CAMP
@@ -63,7 +67,6 @@ typedef struct {
 
 #define IQ16
 #define FLIP_IQ
-#define SWAP_IQ
 
 #define N_SAMPS (960 * 10)
 
@@ -132,7 +135,6 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
         f_min = freq - bw/2;
         f_max = freq + bw/2;
     
-        #define FNAME DIR_CFG "/samples/CQWW_CW_2005.iq16b.fs96k.cf7040.full.iq"
         fd = open(FNAME, O_RDONLY);
         if (fd < 0) panic("sdrpp: open");
         

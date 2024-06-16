@@ -187,6 +187,7 @@ void update_vars_from_config(bool called_at_init)
     int mode_20kHz = (firmware_sel == RX3_WF3)? 1:0;
     TYPEREAL Ioff, Ioff_20kHz, Qoff, Qoff_20kHz;
     //printf("mode_20kHz=%d\n", mode_20kHz);
+    admcfg_default_int("wb_sel", 0, &update_admcfg);
 
     Ioff = cfg_float("DC_offset_I", &err, CFG_OPTIONAL);
     if (err || Ioff == DC_OFFSET_DEFAULT_PREV) {
