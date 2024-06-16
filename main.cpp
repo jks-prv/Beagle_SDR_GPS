@@ -359,6 +359,8 @@ int main(int argc, char *argv[])
     } else {
         wb_sel = admcfg_int("wb_sel", &err, CFG_OPTIONAL);
         if (err) wb_sel = 0;
+        const int wb_bw[] = { 72, 108, 144, 192, 204, 240, 300 };
+        wb_sel = wb_bw[wb_sel];
     }
     
     bool update_admcfg = false;
