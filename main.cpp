@@ -358,7 +358,7 @@ int main(int argc, char *argv[])
         wb_sel = wb_sel_override;
     } else {
         wb_sel = admcfg_int("wb_sel", &err, CFG_OPTIONAL);
-        if (err) wb_sel = 0;
+        if (err || wb_sel < 0 || wb_sel > 6) wb_sel = 0;
         const int wb_bw[] = { 72, 108, 144, 192, 204, 240, 300 };
         wb_sel = wb_bw[wb_sel];
     }
@@ -422,7 +422,6 @@ int main(int argc, char *argv[])
         snd_rate = SND_RATE_WB;
         
         switch (wb_sel) {
-            case   0: rx1_decim = RX1_WB_DECIM; rx2_decim = RX2_WB_DECIM; break;
             case  72: rx1_decim =          926; rx2_decim =            6; break;
             case 108: rx1_decim =          617; rx2_decim =            9; break;
             case 144: rx1_decim =          463; rx2_decim =           12; break;
@@ -433,7 +432,7 @@ int main(int argc, char *argv[])
             default: printf("wb_sel=%d\n", wb_sel); panic("bad wb_sel"); break;
         }
         
-        if (wb_sel) v_wb_buf_chans = rx2_decim;
+        v_wb_buf_chans = rx2_decim;
         rx_decim = rx1_decim * rx2_decim;
         wb_rate  = SND_RATE_WB * rx2_decim;
         nrx_bufs = RXBUF_SIZE_WB / NRX_SPI;

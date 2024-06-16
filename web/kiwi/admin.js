@@ -264,7 +264,7 @@ function mode_wb_srate(wb_srate)
 {
    var s =
       w3_div(admin.mode_fmt +'|width:834px;height:58px', w3_div('w3-font-26px w3-margin-R-4', '🌀'), 'Wideband output '+ extint.wb_srate +' kHz') +
-      w3_select('w3-center w3-text-teal w3-margin-L-32//', 'Wideband bandwidth', '', 'adm.wb_sel', adm.wb_sel, admin.wb_u, 'admin_select_cb');
+      w3_select('w3-restart w3-center w3-text-teal w3-margin-L-32//', 'Wideband bandwidth', '', 'adm.wb_sel', adm.wb_sel, admin.wb_u, 'admin_select_cb');
    w3_innerHTML('id-fw-wb', s);
 }
 
