@@ -266,7 +266,7 @@ function mode_wb_srate_cb(path, idx, first)
 {
    admin_select_cb(path, idx, first);
    w3_innerHTML('id-fw-wb-srate', parseInt(admin.wb_u[adm.wb_sel]) +' kHz');
-   if (adm.firmware_sel == kiwi.RX_WB) w3_restart_cb();
+   if (!first && adm.firmware_sel == kiwi.RX_WB) w3_restart_cb();
 }
 
 function mode_wb_srate()
