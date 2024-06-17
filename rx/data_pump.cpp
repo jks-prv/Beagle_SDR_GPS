@@ -287,9 +287,9 @@ static void snd_service()
                 if (go == DP_DUMP_GO) {
                     iqd_p = rxd_debug.iq_t;
                     for (j=0; j < nrx_samps; j++) {
-                        real_printf("RX0 %04d: ", j);
+                        real_printf("%04d: ", j);
                         for (int ch=0; ch < rx_buf_chans; ch++) {
-                            //#define DP_DUMP_HEX
+                            #define DP_DUMP_HEX
                             #ifdef DP_DUMP_HEX
                                 real_printf("[ch%d %02x|%02x|%04x|%04x] ", ch, iqd_p->i3, iqd_p->q3, iqd_p->i, iqd_p->q);
                             #else

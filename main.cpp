@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
 
 	int fw_sel_override = FW_CONFIGURED;
 	int fw_test = 0;
-	int wb_sel, wb_sel_override = 0;
+	int wb_sel, wb_sel_override = -1;
 	
 	version_maj = VERSION_MAJ;
 	version_min = VERSION_MIN;
@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
         if (err) fw_sel = FW_SEL_SDR_RX4_WF4;
     }
     
-    if (wb_sel_override) {
+    if (wb_sel_override != -1) {
         wb_sel = wb_sel_override;
     } else {
         wb_sel = admcfg_int("wb_sel", &err, CFG_OPTIONAL);
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
     if (update_admcfg) admcfg_save_json(cfg_adm.json);      // during init doesn't conflict with admin cfg
     
     // rx_buf_chans: USE_WB uses this many equivalent buffer channels
-    int v_wb_buf_chans = V_WB_BUF_CHANS;
+    int v_wb_buf_chans;
 
     if (fw_sel == FW_SEL_SDR_RX4_WF4) {
         fpga_id = FPGA_ID_RX4_WF4;
@@ -471,7 +471,7 @@ int main(int argc, char *argv[])
     if (fpga_id == FPGA_ID_OTHER) {
         fpga_file = strdup((char *) "other");
     } else {
-        if (wb_sel)
+        if (kiwi.isWB)
             asprintf(&fpga_file, "wb.%dk", wb_sel);
         else
             asprintf(&fpga_file, "rx%d.wf%d%s", rx_chans, wf_chans, fw_test? ".test" : "");

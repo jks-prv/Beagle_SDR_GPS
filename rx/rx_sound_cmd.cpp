@@ -73,24 +73,22 @@ Boston, MA  02110-1301, USA.
 
 void rx_sound_set_freq(conn_t *conn, double freq, bool spectral_inversion)
 {
-    int rx_chan = conn? conn->rx_channel : RX_CHAN1;
-    bool isWB = (kiwi.isWB && rx_chan == RX_CHAN1);
-    int rx_chan_rx0 = isWB? RX_CHAN0 : rx_chan;
-
+    #ifdef WB_RX0_SHARE
+        int ch = conn? conn->rx_channel : RX_CHAN1;
+    #else
+        int ch = conn? conn->rx_channel : RX_CHAN0;
+    #endif
+    
     double freq_kHz = freq * kHz;
     double freq_inv_kHz = ui_srate - freq_kHz;
     double adc_clock_corrected = conn? conn->adc_clock_corrected : clk.adc_clock_corrected;
     double f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / adc_clock_corrected;
     u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
-    printf("SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", rx_chan,
+    printf("SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", ch,
         freq, PRINTF_U64_ARG(i_phase), adc_clock_corrected, clk.adc_clk_corrections);
 
     if (do_sdr) {
-        spi_set3(CmdSetRXFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-        #ifdef WB_RX0_SHARE
-            if (rx_chan_rx0 != rx_chan)
-                spi_set3(CmdSetRXFreq, rx_chan_rx0, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-        #endif
+        spi_set3(CmdSetRXFreq, ch, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
     }
 }
 
