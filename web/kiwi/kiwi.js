@@ -3151,7 +3151,6 @@ function kiwi_msg(param, ws)
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint.srate = o.sr;
 				extint.wb_srate = Math.round(o.wsr / 1e3);
-				w3_call('mode_wb_srate', extint.wb_srate);
 				extint.nom_srate = o.nsr;
 
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);

@@ -176,7 +176,7 @@ var mode_icon_wf = w3_icon('w3-text-amber', 'fa-area-chart', 28) +'&nbsp;';
 
 function mode_html()
 {
-   var bw = 235, bwpx = px(bw);
+   var bw = 245, bwpx = px(bw);
    var pw = 113, pwpx = px(pw);
    var ci = 0;
 	var s =
@@ -194,9 +194,9 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', 'id-sidenav-fw', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', 'id-sidenav-fw', kiwi.RX8_WF2, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX8_WF2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', 'id-sidenav-fw', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
-               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Wideband', 'id-sidenav-fw', kiwi.RX_WB, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX_WB)),
+               w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Wideband output', 'id-sidenav-fw', kiwi.RX_WB, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX_WB)),
                admin.is_multi_core? 
-                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Max rx chans', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
+                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Max channels', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
                :
                   ''
             ),
@@ -257,14 +257,26 @@ function mode_html()
 		   w3_div('w3-margin-T-16', '<hr>')
       )
 	);
+	
+	setTimeout(function() { mode_wb_srate(); }, 1);
 	return s;
 }
 
-function mode_wb_srate(wb_srate)
+function mode_wb_srate_cb(path, idx, first)
+{
+   admin_select_cb(path, idx, first);
+   w3_innerHTML('id-fw-wb-srate', parseInt(admin.wb_u[adm.wb_sel]) +' kHz');
+   if (adm.firmware_sel == kiwi.RX_WB) w3_restart_cb();
+}
+
+function mode_wb_srate()
 {
    var s =
-      w3_div(admin.mode_fmt +'|width:834px;height:58px', w3_div('w3-font-26px w3-margin-R-4', '🌀'), 'Wideband output '+ extint.wb_srate +' kHz') +
-      w3_select('w3-restart w3-center w3-text-teal w3-margin-L-32//', 'Wideband bandwidth', '', 'adm.wb_sel', adm.wb_sel, admin.wb_u, 'admin_select_cb');
+      w3_div(admin.mode_fmt +'|width:834px;height:58px',
+         w3_div('w3-font-32px w3-margin-R-4', '🌀'),
+         'Wideband output &nbsp;'+ w3_div('id-fw-wb-srate')
+      ) +
+      w3_select('w3-center w3-text-teal w3-margin-L-32//', 'Wideband bandwidth', '', 'adm.wb_sel', adm.wb_sel, admin.wb_u, 'mode_wb_srate_cb');
    w3_innerHTML('id-fw-wb', s);
 }
 

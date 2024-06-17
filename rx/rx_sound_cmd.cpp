@@ -84,8 +84,8 @@ void rx_sound_set_freq(conn_t *conn, double freq, bool spectral_inversion)
     double adc_clock_corrected = conn? conn->adc_clock_corrected : clk.adc_clock_corrected;
     double f_phase = (spectral_inversion? freq_inv_kHz : freq_kHz) / adc_clock_corrected;
     u64_t i_phase = (u64_t) round(f_phase * pow(2,48));
-    printf("SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", ch,
-        freq, PRINTF_U64_ARG(i_phase), adc_clock_corrected, clk.adc_clk_corrections);
+    //printf("SND UPD rx%d freq %.3f kHz i_phase 0x%08x|%08x clk %.6f(%d)\n", ch,
+    //    freq, PRINTF_U64_ARG(i_phase), adc_clock_corrected, clk.adc_clk_corrections);
 
     if (do_sdr) {
         spi_set3(CmdSetRXFreq, ch, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));

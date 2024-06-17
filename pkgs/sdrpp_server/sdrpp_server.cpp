@@ -266,7 +266,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
 void sdrpp_in(struct mg_connection *mc, void *ev_data)
 {
     int bytes_in = (int) *((long *) ev_data);
-    printf("sdrpp_in bytes_in=%d\n", bytes_in);
+    //printf("sdrpp_in bytes_in=%d\n", bytes_in);
     int bytes_rem = bytes_in;
     u1_t *buf = mc->recv.buf;
     
@@ -311,7 +311,8 @@ void sdrpp_in(struct mg_connection *mc, void *ev_data)
                 case SPYSERVER_SETTING_GAIN: printf("SPYSERVER_SETTING_GAIN = %d\n", st->Value); break;
     
                 case SPYSERVER_SETTING_IQ_FORMAT: printf("SPYSERVER_SETTING_IQ_FORMAT = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_IQ_FREQUENCY: printf("SPYSERVER_SETTING_IQ_FREQUENCY = %d\n", st->Value);
+                case SPYSERVER_SETTING_IQ_FREQUENCY:
+                    //printf("SPYSERVER_SETTING_IQ_FREQUENCY = %d\n", st->Value);
                     rx_sound_set_freq(NULL, (double) st->Value / 1e3, /* jksxmg FIXME */ false);
                     break;
                 case SPYSERVER_SETTING_IQ_DECIMATION: printf("SPYSERVER_SETTING_IQ_DECIMATION = %d\n", st->Value); break;
@@ -594,7 +595,7 @@ static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
         }
 
         case MG_EV_READ:
-            sdrpp_prf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
+            //sdrpp_prf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
             sdrpp_in(mc, ev_data);
             return;
 
