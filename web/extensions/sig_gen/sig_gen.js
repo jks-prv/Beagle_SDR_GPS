@@ -360,7 +360,8 @@ function sig_gen_help(show)
                '<li><x1>Self test</x1> (KiwiSDR 2 and later) The digital oscillator described above is routed as an ' +
                'output to the <x1>EXT CLK &amp; TEST</x1> SMA connector. It is intended to be looped-back to the RF antenna input SMA ' +
                'via a short SMA-to-SMA cable. In this way the Kiwi\'s RF front end and ADC prior to the FPGA can be tested ' +
-               'against the known signal source.</li></ul>' +
+               'against the known signal source. ' +
+               '<a href="http://kiwisdr.com/quickstart/#id-self-test" target="_blank">Test result images</a></li></ul>' +
                         
                'URL parameters: <br>' +
                w3_text('|color:orange', '<i>kHz</i> or freq:<i>kHz</i>&nbsp; mode:[<i>0123</i>] &nbsp; attn:<i>dB</i> &nbsp; stop:<i>kHz</i> &nbsp; ' +
