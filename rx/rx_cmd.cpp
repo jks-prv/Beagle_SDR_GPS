@@ -45,8 +45,8 @@ Boston, MA  02110-1301, USA.
 #include "security.h"
 #include "options.h"
 #include "mode.h"
-#include "dx.h"
 #include "ant_switch.h"
+#include "utf8.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -1860,6 +1860,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     rename = true;
                 }
                 kiwi_str_decode_inplace(ident_user_m);
+                //#define INJECT_BAD_UTF8
+                #ifdef INJECT_BAD_UTF8
+                    for (int i=1; i < strlen(ident_user_m) && i < 5; i++) ident_user_m[i] = 0xfe | (i&1);
+                #endif
+                utf8makevalid(ident_user_m, '?');
                 int printable, UTF;
                 char *esc = kiwi_str_escape_HTML(ident_user_m, &printable, &UTF);
                 if (esc) {

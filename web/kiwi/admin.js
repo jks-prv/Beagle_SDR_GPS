@@ -4554,7 +4554,8 @@ function admin_recv(data)
 				break;
 			
          case "user_list":
-            users_list_cb(decodeURIComponent(param[1]));
+            console.log(param[1]);
+            users_list_cb(kiwi_decodeURIComponent('user_list', param[1]));
             break;
 
          case "xfer_stats_cb":   // in response to "SET xfer_stats"

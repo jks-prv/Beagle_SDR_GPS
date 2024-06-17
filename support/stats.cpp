@@ -585,6 +585,7 @@ kstr_t *user_list()
                 sb = kstr_asprintf(sb, "%s{\"ip\":\"%s\",\"g\":\"%s\",\"t\":%d}", comma2? ",":"",
                     //inet4_h2s(entry->ip4), entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
                     entry->ip, entry->geoloc? entry->geoloc : "(no location)", entry->connect_time);
+                //printf("CHECK IDENT: %s <%s>\n", entry->ip, kiwi_str_ASCII_static(ul->ident));
                 comma2 = true;
             }
         sb = kstr_cat(sb, "]}");

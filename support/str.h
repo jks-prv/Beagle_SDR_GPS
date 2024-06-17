@@ -53,6 +53,7 @@ char *kiwi_str_escape_HTML(char *str, int *printable DEF_NULL, int *UTF DEF_NULL
 char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src, int which DEF_0);
 char *kiwi_str_ASCII_static(char *src, int which DEF_0);
+char *kiwi_URL_enc_to_C_hex_esc_enc(char *src);
 char *kiwi_str_clean(char *s);
 void kiwi_chrrep(char *str, const char from, const char to);
 bool kiwi_str_begins_with(char *s, const char *cs);
@@ -86,7 +87,7 @@ typedef struct {
 enum { KSPLIT_NO_SKIP_EMPTY_FIELDS = 0x1, KSPLIT_HANDLE_EMBEDDED_DELIMITERS = 0x2 };
 int kiwi_split(char *ocp, char **mbuf, const char *delims, str_split_t argv[], int nargs, int flags DEF_0);
 
-extern char ASCII[256][4];
+extern char ASCII[256][8];
 
 #define STR_HASH_MISS 0
 
