@@ -75,28 +75,9 @@ const char * const mg_ev_names[] = {
 
 #define MG_API_NEW
 
-typedef struct stat file_stat_t;
-
-#define INT64_FMT PRId64
-
-int web_ev_request(struct mg_connection *mc, int ev, void *ev_data);
-void mg_ev_setup_api_compat(struct mg_connection *mc);
-char *mg_str_to_cstr(mg_str *mgs);
-const char *mg_get_mime_type(const char *path, const char *default_mime_type);
-const char *mg_get_header(struct mg_connection *mc, const char *name);
-void mg_free_header(const char *header);
-void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, file_stat_t *st, const char *msg);
-void mg_response_complete(struct mg_connection *mc);
-void mg_connection_close(struct mg_connection *mc);
-void mg_send_flush();
-void mg_remove_double_dots_and_double_slashes(char *s);
-void mg_bin2str(char *to, const unsigned char *p, size_t len);
-
-enum { MG_FIRST_HEADER, MG_MIDDLE_HEADER, MG_LAST_HEADER };
-void mg_http_send_header(struct mg_connection *mc, const char *name, const char *v, int which = MG_MIDDLE_HEADER, size_t len = 0);
-
 typedef struct {        // cache info for in-memory stored data
-    struct stat st;
+    size_t size;
+    time_t mtime;
     int cached;
     bool if_none_match;
         bool etag_match;
@@ -106,6 +87,22 @@ typedef struct {        // cache info for in-memory stored data
         bool not_mod_since;
         time_t server_mtime, client_mtime;
 } cache_info_t;
+
+int web_ev_request(struct mg_connection *mc, int ev, void *ev_data);
+void mg_ev_setup_api_compat(struct mg_connection *mc);
+char *mg_str_to_cstr(mg_str *mgs);
+const char *mg_get_mime_type(const char *path, const char *default_mime_type);
+const char *mg_get_header(struct mg_connection *mc, const char *name);
+void mg_free_header(const char *header);
+void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, cache_info_t *cache, const char *msg);
+void mg_response_complete(struct mg_connection *mc);
+void mg_connection_close(struct mg_connection *mc);
+void mg_send_flush();
+void mg_remove_double_dots_and_double_slashes(char *s);
+void mg_bin2str(char *to, const unsigned char *p, size_t len);
+
+enum { MG_FIRST_HEADER, MG_MIDDLE_HEADER, MG_LAST_HEADER };
+void mg_http_send_header(struct mg_connection *mc, const char *name, const char *v, int which = MG_MIDDLE_HEADER, size_t len = 0);
 
 
 typedef struct {

@@ -795,10 +795,10 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
 		web_printf_all("%-16s %s:%05d %s (etag_match=%c not_mod_since=%c) mtime=[%s]", "MG_EV_CACHE_DONE",
 			ip_forwarded, mc->rem.port,
 			cache->cached? "### CLIENT_CACHED ###":"NOT_CACHED", cache->etag_match? 'T':'F', cache->not_mod_since? 'T':'F',
-			var_ctime_static(&cache->st.st_mtime));
+			var_ctime_static(&cache->mtime));
 
 		if (!cache->if_mod_since) {
-			float diff = ((float) time_diff_s(cache->st.st_mtime, cache->client_mtime)) / 60.0;
+			float diff = ((float) time_diff_s(cache->mtime, cache->client_mtime)) / 60.0;
 			char suffix = 'm';
 			if (diff >= 60.0 || diff <= -60.0) {
 				diff /= 60.0;
@@ -1149,14 +1149,14 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     // NB: Will see cases of etag_match=N but not_mod_since=Y because of %[] substitution.
     // The size in the etag is different due to the substitution, but the underlying file mtime hasn't changed.
 
-    cache->st.st_size = edata_size + ver_size;
+    cache->size = edata_size + ver_size;
     if (!isAJAX) assert(mtime != 0);
-    cache->st.st_mtime = mtime;
+    cache->mtime = mtime;
 
     if (!(isAJAX && ev == MG_EV_CACHE_INFO)) {		// don't print for isAJAX + MG_EV_CACHE_INFO nop case
         web_printf_all("%-16s %s:%05d size=%6d dirty=%d mtime=[%s] %s %s %s%s\n", (ev == MG_EV_CACHE_INFO)? "MG_EV_CACHE_INFO" : "MG_EV_HTTP_MSG",
             ip_forwarded, mc->rem.port,
-            cache->st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
+            cache->size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
             (mc->query != NULL)? "qs:" : "", (mc->query != NULL)? mc->query : "");
     }
 
@@ -1194,7 +1194,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
             mg_http_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"), MG_FIRST_HEADER);
             hdr_type = "NO-CACHE";
         } else {
-            mg_http_send_standard_headers(mc, uri, &cache->st, "OK");
+            mg_http_send_standard_headers(mc, uri, cache, "OK");
             // Cache image files for a fixed amount of time to keep, e.g.,
             // GPS az/el img from flashing on periodic re-render with Safari.
             //mg_http_send_header(mc, "Cache-Control", "max-age=0");

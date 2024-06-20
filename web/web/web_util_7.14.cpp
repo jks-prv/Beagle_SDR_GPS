@@ -60,7 +60,7 @@ void mg_http_send_header(struct mg_connection *mc, const char *name, const char 
 {
     if (which == MG_FIRST_HEADER) mg_printf(mc, "HTTP/1.1 200 OK\r\n");
     mg_printf(mc, "%s: %s\r\n", name, v);
-    if (len) mg_printf(mc, "Content-Length: %" INT64_FMT "\r\n", len);
+    if (len) mg_printf(mc, "Content-Length: %d\r\n", len);
     if (which == MG_LAST_HEADER) {
         mg_printf(mc, "%s\r\n\r\n", (mc->te_chunked == 0)? "Transfer-Encoding: chunked" : "");
     }
@@ -144,12 +144,11 @@ static void gmt_time_string(char *buf, size_t buf_len, time_t *t) {
   strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", gmtime(t));
 }
 
-static void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
-  mg_snprintf(buf, buf_len, "\"%lx.%" INT64_FMT "\"",
-              (unsigned long) st->st_mtime, (int64_t) st->st_size);
+static void construct_etag(char *buf, size_t buf_len, cache_info_t *cache) {
+  mg_snprintf(buf, buf_len, "\"%lx.%d\"", (unsigned long) cache->mtime, cache->size);
 }
 
-void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, file_stat_t *st, const char *msg)
+void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, cache_info_t *cache, const char *msg)
 {
     char date[64], lm[64], etag[64];
     time_t curtime = time(NULL);
@@ -158,8 +157,8 @@ void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, f
     // Prepare Etag, Date, Last-Modified headers. Must be in UTC, according to
     // http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3
     gmt_time_string(date, sizeof(date), &curtime);
-    gmt_time_string(lm, sizeof(lm), &st->st_mtime);
-    construct_etag(etag, sizeof(etag), st);
+    gmt_time_string(lm, sizeof(lm), &cache->mtime);
+    construct_etag(etag, sizeof(etag), cache);
     
     mg_printf(mc,
         "HTTP/1.1 200 %s\r\n"
@@ -167,13 +166,13 @@ void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, f
         "Last-Modified: %s\r\n"
         "Etag: %s\r\n"
         "Content-Type: %s\r\n"
-        "Content-Length: %" INT64_FMT "\r\n"
+        "Content-Length: %d\r\n"
         "Connection: keep-alive\r\n"
         "Accept-Ranges: bytes\r\n"
         "Transfer-Encoding: chunked\r\n",
         msg, date,
         lm, etag,
-        mime, st->st_size);
+        mime, cache->size);
     mc->te_chunked = 1;
 }
 
@@ -281,10 +280,9 @@ static int mg_strcasecmp_cstr(const char *s1, const char *s2) {
 static int mg_is_not_modified(struct mg_connection *mc)
 {
   cache_info_t *cache = (cache_info_t *) mc->cache_info;
-  const file_stat_t *stp = &cache->st;
   const char *inm = mg_get_header(mc, "If-None-Match");
   const char *ims = mg_get_header(mc, "If-Modified-Since");
-  construct_etag(cache->etag_server, sizeof(cache->etag_server), stp);
+  construct_etag(cache->etag_server, sizeof(cache->etag_server), cache);
 
   cache->if_none_match = (inm != NULL);
   web_printf_all("%-16s etag_match=%c", "MG_EV_CACHE_INFO", cache->if_none_match? 'T':'F');
@@ -299,11 +297,11 @@ static int mg_is_not_modified(struct mg_connection *mc)
   web_printf_all("%-16s not_mod_since=%c", "MG_EV_CACHE_INFO", cache->if_mod_since? 'T':'F');
   if (ims != NULL) {
     time_t client_mtime = parse_date_string(ims);
-	 cache->not_mod_since = (stp->st_mtime <= client_mtime);
-	 cache->server_mtime = stp->st_mtime;
+	 cache->not_mod_since = (cache->mtime <= client_mtime);
+	 cache->server_mtime = cache->mtime;
 	 cache->client_mtime = client_mtime;
 	 // two web_printf_all() due to var_ctime_static() needing to be kept separate
-	 web_printf_all("%c (server=%lx[%s] <= ", cache->not_mod_since? 'T':'F', stp->st_mtime, var_ctime_static((time_t *) &stp->st_mtime));
+	 web_printf_all("%c (server=%lx[%s] <= ", cache->not_mod_since? 'T':'F', cache->mtime, var_ctime_static(&cache->mtime));
 	 web_printf_all("client=%lx[-1 day],%lx[%s])", client_mtime - 86400, client_mtime, var_ctime_static(&client_mtime));
   }
   web_printf_all("\n");
