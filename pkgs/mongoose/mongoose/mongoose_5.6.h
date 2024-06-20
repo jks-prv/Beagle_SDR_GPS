@@ -55,20 +55,8 @@ struct mg_connection {
   int status_code;            // HTTP status code for HTTP error handler
   int wsbits;                 // First byte of the websocket frame
   void *server_param;         // Parameter passed to mg_create_server()
-
-  struct mg_cache {			  // cache info for non-filesystem stored data
-    struct stat st;
-    int cached;
-    bool if_none_match;
-      bool etag_match;
-      #define N_ETAG 64
-      char etag_server[N_ETAG], etag_client[N_ETAG];
-    bool if_mod_since;
-      bool not_mod_since;
-      time_t server_mtime, client_mtime;
-  } cache_info;
-
   void *connection_param;     // Placeholder for connection-specific data
+  void *cache_info;           // Cache info
   void *callback_param;
 };
 

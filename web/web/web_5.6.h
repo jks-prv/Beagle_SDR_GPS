@@ -66,6 +66,18 @@ Boston, MA  02110-1301, USA.
 // Mongoose API
 typedef struct stat file_stat_t;
 
+typedef struct {        // cache info for in-memory stored data
+    struct stat st;
+    int cached;
+    bool if_none_match;
+        bool etag_match;
+        #define N_ETAG 64
+        char etag_server[N_ETAG], etag_client[N_ETAG];
+    bool if_mod_since;
+        bool not_mod_since;
+        time_t server_mtime, client_mtime;
+} cache_info_t;
+
 #define mg_ws_send(mc, s, slen, op)         mg_websocket_write(mc, op, s, slen)
 #define mg_http_write_chunk(mc, buf, len)   mg_send_data(mc, buf, len)
 #define mg_response_complete(mc)

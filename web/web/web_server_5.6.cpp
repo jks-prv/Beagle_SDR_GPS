@@ -251,18 +251,22 @@ static int ev_handler(struct mg_connection *mc, int ev)
 
     switch (ev) {
         case MG_EV_HTTP_MSG:
-        case MG_EV_CACHE_INFO:
-        case MG_EV_CACHE_DONE:
                 if (mc->is_websocket) {
                     //printf("ev_handler ev%d(%s) WEBSOCKET len=%d\n", ev, names[ev], mc->content_len);
                     return websocket_request(mc, ev);
                 } else {
                     //printf("ev_handler ev%d(%s) %s %s\n", ev, names[ev], mc->uri, mc->query);
+                    if (mc->cache_info == NULL) {
+                        mc->cache_info = malloc(sizeof(cache_info_t));
+                        memset(mc->cache_info, 0, sizeof(cache_info_t));
+                    }
                     return web_ev_request(mc, ev);
                 }
             
         case MG_EV_CLOSE:
             rx_server_websocket(WS_MODE_CLOSE, mc);
+            free(mc->cache_info);
+            mc->cache_info = NULL;
             mc->connection_param = NULL;
             return MG_TRUE;
             
@@ -410,6 +414,7 @@ void web_server_init(ws_init_t type)
             lprintf("app already running in background?\ntry \"make stop\" (or \"m stop\") first\n");
             kiwi_exit(-1);
         }
+
         kiwi_asfree(s_port);
         
     } else {	// WS_INIT_START

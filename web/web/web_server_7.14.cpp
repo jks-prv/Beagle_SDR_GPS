@@ -271,14 +271,6 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             mg_ev_setup_api_compat(mc);
             return;
             
-        case MG_EV_CLOSE:
-            rx_server_websocket(WS_MODE_CLOSE, mc);
-            //ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            free(mc->fn_data);
-            mc->fn_data = NULL;
-            mc->connection_param = NULL;
-            return;
-
         case MG_EV_READ:
             ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
             return;
@@ -297,6 +289,10 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
                 mc->fn_data = malloc(sizeof(web_mg_t));
                 wm = (web_mg_t *) mc->fn_data;
                 memset(wm, 0, sizeof(web_mg_t));
+            }
+            if (mc->cache_info == NULL) {
+                mc->cache_info = malloc(sizeof(cache_info_t));
+                memset(mc->cache_info, 0, sizeof(cache_info_t));
             }
             mc->te_chunked = 0;
             return;
@@ -327,6 +323,16 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             websocket_request(mc, ev, ev_data);
             return;
             
+        case MG_EV_CLOSE:
+            rx_server_websocket(WS_MODE_CLOSE, mc);
+            //ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
+            free(mc->fn_data);
+            mc->fn_data = NULL;
+            free(mc->cache_info);
+            mc->cache_info = NULL;
+            mc->connection_param = NULL;
+            return;
+
         default:
             //ev_http_prf("ev_handler_http %s %s:%d => %d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port, mc->loc.port);
             ev_http_prf("ev_handler_http %s\n", mg_ev_names[ev]);

@@ -280,29 +280,30 @@ static int mg_strcasecmp_cstr(const char *s1, const char *s2) {
 // Return True if we should reply 304 Not Modified.
 static int mg_is_not_modified(struct mg_connection *mc)
 {
-  const file_stat_t *stp = &mc->cache_info.st;
+  cache_info_t *cache = (cache_info_t *) mc->cache_info;
+  const file_stat_t *stp = &cache->st;
   const char *inm = mg_get_header(mc, "If-None-Match");
   const char *ims = mg_get_header(mc, "If-Modified-Since");
-  construct_etag(mc->cache_info.etag_server, sizeof(mc->cache_info.etag_server), stp);
+  construct_etag(cache->etag_server, sizeof(cache->etag_server), stp);
 
-  mc->cache_info.if_none_match = (inm != NULL);
-  web_printf_all("%-16s etag_match=%c", "MG_EV_CACHE_INFO", mc->cache_info.if_none_match? 'T':'F');
+  cache->if_none_match = (inm != NULL);
+  web_printf_all("%-16s etag_match=%c", "MG_EV_CACHE_INFO", cache->if_none_match? 'T':'F');
   if (inm != NULL) {
-    mc->cache_info.etag_match = !mg_strcasecmp_cstr(mc->cache_info.etag_server, inm);
-	 web_printf_all("%c (server=%s == client=%s)", mc->cache_info.etag_match? 'T':'F', mc->cache_info.etag_server, inm);
-	 kiwi_strncpy(mc->cache_info.etag_client, inm, N_ETAG);
+    cache->etag_match = !mg_strcasecmp_cstr(cache->etag_server, inm);
+	 web_printf_all("%c (server=%s == client=%s)", cache->etag_match? 'T':'F', cache->etag_server, inm);
+	 kiwi_strncpy(cache->etag_client, inm, N_ETAG);
   }
   web_printf_all("\n");
 
-  mc->cache_info.if_mod_since = (ims != NULL);
-  web_printf_all("%-16s not_mod_since=%c", "MG_EV_CACHE_INFO", mc->cache_info.if_mod_since? 'T':'F');
+  cache->if_mod_since = (ims != NULL);
+  web_printf_all("%-16s not_mod_since=%c", "MG_EV_CACHE_INFO", cache->if_mod_since? 'T':'F');
   if (ims != NULL) {
     time_t client_mtime = parse_date_string(ims);
-	 mc->cache_info.not_mod_since = (stp->st_mtime <= client_mtime);
-	 mc->cache_info.server_mtime = stp->st_mtime;
-	 mc->cache_info.client_mtime = client_mtime;
+	 cache->not_mod_since = (stp->st_mtime <= client_mtime);
+	 cache->server_mtime = stp->st_mtime;
+	 cache->client_mtime = client_mtime;
 	 // two web_printf_all() due to var_ctime_static() needing to be kept separate
-	 web_printf_all("%c (server=%lx[%s] <= ", mc->cache_info.not_mod_since? 'T':'F', stp->st_mtime, var_ctime_static((time_t *) &stp->st_mtime));
+	 web_printf_all("%c (server=%lx[%s] <= ", cache->not_mod_since? 'T':'F', stp->st_mtime, var_ctime_static((time_t *) &stp->st_mtime));
 	 web_printf_all("client=%lx[-1 day],%lx[%s])", client_mtime - 86400, client_mtime, var_ctime_static(&client_mtime));
   }
   web_printf_all("\n");
@@ -321,15 +322,15 @@ static int mg_is_not_modified(struct mg_connection *mc)
   #ifdef NEW_CACHING_LOGIC
     // spec says If-Modified-Since ignored if If-None-Match present
     bool rv = false;
-    if (mc->cache_info.if_none_match) {
-        if (mc->cache_info.etag_match) rv = true;
+    if (cache->if_none_match) {
+        if (cache->etag_match) rv = true;
     } else {
-        if (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since) rv = true;
+        if (cache->if_mod_since && cache->not_mod_since) rv = true;
     }
   #else
     // this fails the NEW_CACHING_LOGIC criteria above because etag_match could be F, but not_mod_since T,
     // resulting in the overall is_not_modified T, which is WRONG. 
-    bool rv = (mc->cache_info.if_none_match && mc->cache_info.etag_match) || (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since);
+    bool rv = (cache->if_none_match && cache->etag_match) || (cache->if_mod_since && cache->not_mod_since);
   #endif
 
   web_printf_all("%-16s is_not_modified = %s\n", "MG_EV_CACHE_INFO", rv? "T (304_use_cache)":"F (don't_use_cache)");
@@ -341,12 +342,13 @@ static int mg_is_not_modified(struct mg_connection *mc)
 int web_ev_request(struct mg_connection *mc, int ev, void *ev_data)
 {
     check(ev == MG_EV_HTTP_MSG);
-    
+    cache_info_t *cache = (cache_info_t *) mc->cache_info;
+
     if (web_request(mc, MG_EV_CACHE_INFO, ev_data) == MG_TRUE) {
         // if MG_TRUE web_request has set mc->st
-		 mc->cache_info.cached = mg_is_not_modified(mc);
+		 cache->cached = mg_is_not_modified(mc);
 		 web_request(mc, MG_EV_CACHE_DONE, ev_data);
-		 if (mc->cache_info.cached) {
+		 if (cache->cached) {
             mg_http_reply(mc, 304, NULL, "");   // 304 = "not modified"
             mg_connection_close(mc);
             return MG_TRUE;
@@ -354,7 +356,11 @@ int web_ev_request(struct mg_connection *mc, int ev, void *ev_data)
     }
 
     int rv = web_request(mc, ev, ev_data);
-    kiwi_asfree(mc->fn_data);   // in case MG_EV_CLOSE doesn't occur for some reason
+
+    // in case MG_EV_CLOSE doesn't occur for some reason
+    kiwi_asfree(mc->fn_data);
     mc->fn_data = NULL;
+    free(mc->cache_info);
+    mc->cache_info = NULL;
     return rv;
 }

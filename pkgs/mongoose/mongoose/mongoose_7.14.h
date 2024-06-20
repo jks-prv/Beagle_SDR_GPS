@@ -2059,18 +2059,7 @@ struct mg_connection {
   uint16_t remote_port;       // Remote port (host order)
   unsigned te_chunked : 1;    // Transfer encoding chunked header sent
   void *connection_param;     // Placeholder for connection-specific data
-
-  struct mg_cache {			  // cache info for non-filesystem stored data (KiwiSDR)
-    struct stat st;
-    int cached;
-    bool if_none_match;
-      bool etag_match;
-      #define N_ETAG 64
-      char etag_server[N_ETAG], etag_client[N_ETAG];
-    bool if_mod_since;
-      bool not_mod_since;
-      time_t server_mtime, client_mtime;
-  } cache_info;
+  void *cache_info;           // Cache info
 #endif
 };
 

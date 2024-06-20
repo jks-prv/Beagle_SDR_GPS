@@ -95,6 +95,18 @@ void mg_bin2str(char *to, const unsigned char *p, size_t len);
 enum { MG_FIRST_HEADER, MG_MIDDLE_HEADER, MG_LAST_HEADER };
 void mg_http_send_header(struct mg_connection *mc, const char *name, const char *v, int which = MG_MIDDLE_HEADER, size_t len = 0);
 
+typedef struct {        // cache info for in-memory stored data
+    struct stat st;
+    int cached;
+    bool if_none_match;
+        bool etag_match;
+        #define N_ETAG 64
+        char etag_server[N_ETAG], etag_client[N_ETAG];
+    bool if_mod_since;
+        bool not_mod_since;
+        time_t server_mtime, client_mtime;
+} cache_info_t;
+
 
 typedef struct {
     bool init;

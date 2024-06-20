@@ -241,7 +241,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
     #if 0
         printf("rx_server_websocket(%s): mc: %p %s:%d %s %s\n", ws_mode_s[mode], mc, mc->remote_ip, mc->remote_port, mc->uri, mc->query);
         if (c != NULL)
-            printf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
+            printf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid=%d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
                 mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
         else
             printf("rx_server_websocket: c == NULL\n");
@@ -253,7 +253,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
             if (mode != WS_MODE_ALLOC && !internal) return NULL;
         #ifdef CONN_PRINTF
             lprintf("rx_server_websocket(%s): BAD CONN MC PARAM\n", ws_mode_s[mode]);
-            lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid %d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
+            lprintf("rx_server_websocket: (mc=%p == mc->c->mc=%p)? mc->c=%p mc->c->valid=%d mc->c->magic=0x%x CN_MAGIC=0x%x mc->c->rport=%d\n",
                 mc, c->mc, c, c->valid, c->magic, CN_MAGIC, c->remote_port);
             lprintf("rx_server_websocket: mc: %s:%d %s\n", mc->remote_ip, mc->remote_port, mc->uri);
             dump();

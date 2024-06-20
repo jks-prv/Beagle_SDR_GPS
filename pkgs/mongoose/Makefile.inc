@@ -1,7 +1,7 @@
 
 INT_FLAGS += -DMG_ARCH=MG_ARCH_CUSTOM
 
-mgold:
+mgo:
 	(cd pkgs/mongoose; rm -f mongoose.cpp mongoose.h)
 	(cd pkgs/mongoose; ln -s mongoose/mongoose_5.6.h mongoose.h)
 	(cd pkgs/mongoose; ln -s mongoose/mongoose_5.6.cpp mongoose.cpp)
@@ -11,7 +11,7 @@ mgold:
 	(cd web; ln -s web/web_util_5.6.cpp web_util.cpp)
 	(cd web; ln -s web/web_server_5.6.cpp web_server.cpp)
 
-mgnew:
+mgn:
 	(cd pkgs/mongoose; rm -f mongoose.cpp mongoose.h)
 	(cd pkgs/mongoose; ln -s mongoose/mongoose_7.14.h mongoose.h)
 	(cd pkgs/mongoose; ln -s mongoose/mongoose_7.14.cpp mongoose.cpp)

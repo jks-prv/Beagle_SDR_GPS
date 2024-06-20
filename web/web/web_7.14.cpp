@@ -721,6 +721,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
 	const char *edata_data;
 	bool isPort80 = (net.port != 80 && mc->loc.port == 80);
 	char *ip_unforwarded = ip_remote(mc);
+	cache_info_t *cache = (cache_info_t *) mc->cache_info;
 
     //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
 
@@ -788,16 +789,16 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
 	    web_has_served(MG_EV_CACHE_DONE, ip_unforwarded, ip_forwarded, mc->uri);
 	    if (web_caching_debug == 0) return MG_TRUE;
 	    
-	    if (mc->cache_info.cached)
-            web_printf_cached("%-16s %6s %11s %4s %3s %4s %5s %s\n", "webserver", "-", mc->cache_info.cached? "304-CACHED":"NO_CACHE", "", "", "", "", mc->uri);
+	    if (cache->cached)
+            web_printf_cached("%-16s %6s %11s %4s %3s %4s %5s %s\n", "webserver", "-", cache->cached? "304-CACHED":"NO_CACHE", "", "", "", "", mc->uri);
 
 		web_printf_all("%-16s %s:%05d %s (etag_match=%c not_mod_since=%c) mtime=[%s]", "MG_EV_CACHE_DONE",
 			ip_forwarded, mc->rem.port,
-			mc->cache_info.cached? "### CLIENT_CACHED ###":"NOT_CACHED", mc->cache_info.etag_match? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
-			var_ctime_static(&mc->cache_info.st.st_mtime));
+			cache->cached? "### CLIENT_CACHED ###":"NOT_CACHED", cache->etag_match? 'T':'F', cache->not_mod_since? 'T':'F',
+			var_ctime_static(&cache->st.st_mtime));
 
-		if (!mc->cache_info.if_mod_since) {
-			float diff = ((float) time_diff_s(mc->cache_info.st.st_mtime, mc->cache_info.client_mtime)) / 60.0;
+		if (!cache->if_mod_since) {
+			float diff = ((float) time_diff_s(cache->st.st_mtime, cache->client_mtime)) / 60.0;
 			char suffix = 'm';
 			if (diff >= 60.0 || diff <= -60.0) {
 				diff /= 60.0;
@@ -810,7 +811,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
 			web_printf_all("[%+.1f%c]", diff, suffix);
 		}
 		
-		web_printf_all(" client=[%s]\n", var_ctime_static(&mc->cache_info.client_mtime));
+		web_printf_all(" client=[%s]\n", var_ctime_static(&cache->client_mtime));
 		return MG_TRUE;
 	}
 	
@@ -1148,14 +1149,14 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     // NB: Will see cases of etag_match=N but not_mod_since=Y because of %[] substitution.
     // The size in the etag is different due to the substitution, but the underlying file mtime hasn't changed.
 
-    mc->cache_info.st.st_size = edata_size + ver_size;
+    cache->st.st_size = edata_size + ver_size;
     if (!isAJAX) assert(mtime != 0);
-    mc->cache_info.st.st_mtime = mtime;
+    cache->st.st_mtime = mtime;
 
     if (!(isAJAX && ev == MG_EV_CACHE_INFO)) {		// don't print for isAJAX + MG_EV_CACHE_INFO nop case
         web_printf_all("%-16s %s:%05d size=%6d dirty=%d mtime=[%s] %s %s %s%s\n", (ev == MG_EV_CACHE_INFO)? "MG_EV_CACHE_INFO" : "MG_EV_HTTP_MSG",
             ip_forwarded, mc->rem.port,
-            mc->cache_info.st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
+            cache->st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
             (mc->query != NULL)? "qs:" : "", (mc->query != NULL)? mc->query : "");
     }
 
@@ -1193,7 +1194,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
             mg_http_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"), MG_FIRST_HEADER);
             hdr_type = "NO-CACHE";
         } else {
-            mg_http_send_standard_headers(mc, uri, &mc->cache_info.st, "OK");
+            mg_http_send_standard_headers(mc, uri, &cache->st, "OK");
             // Cache image files for a fixed amount of time to keep, e.g.,
             // GPS az/el img from flashing on periodic re-render with Safari.
             //mg_http_send_header(mc, "Cache-Control", "max-age=0");
@@ -1208,16 +1209,16 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
 
         web_printf_sent("%-16s %7d %11s %4s %3s %4s %c%c|%c%c %5d%5s ", "webserver:", edata_size, hdr_type,
             is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"",
-            mc->cache_info.if_none_match? 'T':'F', mc->cache_info.etag_match? 'T':'F',
-            mc->cache_info.if_mod_since? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
+            cache->if_none_match? 'T':'F', cache->etag_match? 'T':'F',
+            cache->if_mod_since? 'T':'F', cache->not_mod_since? 'T':'F',
             mc->loc.port, mc->is_tls? "(TLS/SSL)" : "");
         if (web_caching_debug & WEB_CACHING_DEBUG_SENT) {
-            if (mc->cache_info.if_none_match && !mc->cache_info.etag_match)
-                web_printf_sent("%s %s ", mc->cache_info.etag_server, mc->cache_info.etag_client);
-            if (mc->cache_info.if_mod_since && !mc->cache_info.not_mod_since) {
+            if (cache->if_none_match && !cache->etag_match)
+                web_printf_sent("%s %s ", cache->etag_server, cache->etag_client);
+            if (cache->if_mod_since && !cache->not_mod_since) {
 	            // two web_printf_all() due to var_ctime_static() needing to be kept separate
-                web_printf_sent("%s ", var_ctime_static(&mc->cache_info.server_mtime));
-                web_printf_sent("%s ", var_ctime_static(&mc->cache_info.client_mtime));
+                web_printf_sent("%s ", var_ctime_static(&cache->server_mtime));
+                web_printf_sent("%s ", var_ctime_static(&cache->client_mtime));
             }
         }
         web_printf_sent("%15s %s\n", ip_forwarded, isAJAX? mc->uri : uri);
