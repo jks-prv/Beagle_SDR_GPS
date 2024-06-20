@@ -180,7 +180,8 @@ function config_html()
 				w3_div('w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
-				)
+				),
+            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select('w3-width-auto', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
@@ -194,10 +195,11 @@ function config_html()
             w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user names to user connections', 'show_user', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation info to users', 'show_geo', 'admin_bool_cb', true),
-            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true),
-            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true)
          )
 		) +
+
+		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
 			w3_divs('/w3-center',

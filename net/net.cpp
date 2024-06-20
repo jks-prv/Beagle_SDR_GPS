@@ -732,6 +732,8 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
         }
     }
     
+    mg_free_header(x_real_ip);
+    mg_free_header(x_forwarded_for);
     kiwi_asfree(ip_r);
     return forwarded;
 }

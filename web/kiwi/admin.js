@@ -4116,29 +4116,29 @@ function admin_draw(sdr_mode)
 	var ael = w3_el("id-admin");
 	var ci = 0;
 	
-	var s = '';
-	if (!sdr_mode) s += w3_nav(admin_colors[ci++], 'GPS', 'id-navbar-admin', 'gps', 'admin_nav');
-	s +=
-      w3_nav(admin_colors[ci++], 'Status', 'id-navbar-admin', 'status', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Mode', 'id-navbar-admin', 'mode', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Control', 'id-navbar-admin', 'control', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Users', 'id-navbar-admin', 'users', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Connect', 'id-navbar-admin', 'connect', 'admin_nav');
-	if (sdr_mode)
-	   s +=
-         w3_nav(admin_colors[ci++], 'Config', 'id-navbar-admin', 'config', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'Webpage', 'id-navbar-admin', 'webpage', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'Public', 'id-navbar-admin', 'public', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'DX', 'id-navbar-admin', 'dx', 'admin_nav');
-   s += 
-      w3_nav(admin_colors[ci++], 'Update', 'id-navbar-admin', 'update', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Backup', 'id-navbar-admin', 'backup', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Network', 'id-navbar-admin', 'network', 'admin_nav') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'id-navbar-admin', 'gps', 'admin_nav') : '') +
-      w3_nav(admin_colors[ci++], 'Log', 'id-navbar-admin', 'log', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Console', 'id-navbar-admin', 'console', 'admin_nav') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'id-navbar-admin', 'extensions', 'admin_nav') : '') +
-      w3_nav(admin_colors[ci++], 'Security', 'id-navbar-admin', 'security', 'admin_nav');
+   var tabs;
+   if (sdr_mode)
+      tabs = [
+         'Status', 'Mode',    'Control',    'Users', 'Connect',
+         'Config', 'Webpage', 'Public',     'DX',
+         'Update', 'Backup',  'Network',
+         'GPS',
+         'Log',    'Console', 'Extensions', 'Security'
+      ];
+   else
+      tabs = [
+         'GPS',
+         'Status', 'Mode',    'Control',    'Users', 'Connect',
+         'Update', 'Backup',  'Network',
+         'Log',    'Console', 'Extensions', 'Security'
+      ];
+   
+   var s = '';
+   tabs.forEach(
+      function(tab,i) {
+         s += w3_nav(admin_colors[ci++], tab, 'id-navbar-admin', tab.toLowerCase(), 'admin_nav');
+      }
+   );
 
 	ael.innerHTML =
 		w3_div('id-admin-header-container',
@@ -4226,8 +4226,18 @@ function admin_draw(sdr_mode)
 	admin.init = true;
 	   var tab = kiwi_url_param(0, null);
 	   if (tab) tab = tab.split(',')[0];
-	   if (isNonEmptyString(tab) && tab != 'nolocal') {
-	      kiwi_storeWrite('last_admin_navbar', tab);
+	   if (isNonEmptyString(tab)) {
+	      var found = false;
+	      tabs.forEach(
+	         function(s,i) {
+	            s = s.toLowerCase();
+	            if (!found && s.startsWith(tab)) {
+	               //console.log('last_admin_navbar='+ s);
+	               kiwi_storeWrite('last_admin_navbar', s);
+	               found = true;
+	            }
+	         }
+	      );
 	   }
 	   
 	   if (kiwi_storeRead('last_admin_navbar') == 'sdr_hu') kiwi_storeWrite('last_admin_navbar', 'public');

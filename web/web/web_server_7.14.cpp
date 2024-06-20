@@ -78,7 +78,7 @@ void webserver_connection_cleanup(conn_t *c)
 		mg_create_server()
 			ev_handler()
 				MG_EV_HTTP_MSG:
-					web_request()
+					web_ev_request()
 						is_websocket:
 							copy mc data to nbufs:
 								mc data => nbuf_allocq(c2s) [=> web_to_app()]
@@ -245,8 +245,6 @@ void mg_ev_setup_api_compat(struct mg_connection *mc)
     if (kiwi_str_begins_with(mc->remote_ip, "[0:0:0:0:0:ffff:"))
         mg_snprintf(mc->remote_ip, sizeof(mc->remote_ip), "%M", mg_print_ip4, &mc->rem.ip[12]);
     mc->remote_port = mg_ntohs(mc->rem.port);
-
-    //printf("remote: %s:%d local: %s:%d\n", mc->remote_ip, mc->remote_port, mc->local_ip, mc->local_port);
 }
 
 //#define EV_HTTP_PRINTF
@@ -275,18 +273,14 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             
         case MG_EV_CLOSE:
             rx_server_websocket(WS_MODE_CLOSE, mc);
-            wm = (web_mg_t *) mc->fn_data;
-            if (wm->init) {
-            }
-            ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            //ev_http_prf("ev_handler_http %s init=%d free wm=%p\n", mg_ev_names[ev], wm? wm->init : -1, wm);
-            free(wm);
+            //ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
+            free(mc->fn_data);
+            mc->fn_data = NULL;
             mc->connection_param = NULL;
             return;
 
         case MG_EV_READ:
             ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            
             return;
 
         case MG_EV_WRITE:
@@ -298,13 +292,13 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             return;
             
         case MG_EV_HTTP_HDRS:
-            //printf("ev_handler_http %s mc=%p\n", mg_ev_names[ev], mc);
+            ev_http_prf("ev_handler_http %s mc=%p ev_data=%p fn_data=%p\n", mg_ev_names[ev], mc, ev_data, mc? mc->fn_data : NULL);
             if (mc->fn_data == NULL) {
                 mc->fn_data = malloc(sizeof(web_mg_t));
                 wm = (web_mg_t *) mc->fn_data;
-                //printf("ev_handler_http %s wm=%p\n", mg_ev_names[ev], wm);
                 memset(wm, 0, sizeof(web_mg_t));
             }
+            mc->te_chunked = 0;
             return;
             
         case MG_EV_HTTP_MSG: {
@@ -316,26 +310,25 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
                 mc->query = mg_str_to_cstr(&hm->query);
                 wm->init = true;
             }
-            //printf("ev_handler_http %s uri=<%s> qs=<%s>\n", mg_ev_names[ev], mc->uri, mc->query);
 	        u64_t tstamp;
             if (kiwi_str_begins_with(mc->uri, "/ws/") ||
                 // kiwirecorder
                 sscanf(mc->uri, "/%lld/", &tstamp) == 1 || kiwi_str_begins_with(mc->uri, "/wb/")) {
                 mg_ws_upgrade(mc, hm, NULL);
-                //printf("WEBSOCKET upgrade <%s>\n", mc->uri);
+                //ev_http_prf("ev_handler_http WEBSOCKET upgrade <%s>\n", mc->uri);
             } else {
-                web_request(mc, ev, ev_data);
+                web_ev_request(mc, ev, ev_data);
             }
             return;
         }
             
         case MG_EV_WS_MSG:
-            //printf("ev_handler_http %s WEBSOCKET\n", mg_ev_names[ev]);
-            web_websocket(mc, ev, ev_data);
+            //ev_http_prf("ev_handler_http %s WEBSOCKET\n", mg_ev_names[ev]);
+            websocket_request(mc, ev, ev_data);
             return;
             
         default:
-            //printf("ev_handler_http %s %s:%d => %d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port, mc->loc.port);
+            //ev_http_prf("ev_handler_http %s %s:%d => %d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port, mc->loc.port);
             ev_http_prf("ev_handler_http %s\n", mg_ev_names[ev]);
             return;
     }
@@ -449,7 +442,7 @@ void web_server_init(ws_init_t type)
             mtime_obj_keep_edata_always2_o = st.st_mtime;
         }
 
-        asprintf(&web_server_hdr, "KiwiSDR_Mongoose/%d.%d", version_maj, version_min);
+        asprintf(&web_server_hdr, "KiwiSDR_%d.%d/Mongoose_%s", version_maj, version_min, MG_VERSION);
 		init = TRUE;
 	}
 	

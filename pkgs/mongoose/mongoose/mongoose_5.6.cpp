@@ -1952,10 +1952,10 @@ static int call_user(struct connection *conn, int ev) {
 #ifdef NS_ENABLE_SSL
   if (conn != NULL && conn->server != NULL && conn->server->event_handler != NULL) {
     // FIXME: figure out where this needs to be reliably placed at connection establishment
-    conn->mg_conn.is_ssl = (conn->ns_conn->ssl != NULL);
+    conn->mg_conn.is_tls = (conn->ns_conn->ssl != NULL);
     #if 0
-        if (ev == MG_REQUEST && !conn->mg_conn.is_websocket)
-            printf("webserver: is_ssl=%d %p %p port=%d <%s>\n", conn->mg_conn.is_ssl, conn->ns_conn->ssl,
+        if (ev == MG_EV_HTTP_MSG && !conn->mg_conn.is_websocket)
+            printf("webserver: is_tls=%d %p %p port=%d <%s>\n", conn->mg_conn.is_tls, conn->ns_conn->ssl,
                 conn->ns_conn->ssl_ctx, conn->mg_conn.local_port, conn->mg_conn.uri);
     #endif
     return conn->server->event_handler(&conn->mg_conn, ev);
@@ -1980,7 +1980,7 @@ static void send_http_error(struct connection *conn, int code,
   conn->mg_conn.status_code = code;
 
   // Invoke error handler if it is set
-  if (call_user(conn, MG_HTTP_ERROR) == MG_TRUE) {
+  if (call_user(conn, MG_EV_HTTP_ERROR) == MG_TRUE) {
     close_local_endpoint(conn);
     return;
   }
@@ -2288,7 +2288,7 @@ static void prepare_cgi_environment(struct connection *conn,
   }
   addenv(blk, "SERVER_ROOT=%s", opts[DOCUMENT_ROOT]);
   addenv(blk, "DOCUMENT_ROOT=%s", opts[DOCUMENT_ROOT]);
-  addenv(blk, "SERVER_SOFTWARE=%s/%s", "Mongoose", MONGOOSE_VERSION);
+  addenv(blk, "SERVER_SOFTWARE=%s/%s", "Mongoose", MG_VERSION);
 
   // Prepare the environment block
   addenv(blk, "%s", "GATEWAY_INTERFACE=CGI/1.1");
@@ -3118,7 +3118,7 @@ static size_t deliver_websocket_frame(struct connection *conn) {
     }
 
     // Call the handler and remove frame from the iobuf
-    if (call_user(conn, MG_REQUEST) == MG_FALSE) {
+    if (call_user(conn, MG_EV_HTTP_MSG) == MG_FALSE) {
       conn->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
     }
     iobuf_remove(&conn->ns_conn->recv_iobuf, frame_len);
@@ -3207,10 +3207,10 @@ static void send_websocket_handshake_if_requested(struct mg_connection *conn) {
         *key = mg_get_header(conn, "Sec-WebSocket-Key");
   if (ver != NULL && key != NULL) {
     conn->is_websocket = 1;
-    if (call_user(MG_CONN_2_CONN(conn), MG_WS_HANDSHAKE) == MG_FALSE) {
+    if (call_user(MG_CONN_2_CONN(conn), MG_EV_WS_HS) == MG_FALSE) {
       send_websocket_handshake(conn, key);
     }
-    call_user(MG_CONN_2_CONN(conn), MG_WS_CONNECT);
+    call_user(MG_CONN_2_CONN(conn), MG_EV_WS_CONN);
   }
 }
 
@@ -3230,7 +3230,7 @@ static void write_terminating_chunk(struct connection *conn) {
 static int call_request_handler(struct connection *conn, int ev) {
   int result;
   conn->mg_conn.content = conn->ns_conn->recv_iobuf.buf;
-  if ((result = call_user(conn, ev)) == MG_TRUE && ev != MG_CACHE_INFO && ev != MG_CACHE_RESULT) {
+  if ((result = call_user(conn, ev)) == MG_TRUE) {
     if (conn->ns_conn->flags & MG_USING_CHUNKED_API) {
       terminate_headers(&conn->mg_conn);
       write_terminating_chunk(conn);
@@ -3335,68 +3335,20 @@ static const char *suggest_connection_header(const struct mg_connection *conn) {
   return should_keep_alive(conn) ? "keep-alive" : "close";
 }
 
-static void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
+void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
   mg_snprintf(buf, buf_len, "\"%lx.%" INT64_FMT "\"",
               (unsigned long) st->st_mtime, (int64_t) st->st_size);
 }
 
 // Return True if we should reply 304 Not Modified.
-static int is_not_modified(struct connection *conn,
+static int is_not_modified(const struct connection *conn,
                            const file_stat_t *stp) {
-  struct mg_connection *mc = &conn->mg_conn;
-  const char *inm = mg_get_header(mc, "If-None-Match");
-  const char *ims = mg_get_header(mc, "If-Modified-Since");
-  construct_etag(mc->cache_info.etag_server, sizeof(mc->cache_info.etag_server), stp);
-
-  mc->cache_info.if_none_match = (inm != NULL);
-  web_printf_all("%-16s etag_match=%c", "MG_CACHE_INFO", mc->cache_info.if_none_match? 'T':'F');
-  if (inm != NULL) {
-    mc->cache_info.etag_match = !mg_strcasecmp(mc->cache_info.etag_server, inm);
-	web_printf_all("%c (server=%s == client=%s)", mc->cache_info.etag_match? 'T':'F', mc->cache_info.etag_server, inm);
-	kiwi_strncpy(mc->cache_info.etag_client, inm, N_ETAG);
-  }
-  web_printf_all("\n");
-
-  mc->cache_info.if_mod_since = (ims != NULL);
-  web_printf_all("%-16s not_mod_since=%c", "MG_CACHE_INFO", mc->cache_info.if_mod_since? 'T':'F');
-  if (ims != NULL) {
-    time_t client_mtime = parse_date_string(ims);
-	mc->cache_info.not_mod_since = (stp->st_mtime <= client_mtime);
-	mc->cache_info.server_mtime = stp->st_mtime;
-	mc->cache_info.client_mtime = client_mtime;
-	// two web_printf_all() due to var_ctime_static()
-	web_printf_all("%c (server=%lx[%s] <= ", mc->cache_info.not_mod_since? 'T':'F', stp->st_mtime, var_ctime_static((time_t *) &stp->st_mtime));
-	web_printf_all("client=%lx[-1 day],%lx[%s])", client_mtime - 86400, client_mtime, var_ctime_static(&client_mtime));
-  }
-  web_printf_all("\n");
-  
-  // 1/2020
-  // FF wasn't reloading extension .js file when it was touched on server while in development mode.
-  // For reasons we still don't understand FF requests file with client_mtime = server_mtime last time
-  // it was sent PLUS ONE DAY. This despite us having sent the file with max-age=0.
-  // Lead to review of caching logic and switch to NEW_CACHING_LOGIC below.
-  // See:
-  //    developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Modified-Since
-  //    developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match
-  //    stackoverflow.com/questions/1046966/whats-the-difference-between-cache-control-max-age-0-and-no-cache
-  
-  #define NEW_CACHING_LOGIC
-  #ifdef NEW_CACHING_LOGIC
-    // spec says If-Modified-Since ignored if If-None-Match present
-    bool rv = false;
-    if (mc->cache_info.if_none_match) {
-        if (mc->cache_info.etag_match) rv = true;
-    } else {
-        if (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since) rv = true;
-    }
-  #else
-    // this fails the NEW_CACHING_LOGIC criteria above because etag_match could be F, but not_mod_since T,
-    // resulting in the overall is_not_modified T, which is WRONG. 
-    bool rv = (mc->cache_info.if_none_match && mc->cache_info.etag_match) || (mc->cache_info.if_mod_since && mc->cache_info.not_mod_since);
-  #endif
-
-  web_printf_all("%-16s is_not_modified = %s\n", "MG_CACHE_INFO", rv? "T (304_use_cache)":"F (don't_use_cache)");
-  return rv;
+  char etag[64];
+  const char *ims = mg_get_header(&conn->mg_conn, "If-Modified-Since");
+  const char *inm = mg_get_header(&conn->mg_conn, "If-None-Match");
+  construct_etag(etag, sizeof(etag), stp);
+  return (inm != NULL && !mg_strcasecmp(etag, inm)) ||
+    (ims != NULL && stp->st_mtime <= parse_date_string(ims));
 }
 
 // For given directory path, substitute it to valid index file.
@@ -3540,8 +3492,8 @@ void mg_send_standard_headers(struct mg_connection *mc, const char *path, file_s
                   mc->status_code, msg,
                   date,
                   lm, etag,
-                  (int) mime_vec.len, mime_vec.ptr, c->cl,
-                  suggest_connection_header(mc),
+                  (int) mime_vec.len, mime_vec.ptr,
+                  c->cl, suggest_connection_header(mc),
                   range, extra_headers == NULL ? "" : extra_headers,
                   MONGOOSE_USE_EXTRA_HTTP_HEADERS, term_cr_nl? "\r\n" : "");
   ns_send(c->ns_conn, headers, n);
@@ -3557,19 +3509,8 @@ static void call_request_handler_if_data_is_buffered(struct connection *conn) {
 #endif
   if (conn->num_bytes_recv >= (conn->cl + conn->request_len)) {
 
-  	// if e.g. in-memory filesystem, first get cache info so caching status can be determined
-  	if (call_request_handler(conn, MG_CACHE_INFO) == MG_TRUE) {
-		// if MG_TRUE handler has set mc->st
-		mc->cache_info.cached = is_not_modified(conn, &mc->cache_info.st);
-		call_request_handler(conn, MG_CACHE_RESULT);
-		if (mc->cache_info.cached) {
-		  send_http_error(conn, 304, NULL);
-		  return;
-		}
-  	}
-  	
   	// returns MG_TRUE if handled directly (e.g. in-memory filesystem)
-    if (call_request_handler(conn, MG_REQUEST) == MG_FALSE) {
+    if (call_request_handler(conn, MG_EV_HTTP_MSG) == MG_FALSE) {
       open_local_endpoint(conn, 1);
     }
   }
@@ -4761,7 +4702,7 @@ static void open_local_endpoint(struct connection *conn, int skip_user) {
   conn->endpoint_type = EP_NONE;
 
 #ifndef MONGOOSE_NO_AUTH
-  if (conn->server->event_handler && call_user(conn, MG_AUTH) == MG_FALSE) {
+  if (conn->server->event_handler && call_user(conn, MG_EV_AUTH) == MG_FALSE) {
     mg_send_digest_auth_request(&conn->mg_conn);
     return;
   }
@@ -4895,7 +4836,7 @@ static void do_proxy(struct connection *conn) {
   if (0 && conn->request_len == 0) {
     try_parse(conn);
     DBG(("%p parsing -> %d", conn, conn->request_len));
-    if (conn->request_len > 0 && call_user(conn, MG_REQUEST) == MG_FALSE) {
+    if (conn->request_len > 0 && call_user(conn, MG_EV_HTTP_MSG) == MG_FALSE) {
       proxy_request(conn->endpoint.nc, &conn->mg_conn);
     } else if (conn->request_len < 0) {
       ns_forward(conn->ns_conn, conn->endpoint.nc);
@@ -4962,7 +4903,7 @@ xreal_printf("on_recv_data: rl=%d iol=%lu flags=0x%x\n", conn->request_len, (uns
   if (conn->endpoint_type == EP_USER) {
     conn->mg_conn.content = io->buf;
     conn->mg_conn.content_len = io->len;
-    n = call_user(conn, MG_RECV);
+    n = call_user(conn, MG_EV_RECV);
     if (n < 0) {
       conn->ns_conn->flags |= NSF_FINISHED_SENDING_DATA;
     } else if ((size_t) n <= io->len) {
@@ -4984,7 +4925,7 @@ static void call_http_client_handler(struct connection *conn) {
     conn->mg_conn.content_len = conn->ns_conn->recv_iobuf.len;
   }
   conn->mg_conn.content = conn->ns_conn->recv_iobuf.buf;
-  if (call_user(conn, MG_REPLY) == MG_FALSE) {
+  if (call_user(conn, MG_EV_REPLY) == MG_FALSE) {
     conn->ns_conn->flags |= NSF_CLOSE_IMMEDIATELY;
   }
   iobuf_remove(&conn->ns_conn->recv_iobuf, conn->mg_conn.content_len);
@@ -5500,7 +5441,7 @@ static void mg_ev_handler(struct ns_connection *nc, int ev, void *p) {
       conn->mg_conn.status_code = * (int *) p;
       if (conn->mg_conn.status_code != 0 ||
           (!(nc->flags & MG_PROXY_CONN) &&
-           call_user(conn, MG_CONNECT) == MG_FALSE)) {
+           call_user(conn, MG_EV_CONNECT) == MG_FALSE)) {
         nc->flags |= NSF_CLOSE_IMMEDIATELY;
       }
       break;
@@ -5547,7 +5488,7 @@ static void mg_ev_handler(struct ns_connection *nc, int ev, void *p) {
           call_http_client_handler(conn);
         }
 
-        call_user(conn, MG_CLOSE);
+        call_user(conn, MG_EV_CLOSE);
         close_local_endpoint(conn);
         conn->ns_conn = NULL;
         NS_FREE(conn);
@@ -5556,7 +5497,7 @@ static void mg_ev_handler(struct ns_connection *nc, int ev, void *p) {
 
     case NS_POLL:
       if (conn != NULL) {
-        if (call_user(conn, MG_POLL) == MG_TRUE) {
+        if (call_user(conn, MG_EV_POLL) == MG_TRUE) {
           if (conn->ns_conn->flags & MG_HEADERS_SENT) {
             write_terminating_chunk(conn);
           }
@@ -5599,7 +5540,7 @@ static void iter2(struct ns_connection *nc, int ev, void *param) {
   //DBG(("%p [%s]", conn, msg));
   if (sscanf(msg, "%p %n", &func, &n) && func != NULL && conn != NULL) {
     conn->mg_conn.callback_param = (void *) (msg + n);
-    func(&conn->mg_conn, MG_POLL);
+    func(&conn->mg_conn, MG_EV_POLL);
   }
 }
 

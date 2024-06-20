@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2016 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 #pragma once
 
@@ -63,8 +63,26 @@ Boston, MA  02110-1301, USA.
 #define	N_CONNS	(N_CONN_SND_WF_EXT + N_QUEUERS + N_CONN_ADMIN + N_CONN_EXTRA)
 
 
-// mongoose API
-#define mg_ws_send(mc, s, slen, op)     mg_websocket_write(mc, op, s, slen)
+// Mongoose API
+typedef struct stat file_stat_t;
+
+#define mg_ws_send(mc, s, slen, op)         mg_websocket_write(mc, op, s, slen)
+#define mg_http_write_chunk(mc, buf, len)   mg_send_data(mc, buf, len)
+#define mg_response_complete(mc)
+#define mg_free_header(header)
+#define mg_http_send_header(mc, name, v)    mg_send_header(mc, name, v)
+#define mg_http_send_standard_headers(mc, path, stat, msg) \
+                                            mg_send_standard_headers(mc, path, stat, msg, NULL, NULL)
+
+int web_ev_request(struct mg_connection *mc, int ev);
+void mg_connection_close(struct mg_connection *mc);
+
+// CAUTION: different from Mongoose 7 mg_http_reply() where "hdr_name, hdr_val" is really "*headers, content..."
+#define mg_http_reply(mc, status, hdr_name, hdr_val) \
+    mg_send_status(mc, status); \
+    if (hdr_name != NULL) { \
+        mg_send_header(mc, hdr_name, hdr_val); \
+    }
 
 
 extern embedded_files_t edata_embed[];
@@ -84,6 +102,7 @@ void web_to_app_done(conn_t *c, nbuf_t *nb);
 // server to client
 void app_to_web(conn_t *c, char *s, int sl);
 char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data = NULL);
+int websocket_request(struct mg_connection *mc, int ev);
 int web_request(struct mg_connection *mc, int ev);
 
 // UDP

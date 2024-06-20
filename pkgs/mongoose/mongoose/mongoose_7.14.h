@@ -1964,7 +1964,12 @@ enum {
   MG_EV_MQTT_OPEN,  // MQTT CONNACK received        int *connack_status_code
   MG_EV_SNTP_TIME,  // SNTP time received           uint64_t *epoch_millis
   MG_EV_WAKEUP,     // mg_wakeup() data received    struct mg_str *data
-  MG_EV_USER        // Starting ID for user events
+  MG_EV_USER,       // Starting ID for user events
+
+#ifdef KIWISDR
+  MG_EV_CACHE_INFO, // Ask callback to return caching info
+  MG_EV_CACHE_DONE  // Report caching decision result
+#endif
 };
 
 
@@ -2052,6 +2057,7 @@ struct mg_connection {
   char local_ip[48];          // Max IPv6 string length is 45 characters
   uint16_t local_port;        // Local port (host order)
   uint16_t remote_port;       // Remote port (host order)
+  unsigned te_chunked : 1;    // Transfer encoding chunked header sent
   void *connection_param;     // Placeholder for connection-specific data
 
   struct mg_cache {			  // cache info for non-filesystem stored data (KiwiSDR)
@@ -2068,13 +2074,9 @@ struct mg_connection {
 #endif
 };
 
-// 5.6 begin jksxmg
-enum { MG_FALSE, MG_TRUE };
-enum {
-  MG_EV_CACHE_INFO,     // Ask callback to return caching info
-  MG_EV_CACHE_RESULT    // Report caching decision result
-};
-// 5.6 end
+#ifdef KIWISDR
+    enum { MG_FALSE, MG_TRUE };
+#endif
 
 void mg_mgr_poll(struct mg_mgr *, int ms);
 void mg_mgr_init(struct mg_mgr *);
@@ -2102,7 +2104,6 @@ bool mg_wakeup(struct mg_mgr *, unsigned long id, const void *buf, size_t len);
 bool mg_wakeup_init(struct mg_mgr *);
 struct mg_timer *mg_timer_add(struct mg_mgr *mgr, uint64_t milliseconds,
                               unsigned flags, void (*fn)(void *), void *arg);
-
 
 
 

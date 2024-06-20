@@ -305,6 +305,7 @@ int main(int argc, char *argv[])
     kstr_free(reply);
     lprintf("/etc/debian_version %d.%d\n", debian_maj, debian_min);
     debian_ver = debian_maj;
+    lprintf("Mongoose %s\n", MG_VERSION);
     
     #if defined(USE_ASAN)
     	lprintf("### compiled with USE_ASAN\n");

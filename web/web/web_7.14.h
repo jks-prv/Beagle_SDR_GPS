@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2016 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 #pragma once
 
@@ -65,19 +65,35 @@ Boston, MA  02110-1301, USA.
 
 // mongoose API
 const char * const mg_ev_names[] = {
-    "EV_ERROR",    "EV_OPEN",      "EV_POLL",      "EV_RESOLVE",
-    "EV_CONNECT",  "EV_ACCEPT",    "EV_TLS_HS",    "EV_READ",
-    "EV_WRITE",    "EV_CLOSE",     "EV_HTTP_HDRS", "EV_HTTP_MSG",
-    "EV_WS_OPEN",  "EV_WS_MSG",    "EV_WS_CTL",    "EV_MQTT_CMD",
-    "EV_MQTT_MSG", "EV_MQTT_OPEN", "EV_SNTP_TIME", "EV_WAKEUP",
-    "EV_USER"
+    "EV_ERROR",     "EV_OPEN",          "EV_POLL",          "EV_RESOLVE",
+    "EV_CONNECT",   "EV_ACCEPT",        "EV_TLS_HS",        "EV_READ",
+    "EV_WRITE",     "EV_CLOSE",         "EV_HTTP_HDRS",     "EV_HTTP_MSG",
+    "EV_WS_OPEN",   "EV_WS_MSG",        "EV_WS_CTL",        "EV_MQTT_CMD",
+    "EV_MQTT_MSG",  "EV_MQTT_OPEN",     "EV_SNTP_TIME",     "EV_WAKEUP",
+    "EV_USER",      "MG_EV_CACHE_INFO", "MG_EV_CACHE_DONE"
 };
 
 #define MG_API_NEW
+
+typedef struct stat file_stat_t;
+
+#define INT64_FMT PRId64
+
+int web_ev_request(struct mg_connection *mc, int ev, void *ev_data);
 void mg_ev_setup_api_compat(struct mg_connection *mc);
 char *mg_str_to_cstr(mg_str *mgs);
+const char *mg_get_mime_type(const char *path, const char *default_mime_type);
 const char *mg_get_header(struct mg_connection *mc, const char *name);
+void mg_free_header(const char *header);
+void mg_http_send_standard_headers(struct mg_connection *mc, const char *path, file_stat_t *st, const char *msg);
+void mg_response_complete(struct mg_connection *mc);
+void mg_connection_close(struct mg_connection *mc);
 void mg_send_flush();
+void mg_remove_double_dots_and_double_slashes(char *s);
+void mg_bin2str(char *to, const unsigned char *p, size_t len);
+
+enum { MG_FIRST_HEADER, MG_MIDDLE_HEADER, MG_LAST_HEADER };
+void mg_http_send_header(struct mg_connection *mc, const char *name, const char *v, int which = MG_MIDDLE_HEADER, size_t len = 0);
 
 
 typedef struct {
@@ -103,7 +119,7 @@ void web_to_app_done(conn_t *c, nbuf_t *nb);
 // server to client
 void app_to_web(conn_t *c, char *s, int sl);
 char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data);
-int web_websocket(struct mg_connection *mc, int ev, void *ev_data);
+int websocket_request(struct mg_connection *mc, int ev, void *ev_data);
 int web_request(struct mg_connection *mc, int ev, void *ev_data);
 
 // UDP
@@ -116,7 +132,6 @@ void services_start();
 int web_served(conn_t *c);
 void web_served_clear_cache(conn_t *c);
 struct mg_connection *web_connect(const char *url);
-void web_connection_close(struct mg_connection *mc);
 void reload_index_params();
 void iparams_add(const char *id, char *val);
 

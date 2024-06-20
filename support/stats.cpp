@@ -381,6 +381,22 @@ static void called_every_second()
 ////////////////////////////////
 // user list
 ////////////////////////////////
+
+//#define USER_LIST_DBG
+#ifdef USER_LIST_DBG
+	#define ul_prf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define ul_prf(fmt, ...)
+#endif
+    
+//#define USER_LIST_DBG2
+#ifdef USER_LIST_DBG2
+	#define ul_prf2(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define ul_prf2(fmt, ...)
+#endif
     
 typedef struct {
     u4_t idx;
@@ -411,7 +427,7 @@ bool user_ident_cmp(const void *elem1, void *elem2)
 {
 	const char *s1 = (const char *) elem1;
 	user_log_t *ul = (user_log_t *) FROM_VOID_PARAM(elem2);
-    //real_printf("user_strcmp <%s> <%s> ", s1, ul->ident);
+    ul_prf2("user_strcmp <%s> <%s> ", s1, ul->ident);
 	return (strcmp(s1, ul->ident) == 0);
 }
 
@@ -420,7 +436,7 @@ bool user_ip4_cmp(const void *elem1, void *elem2)
 {
 	u4_t ip4_1 = (u4_t) FROM_VOID_PARAM(elem1);
 	user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(elem2);
-    //real_printf("user_ip4_cmp %s %s ", inet4_h2s(ip4_1, 0), inet4_h2s(entry->ip4, 1));
+    ul_prf2("user_ip4_cmp %s %s ", inet4_h2s(ip4_1, 0), inet4_h2s(entry->ip4, 1));
 	return (ip4_1 == entry->ip4);
 }
 */
@@ -429,7 +445,7 @@ bool user_ip_cmp(const void *elem1, void *elem2)
 {
 	const char *ip_1 = (const char *) elem1;
 	user_entry_t *entry = (user_entry_t *) FROM_VOID_PARAM(elem2);
-    //real_printf("user_ip_cmp %s %s ", ip_1, entry->ip);
+    ul_prf2("user_ip_cmp %s %s ", ip_1, entry->ip);
 	return (strcmp(ip_1, entry->ip) == 0);
 }
 
@@ -463,7 +479,9 @@ void user_arrive(conn_t *c)
     if (c->internal_connection || (init && !user_base)) return;
     
     if (!init) {
-        //printf_highlight(0, "user");
+        #ifdef USER_LIST_DBG
+            printf_highlight(0, "user");
+        #endif
         user_base = list_init("user_base", sizeof(user_log_t), N_USER_LOG_ALLOC);
         init = true;
         #if 0
@@ -497,7 +515,7 @@ void user_arrive(conn_t *c)
         ul = (user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, i));
     }
     ul->connected++;
-    //real_printf("user %s #%d %s <%s>\n", isNew? "NEW" : "EXISTING", i, c->remote_ip, ul->ident);
+    ul_prf("user %s #%d %s <%s>\n", isNew? "NEW" : "EXISTING", i, c->remote_ip, ul->ident);
     list_t *entry_base = ul->entry_base;
 
     #if 0
@@ -525,7 +543,9 @@ void user_arrive(conn_t *c)
         //entry = (user_entry_t *) FROM_VOID_PARAM(item_ptr(entry_base, j));
     }
     
-    //user_dump();
+    #ifdef USER_LIST_DBG
+        user_dump();
+    #endif
 }
 
 void user_leaving(conn_t *c, u4_t connected_secs)
@@ -559,7 +579,7 @@ void user_leaving(conn_t *c, u4_t connected_secs)
         entry->connect_time += connected_secs;
     }
 
-    //real_printf("user LEAVING #%d %d|%d secs %s\n", i, connected_secs, ul->total_time, ul->ident);
+    ul_prf("user LEAVING #%d %d|%d secs %s\n", i, connected_secs, ul->total_time, ul->ident);
 }
 
 kstr_t *user_list()
@@ -570,7 +590,7 @@ kstr_t *user_list()
     user_log_t *ul;
     bool comma = false;
 
-    //real_printf("START idx=%d\n", user_tx_idx);
+    ul_prf("START idx=%d\n", user_tx_idx);
     sb = (kstr_t *) "[";
     for (idx = user_tx_idx; kstr_len(sb) <= 1024; idx++) {
         ul = user_base? ((user_log_t *) FROM_VOID_PARAM(item_ptr(user_base, idx))) : NULL;
@@ -594,13 +614,13 @@ kstr_t *user_list()
     if (ul == NULL) {
         sb = kstr_asprintf(sb, "%s{\"end\":1}", comma? ",":"");
         user_tx_idx = 0;
-        //real_printf("DONE idx=%d\n", idx);
+        ul_prf2("DONE idx=%d\n", idx);
     } else {
         user_tx_idx = idx;
-        //real_printf("BUFFER FULL idx=%d\n", idx);
+        ul_prf2("BUFFER FULL idx=%d\n", idx);
     }
     sb = kstr_cat(sb, "]");
-    //real_printf("%s\n", kstr_sp(sb));
+    ul_prf("%s\n", kstr_sp(sb));
     return sb;
 }
 

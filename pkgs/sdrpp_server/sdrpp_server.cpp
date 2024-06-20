@@ -35,6 +35,22 @@ Boston, MA  02110-1301, USA.
 //hf+ sdr://143.178.161.182:5555
 //rtl sdr://94.208.173.143:5555
 
+#define SDRPP_PRINTF
+#ifdef SDRPP_PRINTF
+	#define sdrpp_prf(fmt, ...) \
+		lprintf(fmt, ## __VA_ARGS__)
+#else
+	#define sdrpp_prf(fmt, ...)
+#endif
+
+//#define SDRPP_DPRINTF
+#ifdef SDRPP_DPRINTF
+	#define sdrpp_dprf(fmt, ...) \
+		printf(fmt, ## __VA_ARGS__)
+#else
+	#define sdrpp_dprf(fmt, ...)
+#endif
+
 typedef struct {
     u2_t i, q;
 } iq16_t;
@@ -147,7 +163,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
             close(fd);
             fd = -1;
             in = fp;
-            printf("sdrpp: %d|%d %p|%p\n", N_SAMPS, fsize / sizeof(iq16_t), in + N_SAMPS, fp + (fsize / sizeof(iq16_t)));
+            sdrpp_dprf("sdrpp: %d|%d %p|%p\n", N_SAMPS, fsize / sizeof(iq16_t), in + N_SAMPS, fp + (fsize / sizeof(iq16_t)));
         #endif
 
         sdrpp_WR_tid = CreateTask(sdrpp_WR, TO_VOID_PARAM(mc), SND_PRIORITY);
@@ -166,7 +182,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
         #else
             if (rxc->busy) {
                 mg_http_reply(mc, 503, NULL, "");       // service unavailable
-                web_connection_close(mc);
+                mg_connection_close(mc);
                 return;
             }
         #endif
@@ -221,7 +237,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
         .MinimumIQDecimation = 1,               // 0        2
         .ForcedIQFormat = 1                     // 0        1
     };
-    printf("sdrpp_accept send SpyServerDeviceInfo=%d\n", sizeof(di));
+    sdrpp_prf("sdrpp_accept send SpyServerDeviceInfo=%d\n", sizeof(di));
     mg_send(mc, &di, sizeof(di));
 
 // hf+
@@ -256,7 +272,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
         .MinimumFFTCenterFrequency = f_min,         // 25M      330k
         .MaximumFFTCenterFrequency = f_max          // 1799M    1700M-82.5k
     };
-    printf("sdrpp_accept send SpyServerClientSync=%d\n", sizeof(cs));
+    sdrpp_prf("sdrpp_accept send SpyServerClientSync=%d\n", sizeof(cs));
     mg_send(mc, &cs, sizeof(cs));
     mc->is_resp = 0;    // response is complete
 }
@@ -266,7 +282,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
 void sdrpp_in(struct mg_connection *mc, void *ev_data)
 {
     int bytes_in = (int) *((long *) ev_data);
-    //printf("sdrpp_in bytes_in=%d\n", bytes_in);
+    //sdrpp_prf("sdrpp_in bytes_in=%d\n", bytes_in);
     int bytes_rem = bytes_in;
     u1_t *buf = mc->recv.buf;
     
@@ -279,7 +295,7 @@ void sdrpp_in(struct mg_connection *mc, void *ev_data)
         case SPYSERVER_CMD_HELLO: {
             struct SpyServerClientHandshake *hs = (struct SpyServerClientHandshake *) buf;
             int len = bytes_in - HS_SIZE;
-            printf("SPYSERVER_CMD_HELLO ProtocolVersion=%08x(%08x) id=%.*s\n", hs->ProtocolVersion, SPYSERVER_PROTOCOL_VERSION, len, hs->id);
+            sdrpp_prf("SPYSERVER_CMD_HELLO ProtocolVersion=%08x(%08x) id=%.*s\n", hs->ProtocolVersion, SPYSERVER_PROTOCOL_VERSION, len, hs->id);
             bytes_rem = 0;
             break;
         }
@@ -293,11 +309,11 @@ void sdrpp_in(struct mg_connection *mc, void *ev_data)
 //0060: 0200 0000 0800 0000 // 6500 0000 3c37 0000                                          ........e...<7..
         case SPYSERVER_CMD_SET_SETTING: {
             struct SpyServerSettingTarget *st = (struct SpyServerSettingTarget *) buf;
-            //printf("SPYSERVER_CMD_SET_SETTING Setting=%d Value=%d\n", st->Setting, st->Value);
+            //sdrpp_prf("SPYSERVER_CMD_SET_SETTING Setting=%d Value=%d\n", st->Setting, st->Value);
     
             switch (st->Setting) {
-                case SPYSERVER_SETTING_STREAMING_MODE: printf("SPYSERVER_SETTING_STREAMING_MODE = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_STREAMING_ENABLED: printf("SPYSERVER_SETTING_STREAMING_ENABLED = %d\n", st->Value);
+                case SPYSERVER_SETTING_STREAMING_MODE: sdrpp_prf("SPYSERVER_SETTING_STREAMING_MODE = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_STREAMING_ENABLED: sdrpp_prf("SPYSERVER_SETTING_STREAMING_ENABLED = %d\n", st->Value);
                     streaming_enabled = st->Value;
                     if (sdrpp_WR_tid != -1) {
                         #ifdef CAMP
@@ -308,24 +324,24 @@ void sdrpp_in(struct mg_connection *mc, void *ev_data)
                         TaskWakeup(sdrpp_WR_tid);
                     }
                     break;
-                case SPYSERVER_SETTING_GAIN: printf("SPYSERVER_SETTING_GAIN = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_GAIN: sdrpp_prf("SPYSERVER_SETTING_GAIN = %d\n", st->Value); break;
     
-                case SPYSERVER_SETTING_IQ_FORMAT: printf("SPYSERVER_SETTING_IQ_FORMAT = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_IQ_FORMAT: sdrpp_prf("SPYSERVER_SETTING_IQ_FORMAT = %d\n", st->Value); break;
                 case SPYSERVER_SETTING_IQ_FREQUENCY:
-                    //printf("SPYSERVER_SETTING_IQ_FREQUENCY = %d\n", st->Value);
+                    //sdrpp_prf("SPYSERVER_SETTING_IQ_FREQUENCY = %d\n", st->Value);
                     rx_sound_set_freq(NULL, (double) st->Value / 1e3, /* jksxmg FIXME */ false);
                     break;
-                case SPYSERVER_SETTING_IQ_DECIMATION: printf("SPYSERVER_SETTING_IQ_DECIMATION = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_IQ_DIGITAL_GAIN: printf("SPYSERVER_SETTING_IQ_DIGITAL_GAIN = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_IQ_DECIMATION: sdrpp_prf("SPYSERVER_SETTING_IQ_DECIMATION = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_IQ_DIGITAL_GAIN: sdrpp_prf("SPYSERVER_SETTING_IQ_DIGITAL_GAIN = %d\n", st->Value); break;
     
-                case SPYSERVER_SETTING_FFT_FORMAT: printf("SPYSERVER_SETTING_FFT_FORMAT = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_FFT_FREQUENCY: printf("SPYSERVER_SETTING_FFT_FREQUENCY = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_FFT_DECIMATION: printf("SPYSERVER_SETTING_FFT_DECIMATION = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_FFT_DB_OFFSET: printf("SPYSERVER_SETTING_FFT_DB_OFFSET = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_FFT_DB_RANGE: printf("SPYSERVER_SETTING_FFT_DB_RANGE = %d\n", st->Value); break;
-                case SPYSERVER_SETTING_FFT_DISPLAY_PIXELS: printf("SPYSERVER_SETTING_FFT_DISPLAY_PIXELS = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_FFT_FORMAT: sdrpp_prf("SPYSERVER_SETTING_FFT_FORMAT = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_FFT_FREQUENCY: sdrpp_prf("SPYSERVER_SETTING_FFT_FREQUENCY = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_FFT_DECIMATION: sdrpp_prf("SPYSERVER_SETTING_FFT_DECIMATION = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_FFT_DB_OFFSET: sdrpp_prf("SPYSERVER_SETTING_FFT_DB_OFFSET = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_FFT_DB_RANGE: sdrpp_prf("SPYSERVER_SETTING_FFT_DB_RANGE = %d\n", st->Value); break;
+                case SPYSERVER_SETTING_FFT_DISPLAY_PIXELS: sdrpp_prf("SPYSERVER_SETTING_FFT_DISPLAY_PIXELS = %d\n", st->Value); break;
     
-                default: printf("SPYSERVER_CMD_SET_SETTING UNKNOWN Setting=%d Value=%d\n", st->Setting, st->Value); break;
+                default: sdrpp_prf("SPYSERVER_CMD_SET_SETTING UNKNOWN Setting=%d Value=%d\n", st->Setting, st->Value); break;
             }
             buf += ST_SIZE;
             bytes_rem -= ST_SIZE;
@@ -333,13 +349,16 @@ void sdrpp_in(struct mg_connection *mc, void *ev_data)
         }
         
         case SPYSERVER_CMD_PING: {
-            printf("SPYSERVER_CMD_PING\n");
+            sdrpp_prf("SPYSERVER_CMD_PING\n");
             bytes_rem = 0;
             break;
         }
         
         default:
-            printf("sdrpp_in: CommandType=%d UNKNOWN\n", ch->CommandType);
+            // sdr# ?
+            // sdrpp_in: CommandType=1314410051 UNKNOWN
+            // sdrpp_in: CommandType=1313165391 UNKNOWN
+            sdrpp_prf("sdrpp_in: CommandType=%d UNKNOWN\n", ch->CommandType);
             bytes_rem = 0;
             break;
         }
@@ -538,21 +557,13 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
     mg_send_flush();
 }
 
-#define SDRPP_PRINTF
-#ifdef SDRPP_PRINTF
-	#define sdrpp_prf(fmt, ...) \
-		printf(fmt, ## __VA_ARGS__)
-#else
-	#define sdrpp_prf(fmt, ...)
-#endif
-
 static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
 {
     web_mg_t *wm;
 
     switch (ev) {
         case MG_EV_OPEN:
-            sdrpp_prf("sdrpp_handler %s\n", mg_ev_names[ev]);
+            sdrpp_dprf("sdrpp_handler %s\n", mg_ev_names[ev]);
 
             if (sdrpp_WR_tid != -1) {
                 TaskRemove(sdrpp_WR_tid);
@@ -566,14 +577,14 @@ static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
             return;
             
         case MG_EV_ACCEPT:
-            sdrpp_prf("sdrpp_handler %s\n", mg_ev_names[ev]);
+            sdrpp_dprf("sdrpp_handler %s\n", mg_ev_names[ev]);
             mg_ev_setup_api_compat(mc);
             sdrpp_accept(mc, ev_data);
             return;
             
         case MG_EV_CLOSE: {
-            sdrpp_prf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            //sdrpp_prf("sdrpp_handler %s init=%d free wm=%p\n", mg_ev_names[ev], wm? wm->init : -1, wm);
+            sdrpp_dprf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
+            //sdrpp_dprf("sdrpp_handler %s init=%d free wm=%p\n", mg_ev_names[ev], wm? wm->init : -1, wm);
 
             #ifdef DIRECT
                 #ifdef CAMP
@@ -595,12 +606,12 @@ static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
         }
 
         case MG_EV_READ:
-            //sdrpp_prf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
+            //sdrpp_dprf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
             sdrpp_in(mc, ev_data);
             return;
 
         case MG_EV_WRITE:
-            //sdrpp_prf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
+            //sdrpp_dprf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
             return;
 
         case MG_EV_POLL:
@@ -608,7 +619,7 @@ static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
             
         default:
             //printf("sdrpp_handler %s %s:%d => %d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port, mc->loc.port);
-            sdrpp_prf("sdrpp_handler %s\n", mg_ev_names[ev]);
+            sdrpp_dprf("sdrpp_handler %s\n", mg_ev_names[ev]);
             return;
     }
 }

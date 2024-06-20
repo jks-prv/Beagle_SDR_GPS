@@ -628,7 +628,7 @@ static void _dx_reload_file(cfg_t *cfg, int db)
     
     BYTE hash[SHA256_BLOCK_SIZE];
     sha256_final(&ctx, hash);
-    kiwi_bin2str(dx_db->file_hash, hash, N_DX_FILE_HASH_BYTES);
+    mg_bin2str(dx_db->file_hash, hash, N_DX_FILE_HASH_BYTES);
     dx_db->file_size = (int) kiwi_file_size(cfg->filename);
     lprintf("DX: file = %d,%s,%d\n", i, dx_db->file_hash, dx_db->file_size);
 

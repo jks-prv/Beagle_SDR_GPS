@@ -18,7 +18,7 @@
 #ifndef MONGOOSE_HEADER_INCLUDED
 #define  MONGOOSE_HEADER_INCLUDED
 
-#define MONGOOSE_VERSION "5.6"
+#define MG_VERSION "5.6"
 
 #include <stdio.h>      // required for FILE
 #include <stddef.h>     // required for size_t
@@ -50,7 +50,7 @@ struct mg_connection {
   char *content;              // POST (or websocket message) data, or NULL
   size_t content_len;         // Data length
 
-  int is_ssl;                 // Connection is using SSL
+  int is_tls;                 // Connection is using TLS/SSL
   int is_websocket;           // Connection is a websocket connection
   int status_code;            // HTTP status code for HTTP error handler
   int wsbits;                 // First byte of the websocket frame
@@ -75,20 +75,20 @@ struct mg_connection {
 struct mg_server; // Opaque structure describing server instance
 enum { MG_FALSE, MG_TRUE, MG_MORE };
 enum {
-  MG_POLL,          // Callback return value is ignored
-  MG_CONNECT,       // If callback returns MG_FALSE, connect fails
-  MG_AUTH,          // If callback returns MG_FALSE, authentication fails
-  MG_REQUEST,       // If callback returns MG_FALSE, Mongoose continues with req
-  MG_REPLY,         // If callback returns MG_FALSE, Mongoose closes connection
-  MG_RECV,          // Mongoose has received POST data chunk.
+  MG_EV_POLL,       // Callback return value is ignored
+  MG_EV_CONNECT,    // If callback returns MG_FALSE, connect fails
+  MG_EV_AUTH,       // If callback returns MG_FALSE, authentication fails
+  MG_EV_HTTP_MSG,   // If callback returns MG_FALSE, Mongoose continues with req
+  MG_EV_REPLY,      // If callback returns MG_FALSE, Mongoose closes connection
+  MG_EV_RECV,       // Mongoose has received POST data chunk.
                     // Callback should return a number of bytes to discard from
                     // the receive buffer, or -1 to close the connection.
-  MG_CLOSE,         // Connection is closed, callback return value is ignored
-  MG_WS_HANDSHAKE,  // New websocket connection, handshake request
-  MG_WS_CONNECT,    // New websocket connection established
-  MG_CACHE_INFO,    // Ask callback to return caching info
-  MG_CACHE_RESULT,  // Report caching decision result
-  MG_HTTP_ERROR     // If callback returns MG_FALSE, Mongoose continues with err
+  MG_EV_CLOSE,      // Connection is closed, callback return value is ignored
+  MG_EV_WS_HS,      // New websocket connection, handshake request
+  MG_EV_WS_CONN,    // New websocket connection established
+  MG_EV_CACHE_INFO, // Ask callback to return caching info
+  MG_EV_CACHE_DONE, // Report caching decision result
+  MG_EV_HTTP_ERROR  // If callback returns MG_FALSE, Mongoose continues with err
 };
 typedef int (*mg_handler_t)(struct mg_connection *, int ev);
 
@@ -157,6 +157,8 @@ void mg_munmap(void *p, size_t size);
 void mg_remove_double_dots_and_double_slashes(char *s);
 void mg_bin2str(char *to, const unsigned char *p, size_t len);
 
+typedef struct stat file_stat_t;
+void construct_etag(char *buf, size_t buf_len, const file_stat_t *st);
 
 // Templates support
 struct mg_expansion {

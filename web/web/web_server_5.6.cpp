@@ -76,18 +76,18 @@ void webserver_connection_cleanup(conn_t *c)
 		// (prompted by data coming into web server)
 		mg_create_server()
 			ev_handler()
-				MG_REQUEST:
-					web_request()
+				MG_EV_HTTP_MSG:
+					web_ev_request()
 						is_websocket:
 							copy mc data to nbufs:
 								mc data => nbuf_allocq(c2s) [=> web_to_app()]
 						file:
 							return file/AJAX data to server:
 								mg_send_header
-								(file data, AJAX) => mg_send_data()
-				MG_CLOSE:
+								(file data, AJAX) => mg_http_write_chunk()
+				MG_EV_CLOSE:
 					rx_server_websocket(WS_MODE_CLOSE)
-				MG_AUTH:
+				MG_EV_AUTH:
 					MG_TRUE
 		
 		// polled push of data _to_ web server
@@ -172,7 +172,7 @@ static int iterate_callback(struct mg_connection *mc, int ev)
 	int ret;
 	nbuf_t *nb;
 	
-    if (ev == MG_POLL && mc->is_websocket) {
+    if (ev == MG_EV_POLL && mc->is_websocket) {
         conn_t *c = rx_server_websocket(WS_MODE_LOOKUP, mc);
         if (c == NULL) return MG_FALSE;
 
@@ -230,7 +230,7 @@ static int iterate_callback(struct mg_connection *mc, int ev)
 		}
         evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "..iterate_callback");
 	} else {
-		if (ev != MG_POLL)
+		if (ev != MG_EV_POLL)
 		    printf("$$$$$$$$ s2c %d OTHER: %d len %d\n", mc->remote_port, (int) ev, (int) mc->content_len);
 	}
 	
@@ -250,24 +250,23 @@ static int ev_handler(struct mg_connection *mc, int ev)
     //printf("ev_handler ev%d(%s) %s:%d => %d\n", ev, names[ev], mc->remote_ip, mc->remote_port, mc->loc.port);
 
     switch (ev) {
-        case MG_REQUEST:
-        case MG_CACHE_INFO:
-        case MG_CACHE_RESULT:
-            #if 0
-                if (mc->is_websocket)
-                    //printf("ev_handler ev%d(%s) WEBSOCKET len=%d\n", ev, names[ev], mc->content_len)
-                    ;
-                else
-                    printf("ev_handler ev%d(%s) %s %s\n", ev, names[ev], mc->uri, mc->query);
-            #endif
-            return web_request(mc, ev);
+        case MG_EV_HTTP_MSG:
+        case MG_EV_CACHE_INFO:
+        case MG_EV_CACHE_DONE:
+                if (mc->is_websocket) {
+                    //printf("ev_handler ev%d(%s) WEBSOCKET len=%d\n", ev, names[ev], mc->content_len);
+                    return websocket_request(mc, ev);
+                } else {
+                    //printf("ev_handler ev%d(%s) %s %s\n", ev, names[ev], mc->uri, mc->query);
+                    return web_ev_request(mc, ev);
+                }
             
-        case MG_CLOSE:
+        case MG_EV_CLOSE:
             rx_server_websocket(WS_MODE_CLOSE, mc);
             mc->connection_param = NULL;
             return MG_TRUE;
             
-        case MG_AUTH:
+        case MG_EV_AUTH:
             return MG_TRUE;
             
         default:
@@ -286,7 +285,7 @@ void web_server(void *param)
         mg_poll_server(server, 0);		// passing 0 effects a poll
         struct mg_connection *mc;
         for (mc = mg_next(server, NULL); mc != NULL; mc = mg_next(server, mc)) {
-            iterate_callback(mc, MG_POLL);
+            iterate_callback(mc, MG_EV_POLL);
         }
 		
 		//#define MEAS_WEB_SERVER
@@ -372,7 +371,7 @@ void web_server_init(ws_init_t type)
             mtime_obj_keep_edata_always2_o = st.st_mtime;
         }
 
-        asprintf(&web_server_hdr, "KiwiSDR_Mongoose/%d.%d", version_maj, version_min);
+        asprintf(&web_server_hdr, "KiwiSDR_%d.%d/Mongoose_%s", version_maj, version_min, MG_VERSION);
 		init = TRUE;
 	}
 	

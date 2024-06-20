@@ -287,7 +287,7 @@ bool ip_blacklist_get(bool download_diff_restart)
     sha256_update(&ctx, (BYTE *) dl_sp, strlen(dl_sp));
     BYTE hash[SHA256_BLOCK_SIZE];
     sha256_final(&ctx, hash);
-    kiwi_bin2str(net.ip_blacklist_hash, hash, N_IP_BLACKLIST_HASH_BYTES);
+    mg_bin2str(net.ip_blacklist_hash, hash, N_IP_BLACKLIST_HASH_BYTES);
     lprintf("ip_blacklist_get: ip_blacklist_hash = %s\n", net.ip_blacklist_hash);
 
     if (json_init(&bl_json, dl_sp, "bl_json") == false) {

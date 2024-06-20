@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2019 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 #include "kiwi.h"
 #include "types.h"
@@ -648,25 +648,6 @@ void web_served_clear_cache(conn_t *c)
     }
 }
 
-void web_connection_close(struct mg_connection *mc)
-{
-    mc->is_draining = 1;
-}
-
-// caller must free() result
-char *mg_str_to_cstr(mg_str *mgs)
-{
-    char *cstr;
-    cstr = (mgs->buf && mgs->len)? mg_mprintf("%.*s", mgs->len, mgs->buf) : strdup("");
-    return cstr;
-}
-
-// Mongoose 5 API compat
-const char *mg_get_header(struct mg_connection *mc, const char *name)
-{
-    struct mg_str *hdr_str = mg_http_get_header(((web_mg_t *) ((mc)->fn_data))->hm, name);
-    return hdr_str? hdr_str->buf : NULL;
-}
 
 // event requests _from_ web server:
 // (prompted by data coming into web server)
@@ -675,19 +656,17 @@ const char *mg_get_header(struct mg_connection *mc, const char *name)
 //	3) HTML GET AJAX requests
 //	4) HTML PUT requests
 
-int web_websocket(struct mg_connection *mc, int ev, void *ev_data)
+int websocket_request(struct mg_connection *mc, int ev, void *ev_data)
 {
 	bool isPort80 = (net.port != 80 && mc->loc.port == 80);
 	char *ip_unforwarded = ip_remote(mc);
 
-    //if (web_caching_debug == 0) web_caching_debug = bg? 3:1;
-
     // access to the local HTTP port should only come from local ip addresses
     if (mc->loc.port == net.port_http_local && !isLocal_ip(ip_unforwarded)) {
         if (ev == MG_EV_WS_MSG) {
-            lprintf("webserver: WEBSOCKET but not local ip MG_EV_WS_MSG %s:%d <%s>\n", ip_unforwarded, mc->loc.port, mc->uri);
+            lprintf("webserver: WEBSOCKET but not local ip %s:%d <%s>\n", ip_unforwarded, mc->loc.port, mc->uri);
             mg_http_reply(mc, 403, NULL, "");     // 403 = "forbidden"
-            web_connection_close(mc);
+            mg_connection_close(mc);
             return MG_TRUE;
         } else
             return MG_FALSE;
@@ -696,6 +675,7 @@ int web_websocket(struct mg_connection *mc, int ev, void *ev_data)
     // This handler is called for each incoming websocket frame, one or more
     // times for connection lifetime.
     
+    //web_printf_all("%-16s %s %s\n", "WEBSOCKET", mc->uri, mc->query);
     if (isPort80) return MG_FALSE;
 
     check(ev == MG_EV_WS_MSG);
@@ -712,7 +692,6 @@ int web_websocket(struct mg_connection *mc, int ev, void *ev_data)
 
     //printf("WEBSOCKET: len %d uri <%s>\n", sl, mc->uri);
     if (sl == 0) {
-        //printf("----KA %d\n", mc->rem.port);
         return MG_TRUE;	// keepalive?
     }
     
@@ -727,55 +706,10 @@ int web_websocket(struct mg_connection *mc, int ev, void *ev_data)
     nbuf_allocq(&c->c2s, s, sl);
     
     if (sl == 4 && !memcmp(s, "exit", 4)) {
-        //printf("----EXIT %d\n", mc->rem.port);
         return MG_FALSE;
     }
     
     return MG_TRUE;
-}
-
-const char *web_get_mime_type(const char *path, const char *default_mime_type);
-
-static void gmt_time_string(char *buf, size_t buf_len, time_t *t) {
-  strftime(buf, buf_len, "%a, %d %b %Y %H:%M:%S GMT", gmtime(t));
-}
-
-typedef struct stat file_stat_t;
-
-static void construct_etag(char *buf, size_t buf_len, const file_stat_t *st) {
-  #define INT64_FMT PRId64
-  mg_snprintf(buf, buf_len, "\"%lx.%" INT64_FMT "\"",
-              (unsigned long) st->st_mtime, (int64_t) st->st_size);
-}
-
-kstr_t *web_send_standard_headers(kstr_t *headers, struct mg_connection *mc,
-  const char *path, file_stat_t *st)
-{
-  char date[64], lm[64], etag[64];
-  time_t curtime = time(NULL);
-  const char *mime_type;
-  int n;
-
-  mime_type = web_get_mime_type(path, "text/plain");
-
-  // Prepare Etag, Date, Last-Modified headers. Must be in UTC, according to
-  // http://www.w3.org/Protocols/rfc2616/rfc2616-sec3.html#sec3.3
-  gmt_time_string(date, sizeof(date), &curtime);
-  gmt_time_string(lm, sizeof(lm), &st->st_mtime);
-  construct_etag(etag, sizeof(etag), st);
-
-  // Content-Length added later by mg_http_reply()
-  kstr_t *headers_r = kstr_asprintf(headers,
-                  "Date: %s\r\n"
-                  "Last-Modified: %s\r\n"
-                  "Etag: %s\r\n"
-                  "Content-Type: %s\r\n"
-                  "Connection: keep-alive\r\n"
-                  "Accept-Ranges: bytes\r\n",
-                  date,
-                  lm, etag,
-                  mime_type);
-  return headers_r;
 }
 
 bool webserver_caching, web_nocache;
@@ -783,7 +717,6 @@ bool webserver_caching, web_nocache;
 int web_request(struct mg_connection *mc, int ev, void *ev_data)
 {
 	int i, n;
-	
 	size_t edata_size = 0;
 	const char *edata_data;
 	bool isPort80 = (net.port != 80 && mc->loc.port == 80);
@@ -794,22 +727,13 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     // access to the local HTTP port should only come from local ip addresses
     if (mc->loc.port == net.port_http_local && !isLocal_ip(ip_unforwarded)) {
         if (ev == MG_EV_HTTP_MSG) {
-            lprintf("webserver: HTTP but not local ip MG_EV_HTTP_MSG %s:%d <%s>\n", ip_unforwarded, mc->loc.port, mc->uri);
+            lprintf("webserver: HTTP but not local ip %s:%d <%s>\n", ip_unforwarded, mc->loc.port, mc->uri);
             mg_http_reply(mc, 403, NULL, "");     // 403 = "forbidden"
-            web_connection_close(mc);
+            mg_connection_close(mc);
             return MG_TRUE;
         } else
             return MG_FALSE;
     }
-
-	if (mc->is_websocket) {
-	    panic("web_request() called with mc->is_websocket?");
-	}
-    
-    
-    ////////////////////////////////
-    // not web socket
-    ////////////////////////////////
 
 	// iptables will stop regular connection attempts from a blacklisted ip.
 	// But when proxied we need to check the forwarded ip address.
@@ -833,8 +757,8 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     if (bl_ufw || bl_fwd || bl_test) {
 		lprintf("WEB: IP BLACKLISTED: %d|%d %s|%s url=<%s> qs=<%s>\n",
 		    bl_ufw, bl_fwd, ip_unforwarded, ip_forwarded, mc->uri, mc->query);
-        mg_http_reply(mc, 403, NULL, "");     // 403 = "forbidden"
-        web_connection_close(mc);
+        mg_http_reply(mc, 403, NULL, "");   // 403 = "forbidden"
+        mg_connection_close(mc);
         return MG_TRUE;
     }
     
@@ -860,14 +784,14 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
         #endif
     #endif
 		
-	if (ev == MG_EV_CACHE_RESULT) {
-	    web_has_served(MG_EV_CACHE_RESULT, ip_unforwarded, ip_forwarded, mc->uri);
+	if (ev == MG_EV_CACHE_DONE) {
+	    web_has_served(MG_EV_CACHE_DONE, ip_unforwarded, ip_forwarded, mc->uri);
 	    if (web_caching_debug == 0) return MG_TRUE;
 	    
 	    if (mc->cache_info.cached)
             web_printf_cached("%-16s %6s %11s %4s %3s %4s %5s %s\n", "webserver", "-", mc->cache_info.cached? "304-CACHED":"NO_CACHE", "", "", "", "", mc->uri);
 
-		web_printf_all("%-16s %s:%05d %s (etag_match=%c not_mod_since=%c) mtime=[%s]", "MG_EV_CACHE_RESULT",
+		web_printf_all("%-16s %s:%05d %s (etag_match=%c not_mod_since=%c) mtime=[%s]", "MG_EV_CACHE_DONE",
 			ip_forwarded, mc->rem.port,
 			mc->cache_info.cached? "### CLIENT_CACHED ###":"NOT_CACHED", mc->cache_info.etag_match? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
 			var_ctime_static(&mc->cache_info.st.st_mtime));
@@ -910,7 +834,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     if ((isPort80 && !acme) || (acme && !isPort80)) {
         lprintf("webserver: bad ACME request ev=%d %s:%d <%s>\n", ev, ip_forwarded, mc->loc.port, o_uri);
         mg_http_reply(mc, 403, NULL, "");     // 403 = "forbidden"
-        web_connection_close(mc);
+        mg_connection_close(mc);
         return MG_TRUE;
     }
 
@@ -935,9 +859,8 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
                 kstr_t *args = mc->query? kstr_cat(sep, mc->query) : NULL;
                 kstr_t *redirect = kstr_cat(url_redirect, args);
                 printf("REDIRECT: %s\n", kstr_sp(redirect));
-                // 307 = "redirect"
                 mg_http_reply(mc, 307, stprintf("Location: %s\r\n", kstr_sp(redirect)), "");
-                web_connection_close(mc);
+                mg_connection_close(mc);
                 evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "307 redirect");
                 kstr_free(redirect);
                 admcfg_string_free(url_redirect);
@@ -948,7 +871,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     }
 
     // SECURITY: prevent escape out of local directory
-    kiwi_remove_double_dots_and_double_slashes((char *) mc->uri);
+    mg_remove_double_dots_and_double_slashes((char *) mc->uri);
     char *suffix = strrchr(o_uri, '.');
     
     // disallow certain suffixes in *any* directory
@@ -1224,7 +1147,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     
     // NB: Will see cases of etag_match=N but not_mod_since=Y because of %[] substitution.
     // The size in the etag is different due to the substitution, but the underlying file mtime hasn't changed.
-    
+
     mc->cache_info.st.st_size = edata_size + ver_size;
     if (!isAJAX) assert(mtime != 0);
     mc->cache_info.st.st_mtime = mtime;
@@ -1232,11 +1155,14 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     if (!(isAJAX && ev == MG_EV_CACHE_INFO)) {		// don't print for isAJAX + MG_EV_CACHE_INFO nop case
         web_printf_all("%-16s %s:%05d size=%6d dirty=%d mtime=[%s] %s %s %s%s\n", (ev == MG_EV_CACHE_INFO)? "MG_EV_CACHE_INFO" : "MG_EV_HTTP_MSG",
             ip_forwarded, mc->rem.port,
-            mc->cache_info.st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, web_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
+            mc->cache_info.st.st_size, dirty, var_ctime_static(&mtime), isAJAX? mc->uri : uri, mg_get_mime_type(isAJAX? mc->uri : uri, "text/plain"),
             (mc->query != NULL)? "qs:" : "", (mc->query != NULL)? mc->query : "");
     }
 
-    bool isImage = (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0));
+    bool isImage = (
+        (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0)) ||
+        strcmp(uri, "photo.upload") == 0
+    );
     int rtn = MG_TRUE;
     if (ev == MG_EV_CACHE_INFO) {
         if (dirty || isAJAX || web_nocache || !webserver_caching) {
@@ -1247,13 +1173,12 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
         }
     } else {
         // ev == MG_EV_HTTP_MSG
-        kstr_t *headers = NULL;
         const char *hdr_type;
     
         // NB: prevent AJAX responses from getting cached by not sending standard headers which include etag etc!
         if (isAJAX) {
             //printf("AJAX: %s %s\n", mc->uri, uri);
-            headers = kstr_asprintf(headers, "Content-Type: text/plain\r\n");
+            mg_http_send_header(mc, "Content-Type", "text/plain", MG_FIRST_HEADER);
             
             // needed by, e.g., auto-discovery port scanner
             // SECURITY FIXME: can we detect a special request header in the pre-flight and return this selectively?
@@ -1261,24 +1186,23 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
             // An <iframe sandbox="allow-same-origin"> is not sufficient for subsequent
             // non-same-origin XHRs because the
             // "Access-Control-Allow-Origin: *" must be specified in the pre-flight.
-            headers = kstr_asprintf(headers, "Access-Control-Allow-Origin: *\r\n");
+            mg_http_send_header(mc, "Access-Control-Allow-Origin", "*");
             hdr_type = "AJAX";
         } else
         if (web_nocache || !webserver_caching) {
-            headers = kstr_asprintf(headers, "Content-Type: %s\r\n", web_get_mime_type(uri, "text/plain"));
+            mg_http_send_header(mc, "Content-Type", mg_get_mime_type(uri, "text/plain"), MG_FIRST_HEADER);
             hdr_type = "NO-CACHE";
         } else {
-            headers = web_send_standard_headers(headers, mc, uri, &mc->cache_info.st);
+            mg_http_send_standard_headers(mc, uri, &mc->cache_info.st, "OK");
             // Cache image files for a fixed amount of time to keep, e.g.,
             // GPS az/el img from flashing on periodic re-render with Safari.
-            //headers = kstr_asprintf(headers, "Cache-Control: %s\r\n", "max-age=0");
-            //headers = kstr_asprintf(headers, "Cache-Control: %s\r\n", isImage? "max-age=31536000" : "max-age=0");
-            headers = kstr_asprintf(headers, "Cache-Control: %s\r\n", isImage? "max-age=31536000" : "max-age=0, must-revalidate");
+            //mg_http_send_header(mc, "Cache-Control", "max-age=0");
+            //mg_http_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0");
+            mg_http_send_header(mc, "Cache-Control", isImage? "max-age=31536000":"max-age=0, must-revalidate");
             hdr_type = isImage? "CACHE-IMAGE" : "CACHE-REVAL";
         }
         
-        if (is_gzip)
-            headers = kstr_asprintf(headers, "Content-Encoding: gzip\r\n");
+        if (is_gzip) mg_http_send_header(mc, "Content-Encoding", "gzip");
         
         web_printf_all("%-16s %11s %s%s\n", "sending", hdr_type, is_min? "MIN ":"", is_gzip? "GZIP":"");
 
@@ -1286,12 +1210,12 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
             is_file? "FILE":"", is_min? "MIN":"", is_gzip? "GZIP":"",
             mc->cache_info.if_none_match? 'T':'F', mc->cache_info.etag_match? 'T':'F',
             mc->cache_info.if_mod_since? 'T':'F', mc->cache_info.not_mod_since? 'T':'F',
-            mc->loc.port, mc->is_tls? "(SSL)" : "");
+            mc->loc.port, mc->is_tls? "(TLS/SSL)" : "");
         if (web_caching_debug & WEB_CACHING_DEBUG_SENT) {
             if (mc->cache_info.if_none_match && !mc->cache_info.etag_match)
                 web_printf_sent("%s %s ", mc->cache_info.etag_server, mc->cache_info.etag_client);
             if (mc->cache_info.if_mod_since && !mc->cache_info.not_mod_since) {
-	            // two web_printf_all() due to var_ctime_static()
+	            // two web_printf_all() due to var_ctime_static() needing to be kept separate
                 web_printf_sent("%s ", var_ctime_static(&mc->cache_info.server_mtime));
                 web_printf_sent("%s ", var_ctime_static(&mc->cache_info.client_mtime));
             }
@@ -1299,9 +1223,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
         web_printf_sent("%15s %s\n", ip_forwarded, isAJAX? mc->uri : uri);
         if (!isAJAX) web_has_served(MG_EV_HTTP_MSG, ip_unforwarded, ip_forwarded, mc->uri);
         
-        headers = kstr_asprintf(headers, "Server: %s\r\nTransfer-Encoding: chunked\r\n", web_server_hdr);
-        mg_http_reply(mc, 200, kstr_sp(headers), "");
-        kstr_free(headers);
+        mg_http_send_header(mc, "Server", web_server_hdr, MG_LAST_HEADER, isAJAX? edata_size : 0);
         
         evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", "mg_http_write_chunk..");
         mg_http_write_chunk(mc, kstr_sp((char *) edata_data), edata_size);
@@ -1310,16 +1232,17 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
         if (ver != NULL) {
             mg_http_write_chunk(mc, ver, ver_size);
         }
-        
-        mg_http_printf_chunk(mc, "");
-        mc->is_resp = 0;    // response is complete
-        
+
+        mg_response_complete(mc);
+
         #if 0
             if (isIndex) {
                 //const char *ua = mg_get_header(mc, "User-Agent");
                 //printf("UA <%s>\n", ua);
+                //mg_free_header(ua);
                 const char *cookie = mg_get_header(mc, "Cookie");
                 real_printf("COOKIE %s\n", cookie);
+                mg_free_header(cookie);
             }
         #endif
     }
@@ -1338,78 +1261,4 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     if (ev != MG_EV_CACHE_INFO) http_bytes += edata_size;
     evWS(EC_EVENT, EV_WS, 0, "WEB_SERVER", evprintf("edata_size %d", edata_size));
     return rtn;
-}
-
-// From mongoose 5.6 because removed in 7.14
-static const struct {
-  const char *extension;
-  size_t ext_len;
-  const char *mime_type;
-} static_builtin_mime_types[] = {
-  {".html", 5, "text/html"},
-  {".htm", 4, "text/html"},
-  {".shtm", 5, "text/html"},
-  {".shtml", 6, "text/html"},
-  {".css", 4, "text/css"},
-  {".js",  3, "application/javascript"},
-  {".ico", 4, "image/x-icon"},
-  {".gif", 4, "image/gif"},
-  {".jpg", 4, "image/jpeg"},
-  {".jpeg", 5, "image/jpeg"},
-  {".png", 4, "image/png"},
-  {".svg", 4, "image/svg+xml"},
-  {".txt", 4, "text/plain"},
-  {".torrent", 8, "application/x-bittorrent"},
-  {".wav", 4, "audio/x-wav"},
-  {".mp3", 4, "audio/x-mp3"},
-  {".mid", 4, "audio/mid"},
-  {".m3u", 4, "audio/x-mpegurl"},
-  {".ogg", 4, "application/ogg"},
-  {".ram", 4, "audio/x-pn-realaudio"},
-  {".xml", 4, "text/xml"},
-  {".json",  5, "application/json"},
-  {".xslt", 5, "application/xml"},
-  {".xsl", 4, "application/xml"},
-  {".ra",  3, "audio/x-pn-realaudio"},
-  {".doc", 4, "application/msword"},
-  {".exe", 4, "application/octet-stream"},
-  {".zip", 4, "application/x-zip-compressed"},
-  {".xls", 4, "application/excel"},
-  {".tgz", 4, "application/x-tar-gz"},
-  {".tar", 4, "application/x-tar"},
-  {".gz",  3, "application/x-gunzip"},
-  {".arj", 4, "application/x-arj-compressed"},
-  {".rar", 4, "application/x-rar-compressed"},
-  {".rtf", 4, "application/rtf"},
-  {".pdf", 4, "application/pdf"},
-  {".swf", 4, "application/x-shockwave-flash"},
-  {".mpg", 4, "video/mpeg"},
-  {".webm", 5, "video/webm"},
-  {".mpeg", 5, "video/mpeg"},
-  {".mov", 4, "video/quicktime"},
-  {".mp4", 4, "video/mp4"},
-  {".m4v", 4, "video/x-m4v"},
-  {".asf", 4, "video/x-ms-asf"},
-  {".avi", 4, "video/x-msvideo"},
-  {".bmp", 4, "image/bmp"},
-  {".ttf", 4, "application/x-font-ttf"},
-  {NULL,  0, NULL}
-};
-
-const char *web_get_mime_type(const char *path, const char *default_mime_type)
-{
-  const char *ext;
-  size_t i, path_len;
-
-  path_len = strlen(path);
-
-  for (i = 0; static_builtin_mime_types[i].extension != NULL; i++) {
-    ext = path + (path_len - static_builtin_mime_types[i].ext_len);
-    if (path_len > static_builtin_mime_types[i].ext_len &&
-        strcasecmp(ext, static_builtin_mime_types[i].extension) == 0) {
-      return static_builtin_mime_types[i].mime_type;
-    }
-  }
-
-  return default_mime_type;
 }
