@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.687  June 25, 2024
+v1.687,688  June 25, 2024
     Automatically rebuild proxy configuration file when necessary.
 
 v1.686  June 6, 2024
