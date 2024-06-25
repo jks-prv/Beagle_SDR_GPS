@@ -270,6 +270,27 @@ static void misc_NET(void *param)
 	lprintf("PROXY: %s dom_sel_menu=%d\n", proxy? "YES":"NO", dom_sel);
 	
 	if (proxy) {
+	    if (!kiwi_file_exists(DIR_CFG "/frpc.ini")) {
+            bool rev_auto = admcfg_bool("rev_auto", NULL, CFG_REQUIRED);
+            const char *user = admcfg_string("rev_auto_user", NULL, CFG_REQUIRED);
+            const char *host = admcfg_string("rev_auto_host", NULL, CFG_REQUIRED);
+            const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
+            lprintf("PROXY: no " DIR_CFG "/frpc.ini cfg file\n");
+            lprintf("PROXY: rev_auto=%d user=%s host=%s proxy_server=%s\n",
+                rev_auto, user, host, proxy_server);
+
+            if (rev_auto && kiwi_nonEmptyStr(user) && kiwi_nonEmptyStr(host) && kiwi_nonEmptyStr(proxy_server)) {
+                lprintf("PROXY: initializing frpc configuration file\n");
+                asprintf(&cmd_p, "sed -e s/SERVER/%s/ -e s/USER/%s/ -e s/HOST/%s/ -e s/PORT/%d/ %s >%s",
+                    proxy_server, user, host, net.port_ext, DIR_CFG "/frpc.template.ini", DIR_CFG "/frpc.ini");
+                printf("proxy register: %s\n", cmd_p);
+                system(cmd_p);
+                kiwi_asfree(cmd_p);
+            }
+            
+            admcfg_string_free(user); admcfg_string_free(host); admcfg_string_free(proxy_server);
+	    }
+	    
 		lprintf("PROXY: starting frpc\n");
 		rev_enable_start = true;
     	if (background_mode)
