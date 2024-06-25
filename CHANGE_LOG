@@ -2,6 +2,9 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.687  June 25, 2024
+    Automatically rebuild proxy configuration file when necessary.
+
 v1.686  June 6, 2024
     If the auto proxy configuration needs to be restored after a re-flash then the admin password is
     now set to the Kiwi serial number. Previously the admin password restored to being blank which
