@@ -271,10 +271,10 @@ static void misc_NET(void *param)
 	
 	if (proxy) {
 	    if (!kiwi_file_exists(DIR_CFG "/frpc.ini")) {
-            bool rev_auto = admcfg_bool("rev_auto", NULL, CFG_REQUIRED);
-            const char *user = admcfg_string("rev_auto_user", NULL, CFG_REQUIRED);
-            const char *host = admcfg_string("rev_auto_host", NULL, CFG_REQUIRED);
-            const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_REQUIRED);
+            bool rev_auto = admcfg_true("rev_auto");
+            const char *user = admcfg_string("rev_auto_user", NULL, CFG_OPTIONAL);
+            const char *host = admcfg_string("rev_auto_host", NULL, CFG_OPTIONAL);
+            const char *proxy_server = admcfg_string("proxy_server", NULL, CFG_OPTIONAL);
             lprintf("PROXY: no " DIR_CFG "/frpc.ini cfg file\n");
             lprintf("PROXY: rev_auto=%d user=%s host=%s proxy_server=%s\n",
                 rev_auto, user, host, proxy_server);
