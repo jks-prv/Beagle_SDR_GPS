@@ -101,6 +101,31 @@ void rx_loguser(conn_t *c, logtype_e type)
 	u4_t hr = t;
 
 	if (type == LOG_ARRIVED) {
+        #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
+            if (strcmp(c->ident_user, "kiwi_nc.py") == 0) {
+                float f_kHz = (float) c->freqHz / kHz + freq_offset_kHz;
+                int f = (int) floorf(f_kHz);
+                bool freq_trig = (
+                    (f >= (2941-10) && f <= (3900+10)) ||
+                    (f >= (4654-10) && f <= (4687+10)) ||
+                    (f >= (5451-10) && f <= (5720+10)) ||
+                    (f >= (6529-10) && f <= (6712+10)) ||
+                    (f >= (8825-10) && f <= (8977+10)) ||
+                    (f >= (10027-10) && f <= (10093+10)) ||
+                    (f >= (11184-10) && f <= (11387+10)) ||
+                    (f >= (13264-10) && f <= (13351+10)) ||
+                    (f >= (15025-10) && f <= (15025+10)) ||
+                    (f >= (17901-10) && f <= (17985+10)) ||
+                    (f >= (21928-10) && f <= (21997+10))
+                );
+                if (freq_trig) {
+                    clprintf(c, "API: non-Kiwi app fingerprint-3 was denied connection\n");
+                    c->kick = true;
+                    return;
+                }
+            }
+        #endif
+
 		asprintf(&s, "(ARRIVED)");
 		c->last_tune_time = now;
 		user_arrive(c);
@@ -133,7 +158,7 @@ void rx_loguser(conn_t *c, logtype_e type)
                 c->geo? " ":"", c->geo? c->geo:"", s);
         }
     #endif
-	
+
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
 	kiwi_asfree(s);
 }
