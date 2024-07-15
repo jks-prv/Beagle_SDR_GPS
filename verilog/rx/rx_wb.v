@@ -30,7 +30,7 @@ module rx_wb (
 	output wire [15:0] rx_dout_A,
 
     // debug
-	input  wire [ 3:0] rxn_i,
+	input  wire [ 2:0] didx_i,
 	input  wire [15:0] waddr_i,
 	input  wire [15:0] count_i,
 
@@ -161,20 +161,15 @@ fir_iq #(.WIDTH(RXO_BITS))
 	    begin
 //`define WB_PATTERN
 `ifdef WB_PATTERN
-            case (rxn_i)
+            case (didx_i)
                 0: rx_dout = rd_getI? count_i : (rd_getQ? 16'h0def : 16'h0a0b);
                 1: rx_dout = rd_getI? count_i : (rd_getQ? 16'h1def : 16'h1a1b);
-                2: rx_dout = rd_getI? count_i : (rd_getQ? 16'h2def : 16'h2a2b);
+                2: rx_dout = rd_getI? count_i : (rd_getQ?  waddr_i : 16'h2a2b);
                 3: rx_dout = rd_getI? count_i : (rd_getQ? 16'h3def : 16'h3a3b);
                 4: rx_dout = rd_getI? count_i : (rd_getQ? 16'h4def : 16'h4a4b);
                 5: rx_dout = rd_getI? count_i : (rd_getQ? 16'h5def : 16'h5a5b);
                 6: rx_dout = rd_getI? count_i : (rd_getQ? 16'h6def : 16'h6a6b);
                 7: rx_dout = rd_getI? count_i : (rd_getQ? 16'h7def : 16'h7a7b);
-                8: rx_dout = rd_getI? count_i : (rd_getQ? 16'h8def : 16'h8a8b);
-                9: rx_dout = rd_getI? count_i : (rd_getQ? 16'h9def : 16'h9a9b);
-               10: rx_dout = rd_getI? count_i : (rd_getQ? 16'hadef : 16'haaab);
-               11: rx_dout = rd_getI? count_i : (rd_getQ? 16'hbdef : 16'hbacb);
-                default: rx_dout = 16'hcafe;
             endcase
 `else
             // sign extend
@@ -187,17 +182,6 @@ fir_iq #(.WIDTH(RXO_BITS))
             
 		    rx_dout = rd_getI? rx_cic1_out_i[15:0] : ( rd_getQ? rx_cic1_out_q[15:0] :
 		        { {{6{rx_cic1_out_i[17]}}, rx_cic1_out_i[17:16]}, {{6{rx_cic1_out_q[17]}}, rx_cic1_out_q[17:16]} } );
-
-            // zero fill
-            // for RX2_BITS = 18
-            // 2222 1111 111111
-            // 3210 9876 54321098 76543210
-            // Sddd dddd dddddddd dd000000
-            // 1       1            123456
-            // 7       0 9         0
-            
-		    //rx_dout = rd_getI? {rx_cic1_out_i[9:0], 6'b0} : ( rd_getQ? {rx_cic1_out_q[9:0], 6'b0} :
-		    //    { rx_cic1_out_i[17:10], rx_cic1_out_q[17:10] } );
 `endif
 	    end else
 	    begin

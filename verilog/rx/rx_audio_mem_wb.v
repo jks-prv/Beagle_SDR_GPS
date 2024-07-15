@@ -36,7 +36,7 @@ module rx_audio_mem_wb (
     output reg         rd_getI,
     output reg         rd_getQ,
     output reg         rd_getWB,
-    output wire [ 3:0] rxn_o,
+    output wire [ 2:0] didx_o,
     output wire [15:0] waddr_o,
     output wire [15:0] count_o,
     output wire        debug,
@@ -54,7 +54,7 @@ module rx_audio_mem_wb (
 
     assign debug = use_ts;
 
-    reg [3:0] rxn;
+    reg [2:0] didx;
     reg [1:0] done;
     reg [15:0] count;
 	reg inc_A, wr, use_ts, use_ctr;
@@ -81,7 +81,7 @@ module rx_audio_mem_wb (
 			move <= 0;
 			wr <= 0;
 			done <= 0;
-			rxn <= 0;
+			didx <= 0;
 			inc_A <= 0;
 			use_ts <= 0;
             use_ctr <= 0;
@@ -156,14 +156,13 @@ debug_3 <= 1;
 			end
 			else
 			begin
-                // step through all channels
-				// start a sequential string of iq3 * rxn channel data writes
+				// start a sequential string of iq3 * nrx_samps data writes
 				case (move)
 					0: begin rd_getI <= 1; rd_getQ <= 0; wr <= 1; move <= 1; tsel <= 0; end
 					1: begin rd_getI <= 0; rd_getQ <= 1; wr <= 1; move <= 2; tsel <= 1; end
 					2: begin rd_getI <= 0; rd_getQ <= 0; wr <= 1; move <= 3; tsel <= 2; end
 					3: begin rd_getI <= 0; rd_getQ <= 0; wr <= 0; move <= 0; tsel <= 0;
-					         done <= done - 1; rxn <= rxn + 1; count <= count + 1; end
+					         done <= done - 1; didx <= didx + 1; count <= count + 1; end
 				endcase
 				inc_A <= 0;
 				rd_getWB <= !use_ts && !use_ctr;
@@ -238,7 +237,7 @@ debug_3 <= 1;
 
 	wire rd = get_rx_samp_C;
 	
-    assign rxn_o = rxn;
+    assign didx_o = didx;
     //assign count_o = count;
     //assign waddr_o = waddr;
     assign count_o = count;

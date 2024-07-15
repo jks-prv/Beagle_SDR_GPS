@@ -214,7 +214,7 @@ module receiver_wb (
 	
 	wire rd_getI, rd_getQ;
 	wire rd_getWB;
-	wire [3:0] rxn;
+	wire [2:0] didx;
 	wire [15:0] waddr, count;
 
 	rx_wb #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst (
@@ -229,7 +229,7 @@ module receiver_wb (
 		.rx_dout_A		(rx_data_A),
 		
 		// debug
-		.rxn_i          (rxn),
+		.didx_i         (didx),
 		.waddr_i        (waddr),
 		.count_i        (count),
 
@@ -262,11 +262,7 @@ module receiver_wb (
 		if (rx_avail_A)
 		    ticks_latched_A <= ticks_A;
 
-`ifdef WB_RX0_SHARE
-	rx_audio_mem_rx0_wb rx_audio_mem_wb_inst (
-`else
 	rx_audio_mem_wb     rx_audio_mem_wb_inst (
-`endif
 		.adc_clk		(adc_clk),
 		.nrx_samps      (nrx_samps_A),
 		.rx_avail_A     (rx_avail_A),
@@ -278,7 +274,7 @@ module receiver_wb (
 		.rd_getI        (rd_getI),
 		.rd_getQ        (rd_getQ),
 		.rd_getWB       (rd_getWB),
-		.rxn_o          (rxn),
+		.didx_o         (didx),
 		.waddr_o        (waddr),
 		.count_o        (count),
 		.debug          (awb_debug),

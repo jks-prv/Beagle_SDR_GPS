@@ -17,8 +17,8 @@
 `define DEF_ADC_BITS 1
 	localparam DEFAULT_NSYNC = 2;    // DEFp 0x2
 `define DEF_DEFAULT_NSYNC 1
-`define USE_WB 1    // DEFh 0x1
-//`define USE_RX_CICF    // DEFh 0x0
+//`define USE_WB    // DEFh 0x0
+`define USE_RX_CICF 1    // DEFh 0x1
 `define USE_OPTIONAL 1    // DEFh 0x1
 `define USE_LOGGER 1    // DEFh 0x1
 `define USE_CPU_CTR 1    // DEFh 0x1
@@ -58,25 +58,21 @@
 `define DEF_SPIBUF_B 1
 	localparam SPIBUF_BMAX = 4094;    // DEFp 0xffe
 `define DEF_SPIBUF_BMAX 1
-	localparam RX1_WB_DECIM = 222;    // DEFp 0xde
-`define DEF_RX1_WB_DECIM 1
-	localparam RX2_WB_DECIM = 25;    // DEFp 0x19
-`define DEF_RX2_WB_DECIM 1
 	localparam SND_RATE_WB = 12000;    // DEFp 0x2ee0
 `define DEF_SND_RATE_WB 1
-	localparam V_WB_BUF_CHANS = 25;    // DEFp 0x19
-`define DEF_V_WB_BUF_CHANS 1
-	localparam WB_RATE = 300000;    // DEFp 0x493e0
-`define DEF_WB_RATE 1
+	localparam RX1_WB_DECIM = 926;    // DEFp 0x39e
+`define DEF_RX1_WB_DECIM 1
+	localparam RX2_WB_DECIM = 3;    // DEFp 0x3
+`define DEF_RX2_WB_DECIM 1
 	localparam RX1_WIDE_DECIM = 823;    // DEFp 0x337
 `define DEF_RX1_WIDE_DECIM 1
-	localparam RX2_WIDE_DECIM = 4;    // DEFp 0x4
+	localparam RX2_WIDE_DECIM = 2;    // DEFp 0x2
 `define DEF_RX2_WIDE_DECIM 1
-	localparam RX1_STD_DECIM = 222;    // DEFp 0xde
+	localparam RX1_STD_DECIM = 926;    // DEFp 0x39e
 `define DEF_RX1_STD_DECIM 1
-	localparam RX2_STD_DECIM = 25;    // DEFp 0x19
+	localparam RX2_STD_DECIM = 3;    // DEFp 0x3
 `define DEF_RX2_STD_DECIM 1
-`define CICF_DECIM_BY_2 1    // DEFh 0x1
+`define CICF_DECIM_BY_2 1    // DEFh 0x2
 	localparam MAX_SND_RATE = 20250;    // DEFp 0x4f1a
 `define DEF_MAX_SND_RATE 1
 	localparam SND_RATE_3CH = 20250;    // DEFp 0x4f1a
@@ -91,13 +87,13 @@
 `define DEF_SND_RATE_14CH 1
 	localparam RX_DECIM_3CH = 3292;    // DEFp 0xcdc
 `define DEF_RX_DECIM_3CH 1
-	localparam RX_DECIM_4CH = 5550;    // DEFp 0x15ae
+	localparam RX_DECIM_4CH = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_4CH 1
-	localparam RX_DECIM_8CH = 5550;    // DEFp 0x15ae
+	localparam RX_DECIM_8CH = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_8CH 1
-	localparam RX_DECIM_14CH = 5550;    // DEFp 0x15ae
+	localparam RX_DECIM_14CH = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_14CH 1
-	localparam RX_DECIM_WB = 5550;    // DEFp 0x15ae
+	localparam RX_DECIM_WB = 5556;    // DEFp 0x15b4
 `define DEF_RX_DECIM_WB 1
 	localparam RXBUF_SIZE_4CH = 8192;    // DEFp 0x2000
 `define DEF_RXBUF_SIZE_4CH 1
