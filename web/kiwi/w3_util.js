@@ -3910,13 +3910,13 @@ function w3_string_old_set_cfg_cb(path, val, first)
 
 function w3_string_set_cfg_cb(path, val, first)
 {
-	console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
    w3_json_set_cfg_cb(path, val, first);
 }
 
 function w3_json_set_cfg_cb(path, val, first)
 {
-	console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+	//console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
 
 	// verify that value is valid JSON
 	var v = val;

@@ -158,7 +158,7 @@ void rx_loguser(conn_t *c, logtype_e type)
                 c->geo? " ":"", c->geo? c->geo:"", s);
         }
     #endif
-    
+
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
 	kiwi_asfree(s);
 }
