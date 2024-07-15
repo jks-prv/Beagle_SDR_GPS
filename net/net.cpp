@@ -698,6 +698,10 @@ char *ip_remote(struct mg_connection *mc)
 bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_ip)
 {
     kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);     // unforwarded
+    
+    // headers are invalid for web sockets and internal connections
+    if (mc->is_websocket || !mc->connection_param) return false;
+
     const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
     const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
     //printf("check_if_forwarded: x_real_ip=<%s> x_forwarded_for=<%s>\n", x_real_ip, x_forwarded_for);
@@ -728,6 +732,8 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
         }
     }
     
+    mg_free_header(x_real_ip);
+    mg_free_header(x_forwarded_for);
     kiwi_asfree(ip_r);
     return forwarded;
 }
@@ -752,7 +758,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         mcs = &iconn->snd_mc;
         mc_fail = mcs;
         mcs->connection_param = NULL;
-        asprintf((char **) &mcs->uri, "%lld/SND", tstamp);
+        asprintf((char **) &mcs->uri, "ws/kiwi/%lld/SND", tstamp);
         kiwi_strncpy(mcs->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mcs->remote_port = local_port;
         mcs->local_port = net.port;
@@ -774,7 +780,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         mcw = &iconn->wf_mc;
         mc_fail = mcw;
         mcw->connection_param = NULL;
-        asprintf((char **) &mcw->uri, "%lld/W/F", tstamp);
+        asprintf((char **) &mcw->uri, "ws/kiwi/%lld/W/F", tstamp);
         kiwi_strncpy(mcw->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mcw->remote_port = local_port + 1;
         mcw->local_port = net.port;
@@ -799,7 +805,7 @@ bool internal_conn_setup(u4_t ws, internal_conn_t *iconn, int instance, int port
         mc_fail = mce;
         if (csnd == NULL) goto error2;  // i.e. ICONN_WS_SND must be used together with ICONN_WS_EXT
         mce->connection_param = NULL;
-        asprintf((char **) &mce->uri, "%lld/EXT", tstamp);
+        asprintf((char **) &mce->uri, "ws/kiwi/%lld/EXT", tstamp);
         kiwi_strncpy(mce->remote_ip, "127.0.0.1", NET_ADDRSTRLEN);
         mce->remote_port = local_port + 2;
         mce->local_port = net.port;

@@ -72,6 +72,7 @@ function kiwi_monitor()
    
    ws_any().msg_cb = function(msg_a) {
       var a = msg_a[1]? msg_a[1].split(',') : null;
+      var s;
       switch (msg_a[0]) {
 
          case 'qpos':
@@ -79,14 +80,13 @@ function kiwi_monitor()
             
             // remove any camp url param so the reload doesn't come right back here
             if (reload) kiwi_queue_reload_cb();
-            var s = '';
+            s = '';
             if (kiwi.queued) s += 'You are '+ pos +' of '+ waiters +' in queue.';
             w3_innerHTML('id-queue-pos', s);
             break;
 
          case 'camp':
             var okay = +a[0], rx = +a[1];
-            var s;
             if (okay) {
                if (!monitor.init) {
                   check_suspended_audio_state();
@@ -145,7 +145,7 @@ function kiwi_monitor()
 
 function kiwi_queue_reload_cb()
 {
-   kiwi_open_or_reload_page({ url:kiwi_remove_search_param(window.location.href, 'camp') });
+   kiwi_open_or_reload_page({ url:kiwi_remove_search_param(kiwi_url(), 'camp') });
 }
 
 function kiwi_camp_update(rx, s)

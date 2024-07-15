@@ -23,6 +23,7 @@ Boston, MA  02110-1301, USA.
 #include "mode.h"
 #include "rx.h"
 #include "rx_cmd.h"
+#include "rx_server.h"
 #include "rx_util.h"
 #include "clk.h"
 #include "mem.h"
@@ -39,12 +40,13 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "debug.h"
 #include "ext_int.h"
+#include "FT8.h"
 #include "wspr.h"
 #include "security.h"
 #include "options.h"
 #include "mode.h"
-#include "dx.h"
 #include "ant_switch.h"
+#include "utf8.h"
 
 #ifdef USE_SDR
  #include "data_pump.h"
@@ -194,6 +196,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET DX_SET", CMD_DX_SET },
     { "SET GET_CO", CMD_GET_CONFIG },
     { "SET STATS_", CMD_STATS_UPD },
+    { "SET xfer_s", CMD_XFER_STATS },
     { "SET GET_US", CMD_GET_USERS },
     { "SET requir", CMD_REQUIRE_ID },
     { "SET ident_", CMD_IDENT_USER },
@@ -233,7 +236,7 @@ void rx_common_init(conn_t *conn)
 	    send_msg(conn, false, "MSG is_multi_core");
 }
 
-bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
+bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 {
 	int i, j, k, n, seq;
 	const char *stream_name = rx_streams[stream_type].uri;
@@ -241,6 +244,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	char *sb;
 	int slen;
 	bool ok, err;
+	
+    if (keep_alive) *keep_alive = false;
 	
 	if (mc == NULL) {
 	    //cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
@@ -292,6 +297,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	case CMD_KEEPALIVE:
         if (strcmp(cmd, "SET keepalive") == 0) {
             conn->keepalive_time = timer_sec();
+            if (keep_alive) *keep_alive = true;
 
             // for STREAM_EXT send a roundtrip keepalive
             if (conn->type == STREAM_EXT) {
@@ -422,7 +428,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                 pwd_debug = false;
             }
             
-            pwd_lprintf("PWD new connection --------------------------------------------------------\n");
+            if (conn->isMaster || type_admin)
+                clprintf(conn, "--- new connection --------------------------------------------------------\n");
         
             if (conn->internal_connection) {
                 is_local_e = IS_LOCAL;
@@ -538,6 +545,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     pwd_printf("TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
                 }
             }
+
+            const char *ip_trace = admcfg_string("ip_trace", NULL, CFG_OPTIONAL);
+            if (kiwi_nonEmptyStr(ip_trace) && strcmp(conn->remote_ip, ip_trace) == 0) {
+                pwd_printf("IP_TRACE: %s\n", conn->remote_ip);
+                conn->ip_trace = true;
+            }
+            cfg_string_free(ip_trace);
 
             // Let client know who we think they are.
             // Use public ip of Kiwi server when client connection is on local subnet.
@@ -830,12 +844,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 send_msg(conn, false, "MSG foff_error=1");
                             } else {
 		                        freq_offset_kHz = conn->foff;
+		                        freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
                                 cfg_set_float("freq_offset", freq_offset_kHz);
                                 printf("_cfg_save_json freq_offset\n");
 		                        cfg_save_json(cfg_cfg.json);    // we just checked that no admin connections exist
                                 update_freqs();
                                 update_masked_freqs();
-                                cprintf(conn, "foff: UPDATED\n");
+                                cprintf(conn, "foff: UPDATED %.3f\n", freq_offset_kHz);
                             }
                             conn->foff_set = false;
                         }
@@ -1724,25 +1739,12 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             // ch == rx_chans for admin connections (e.g. 4 when ch = 0..3 for user connections)
             if (n != 1 || ch < 0 || ch > rx_chans) return true;
 
-            rx_chan_t *rx;
-            int underruns = 0, seq_errors = 0;
-        
-            for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
-                if (rx->busy) {
-                    conn_t *c = rx->conn;
-                    if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->ident_user != NULL) {
-                        underruns += c->audio_underrun;
-                        seq_errors += c->sequence_errors;
-                    }
-                }
-            }
-        
             sb = kstr_asprintf(NULL, cpu_stats_buf? "{%s," : "{", kstr_sp(cpu_stats_buf));
 
             float sum_kbps = audio_kbps[rx_chans] + waterfall_kbps[rx_chans] + http_kbps;
-            sb = kstr_asprintf(sb, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f,\"nsr\":%d",
+            sb = kstr_asprintf(sb, "\"ac\":%.0f,\"wc\":%.0f,\"fc\":%.0f,\"ah\":%.0f,\"as\":%.0f,\"sr\":%.6f,\"wsr\":%d,\"nsr\":%d",
                 audio_kbps[ch], waterfall_kbps[ch], waterfall_fps[ch], http_kbps, sum_kbps,
-                ext_update_get_sample_rateHz(ADC_CLK_SYS), snd_rate);
+                ext_update_get_sample_rateHz(ADC_CLK_SYS), snd_rate * rx_wb_buf_chans, snd_rate);
 
             #ifdef USE_GPS
                 sb = kstr_asprintf(sb, ",\"ga\":%d,\"gt\":%d,\"gg\":%d,\"gf\":%d,\"gc\":%.6f,\"go\":%d",
@@ -1750,36 +1752,10 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             #endif
 
             #ifdef USE_SDR
-                //printf("ch=%d ug=%d haveLat=%d\n", ch, wspr_c.GPS_update_grid, (gps.StatLat != 0));
-                if (wspr_c.GPS_update_grid && gps.StatLat) {
-                    latLon_t loc;
-                    loc.lat = gps.sgnLat;
-                    loc.lon = gps.sgnLon;
-                    char grid6[LEN_GRID];
-                    if (latLon_to_grid6(&loc, grid6) == 0) {
-                        //#define TEST_GPS_GRID
-                        #ifdef TEST_GPS_GRID
-                            static int grid_flip;
-                            grid6[5] = grid_flip? 'j':'i';
-                            if (ch == rx_chans) {
-                                grid_flip = grid_flip ^ 1;
-                                printf("TEST_GPS_GRID %s\n", grid6);
-                            }
-                        #endif
-                        kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
-                    }
-                }
-        
-                // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
-                // and update-from-GPS turned off.
-                sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
-                //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
-        
-                sb = kstr_asprintf(sb, ",\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"an\":%d,\"an2\":%d,",
-                    dpump.audio_dropped, underruns, seq_errors, dpump.resets, nrx_bufs, N_DPBUF);
-                sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
-                sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, N_DPBUF));
-            
+                sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(kiwi.grid6));
+                sb = kstr_asprintf(sb, ",\"gl\":\"%s\"", kiwi_str_encode_static(kiwi.latlon_s));
+                //printf("status sending kiwi.grid6=<%s> kiwi.latlon_s=<%s>\n", kiwi.grid6, kiwi.latlon_s);
+
                 sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset_kHz? -1 : snr_HF,
                     kiwi.spectral_inversion_lockout? 1:0);
             #endif
@@ -1809,8 +1785,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 
     case CMD_GET_USERS:
 	if (strcmp(cmd, "SET GET_USERS") == 0) {
-		bool include_ip = (conn->type == STREAM_ADMIN);
-		sb = rx_users(include_ip);
+		sb = rx_users(conn->type == STREAM_ADMIN);
 		send_msg(conn, false, "MSG user_cb=%s", kstr_sp(sb));
 		kstr_free(sb);
 		return true;
@@ -1873,6 +1848,12 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     rename = true;
                 }
                 kiwi_str_decode_inplace(ident_user_m);
+                //#define INJECT_BAD_UTF8
+                #ifdef INJECT_BAD_UTF8
+                    for (int i=1; i < strlen(ident_user_m) && i < 5; i++) ident_user_m[i] = 0xfe | (i&1);
+                #endif
+                utf8makevalid(ident_user_m, '?');
+                //printf("CHECK SET IDENT: %s <%s>\n", ident_user_m, kiwi_str_ASCII_static(ident_user_m));
                 int printable, UTF;
                 char *esc = kiwi_str_escape_HTML(ident_user_m, &printable, &UTF);
                 if (esc) {
@@ -1890,11 +1871,14 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     ident_user_m = strdup("(bad identity)");
                 }
 
-                kiwi_str_redup(&conn->ident_user, "ident_user", ident_user_m);
+                // truncate long idents
                 int len = cfg_int("ident_len", NULL, CFG_REQUIRED);
                 len = MAX(len, IDENT_LEN_MIN);
-                if (strlen(conn->ident_user) > len)
-                    conn->ident_user[len] = '\0';
+                if (strlen(ident_user_m) > len)
+                    ident_user_m[len] = '\0';
+                utf8makevalid(ident_user_m, '?');   // fix if truncating has made invalid UTF8
+                //printf("CHECK SET IDENT 2: %s <%s>\n", ident_user_m, kiwi_str_ASCII_static(ident_user_m));
+                kiwi_str_redup(&conn->ident_user, "ident_user", ident_user_m);
                 //printf("ident <%s> len=%d\n", conn->ident_user, len);
                 conn->isUserIP = FALSE;
                 // printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",

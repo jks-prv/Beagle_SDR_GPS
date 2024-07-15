@@ -18,7 +18,7 @@
 // http://www.holmea.demon.co.uk/GPS/Main.htm
 //////////////////////////////////////////////////////////////////////////
 
-// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 `default_nettype none
 
@@ -53,11 +53,8 @@ module KiwiSDR (
     input  wire BBB_MOSI,       // P918
     output wire BBB_MISO,       // P921
 
-    // devl: orig
-    input  wire P911,       // P911, GPIO 0_30, unused debug in
-    input  wire P913,       // P913, GPIO 0_31, unused debug in
-    //output wire P911,       // P911, GPIO 0_30, unused debug in
-    //output wire P913,       // P913, GPIO 0_31, unused debug in
+    output wire P911,       // P911, GPIO 0_30, unused debug out
+    output wire P913,       // P913, GPIO 0_31, unused debug out
 
     input  wire P915,       // P915, GPIO 1_0-2_0, unused debug in
     output wire CMD_READY,  // P923, GPIO 1_17, ctrl[CTRL_CMD_READY]
@@ -106,8 +103,16 @@ module KiwiSDR (
     
     wire [2:0] P9;
     
-    // devl: orig
+`ifdef USE_WB
+    wire awb_debug, rx_avail_wb_A, rx_avail_A;
+    assign P911 = awb_debug;
+    assign P913 = rx_avail_wb_A;
+    assign P926 = rx_avail_A;
+`else
+    assign P911 = P9[0];    // P911
+    assign P913 = P9[1];    // P913
     assign P926 = P9[2];    // P926
+`endif
 
     // P8: 25 23 21 19 17 15 13 11 09 07 05 03 01   pcb top, inside row
     //              b8 b7 b6 b5 b4
@@ -211,21 +216,11 @@ module KiwiSDR (
 	assign DA_DACLK = ser_attn && ctrl[CTRL_SER_CLK];
 	assign DA_DADAT = ser_attn && ctrl[CTRL_SER_DATA];
 
-	// devl: attn ser test
-	//assign P911 = DA_DACLK;
-	//assign P913 = DA_DADAT;
-	//assign P926 = DA_DALE;
-
     wire ser_gps = (ser_sel == CTRL_SER_GPS);
 	assign GPS_GSCS = ser_gps && ctrl[CTRL_SER_LE_CSN];
 	assign GPS_GSCLK = ser_gps && ctrl[CTRL_SER_CLK];
 	assign GPS_GSDAT = ser_gps && ctrl[CTRL_SER_DATA];
 	
-	// devl: gps ser test
-	//assign P911 = GPS_GSCLK;
-	//assign P913 = GPS_GSDAT;
-	//assign P926 = GPS_GSCS;
-
     wire ser_dna = (ser_sel == CTRL_SER_DNA);
 	wire dna_read = ser_dna && ctrl[CTRL_SER_LE_CSN];
 	wire dna_clk = ser_dna && ctrl[CTRL_SER_CLK];
@@ -260,9 +255,7 @@ module KiwiSDR (
 	assign P8[9] = ctrl[CTRL_UNUSED_OUT];
 `endif
     
-    // devl: orig
-	wire unused_inputs = P911 | P913 | P915
-	//wire unused_inputs = P915
+	wire unused_inputs = P915
 `ifdef USE_OTHER
         | unused_inputs_other
 `else
@@ -322,9 +315,12 @@ module KiwiSDR (
 	
 	wire self_test;
 	assign ADC_STSIG = self_test;
-	//assign P926 = self_test;        // devl: self test
 
-    RECEIVER receiver (
+`ifdef USE_WB
+    receiver_wb receiver_inst (
+`else
+    receiver receiver_inst (
+`endif
     	.adc_clk	    (adc_clk),
     	.adc_data	    (reg_adc_data),
     	.adc_ovfl       (ADC_OVFL),
@@ -350,6 +346,13 @@ module KiwiSDR (
         .wrEvt2         (wrEvt2),
         
         .use_gen_C      (use_gen_C),
+        
+`ifdef USE_WB
+        // debug
+        .rx_avail_wb_A  (rx_avail_wb_A),
+        .rx_avail_A     (rx_avail_A),
+        .awb_debug      (awb_debug),
+`endif
         
         .self_test_en_C (ctrl[CTRL_STEN]),
         .self_test      (self_test)

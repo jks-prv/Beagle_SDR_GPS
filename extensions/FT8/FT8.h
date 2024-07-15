@@ -18,6 +18,9 @@ typedef struct {
     s2_t *s2p_start, *s2p_end;
     int tsamps;
     
+	bool GPS_update_grid;
+    char rgrid[6+1];
+
     int syslog;
 } ft8_conf_t;
 
@@ -30,6 +33,7 @@ C_LINKAGE(void decode_ft8_setup(int rx_chan, int debug));
 C_LINKAGE(void decode_ft8_protocol(int rx_chan, int freqHz, int proto));
 C_LINKAGE(void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int freqHz, u1_t *start_test));
 
+void ft8_update_rgrid(char *rgrid);
 bool ft8_update_vars_from_config(bool called_at_init_or_restart);
 void ft8_autorun_start(bool initial);
 void ft8_autorun_restart();

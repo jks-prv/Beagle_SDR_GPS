@@ -79,9 +79,9 @@ function noise_blank_controls_refresh()
 			w3_divs('/w3-tspace-8',
 				w3_inline('w3-gap-16/',
 				   w3_div('w3-text-aqua', '<b>Noise blanker</b>'),
-               w3_select('w3-text-red||title="noise blanker selection"', '', 'blanker', 'nb_algo', noise_blank.algo, noise_blank.menu_s, 'nb_algo_cb', 'm'),
+               w3_select('w3-text-red||title="noise blanker selection"', '', 'type', 'nb_algo', noise_blank.algo, noise_blank.menu_s, 'nb_algo_cb', 'm'),
 				   w3_button('w3-padding-tiny w3-yellow', 'Defaults', 'noise_blank_load_defaults'),
-               w3_button('id-noise-blanker-help-btn w3-right w3-green w3-small w3-padding-small', 'help', 'noise_blank_help')
+               w3_button('id-noise-blanker-help-btn w3-btn-right w3-green w3-small w3-padding-small', 'help', 'noise_blank_help')
 				),
             w3_div('w3-margin-LR-16', s)
 			)

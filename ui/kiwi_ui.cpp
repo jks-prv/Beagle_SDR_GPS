@@ -72,7 +72,7 @@ void sd_backup(conn_t *conn, bool from_admin)
     TaskSleepReasonSec("kick delay", 5);
     
     // clear user list on status tab
-    sb = rx_users(/* include_ip */ true);
+    sb = rx_users(IS_ADMIN);
     send_msg(conn, false, "MSG user_cb=%s", kstr_sp(sb));
     kstr_free(sb);
     

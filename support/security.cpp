@@ -58,6 +58,29 @@ char *kiwi_authkey()
 	return s;
 }
 
+bool admin_pwd_unsafe()
+{
+    bool unsafe = false;
+    if (cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED) != DOM_SEL_REV) return false;
+
+    char *serno_s;
+    asprintf(&serno_s, "%d", net.serno);
+    const char *apw = admcfg_string("admin_password", NULL, CFG_OPTIONAL);
+    bool rev_auto = admcfg_true("rev_auto");
+    const char *auto_host = admcfg_string("rev_auto_host", NULL, CFG_OPTIONAL);
+    const char *norm_host = admcfg_string("rev_host", NULL, CFG_OPTIONAL);
+    const char *host = rev_auto? auto_host : norm_host;
+
+    if (kiwi_nonEmptyStr(host) && strcmp(host, serno_s) == 0 && strcmp(apw, serno_s) == 0) {
+        unsafe = true;
+    }
+
+    //printf("admin_pwd_unsafe serno=%d apw=<%s> rev_auto=%d auto_host=<%s> norm_host=<%s> unsafe=%d\n",
+    //    net.serno, apw, rev_auto, auto_host, norm_host, unsafe);
+    admcfg_string_free(serno_s); admcfg_string_free(apw); admcfg_string_free(auto_host); admcfg_string_free(norm_host);
+    return unsafe;
+}
+
 
 // see: man 3 crypt
 

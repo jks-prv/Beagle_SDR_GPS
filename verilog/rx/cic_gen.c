@@ -459,6 +459,7 @@ int main (int argc, char *argv[])
 
         cic_gen("cic_rx1_12k.vh", INTEG_COMB|MODE_REAL, RX1_STAGES, RX1_STD_DECIM,  RX1_BITS, RX2_BITS);
         cic_gen("cic_rx1_20k.vh", INTEG_COMB|MODE_REAL, RX1_STAGES, RX1_WIDE_DECIM, RX1_BITS, RX2_BITS);
+        cic_gen("cic_rx1_wb.vh",  INTEG_COMB|MODE_REAL, RX1_STAGES, RX1_WB_DECIM,   RX1_BITS, RX2_BITS);
 
     #ifdef USE_RX_SEQ
         // For USE_RX_SEQ the cic_gen() mode is INTEG_ONLY because the comb part of the
@@ -470,8 +471,10 @@ int main (int argc, char *argv[])
     #else
         cic_gen("cic_rx2_12k.vh", INTEG_COMB|MODE_REAL, RX2_STAGES, RX2_STD_DECIM,  RX2_BITS, RXO_BITS);
         cic_gen("cic_rx2_20k.vh", INTEG_COMB|MODE_REAL, RX2_STAGES, RX2_WIDE_DECIM, RX2_BITS, RXO_BITS);
+        cic_gen("cic_rx2_wb.vh",  INTEG_COMB|MODE_REAL, RX2_STAGES, RX2_WB_DECIM,   RX2_BITS, RXO_BITS);
         cic_gen("cic_rx3_12k.vh", EMPTY, 0, 0, 0, 0);
         cic_gen("cic_rx3_20k.vh", EMPTY, 0, 0, 0, 0);
+        cic_gen("cic_wb_20k.vh",  EMPTY, 0, 0, 0, 0);
     #endif
 
     #ifdef USE_WF_1CIC

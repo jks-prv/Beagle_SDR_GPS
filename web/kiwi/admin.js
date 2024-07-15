@@ -8,14 +8,18 @@ var admin = {
    current_tab_name: '',
    ext_configs_done: false,
    console_open: false,
+   status_interval: null,
    
    long_running: false,
    is_multi_core: false,
+   
+   wb_u: [ '72k', '108k', '144k', '192k', '204k', '240k', '300k' ],
    
    update_interval: null,
    status: {},
    
    pie_size: 25,
+   mode_fmt: 'w3-margin-left w3-valign w3-padding-L-8 w3-border w3-border-light-blue w3-center',
    
    spectral_inversion_lockout: false,
    
@@ -105,6 +109,45 @@ function status_focus()
       setTimeout(function() { cfg_save_json('test_cfg_save_seq 3', 'cfg'); }, 200);
       setTimeout(function() { cfg_save_json('test_cfg_save_seq 4', 'cfg'); }, 300);
    }
+
+   kiwi_clearInterval(admin.status_interval);
+	admin.status_interval = setInterval(function() { msg_send('SET xfer_stats'); }, 1000);
+}
+
+function status_blur()
+{
+   kiwi_clearInterval(admin.status_interval);
+}
+
+function status_xfer_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_in_hist_resets, dp_hist_cnt, dp_hist, in_hist_cnt, in_hist)
+{
+   if (audio_dropped == undefined) return;
+   
+	var el = w3_el('id-msg-errors');
+	if (el) el.innerHTML = 'Stats: '+
+	   'dropped '+ audio_dropped.toUnits() +
+	   ', underruns '+ underruns.toUnits() +
+	   ', sequence '+ seq_errors.toUnits() +
+	   ', realtime_D '+ dp_resets.toUnits() +
+	   ', realtime_S '+ dp_in_hist_resets.toUnits();
+
+	el = w3_el('id-status-dp-hist');
+	if (el) {
+	   var s = 'Datapump: ';
+		for (var i = 0; i < dp_hist_cnt; i++) {
+		   s += (i? ' ':'') + dp_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
+
+	el = w3_el('id-status-in-hist');
+	if (el) {
+	   var s = 'SoundInQ: ';
+		for (var i = 0; i < in_hist_cnt; i++) {
+		   s += (i? ' ':'') + in_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
 }
 
 function status_dpump_hist_reset_cb(id, idx)
@@ -130,9 +173,23 @@ var mode_icon_wf = w3_icon('w3-text-amber', 'fa-area-chart', 28) +'&nbsp;';
 
 function mode_html()
 {
-   var bw = 235, bwpx = px(bw);
+   var bw = 245, bwpx = px(bw);
    var pw = 113, pwpx = px(pw);
    var ci = 0;
+   var wb = 0;
+   
+   var s1 = '';
+   if (wb)
+      s1 += w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Wideband output', 'id-sidenav-fw', kiwi.RX_WB, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX_WB));
+   if (admin.is_multi_core)
+      s1 += w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Max channels', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0));
+
+   var s2 = '';
+   if (wb)
+      s2 += w3_div('id-fw-wb w3-flex w3-padding-TB-6');
+   if (admin.is_multi_core)
+      s2 += w3_div('id-fw-14ch w3-flex w3-padding-TB-6');
+
 	var s =
 	w3_div('id-mode w3-hide',
 		'<hr>',
@@ -148,16 +205,13 @@ function mode_html()
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Kiwi classic', 'id-sidenav-fw', kiwi.RX4_WF4, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX4_WF4)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More receivers', 'id-sidenav-fw', kiwi.RX8_WF2, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX8_WF2)),
                w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'More bandwidth', 'id-sidenav-fw', kiwi.RX3_WF3, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX3_WF3)),
-               admin.is_multi_core? 
-                  w3_nav(admin_colors[ci++] +' w3-border w3-padding-xxlarge w3-restart', 'Only audio chans', 'id-sidenav-fw', kiwi.RX14_WF0, 'firmware_sel_cb', (adm.firmware_sel == kiwi.RX14_WF0))
-               :
-                  ''
+               s1
             ),
             w3_div('w3-margin-left w3-left',
-               w3_div('id-fw-4ch w3-flex w3-padding-TB-7'),
-               w3_div('id-fw-8ch w3-flex w3-padding-TB-7'),
-               w3_div('id-fw-3ch w3-flex w3-padding-TB-7'),
-               w3_div('id-fw-14ch w3-flex w3-padding-TB-7')
+               w3_div('id-fw-4ch w3-flex w3-padding-TB-6'),
+               w3_div('id-fw-8ch w3-flex w3-padding-TB-6'),
+               w3_div('id-fw-3ch w3-flex w3-padding-TB-6'),
+               s2
             )
          ),
          
@@ -209,7 +263,27 @@ function mode_html()
 		   w3_div('w3-margin-T-16', '<hr>')
       )
 	);
+	
+	if (wb) setTimeout(function() { mode_wb_srate(); }, 1);
 	return s;
+}
+
+function mode_wb_srate_cb(path, idx, first)
+{
+   admin_select_cb(path, idx, first);
+   w3_innerHTML('id-fw-wb-srate', parseInt(admin.wb_u[adm.wb_sel]) +' kHz');
+   if (!first && adm.firmware_sel == kiwi.RX_WB) w3_restart_cb();
+}
+
+function mode_wb_srate()
+{
+   var s =
+      w3_div(admin.mode_fmt +'|width:834px;height:58px',
+         w3_div('w3-font-32px w3-margin-R-4', '🌀'),
+         'Wideband output &nbsp;'+ w3_div('id-fw-wb-srate')
+      ) +
+      w3_select('w3-center w3-text-teal w3-margin-L-32//', 'Wideband bandwidth', '', 'adm.wb_sel', adm.wb_sel, admin.wb_u, 'mode_wb_srate_cb');
+   w3_innerHTML('id-fw-wb', s);
 }
 
 function mode_focus()
@@ -242,9 +316,8 @@ function mode_focus()
    for (i = 0; i < 3; i++) s += rx20_wf;
    w3_innerHTML('id-fw-3ch', s);
 
-   var fmt = 'w3-margin-left w3-valign w3-padding-L-8 w3-border w3-border-light-blue w3-center|width:728px';
    if (admin.is_multi_core) {
-      s = rx12_afft + w3_div(fmt, '14 channels total...');
+      s = rx12_afft + w3_div(admin.mode_fmt +'|width:728px', '14 rx channels total...');
       w3_innerHTML('id-fw-14ch', s);
    }
 }
@@ -599,7 +672,7 @@ function connect_html()
          w3_div('w3-container w3-valign',
             '<header class="w3-container w3-yellow"><h6>' +
             'Please read these instructions before use: ' +
-            '<a href="http://kiwisdr.com/quickstart/index.html#id-net-duc" target="_blank">dynamic DNS update client (DUC)</a>' +
+            '<a href="http://kiwisdr.com/info#id-net-duc" target="_blank">dynamic DNS update client (DUC)</a>' +
             '</h6></header>'
          ),
 
@@ -655,7 +728,7 @@ function connect_html()
       } else {
          auto_s = 'The automatic proxy configuration for this Kiwi seems to be missing. ' +
             'Please contact support@kiwisdr.com <br><br> Manual proxy setup is shown.';
-         connect_auto_proxy_cb('adm.rev_auto', w3_switch_idx(false));
+         connect_auto_proxy_cb('adm.rev_auto', w3_switch_val2idx(false));
          
       }
 	}
@@ -760,7 +833,7 @@ function connect_focus()
 	if (cfg.sdr_hu_dom_sel == kiwi.REV)
 	   ext_send('SET rev_status_query');
 	
-	connect_auto_proxy_cb('adm.rev_auto', w3_switch_idx(adm.rev_auto));
+	connect_auto_proxy_cb('adm.rev_auto', w3_switch_val2idx(adm.rev_auto));
 }
 
 function connect_blur()
@@ -835,6 +908,11 @@ function connect_update_url()
    w3_el('id-connect-url').innerHTML = ok? host_and_port : '(incomplete information, fill-in field above)';
 }
 
+function connect_stop_proxy()
+{
+   ext_send('SET stop_proxy');
+}
+
 function connect_dom_nam_focus(ok)
 {
    var server_url = (ok == false)? '' : cfg.sdr_hu_dom_name;
@@ -842,6 +920,7 @@ function connect_dom_nam_focus(ok)
 	ext_set_cfg_param('cfg.server_url', server_url, EXT_NO_SAVE);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', kiwi.NAM, EXT_SAVE);
 	connect_update_url();
+	connect_stop_proxy();
 	if (server_url != '') w3_restart_cb();
 }
 
@@ -852,6 +931,7 @@ function connect_dom_duc_focus()
 	ext_set_cfg_param('cfg.server_url', server_url, EXT_NO_SAVE);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', kiwi.DUC, EXT_SAVE);
 	connect_update_url();
+	connect_stop_proxy();
 	if (server_url != '') w3_restart_cb();
 }
 
@@ -873,6 +953,7 @@ function connect_dom_pub_focus()
 	ext_set_cfg_param('cfg.server_url', server_url, EXT_NO_SAVE);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', kiwi.PUB, EXT_SAVE);
 	connect_update_url();
+	connect_stop_proxy();
 	if (server_url != '') w3_restart_cb();
 }
 
@@ -883,6 +964,7 @@ function connect_dom_sip_focus(ok)
 	ext_set_cfg_param('cfg.server_url', server_url, EXT_NO_SAVE);
 	ext_set_cfg_param('cfg.sdr_hu_dom_sel', kiwi.SIP, EXT_SAVE);
 	connect_update_url();
+	connect_stop_proxy();
 	if (server_url != '') w3_restart_cb();
 }
 
@@ -1101,8 +1183,10 @@ function connect_rev_register_cb(id, idx)
    var auto = adm.rev_auto? 1:0;
    var user = auto? adm.rev_auto_user : adm.rev_user;
    var host = auto? adm.rev_auto_host : adm.rev_host;
-   if (user == '' || host == '')
-      return connect_rev_status_cb(100);
+   if (user == '' || host == '') {
+      connect_rev_status_cb(100);
+      return;
+   }
    
    kiwi_clearTimeout(connect.timeout);
 	w3_innerHTML('id-connect-rev-status', w3_icon('', 'fa-refresh fa-spin', 24) + '&nbsp; Getting status from proxy server...');
@@ -1627,7 +1711,7 @@ function network_html()
    // if commit value differs from current setting the update must have failed -- fix it
    if (adm.ip_address.use_static != commit_use_static) {
       ext_set_cfg_param('adm.ip_address.use_static', commit_use_static, EXT_SAVE);
-      w3_switch_set_value('adm.ip_address.use_static', w3_switch_idx(!commit_use_static));
+      w3_switch_set_value('adm.ip_address.use_static', w3_switch_val2idx(!commit_use_static));
    }
    
    // check once per admin page load
@@ -4049,29 +4133,29 @@ function admin_draw(sdr_mode)
 	var ael = w3_el("id-admin");
 	var ci = 0;
 	
-	var s = '';
-	if (!sdr_mode) s += w3_nav(admin_colors[ci++], 'GPS', 'id-navbar-admin', 'gps', 'admin_nav');
-	s +=
-      w3_nav(admin_colors[ci++], 'Status', 'id-navbar-admin', 'status', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Mode', 'id-navbar-admin', 'mode', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Control', 'id-navbar-admin', 'control', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Users', 'id-navbar-admin', 'users', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Connect', 'id-navbar-admin', 'connect', 'admin_nav');
-	if (sdr_mode)
-	   s +=
-         w3_nav(admin_colors[ci++], 'Config', 'id-navbar-admin', 'config', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'Webpage', 'id-navbar-admin', 'webpage', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'Public', 'id-navbar-admin', 'public', 'admin_nav') +
-         w3_nav(admin_colors[ci++], 'DX', 'id-navbar-admin', 'dx', 'admin_nav');
-   s += 
-      w3_nav(admin_colors[ci++], 'Update', 'id-navbar-admin', 'update', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Backup', 'id-navbar-admin', 'backup', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Network', 'id-navbar-admin', 'network', 'admin_nav') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'GPS', 'id-navbar-admin', 'gps', 'admin_nav') : '') +
-      w3_nav(admin_colors[ci++], 'Log', 'id-navbar-admin', 'log', 'admin_nav') +
-      w3_nav(admin_colors[ci++], 'Console', 'id-navbar-admin', 'console', 'admin_nav') +
-      (sdr_mode? w3_nav(admin_colors[ci++], 'Extensions', 'id-navbar-admin', 'extensions', 'admin_nav') : '') +
-      w3_nav(admin_colors[ci++], 'Security', 'id-navbar-admin', 'security', 'admin_nav');
+   var tabs;
+   if (sdr_mode)
+      tabs = [
+         'Status', 'Mode',    'Control',    'Users', 'Connect',
+         'Config', 'Webpage', 'Public',     'DX',
+         'Update', 'Backup',  'Network',
+         'GPS',
+         'Log',    'Console', 'Extensions', 'Security'
+      ];
+   else
+      tabs = [
+         'GPS',
+         'Status', 'Mode',    'Control',    'Users', 'Connect',
+         'Update', 'Backup',  'Network',
+         'Log',    'Console', 'Extensions', 'Security'
+      ];
+   
+   var s = '';
+   tabs.forEach(
+      function(tab,i) {
+         s += w3_nav(admin_colors[ci++], tab, 'id-navbar-admin', tab.toLowerCase(), 'admin_nav');
+      }
+   );
 
 	ael.innerHTML =
 		w3_div('id-admin-header-container',
@@ -4159,8 +4243,18 @@ function admin_draw(sdr_mode)
 	admin.init = true;
 	   var tab = kiwi_url_param(0, null);
 	   if (tab) tab = tab.split(',')[0];
-	   if (isNonEmptyString(tab) && tab != 'nolocal') {
-	      kiwi_storeWrite('last_admin_navbar', tab);
+	   if (isNonEmptyString(tab)) {
+	      var found = false;
+	      tabs.forEach(
+	         function(s,i) {
+	            s = s.toLowerCase();
+	            if (!found && s.startsWith(tab)) {
+	               //console.log('last_admin_navbar='+ s);
+	               kiwi_storeWrite('last_admin_navbar', s);
+	               found = true;
+	            }
+	         }
+	      );
 	   }
 	   
 	   if (kiwi_storeRead('last_admin_navbar') == 'sdr_hu') kiwi_storeWrite('last_admin_navbar', 'public');
@@ -4365,10 +4459,13 @@ function admin_recv(data)
 			   admin.repo_git = decodeURIComponent(param[1]);
 				break;
 
-			case "gps_info":
-				var func = admin_sdr.ext_cur_nav +'_gps_info_cb';
+			case "get_gps_info_cb":
 				var param = decodeURIComponent(param[1]);
-				//console.log('gps_info: func='+ func +' param='+ param);
+				//console.log('get_gps_info_cb: func='+ func +' param='+ param);
+            var gps_info = kiwi_JSON_parse('get_gps_info_cb', param);
+				//console.log(gps_info);
+            kiwi.GPS_auto_grid = gps_info.grid;
+				var func = admin_sdr.ext_cur_nav +'_gps_info_cb';
 				w3_call(func, param);
 				break;
 
@@ -4499,7 +4596,17 @@ function admin_recv(data)
 				break;
 			
          case "user_list":
-            users_list_cb(decodeURIComponent(param[1]));
+            //console.log(param[1]);
+            users_list_cb(kiwi_decodeURIComponent('user_list', param[1]));
+            break;
+
+         case "xfer_stats_cb":   // in response to "SET xfer_stats"
+            //console.log('xfer_stats_cb='+ param[1]);
+            var o = kiwi_JSON_parse('xfer_stats_cb', param[1]);
+            if (o) {
+               //console.log(o);
+				   status_xfer_cb(o.ad, o.au, o.ae, o.ar, o.ar2, o.an, o.ap, o.an2, o.ai);
+            }
             break;
 
 			default:

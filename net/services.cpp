@@ -72,12 +72,14 @@ static void get_TZ(void *param)
 		char *s;
 		bool err, haveLatLon = false;
 	
+	    // Since get_TZ() is run at startup getting rx_gps from the cfg is okay, even with GPS
+	    // continuous update enabled, because the value is updated on startup.
 		lat_lon = (char *) cfg_string("rx_gps", NULL, CFG_OPTIONAL);
 		if (lat_lon != NULL) {
 			n = sscanf(lat_lon, "%*[^0-9+-]%f%*[^0-9+-]%f)", &lat, &lon);
 			// consider default lat/lon to be the same as unset
 			if (n == 2 && strcmp(lat_lon, "(-37.631120, 176.172210)") != 0 && strcmp(lat_lon, "(0.000000, 0.000000)") != 0) {
-				lprintf("TIMEZONE: lat/lon from admin public config: (%f, %f)\n", lat, lon);
+				lprintf("TIMEZONE: lat/lon from admin webpage config: (%f, %f)\n", lat, lon);
 				haveLatLon = true;
 			}
 			cfg_string_free(lat_lon);
@@ -99,10 +101,12 @@ static void get_TZ(void *param)
 		}
 		
 		if (!haveLatLon) {
-			if (report) lprintf("TIMEZONE: no lat/lon available from admin public config, ipinfo or GPS\n");
+			if (report) lprintf("TIMEZONE: no lat/lon available from admin webpage config, ipinfo or GPS\n");
 			goto retry;
 		}
 		
+		// current users:
+		//  HFDL "show Kiwi" button
 		kiwi.lowres_lat = ((int) roundf(lat)) & ~1;
 		kiwi.lowres_lon = ((int) roundf(lon)) & ~1;
 	
@@ -228,14 +232,15 @@ void my_kiwi_register(bool reg, int root_pwd_unset, int debian_pwd_default)
         "pub=%s&pvt=%s&"
         "port=%d&jq=%d&"
         "email=%s&ver=%d.%d&deb=%d.%d&model=%d&plat=%d&"
-        "dom=%d&dom_stat=%d&dna=%08x%08x&serno=%d&reg=%d&up=%d"
+        "dom=%d&dom_stat=%d&dna=%08x%08x&apu=%d&serno=%d&reg=%d&up=%d"
         "%s\"",
         kiwisdr_com,
         server_url, server_port, net.mac, add_nat,
         net.pub_valid? net.ip_pub : "not_valid", net.pvt_valid? net.ip_pvt : "not_valid",
         net.use_ssl? net.port_http_local : net.port, kiwi_file_exists("/usr/bin/jq"),
         email, version_maj, version_min, debian_maj, debian_min, kiwi.model, kiwi.platform,
-        dom_sel, dom_stat, PRINTF_U64_ARG(net.dna), net.serno, kiwisdr_com_reg? 1:0, timer_sec(),
+        dom_sel, dom_stat, PRINTF_U64_ARG(net.dna), admin_pwd_unsafe(),
+        net.serno, kiwisdr_com_reg? 1:0, timer_sec(),
         kstr_sp(cmd_p2));
     cfg_string_free(server_url);
     kiwi_ifree(email, "email");
@@ -811,9 +816,9 @@ static void git_commits(void *param)
 
 // routine that processes the output of the registration wget command
 
-#define RETRYTIME_KIWISDR_COM		30
+#define RETRYTIME_KIWISDR_COM		60
 //#define RETRYTIME_KIWISDR_COM		1
-#define RETRYTIME_KIWISDR_COM_FAIL  2
+#define RETRYTIME_KIWISDR_COM_FAIL  3
 
 static int _reg_public(void *param)
 {
@@ -825,15 +830,8 @@ static int _reg_public(void *param)
 	}
     //printf("_reg_public <%s>\n", sp);
 
-    int n, status = 0, kod = 0, serno = 0;
-    n = sscanf(sp, "status %d %d %d", &status, &kod, &serno);
-    if (n == 3 && status == 22 && serno == net.serno) {
-        //printf("_reg_public status=%d kod=%d serno=%d/%d\n", status, kod, serno, net.serno);
-        status = kod;
-    } else
-    if (status >= 42 && status < 50) {
-        status = 0;
-    }
+    int status = 0;
+    sscanf(sp, "status %d", &status);
     //printf("_reg_public status=%d\n", status);
 
 	return status;
@@ -895,14 +893,15 @@ static void reg_public(void *param)
             "pub=%s&pvt=%s&"
             "port=%d&jq=%d&"
             "email=%s&ver=%d.%d&deb=%d.%d&model=%d&plat=%d&"
-            "dom=%d&dom_stat=%d&dna=%08x%08x&serno=%d&reg=%d&up=%d"
+            "dom=%d&dom_stat=%d&dna=%08x%08x&apu=%d&serno=%d&reg=%d&up=%d"
             "\" 2>&1",
             kiwisdr_com,
             server_url, server_port, net.mac, add_nat,
             net.pub_valid? net.ip_pub : "not_valid", net.pvt_valid? net.ip_pvt : "not_valid",
             net.use_ssl? net.port_http_local : net.port, kiwi_file_exists("/usr/bin/jq"),
             email, version_maj, version_min, debian_maj, debian_min, kiwi.model, kiwi.platform,
-            dom_sel, dom_stat, PRINTF_U64_ARG(net.dna), net.serno, kiwisdr_com_reg? 1:0, timer_sec()
+            dom_sel, dom_stat, PRINTF_U64_ARG(net.dna), admin_pwd_unsafe(),
+            net.serno, kiwisdr_com_reg? 1:0, timer_sec()
             );
     
 		bool server_enabled = (!down && admcfg_bool("server_enabled", NULL, CFG_REQUIRED) == true);
@@ -928,15 +927,6 @@ static void reg_public(void *param)
                 reg_kiwisdr_com_status = exit_status? exit_status : 1;      // for now just indicate that it completed
                 if (kiwi_reg_debug) {
                     printf("reg_kiwisdr_com reg_kiwisdr_com_status=0x%x\n", reg_kiwisdr_com_status);
-                }
-                if (exit_status == 42) {
-                    system("touch " DIR_CFG "/opt.debug");
-				    kiwi_restart();
-                }
-                if (exit_status == 43) {
-				    system("reboot");
-                    while (true)
-                        kiwi_usleep(100000);
                 }
 		    }
 		} else {
@@ -1011,7 +1001,7 @@ void services_start()
     SNR_meas_tid = CreateTaskF(SNR_meas, 0, SERVICES_PRIORITY, CTF_NO_LOG);
 	//CreateTask(git_commits, 0, SERVICES_PRIORITY);
 
-    if (!disable_led_task)
+    //if (!disable_led_task)
         CreateTask(led_task, NULL, ADMIN_PRIORITY);
 
     reg_kiwisdr_com_tid = CreateTask(reg_public, 0, SERVICES_PRIORITY);

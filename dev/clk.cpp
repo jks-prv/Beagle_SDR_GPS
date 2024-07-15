@@ -76,7 +76,7 @@ void clock_init()
 
 void clock_conn_init(conn_t *conn)
 {
-	conn->adc_clock_corrected = clk.adc_clock_base;
+	conn->adc_clock_corrected = clk.adc_clock_corrected = clk.adc_clock_base;
 	conn->manual_offset = 0;
 	conn->adjust_clock = true;
 }
@@ -88,6 +88,8 @@ double adc_clock_system()
     // apply effect of any manual clock corrections
     if (clk.do_corrections == ADC_CLK_CORR_DISABLED ||
         (clk.do_corrections >= ADC_CLK_CORR_CONTINUOUS && clk.adc_gps_clk_corrections == 0)) {
+        clk.adc_clock_corrected = new_clk;
+        
         for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
             if (!c->valid) continue;
     
@@ -255,6 +257,7 @@ void clock_correction(double t_rx, u64_t ticks)
     static u4_t last;
     if (now > (last + 10) || clk.do_corrections > ADC_CLK_CORR_CONTINUOUS) {
         clk_printf("%-12s CONN ", "CLK");
+        clk.adc_clock_corrected = clk.adc_clock_base;
         for (conn_t *c = conns; c < &conns[N_CONNS]; c++) {
             if (!c->valid || (!c->adjust_clock && !first_time_temp_correction)) continue;
 

@@ -231,7 +231,7 @@ function ant_switch_user_init()
          w3_inline('w3-gap-12/',
             w3_div('w3-text-aqua', '<b>Antenna switch</b>'),
             w3_div('w3-text-white', 'by Kari Karvonen'),
-            w3_button('id-antsw-help-btn w3-right w3-green w3-small w3-padding-small', 'help', 'ant_switch_help')
+            w3_button('id-antsw-help-btn w3-btn-right w3-green w3-small w3-padding-small', 'help', 'ant_switch_help')
          ),
          w3_div('w3-margin-LR-8',
             w3_div('id-antsw-display-selected w3-margin-T-4'),
@@ -259,6 +259,9 @@ function ant_switch_user_init()
       ant_switch_focus();
       ant_switch_view();
    }
+
+   ant_switch_log('SET antsw_check_set_default');
+   ext_send('SET antsw_check_set_default');
 }
 
 function ant_switch_focus()
@@ -282,7 +285,10 @@ function ant_switch_select_antenna(ant) {
    ext_send('SET antsw_SetAntenna='+ ant);
 }
 
-function ant_switch_select_antenna_cb(path, val) { ant_switch_select_antenna(val); }
+function ant_switch_select_antenna_cb(path, val, first) {
+   ant_switch_log('ant_switch_select_antenna_cb: path='+ path +'first='+ first);
+   ant_switch_select_antenna(val);
+}
 
 function ant_switch_prompt_query() {
    ant_switch_log('ant_switch_prompt_query');
@@ -569,15 +575,14 @@ function ant_switch_admin_msg(param)
          return true;
 
       case "antsw_mix":
-         console.log('antsw_mix='+ param[1]);
+         ant_switch_log('antsw_mix='+ param[1]);
          ant_sw.can_mix = (param[1] == 'mix')? true : false;
          w3_innerHTML('id-antsw-mix', 'Supports mixing? '+ (ant_sw.can_mix? 'yes' : 'no'));
-         w3_switch_set_value('id-ant_switch.denymixing', w3_SWITCH_YES_IDX);
          w3_disable('id-antsw-mix-switch', !ant_sw.can_mix);
          return true;
 
       case "antsw_ip_or_url":
-         console.log('antsw_ip_or_url='+ param[1]);
+         ant_switch_log('antsw_ip_or_url='+ param[1]);
          var ip_url = param[1];
          if (ip_url == '(null)') ip_url = '';
          w3_set_value('id-ant_sw.ip_or_url', ip_url);
@@ -660,6 +665,12 @@ function ant_switch_config_html2(n_ch)
    if (n_ch) ant_sw.n_ant = n_ch;
    ant_switch_log('ant_switch_config_html2 n_ch='+ n_ch);
    var s = '';
+         /*
+         w3_inline_percent('w3-margin-T-16 w3-valign-center/',
+            '', 52.65,
+            w3_checkbox_get_param('w3-defer//w3-label-inline', 'Default ground antenna', 'ant_switch.ant_ground_default', 'admin_bool_cb', false)
+         );
+         */
 
    for (var i = 1; i <= ant_sw.n_ant; i++) {
       s +=
@@ -727,12 +738,18 @@ function ant_switch_config_html()
                   'The <x1>Default antenna</x1> checkbox below define which single antenna is initially selected. <br>' +
                   'And also when no users are connected if the switch below is set to <x1>Yes</x1>. <br>' +
                   '"Users" includes all connections including FT8/WSPR autorun and kiwirecorder (e.g. wsprdaemon). <br>' +
-                  'If multiple are checked only the first encountered is used. <br>' +
-                  'If none are checked then all antennas are grounded if such a mode is supported by the switch device.'
+                  'If multiple are checked only the first encountered is used.'
                ),
                w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8',
                   'Switch to default antenna when no users connected?',
                   'Yes', 'No', 'ant_switch.default_when_no_users', true, true, 'admin_radio_YN_cb'),
+
+               w3_div('w3-margin-T-16',
+                  'Grounds antennas instead of switching to default antenna when no users connected.'
+               ),
+               w3_switch_label_get_param('w3-defer/w3-label-inline w3-label-left w3-margin-T-8',
+                  'Ground antennas when no users connected?',
+                  'Yes', 'No', 'ant_switch.ground_when_no_users', true, true, 'admin_radio_YN_cb'),
 
                w3_div('','<hr><b>Antenna buttons configuration</b><br>'),
                w3_col_percent('w3-margin-T-16/',
