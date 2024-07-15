@@ -361,7 +361,7 @@ function sig_gen_help(show)
                'output to the <x1>EXT CLK &amp; TEST</x1> SMA connector. It is intended to be looped-back to the RF antenna input SMA ' +
                'via a short SMA-to-SMA cable. In this way the Kiwi\'s RF front end and ADC prior to the FPGA can be tested ' +
                'against the known signal source. ' +
-               '<a href="http://kiwisdr.com/quickstart/#id-self-test" target="_blank">Test result images</a></li></ul>' +
+               '<a href="http://kiwisdr.com/info#id-self-test" target="_blank">Test result images</a></li></ul>' +
                         
                'URL parameters: <br>' +
                w3_text('|color:orange', '<i>kHz</i> or freq:<i>kHz</i>&nbsp; mode:[<i>0123</i>] &nbsp; attn:<i>dB</i> &nbsp; stop:<i>kHz</i> &nbsp; ' +
@@ -391,7 +391,8 @@ function sig_gen_config_html()
          w3_divs('w3-container',
             w3_inline('/w3-margin-bottom w3-valign',
                w3_text('w3-medium w3-bold w3-text-teal', 'Self-test function'),
-               w3_button('w3-aqua w3-margin-left', 'start self-test', 'self_test_cb')
+               w3_button('w3-aqua w3-margin-left', 'start self-test', 'self_test_cb'),
+               w3_text('w3-medium w3-margin-left w3-text-teal', 'Note: only works with first receiver channel (rx0)')
             ),
             w3_divs('w3-container w3-width-half',
                'To use the self-test function attach the short cable that came with your Kiwi ' +
@@ -402,7 +403,7 @@ function sig_gen_config_html()
                'A user connection will be made and the signal generator extension opened in self-test mode ' +
                '(this will only work on the first channel rx0). ' +
                'Compare against these sample ' +
-               w3_link('w3-link-darker-color', 'kiwisdr.com/quickstart/index.html#id-self-test', 'test result images') +
+               w3_link('w3-link-darker-color', 'kiwisdr.com/info#id-self-test', 'test result images') +
                '. Check at the different zoom levels shown.<br><br>' +
                
                'The generated 10 MHz test signal (plus harmonics and sidebands) is not precise. ' +

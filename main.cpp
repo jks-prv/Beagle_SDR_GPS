@@ -63,7 +63,7 @@ Boston, MA  02110-1301, USA.
 kiwi_t kiwi;
 
 int version_maj, version_min;
-int fw_sel, fpga_id, rx_chans, rx_all_chans, rx_buf_chans, rx_wb_buf_chans, wf_chans, wb_chans, nrx_bufs,
+int fw_sel, fpga_id, rx_chans, rx_wb_buf_chans, wf_chans, wb_chans, nrx_bufs,
     nrx_samps, nrx_samps_wb, nrx_samps_loop, nrx_samps_rem,
     snd_rate, wb_rate, rx_decim, rx1_decim, rx2_decim;
 
@@ -200,6 +200,7 @@ int main(int argc, char *argv[])
 		if (ARG("-v")) {} else      // dummy arg so Kiwi version can appear in e.g. htop
 		
 		if (ARG("-test")) { ARGL(test_flag); printf("test_flag %d(0x%x)\n", test_flag, test_flag); } else
+		if (ARG("-mm")) kiwi.test_marine_mobile = true; else
 		if (ARG("-dx")) { ARGL(dx_print); printf("dx %d(0x%x)\n", dx_print, dx_print); } else
 		if (ARG("-led") || ARG("-leds")) disable_led_task = true; else
 		if (ARG("-gps_e1b")) gps_e1b_only = true; else
@@ -367,7 +368,6 @@ int main(int argc, char *argv[])
     bool update_admcfg = false;
     if (update_admcfg) admcfg_save_json(cfg_adm.json);      // during init doesn't conflict with admin cfg
     
-    // rx_buf_chans: USE_WB uses this many equivalent buffer channels
     int v_wb_buf_chans;
 
     if (fw_sel == FW_SEL_SDR_RX4_WF4) {
@@ -445,29 +445,20 @@ int main(int argc, char *argv[])
     }
     
     //          rx_chans
-    //          |   rx_all_chans
-    //          |   |   rx_buf_chans
-    //          |   |   |   rx_wb_buf_chans
-    //          |   |   |   |   wb_chans
-    //          |   |   |   |   |
-    // rx4      4   4   4   0   0
-    // rx3      3   3   3   0   0
-    // rx8      8   8   8   0   0
-    // rx14     14  14  14  0   0
-    // wb+rx0   1   2   7   6   1    72k  WB_RX0_SHARE
-    // wb       1   2   6   6   1    72k
-    // wb       1   2   16  16  1   192k
-    // wb       1   2   17  17  1   204k
-    // wb       1   2   25  25  1   300k
+    //          |   rx_wb_buf_chans (USE_WB uses this many equivalent buffer channels)
+    //          |   |   wb_chans
+    //          |   |   |
+    // rx4      4   4   0
+    // rx3      3   3   0
+    // rx8      8   8   0
+    // rx14     14  14  0
+    // wb       1   6   1    72k
+    // wb       1   16  1   192k
+    // wb       1   17  1   204k
+    // wb       1   20  1   240k
+    // wb       1   25  1   300k
     
-    rx_all_chans = kiwi.isWB? 2 : rx_chans;
-    rx_buf_chans = kiwi.isWB? v_wb_buf_chans : rx_chans;
-    
-    #ifdef WB_RX0_SHARE
-        rx_wb_buf_chans = kiwi.isWB? (v_wb_buf_chans-1) : rx_chans;
-    #else
-        rx_wb_buf_chans = kiwi.isWB? v_wb_buf_chans : rx_chans;
-    #endif
+    rx_wb_buf_chans = kiwi.isWB? v_wb_buf_chans : rx_chans;
     
     if (fpga_id == FPGA_ID_OTHER) {
         fpga_file = strdup((char *) "other");
@@ -481,12 +472,12 @@ int main(int argc, char *argv[])
         if (err) no_wf = false;
         if (no_wf) wf_chans = 0;
 
-        lprintf("firmware: rx_chans=%d rx_all_chans=%d rx_buf_chans=%d rx_wb_buf_chans=%d wb_chans=%d wf_chans=%d gps_chans=%d\n",
-            rx_chans, rx_all_chans, rx_buf_chans, rx_wb_buf_chans, wb_chans, wf_chans, gps_chans);
+        lprintf("firmware: rx_chans=%d rx_wb_buf_chans=%d wb_chans=%d wf_chans=%d gps_chans=%d\n",
+            rx_chans, rx_wb_buf_chans, wb_chans, wf_chans, gps_chans);
 
-        nrx_samps = NRX_SAMPS_CHANS(rx_buf_chans);
-        nrx_samps_loop = nrx_samps * rx_buf_chans / NRX_SAMPS_RPT;
-        nrx_samps_rem = (nrx_samps * rx_buf_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
+        nrx_samps = NRX_SAMPS_CHANS(rx_wb_buf_chans);
+        nrx_samps_loop = nrx_samps * rx_wb_buf_chans / NRX_SAMPS_RPT;
+        nrx_samps_rem = (nrx_samps * rx_wb_buf_chans) - (nrx_samps_loop * NRX_SAMPS_RPT);
         snd_intr_usec = 1e6 / ((float) snd_rate/nrx_samps);
         lprintf("firmware: RX rx_decim=%d RX1_DECIM=%d RX2_DECIM=%d USE_RX_CICF=%d\n",
             rx_decim, rx1_decim, rx2_decim, VAL_USE_RX_CICF);
@@ -509,7 +500,7 @@ int main(int argc, char *argv[])
         lprintf("firmware: WF xfer=%d samps=%d rpt=%d loop=%d rem=%d\n",
             NWF_NXFER, NWF_SAMPS, NWF_SAMPS_RPT, NWF_SAMPS_LOOP, NWF_SAMPS_REM);
 
-        rx_num = rx_all_chans, wf_num = wf_chans;
+        rx_num = rx_chans, wf_num = wf_chans;
         monitors_max = (rx_chans * N_CAMP) + N_QUEUERS;
     }
     

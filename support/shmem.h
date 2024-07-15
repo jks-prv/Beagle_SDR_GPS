@@ -111,20 +111,24 @@ typedef struct {
     #define WF_SHMEM_DISABLE
 #endif
 
-const char * const shmem_status_s[] = { "idle", "start", "busy", "done", "error" };
+const char * const shmem_status_s[] = { "IDLE", "START", "BUSY", "DONE", "ERROR" };
 
 typedef struct {
     net_t net_shmem;
     int CAT_last_freqHz;
 
     u4_t rv_u4_t[MAX_RX_CHANS];
-    #define N_SHMEM_STATUS_ANT_SW 0
+    
+    #define N_SHMEM_ST_ANT_SW 0
+    #define N_SHMEM_ST_SEQ 1
     #define N_SHMEM_STATUS 4
+    
     #define SHMEM_STATUS_IDLE 0
     #define SHMEM_STATUS_START 1
     #define SHMEM_STATUS_BUSY 2
     #define SHMEM_STATUS_DONE 3
     #define SHMEM_STATUS_ERROR 4
+    
     u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
     

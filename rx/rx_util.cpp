@@ -101,6 +101,31 @@ void rx_loguser(conn_t *c, logtype_e type)
 	u4_t hr = t;
 
 	if (type == LOG_ARRIVED) {
+        #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
+            if (strcmp(c->ident_user, "kiwi_nc.py") == 0) {
+                float f_kHz = (float) c->freqHz / kHz + freq_offset_kHz;
+                int f = (int) floorf(f_kHz);
+                bool freq_trig = (
+                    (f >= (2941-10) && f < 3500) ||     // stay outside 80m ham band
+                    (f >= (4654-10) && f <= (4687+10)) ||
+                    (f >= (5451-10) && f <= (5720+10)) ||
+                    (f >= (6529-10) && f <= (6712+10)) ||
+                    (f >= (8825-10) && f <= (8977+10)) ||
+                    (f >= (10027-10) && f <= (10093+10)) ||
+                    (f >= (11184-10) && f <= (11387+10)) ||
+                    (f >= (13264-10) && f <= (13351+10)) ||
+                    (f >= (15025-10) && f <= (15025+10)) ||
+                    (f >= (17901-10) && f <= (17985+10)) ||
+                    (f >= (21928-10) && f <= (21997+10))
+                );
+                if (freq_trig) {
+                    clprintf(c, "API: non-Kiwi app fingerprint-3 was denied connection\n");
+                    c->kick = true;
+                    return;
+                }
+            }
+        #endif
+
 		asprintf(&s, "(ARRIVED)");
 		c->last_tune_time = now;
 		user_arrive(c);
@@ -133,14 +158,14 @@ void rx_loguser(conn_t *c, logtype_e type)
                 c->geo? " ":"", c->geo? c->geo:"", s);
         }
     #endif
-	
+    
 	// we don't do anything with LOG_UPDATE and LOG_UPDATE_NC at present
 	kiwi_asfree(s);
 }
 
-int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt)
+int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt, int *busy)
 {
-	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0, preempt_cnt = 0;
+	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0, preempt_cnt = 0, busy_cnt = 0;
 	rx_chan_t *rx;
 
     // When configuration has a limited number of channels with waterfalls
@@ -156,6 +181,7 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt
                 heavy_cnt++; \
             if (rx->conn && rx->conn->arun_preempt) \
                 preempt_cnt++; \
+            busy_cnt++; \
         } else { \
             free_cnt++; \
             if (free_idx == -1) free_idx = i; \
@@ -174,6 +200,7 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt
 	if (idx != NULL) *idx = free_idx;
 	if (heavy != NULL) *heavy = heavy_cnt;
 	if (preempt != NULL) *preempt = preempt_cnt;
+	if (busy != NULL) *busy = busy_cnt;
 	return free_cnt;
 }
 
@@ -204,12 +231,12 @@ int rx_count_server_conns(conn_count_e type, u4_t flags, conn_t *our_conn)
         // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
         bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
         
-        // don't count preemptible internal connections since they can be kicked
+        // don't count preemptable internal connections since they can be kicked
         if (sound && (type == INCLUDE_INTERNAL) && (flags & EXCEPT_PREEMPTABLE) && c->arun_preempt)
             sound = false;
 
 	    if (type == TDOA_USERS) {
-	        if (sound && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service"))
+	        if (sound && kiwi_str_begins_with(c->ident_user, "TDoA_service"))
 	            users++;
 	    } else
 	    if (type == EXT_API_USERS) {
@@ -639,7 +666,7 @@ void dump()
 	lprintf("rf_attn_dB=%.1f\n", kiwi.rf_attn_dB);
 	lprintf("\n");
 	
-	for (i=0; i < rx_all_chans; i++) {
+	for (i=0; i < rx_chans; i++) {
 		rx_chan_t *rx = &rx_channels[i];
 		lprintf("RX%d chan_en=%d data_en=%d busy=%d conn-%2s %2.0f %2.0f %p %d|w %d|r\n",
 		    i, rx->chan_enabled, rx->data_enabled, rx->busy,
@@ -946,6 +973,7 @@ char *rx_users(bool isAdmin)
         need_comma = true;
     }
 
+    //printf("rx_users: foff %.3f\n", freq_offset_kHz);
     sb = kstr_cat(sb, "]\n");
     return sb;
 }
@@ -1058,7 +1086,7 @@ void SNR_meas(void *param)
     do {
         static int meas_idx;
 	
-        for (int loop = 0; loop == 0 && snr_meas_interval_hrs; loop++) {   // so break can be used below
+        for (int loop = 0; loop == 0 && (snr_meas_interval_hrs || !regular_wakeup); loop++) {   // so break can be used below
             if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR, WS_FL_PREEMPT_AUTORUN | WS_FL_NO_LOG,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
@@ -1141,7 +1169,32 @@ void SNR_meas(void *param)
         //TaskSleepSec(60);
         // if disabled check again in an hour to see if re-enabled
         u64_t hrs = snr_meas_interval_hrs? snr_meas_interval_hrs : 1;
+        
+        // a !regular_wakeup occurs where there is an on-demand request, such as the admin control tab
+        // "measure SNR now" button or the /snr?meas control URL
         regular_wakeup = (bool) FROM_VOID_PARAM(TaskSleepSec(hrs * 60 * 60));
         //TaskSleepSec(60);
     } while (1);
+}
+
+void on_GPS_solution()
+{
+    //printf("on_GPS_solution: WSPR_auto=%d FT8_auto=%d haveLat=%d\n", wspr_c.GPS_update_grid, ft8_conf.GPS_update_grid, (gps.StatLat != 0));
+    if (gps.StatLat) {
+        if (wspr_c.GPS_update_grid || ft8_conf.GPS_update_grid) {
+            latLon_t loc;
+            loc.lat = gps.sgnLat;
+            loc.lon = gps.sgnLon;
+            if (latLon_to_grid6(&loc, kiwi.grid6) == 0) {   // see also gps/stat.cpp::TEST_MM
+                if (wspr_c.GPS_update_grid)
+                    wspr_update_rgrid(kiwi.grid6);
+                if (ft8_conf.GPS_update_grid)
+                    ft8_update_rgrid(kiwi.grid6);
+            }
+        }
+        
+        int res= cfg_true("GPS_update_web_hires")? 6:2;
+        kiwi_snprintf_buf(kiwi.latlon_s, "(%.*f, %.*f)", res, gps.sgnLat, res, gps.sgnLon);
+        //printf("on_GPS_solution: %s %s\n", kiwi.grid6, kiwi.latlon_s);
+    }
 }

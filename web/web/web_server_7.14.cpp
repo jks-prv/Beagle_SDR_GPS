@@ -309,7 +309,9 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
 	        u64_t tstamp;
             if (kiwi_str_begins_with(mc->uri, "/ws/") ||
                 // kiwirecorder
-                sscanf(mc->uri, "/%lld/", &tstamp) == 1 || kiwi_str_begins_with(mc->uri, "/wb/")) {
+                sscanf(mc->uri, "/%lld/", &tstamp) == 1 ||
+                // wideband
+                kiwi_str_begins_with(mc->uri, "/wb/")) {
                 mg_ws_upgrade(mc, hm, NULL);
                 //ev_http_prf("ev_handler_http WEBSOCKET upgrade <%s>\n", mc->uri);
             } else {
@@ -326,8 +328,15 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
         case MG_EV_CLOSE:
             rx_server_websocket(WS_MODE_CLOSE, mc);
             //ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            free(mc->fn_data);
-            mc->fn_data = NULL;
+            wm = (web_mg_t *) mc->fn_data;
+            if (wm) {
+                if (wm->init) {
+                    free(mc->uri);
+                    free(mc->query);
+                }
+                free(mc->fn_data);
+                mc->fn_data = NULL;
+            }
             free(mc->cache_info);
             mc->cache_info = NULL;
             mc->connection_param = NULL;

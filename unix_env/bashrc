@@ -145,6 +145,22 @@ alias chod="chown debian:debian"
 alias modn="stat -c '%a %n'"
 
 # antenna switch
+alias aah='echo "Antenna switch shell aliases:"; \
+           echo "cda: change to ant switch directory"; \
+           echo "abi: get backend info of currently selected switch"; \
+           echo "abe: emunerate all backend script names"; \
+           echo "abs: select switch backend script"; \
+           echo "aga: get switch IP address (if any)"; \
+           echo "asa: set switch IP address (if any)"; \
+           echo "as:  show current antenna selected"; \
+           echo "ag:  ground antennas (if switch supports this feature)"; \
+           echo "a1 - a9: select antenna 1 through 9 (some switches have fewer than 9)"; \
+           echo "aa 1-9: add antenna 1-9 if switch supports antenna mixing"; \
+           echo "ar 1-9: remove antenna 1-9 if switch supports antenna mixing"; \
+           echo "at 1-9: toggle antenna 1-9 if switch supports antenna mixing"; \
+           echo "ant <cmd>: run frontend script using <cmd> command"; \
+           echo "ah: show frontend script help"; \
+           echo "aah: show this list of aliases"'
 alias cda="cd ~/Beagle_SDR_GPS/pkgs/ant_switch"
 alias ant="./ant-switch-frontend"
 alias ah="./ant-switch-frontend h"
@@ -217,6 +233,8 @@ alias mi="make install"
 alias mc="make clean"
 alias mcd="make clean_dist"
 alias mcl="make clean_logs"
+alias mpd="make prep_distro"
+alias mckd="make check_distro"
 alias md="make debug"
 alias mt="make test"
 alias me="make everything"
@@ -308,6 +326,9 @@ alias gdi="git diff"
 alias gst="git status"
 alias gsh="git show"
 alias grem="git remote -v"
+# get rid of all local changes
+# e.g. accidentally edited/deleted a file AND gup doesn't work for some reason
+alias greset="git reset --hard HEAD"
 git_user="jks-prv"
 alias gclone="function _gclone () { git clone https://github.com/${git_user}/\$1.git ; } ; _gclone"
 
@@ -534,6 +555,7 @@ alias status80="function _status () { curl --connect-timeout 5 \${*}:80/status ;
 alias mdu="killall -q -s USR1 kiwid; killall -q -s USR1 kiwi.bin"
 alias kh="killall -q -s HUP kiwid; killall -q -s HUP kiwi.bin"
 alias whilek="while true; do ./k; done"
+alias whilekmm="while true; do ./k -mm; done"
 alias whiled="while true; do ./d; done"
 alias bbpp="ping -c 1 proxy.kiwisdr.com"
 alias bbfp="ping -c 1 forum.kiwisdr.com"

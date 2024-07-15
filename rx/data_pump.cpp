@@ -159,7 +159,7 @@ static void snd_service()
             i_samps[ch] = rx->in_samps[rx->wr_pos];
         }
         if (kiwi.isWB) {
-            rx_dpump_t *rx = &rx_dpump[RX_CHAN1];
+            rx_dpump_t *rx = &rx_dpump[RX_CHAN0];
             i_wb_samps = rx->wb_samps[rx->wr_pos];
             //real_printf("[%d=%p] ", rx->wr_pos, i_wb_samps); fflush(stdout);
         }
@@ -171,9 +171,9 @@ static void snd_service()
             static int debug_ticks;
             if (debug_ticks >= 1024 && debug_ticks < 1024+8) {
                 for (int j=-1; j>-2; j--) {
-                    real_printf("debug_iq3 %d %d(%d*%d) %02x%04x %02x%04x\n", j, nrx_samps*rx_buf_chans+j, nrx_samps, rx_buf_chans,
-                        rxd->iq_t[nrx_samps*rx_buf_chans+j].i3, rxd->iq_t[nrx_samps*rx_buf_chans+j].i,
-                        rxd->iq_t[nrx_samps*rx_buf_chans+j].q3, rxd->iq_t[nrx_samps*rx_buf_chans+j].q);
+                    real_printf("debug_iq3 %d %d(%d*%d) %02x%04x %02x%04x\n", j, nrx_samps*rx_wb_buf_chans+j, nrx_samps, rx_wb_buf_chans,
+                        rxd->iq_t[nrx_samps*rx_wb_buf_chans+j].i3, rxd->iq_t[nrx_samps*rx_wb_buf_chans+j].i,
+                        rxd->iq_t[nrx_samps*rx_wb_buf_chans+j].q3, rxd->iq_t[nrx_samps*rx_wb_buf_chans+j].q);
                 }
                 real_printf("debug_ticks %04x[2] %04x[1] %04x[0]\n", rxt->ticks[2], rxt->ticks[1], rxt->ticks[0]);
                 real_printf("debug_bufcnt %04x\n\n", rxt->write_ctr_stored);
@@ -188,43 +188,18 @@ static void snd_service()
                 static u4_t go;
             #endif
     
-            //if (rx_channels[RX_CHAN1].data_enabled) { real_printf("."); fflush(stdout); }
+            //if (rx_channels[RX_CHAN0].data_enabled) { real_printf("."); fflush(stdout); }
 
             for (j=0; j < nrx_samps; j++) {
 
-                #ifdef WB_RX0_SHARE
-                    // rx0:
-                    if (rx_channels[0].data_enabled) {
-                        s4_t i, q;
-                        i = S24_8_16(iqp->i3, iqp->i);
-                        q = S24_8_16(iqp->q3, iqp->q);
-    
-                        // NB: I/Q reversed to get correct sideband polarity; fixme: why?
-                        // [probably because mixer NCO polarity is wrong, i.e. cos/sin should really be cos/-sin]
-                        i_samps[0]->re = q * rescale + DC_offset_I;
-                        i_samps[0]->im = i * rescale + DC_offset_Q;
-                        i_samps[0]++;
-                    }
-    
-                    #ifdef DP_DUMP_WB
-                        if (go == DP_DUMP_GO) {
-                            iqd_p->i = iqp->i;
-                            iqd_p->i3 = iqp->i3;
-                            iqd_p->q = iqp->q;
-                            iqd_p->q3 = iqp->q3;
-                            iqd_p++;
-                        }
-                    #endif
-    
-                    iqp++;
-                #endif
-                
                 // rx1: wb0..wb[rx_wb_buf_chans-1]
                 for (int wb = 0; wb < rx_wb_buf_chans; wb++) {
-                    if (rx_channels[RX_CHAN1].data_enabled) {
+                    if (rx_channels[RX_CHAN0].data_enabled) {
                         s4_t i, q;
                         //#define WB_PATTERN
                         #ifdef WB_PATTERN
+
+                            // sdr++: zoom in fully to see the picket
                             #define PICKET
                             #ifdef PICKET
                                 static u4_t ctr;
@@ -242,29 +217,16 @@ static void snd_service()
                             i = S24_8_16(iqp->i3, iqp->i);
                             q = S24_8_16(iqp->q3, iqp->q);
         
-                            #if 1
-                                // sign extend
-                                // for RX2_BITS = 18
-                                // 2222 1111 111111
-                                // 3210 9876 54321098 76543210
-                                // eeee eeSd dddddddd dddddddd
-                                //        12 345678
-                                //                 12 34567890
-                                
-                                i_wb_samps->re = q;
-                                i_wb_samps->im = i;
-                            #else
-                                // zero fill
-                                // for RX2_BITS = 18
-                                // 2222 1111 111111
-                                // 3210 9876 54321098 76543210
-                                // Sddd dddd dddddddd dd000000
-                                // 1       1            123456
-                                // 7       0 9         0
-                                
-                                i_wb_samps->re = q >> 6;
-                                i_wb_samps->im = i >> 6;
-                            #endif
+                            // sign extend
+                            // for RX2_BITS = 18
+                            // 2222 1111 111111
+                            // 3210 9876 54321098 76543210
+                            // eeee eeSd dddddddd dddddddd
+                            //        12 345678
+                            //                 12 34567890
+                            
+                            i_wb_samps->re = q;
+                            i_wb_samps->im = i;
                         #endif
                         i_wb_samps++;
                     }
@@ -288,7 +250,7 @@ static void snd_service()
                     iqd_p = rxd_debug.iq_t;
                     for (j=0; j < nrx_samps; j++) {
                         real_printf("%04d: ", j);
-                        for (int ch=0; ch < rx_buf_chans; ch++) {
+                        for (int ch=0; ch < rx_wb_buf_chans; ch++) {
                             #define DP_DUMP_HEX
                             #ifdef DP_DUMP_HEX
                                 real_printf("[ch%d %02x|%02x|%04x|%04x] ", ch, iqd_p->i3, iqd_p->q3, iqd_p->i, iqd_p->q);
@@ -352,7 +314,7 @@ static void snd_service()
     
         int n_dpbuf = kiwi.isWB? N_WB_DPBUF : N_DPBUF;
         
-        for (int ch=0; ch < rx_all_chans; ch++) {
+        for (int ch=0; ch < rx_chans; ch++) {
             //if (ch == 1) real_printf("%d:en%d ", ch, rx_channels[ch].data_enabled); fflush(stdout);
             if (rx_channels[ch].data_enabled) {
                 rx_dpump_t *rx = &rx_dpump[ch];
@@ -370,7 +332,7 @@ static void snd_service()
                 diff = (rx->wr_pos >= rx->rd_pos)? (rx->wr_pos - rx->rd_pos) : (n_dpbuf - rx->rd_pos + rx->wr_pos);
                 if (diff >= n_dpbuf) {
                     dpump.in_hist_resets++;
-                    #if 1
+                    #if 0
                         real_printf("#"); fflush(stdout);
                     #endif
                 } else {
@@ -475,7 +437,7 @@ static void data_pump(void *param)
 
 		snd_service();
 		
-		for (int ch=0; ch < rx_all_chans; ch++) {
+		for (int ch=0; ch < rx_chans; ch++) {
 			rx_chan_t *rxc = &rx_channels[ch];
 			if (!rxc->chan_enabled) continue;
 			if (rxc->wb_task) {
@@ -496,7 +458,7 @@ void data_pump_start_stop()
 {
 #ifdef USE_SDR
 	bool no_users = true;
-	for (int i = 0; i < rx_all_chans; i++) {
+	for (int i = 0; i < rx_chans; i++) {
         rx_chan_t *rx = &rx_channels[i];
 		if (rx->chan_enabled) {
 			no_users = false;
@@ -509,7 +471,7 @@ void data_pump_start_stop()
 		itask_run = false;
 		spi_set(CmdSetRXNsamps, 0);
 		ctrl_clr_set(CTRL_SND_INTR, 0);
-		real_printf("#### STOP dpump\n");
+		//real_printf("#### STOP dpump\n");
 		last_run_us = 0;
 	}
 
@@ -517,14 +479,14 @@ void data_pump_start_stop()
 	if (!itask_run && !no_users) {
 		itask_run = true;
 		
-	    for (int i = 0; i < rx_all_chans; i++) {
+	    for (int i = 0; i < rx_chans; i++) {
             rx_dpump_t *rx = &rx_dpump[i];
             rx->wr_pos = rx->rd_pos = 0;
 	    }
 		
 		ctrl_clr_set(CTRL_SND_INTR, 0);
 		spi_set(CmdSetRXNsamps, nrx_samps_wb);
-		real_printf("#### START dpump %d\n", nrx_samps_wb);
+		//real_printf("#### START dpump %d\n", nrx_samps_wb);
 		last_run_us = 0;
 	}
 	
@@ -535,9 +497,9 @@ void data_pump_start_stop()
 void data_pump_init()
 {
     #ifdef SND_SEQ_CHECK
-        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(iq3_t) * nrx_samps * rx_buf_chans);
+        rx_xfer_size = sizeof(rx_data_t::rx_header_t) + (sizeof(iq3_t) * nrx_samps * rx_wb_buf_chans);
     #else
-        rx_xfer_size = sizeof(iq3_t) * nrx_samps * rx_buf_chans;
+        rx_xfer_size = sizeof(iq3_t) * nrx_samps * rx_wb_buf_chans;
     #endif
 	rxd = (rx_data_t *) &SPI_SHMEM->dpump_miso.word[0];
 	rxt = (rx_trailer_t *) ((char *) rxd + rx_xfer_size);
@@ -572,11 +534,11 @@ void data_pump_startup()
 
 void data_pump_dump()
 {
-    rx_dpump_t *rx = &rx_dpump[RX_CHAN1];
+    rx_dpump_t *rx = &rx_dpump[RX_CHAN0];
     int n_dpbuf = kiwi.isWB? N_WB_DPBUF : N_DPBUF;
     
     u4_t diff = (rx->wr_pos >= rx->rd_pos)? (rx->wr_pos - rx->rd_pos) : (n_dpbuf - rx->rd_pos + rx->wr_pos);
-    printf("data_pump RX_CHAN1 isWB=%d n_dpbuf=%d rd|wr_pos=%d|%d|%d \n",
+    printf("data_pump RX_CHAN0 isWB=%d n_dpbuf=%d rd|wr_pos=%d|%d|%d \n",
         kiwi.isWB, n_dpbuf, rx->rd_pos, rx->wr_pos, diff);
 }
 

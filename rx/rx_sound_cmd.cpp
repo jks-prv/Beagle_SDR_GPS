@@ -73,12 +73,7 @@ Boston, MA  02110-1301, USA.
 
 void rx_sound_set_freq(conn_t *conn, double freq, bool spectral_inversion)
 {
-    #ifdef WB_RX0_SHARE
-        int ch = conn? conn->rx_channel : RX_CHAN1;
-    #else
-        int ch = conn? conn->rx_channel : RX_CHAN0;
-    #endif
-    
+    int ch = conn? conn->rx_channel : RX_CHAN0;
     double freq_kHz = freq * kHz;
     double freq_inv_kHz = ui_srate - freq_kHz;
     double adc_clock_corrected = conn? conn->adc_clock_corrected : clk.adc_clock_corrected;
@@ -112,7 +107,6 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
 {
     int j, k;
 	int rx_chan = conn->rx_channel;
-    bool isWB = (kiwi.isWB && rx_chan == RX_CHAN1);
 
 	snd_t *s = &snd_inst[rx_chan];
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
@@ -400,7 +394,7 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
             if (rx_chan == 0 && s->genattn != _genattn) {
                 s->genattn = _genattn;
                 if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) s->genattn);
-                //cprintf(conn, "GEN_ATTN %d 0x%x\n", s->genattn, genattn);
+                //cprintf(conn, "GEN_ATTN %d 0x%x\n", s->genattn, s->genattn);
                 if (rx_chan == 0) g_genampl = s->genattn / (float)((1<<17)-1);
             }
         }

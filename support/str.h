@@ -44,6 +44,7 @@ C_LINKAGE(kstr_t *kstr_list_int(const char *head, const char *fmt, const char *t
 void kiwi_get_chars(char *field, char *value, size_t size);
 #define SET_CHARS(field, value, fill) kiwi_set_chars(field, value, fill, sizeof(field));
 void kiwi_set_chars(char *field, const char *value, const char fill, size_t size);
+bool kiwi_nonEmptyStr(const char *s);
 char *kiwi_str_replace(char *s, const char *from, const char *to, bool *caller_must_free DEF_NULL);
 void kiwi_str_unescape_quotes(char *str);
 char *kiwi_json_to_html(char *str, bool doBR DEF_TRUE);

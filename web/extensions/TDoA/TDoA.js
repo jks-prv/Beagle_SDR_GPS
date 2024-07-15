@@ -1813,7 +1813,7 @@ function tdoa_host_click_status_cb(obj, field_idx)
       } else {
          //console.log('u='+ users +' u_max='+ users_max +' preempt='+ preempt);
          if (users_max == null) return;      // unexpected response
-         if (users < users_max || preempt > 0) {      // also try if any preemptible channels
+         if (users < users_max || preempt > 0) {      // also try if any preemptable channels
             tdoa_set_icon('sample', field_idx, 'fa-refresh', 20, 'lime');
             tdoa_set_icon('listen', field_idx, 'fa-volume-up', 20, 'lime',
                'click to open in new tab/page\nshift-click for waterfall preview',

@@ -129,7 +129,7 @@ static void webserver_collect_print_stats(int print)
 		bool both_no_api = (!c->snd_cmd_recv_ok && !c->wf_cmd_recv_ok);
 		if (c->auth && both_no_api && (now - c->arrival) >= NO_API_TIME) {
             clprintf(c, "\"%s\"%s%s%s%s incomplete connection kicked\n",
-                c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
+                kiwi_nonEmptyStr(c->ident_user)? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
                 c->geo? " ":"", c->geo? c->geo:"");
             c->kick = true;
 		}
@@ -330,7 +330,7 @@ static void called_every_second()
             bool kick = false;
             if (ext_api_users > ext_api_ch) {
                 clprintf(c, "API: non-Kiwi app was denied connection: %d/%d %s \"%s\"\n",
-                    ext_api_users, ext_api_ch, c->remote_ip, c->ident_user);
+                    ext_api_users, ext_api_ch, c->remote_ip, kiwi_nonEmptyStr(c->ident_user)? c->ident_user : "(no identity)");
                 kick = true;
             } else {
                 #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
@@ -346,6 +346,27 @@ static void called_every_second()
                     if (trig) {
                         clprintf(c, "API: non-Kiwi app fingerprint was denied connection\n");
                         kick = true;
+                    } else {
+                        if (kiwi_str_begins_with(c->ident_user, "TDoA_service")) {
+                            int f = (int) floor_kHz;
+                            freq_trig = (
+                                (f >= (2941-10) && f < 3500) ||     // stay outside 80m ham band
+                                (f >= (4654-10) && f <= (4687+10)) ||
+                                (f >= (5451-10) && f <= (5720+10)) ||
+                                (f >= (6529-10) && f <= (6712+10)) ||
+                                (f >= (8825-10) && f <= (8977+10)) ||
+                                (f >= (10027-10) && f <= (10093+10)) ||
+                                (f >= (11184-10) && f <= (11387+10)) ||
+                                (f >= (13264-10) && f <= (13351+10)) ||
+                                (f >= (15025-10) && f <= (15025+10)) ||
+                                (f >= (17901-10) && f <= (17985+10)) ||
+                                (f >= (21928-10) && f <= (21997+10))
+                            );
+                            if (freq_trig) {
+                                clprintf(c, "API: non-Kiwi app fingerprint-2 was denied connection\n");
+                                c->kick = true;
+                            }
+                        }
                     }
                 #endif
             }
@@ -363,7 +384,7 @@ static void called_every_second()
         // If a match and the limit is exceeded then kick the connection off immediately.
         // This identification is typically sent right after initial connection is made.
 
-        if (!c->kick && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service")) {
+        if (!c->kick && kiwi_str_begins_with(c->ident_user, "TDoA_service")) {
             int tdoa_ch = cfg_int("tdoa_nchans", NULL, CFG_REQUIRED);
             if (tdoa_ch == -1) tdoa_ch = rx_chans;      // has never been set
             int tdoa_users = rx_count_server_conns(TDOA_USERS);
@@ -498,7 +519,7 @@ void user_arrive(conn_t *c)
         #endif
     }
     
-    const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
+    const char *ident = (!c->isUserIP && kiwi_nonEmptyStr(c->ident_user))? c->ident_user : "(no identity)";
     bool isNew;
     
     i = item_find_grow(user_base, TO_VOID_PARAM(ident), user_ident_cmp, &isNew);
@@ -550,7 +571,7 @@ void user_arrive(conn_t *c)
 
 void user_leaving(conn_t *c, u4_t connected_secs)
 {
-    const char *ident = (!c->isUserIP && (c->ident_user && c->ident_user[0] != '\0'))? c->ident_user : "(no identity)";
+    const char *ident = (!c->isUserIP && kiwi_nonEmptyStr(c->ident_user))? c->ident_user : "(no identity)";
     bool found;
     if (c->internal_connection || !user_base) return;
     
@@ -724,7 +745,7 @@ void stat_task(void *param)
 			if (do_sdr) {
 				webserver_collect_print_stats(print_stats & STATS_TASK);
 				if (!do_gps) nbuf_stat();
-	            ant_switch_poll();
+	            ant_switch_poll_10s();
 			}
 
             cull_zombies();

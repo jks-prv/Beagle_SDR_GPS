@@ -82,7 +82,7 @@ typedef enum {
     RX_COUNT_NO_WF_FIRST,   // check non-wf channels first, then wf channels
     RX_COUNT_NO_WF_AT_ALL   // never consider wf channels for configs where wf_chans != 0 && wf_chans < rx_chans
 } rx_free_count_e;
-int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL, int *preempt = NULL);
+int rx_chan_free_count(rx_free_count_e flags, int *idx = NULL, int *heavy = NULL, int *preempt = NULL, int *busy = NULL);
 
 typedef enum { PWD_CHECK_NO, PWD_CHECK_YES } pwd_check_e;
 int rx_chan_no_pwd(pwd_check_e pwd_check = PWD_CHECK_NO);
@@ -110,3 +110,4 @@ int rx_mode2enum(const char *mode);
 const char * rx_enum2mode(int e);
 void debug_init();
 void rx_send_config(int rx_chan);
+void on_GPS_solution();

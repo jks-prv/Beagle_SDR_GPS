@@ -35,7 +35,7 @@ typedef struct {
 #define N_DPBUF	    32
 #define N_WB_DPBUF  256
 
-#define N_IN_HIST   N_WB_DPBUF
+#define N_IN_HIST_MAX   N_WB_DPBUF
 
 typedef struct {
 	struct {
@@ -76,7 +76,7 @@ typedef struct {
 
 typedef struct {
     u4_t resets, hist[MAX_NRX_BUFS];
-    u4_t in_hist_resets, in_hist[N_IN_HIST];
+    u4_t in_hist_resets, in_hist[N_IN_HIST_MAX];
     int rx_adc_ovfl;
     u4_t rx_adc_ovfl_cnt;
     int audio_dropped;

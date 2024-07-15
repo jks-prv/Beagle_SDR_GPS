@@ -38,6 +38,7 @@ extern gpio_t SPIn_SCLK, SPIn_MISO, SPIn_MOSI, SPIn_CS0, SPIn_CS1;
 extern gpio_t CMD_READY, SND_INTR;
 extern gpio_t P911, P913, P915, P926;
 extern gpio_t P811, P812, P813, P814, P815, P816, P817, P818, P819, P826;
+extern gpio_t BOOT_BTN;
 
 #define devio_check(gpio, dir, pmux_val1, pmux_val2) \
 	_devio_check(#gpio, gpio, dir, pmux_val1, pmux_val2);

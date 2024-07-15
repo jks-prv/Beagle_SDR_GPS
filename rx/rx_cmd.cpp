@@ -833,12 +833,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                                 send_msg(conn, false, "MSG foff_error=1");
                             } else {
 		                        freq_offset_kHz = conn->foff;
+		                        freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
                                 cfg_set_float("freq_offset", freq_offset_kHz);
                                 printf("_cfg_save_json freq_offset\n");
 		                        cfg_save_json(cfg_cfg.json);    // we just checked that no admin connections exist
                                 update_freqs();
                                 update_masked_freqs();
-                                cprintf(conn, "foff: UPDATED\n");
+                                cprintf(conn, "foff: UPDATED %.3f\n", freq_offset_kHz);
                             }
                             conn->foff_set = false;
                         }
@@ -1740,34 +1741,10 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
             #endif
 
             #ifdef USE_SDR
-                //printf("ch=%d WSPR_auto=%d FT8_auto=%d haveLat=%d\n", ch, wspr_c.GPS_update_grid, ft8_conf.GPS_update_grid, (gps.StatLat != 0));
-                if ((wspr_c.GPS_update_grid || ft8_conf.GPS_update_grid) && gps.StatLat) {
-                    latLon_t loc;
-                    loc.lat = gps.sgnLat;
-                    loc.lon = gps.sgnLon;
-                    char grid6[LEN_GRID];
-                    if (latLon_to_grid6(&loc, grid6) == 0) {
-                        //#define TEST_GPS_GRID
-                        #ifdef TEST_GPS_GRID
-                            static int grid_flip;
-                            grid6[5] = grid_flip? 'j':'i';
-                            if (ch == rx_chans) {
-                                grid_flip = grid_flip ^ 1;
-                                printf("TEST_GPS_GRID %s\n", grid6);
-                            }
-                        #endif
-                        if (wspr_c.GPS_update_grid)
-                            kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
-                        if (ft8_conf.GPS_update_grid)
-                            kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
-                    }
-                }
-        
-                // Always send WSPR grid. Won't reveal location if grid not set on WSPR admin page
-                // and update-from-GPS turned off.
-                sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(wspr_c.rgrid));
-                //printf("status sending wspr_c.rgrid=<%s>\n", wspr_c.rgrid);
-        
+                sb = kstr_asprintf(sb, ",\"gr\":\"%s\"", kiwi_str_encode_static(kiwi.grid6));
+                sb = kstr_asprintf(sb, ",\"gl\":\"%s\"", kiwi_str_encode_static(kiwi.latlon_s));
+                //printf("status sending kiwi.grid6=<%s> kiwi.latlon_s=<%s>\n", kiwi.grid6, kiwi.latlon_s);
+
                 sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset_kHz? -1 : snr_HF,
                     kiwi.spectral_inversion_lockout? 1:0);
             #endif
@@ -1865,6 +1842,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     for (int i=1; i < strlen(ident_user_m) && i < 5; i++) ident_user_m[i] = 0xfe | (i&1);
                 #endif
                 utf8makevalid(ident_user_m, '?');
+                //printf("CHECK SET IDENT: %s <%s>\n", ident_user_m, kiwi_str_ASCII_static(ident_user_m));
                 int printable, UTF;
                 char *esc = kiwi_str_escape_HTML(ident_user_m, &printable, &UTF);
                 if (esc) {
@@ -1882,11 +1860,14 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     ident_user_m = strdup("(bad identity)");
                 }
 
-                kiwi_str_redup(&conn->ident_user, "ident_user", ident_user_m);
+                // truncate long idents
                 int len = cfg_int("ident_len", NULL, CFG_REQUIRED);
                 len = MAX(len, IDENT_LEN_MIN);
-                if (strlen(conn->ident_user) > len)
-                    conn->ident_user[len] = '\0';
+                if (strlen(ident_user_m) > len)
+                    ident_user_m[len] = '\0';
+                utf8makevalid(ident_user_m, '?');   // fix if truncating has made invalid UTF8
+                //printf("CHECK SET IDENT 2: %s <%s>\n", ident_user_m, kiwi_str_ASCII_static(ident_user_m));
+                kiwi_str_redup(&conn->ident_user, "ident_user", ident_user_m);
                 //printf("ident <%s> len=%d\n", conn->ident_user, len);
                 conn->isUserIP = FALSE;
                 // printf(">>> isUserIP FALSE: %s:%05d setUserIP=%d noname=%d user=%s <%s>\n",

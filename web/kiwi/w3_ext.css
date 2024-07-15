@@ -819,6 +819,11 @@ input[type=range]::-moz-range-thumb {
     padding-bottom: 0 !important;
 }
 
+.w3-padding-TB-6
+{
+    padding: 6px 0
+}
+
 .w3-padding-TB-7
 {
     padding: 7px 0

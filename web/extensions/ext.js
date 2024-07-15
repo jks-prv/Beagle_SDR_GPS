@@ -263,7 +263,8 @@ var ext_zoom = {
 	CUR: 4,
 	NOM_IN: 8,
 	MAX_IN: 9,
-	MAX_OUT: -9
+	MAX_OUT: -9,
+	TO_PASSBAND: null
 };
 
 // mode, zoom and passband are optional
@@ -332,10 +333,11 @@ function ext_get_mode()
 function ext_mode(mode)
 {
    var fail = false;
+   var str;
    
    if (isArg(mode)) {
       mode = mode.toLowerCase();
-      var str = mode.substr(0,2);
+      str = mode.substr(0,2);
       if (str == 'qa') str = 'sa';  // QAM -> SAM case
       if (str == 'nn') str = 'nb';  // NNFM -> NBFM case
    } else {
@@ -434,7 +436,7 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// spec
 	
 	low_cut = (low_cut < filter.low_cut_limit)? filter.low_cut_limit : low_cut;
 	high_cut = (high_cut > filter.high_cut_limit)? filter.high_cut_limit : high_cut;
-	var bw = Math.abs(high_cut - low_cut);
+	bw = Math.abs(high_cut - low_cut);
 	//console.log('SET_PB_CLIP bw='+ bw +' lo='+ low_cut +' hi='+ high_cut);
 	
 	var okay = false;
@@ -451,14 +453,19 @@ function ext_set_passband(low_cut, high_cut, set_mode_pb, freq_dial_Hz)		// spec
 		owrx.last_hi[cur_mode] = high_cut;
 	}
 	
-	if (freq_dial_Hz != undefined && freq_dial_Hz != null) {
+	if (isArg(freq_dial_Hz)) {
 		freq_dial_Hz *= 1000;
 		freq_car_Hz = freq_dsp_to_car(freq_dial_Hz);
-	}
 
-	extint.ext_is_tuning = true;
-	   demodulator_set_offset_frequency(owrx.FSET_EXT_SET_PB, freq_car_Hz - center_freq);
-	extint.ext_is_tuning = false;
+      extint.ext_is_tuning = true;
+         demodulator_set_offset_frequency(owrx.FSET_EXT_SET_PB, freq_car_Hz - center_freq);
+      extint.ext_is_tuning = false;
+	} else {
+	   // only set the passband
+	   demodulators[0].set();
+		if (!wf.audioFFT_active)
+		   mkenvelopes(get_visible_freq_range());
+	}
 }
 
 function ext_get_tuning()
@@ -672,11 +679,13 @@ screen.{width,height}	P=portrait L=landscape
 			   h     w		rotated to landscape
 iPhone 5S	320   568	P
 iPhone 6S   375   667   P
+iPhone X    375   812   P
 iPhone XR   414   896	P
+
 levono		600   1024	P 7"
 huawei		600   982	P 7"
-
 iPad 2		768   1024	P
+
 MBP 15"		1440  900	L
 */
 
@@ -689,6 +698,7 @@ function ext_mobile_info(last)
 {
    var w = window.innerWidth;
    var h = window.innerHeight;      // reduced if popup keyboard active
+   if (mobile_laptop_test) { w = 375; h = 812; }   // simulate iPhone X
    var rv = { width:w, height:h };
    var isPortrait;
 
@@ -1038,7 +1048,7 @@ function extint_open_ws_cb()
 {
 	// should always work since extensions are only loaded from an already validated client
 	ext_hasCredential('kiwi', null, null);
-	setTimeout(function() { setInterval(function() { ext_send("SET keepalive") }, 5000) }, 5000);
+	setTimeout(function() { setInterval(function() { ext_send("SET keepalive"); }, 5000); }, 5000);
 }
 
 function extint_connect_server()
@@ -1055,7 +1065,7 @@ function extint_msg_cb(param, ws)
 			break;
 
 		case "ext_client_init":
-		   console.log('ext_client_init is_locked='+ +param[1]);
+		   console.log('ext_client_init is_locked='+ (+param[1]));
 			extint_focus(+param[1]);
 			break;
 		

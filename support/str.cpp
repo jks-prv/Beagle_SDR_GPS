@@ -336,6 +336,11 @@ void kiwi_set_chars(char *field, const char *value, const char fill, size_t size
 	memcpy(field, value, strlen(value));
 }
 
+bool kiwi_nonEmptyStr(const char *s)
+{
+    return (s != NULL && s[0] != '\0');
+}
+
 // Version of strsep() that handles delimiters embedded inside double-quotes.
 // Also recognizes the spreadsheet standard of escaping quoted double-quotes by doubling them up.
 static char *ed_strsep(char **sp, const char *delim)
@@ -878,6 +883,7 @@ void kiwi_chrrep(char *str, const char from, const char to)
 
 bool kiwi_str_begins_with(char *s, const char *cs)
 {
+    if (s == NULL) return false;
     int slen = strlen(cs);
     return (strncmp(s, cs, slen) == 0);
 }

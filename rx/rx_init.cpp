@@ -151,6 +151,7 @@ void update_freqs(bool *update_cfg)
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 	ui_srate_kHz = round(ui_srate/kHz);
     freq_offset_kHz = cfg_default_float("freq_offset", 0, update_cfg);
+    //printf("foff: INIT %.3f\n", freq_offset_kHz);
     freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
 	//printf("ui_srate=%.3f ui_srate_kHz=%.3f freq_offset_kHz=%.3f freq_offmax_kHz=%.3f\n",
 	//    ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz);
@@ -304,6 +305,7 @@ void update_vars_from_config(bool called_at_init)
 
     S_meter_cal = cfg_default_int("S_meter_cal", SMETER_CALIBRATION_DEFAULT, &up_cfg);
     waterfall_cal = cfg_default_int("waterfall_cal", WATERFALL_CALIBRATION_DEFAULT, &up_cfg);
+    cfg_default_bool("no_zoom_corr", false, &up_cfg);
     cfg_default_bool("contact_admin", true, &up_cfg);
     cfg_default_int("chan_no_pwd", 0, &up_cfg);
     cfg_default_int("clk_adj", 0, &up_cfg);
@@ -349,6 +351,9 @@ void update_vars_from_config(bool called_at_init)
     cfg_default_int("init.cw_offset", 500, &up_cfg);
     cfg_default_int("init.colormap", 0, &up_cfg);
     cfg_default_int("init.aperture", 1, &up_cfg);
+    cfg_default_int("init.comp", 0, &up_cfg);
+    cfg_default_int("init.setup", 0, &up_cfg);
+    cfg_default_int("init.tab", 0, &up_cfg);
     cfg_default_float("init.rf_attn", 0, &up_cfg);
 
     cfg_default_object("ant_switch", "{}", &up_cfg);

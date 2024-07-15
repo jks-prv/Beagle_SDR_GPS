@@ -771,7 +771,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
     
     //#define WEB_PRINTF_ON_URL
     #ifdef WEB_PRINTF_ON_URL
-        web_caching_debug |= (strstr(mc->uri, "extensions") != NULL)? 3:0;
+        web_caching_debug = (strstr(mc->uri, "admin_sdr") != NULL)? 15:0;
     #endif
 		
     //#define WEB_PRINTF_ON_FILE
@@ -1160,10 +1160,7 @@ int web_request(struct mg_connection *mc, int ev, void *ev_data)
             (mc->query != NULL)? "qs:" : "", (mc->query != NULL)? mc->query : "");
     }
 
-    bool isImage = (
-        (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0)) ||
-        strcmp(uri, "photo.upload") == 0
-    );
+    bool isImage = (suffix && (strcmp(suffix, ".png") == 0 || strcmp(suffix, ".jpg") == 0 || strcmp(suffix, ".ico") == 0));
     int rtn = MG_TRUE;
     if (ev == MG_EV_CACHE_INFO) {
         if (dirty || isAJAX || web_nocache || !webserver_caching) {

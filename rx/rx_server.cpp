@@ -52,7 +52,7 @@ Boston, MA  02110-1301, USA.
 #include <math.h>
 #include <signal.h>
 
-#define CONN_PRINTF
+//#define CONN_PRINTF
 #ifdef CONN_PRINTF
 	#define conn_printf(fmt, ...) \
 		printf(fmt, ## __VA_ARGS__)
@@ -284,21 +284,29 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
 	if (uri_ts[0] == '/') uri_ts++;
 	conn_printf("#### new connection: %s:%d %s\n", mc->remote_ip, mc->remote_port, uri_ts);
 	
-	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false, old_fmt, isKrec = false;
+	bool isKiwi_UI = false, isNo_WF = false, isWF_conn = false, isWB_conn = false, isWebSocket, isKrec = false;
 	u64_t tstamp;
 	char *type_m = NULL, *uri_m = NULL;
 	int n = 0;
-	
+
+
+	// The new mongoose API requires something in the URL to distinguish web socket connections from
+	// normal HTTP transfers. Since our code has to decide when a connection is a web socket requiring
+	// an upgrade call to mg_ws_upgrade(). We prefix web socket URLs with "ws/" to do this.
+	//
+	// Kiwirecorder continues to work because its URL format is unique (<tstamp>/<uri>) compared to
+	// the old Kiwi API (<type>/<tstamp/<uri>) Kiwirecorder always uses a web socket (SND, W/F, EXT)
+
 	if ((n=sscanf(uri_ts, "ws/%8m[^/]/%lld/%256m[^\?]", &type_m, &tstamp, &uri_m)) == 3) {
-	    old_fmt = false;
+	    isWebSocket = true;
 	} else
 	if (sscanf(uri_ts, "%8m[^/]/%lld/%256m[^\?]", &type_m, &tstamp, &uri_m) == 3) {
-	    old_fmt = true;
+	    isWebSocket = false;
 	} else
     // kiwiclient / kiwirecorder
     if (sscanf(uri_ts, "%lld/%256m[^\?]", &tstamp, &uri_m) == 2) {
         type_m = strdup("krec");
-        old_fmt = false;
+        isWebSocket = true;
         isKrec = true;
     } else {
         printf("bad URI_TS format n=%d <%s>\n", n, uri_ts);
@@ -306,7 +314,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
         kiwi_asfree(uri_m);
         return NULL;
     }
-    printf("URI_TS <%s> old_fmt=%d <%s> %lld <%s>\n", uri_ts, old_fmt, type_m, tstamp, uri_m);
+    conn_printf("URI_TS <%s> web_socket=%d <%s> %lld <%s>\n", uri_ts, isWebSocket, type_m, tstamp, uri_m);
     
     if (strcmp(type_m, "kiwi") == 0) {
 	    isKiwi_UI = true;
@@ -527,44 +535,24 @@ retry:
 		int rx_n, heavy;
 
         #ifdef USE_WB
-            rx_chan_t *rxc = &rx_channels[RX_CHAN1];
-            #ifdef WB_RX0_SHARE
+            if (kiwi.isWB) {
+                rx_chan_t *rxc = &rx_channels[RX_CHAN0];
                 if (isWB_conn) {
-                    if (kiwi.isWB) {
-                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rxc->chan_enabled, rxc->data_enabled, rxc->busy);
-                        rx_n = rxc->busy? -1 : 1;     // allow simultaneous rx0/wb1 connections
-                    } else {
-                        rx_n = -1;
-                    }
-                    if (rx_n == -1) {
-                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG too_busy=%d", rx_chans);
-                        mc->connection_param = NULL;
-                        conn_init(c);
-                        return NULL;
-                    }
-                    rxc->busy = 1;
-                } else
-                    // rx0: fall through to normal rx connect block below
-                    // which should succeed if rx0 is available
-            #else
-                if (kiwi.isWB) {
-                    if (isWB_conn) {
-                        printf("isWB isWB_conn rx_channels[1]=%d|%d|%d\n", rxc->chan_enabled, rxc->data_enabled, rxc->busy);
-                        rx_n = rxc->busy? -1 : 1;     // wb firmware: allow only wb1 connections
-                    } else {
-                        rx_n = -1;
-                    }
-                    if (rx_n == -1) {
-                        if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG wb_only");
-                        mc->connection_param = NULL;
-                        conn_init(c);
-                        return NULL;
-                    }
-                    rxc->busy = 1;
-                } else
-                    // non-wb firmware: fall through to normal rx connect block below
-                    // which will always fail because rx_n == -1
-            #endif
+                    printf("isWB isWB_conn rx_channels[RX_CHAN0]=%d|%d|%d\n", rxc->chan_enabled, rxc->data_enabled, rxc->busy);
+                    rx_n = rxc->busy? -1 : RX_CHAN0;
+                } else {
+                    rx_n = -1;
+                }
+                if (rx_n == -1) {
+                    if (!internal) send_msg_mc(mc, SM_NO_DEBUG, "MSG wb_only");
+                    mc->connection_param = NULL;
+                    conn_init(c);
+                    return NULL;
+                }
+                rxc->busy = 1;
+            } else
+                // non-wb firmware: fall through to normal rx connect block below
+                // which will always fail because rx_n == -1
         #endif
         
         {

@@ -128,7 +128,7 @@ void c2s_mfg(void *param)
 
 			i = strcmp(cmd, "SET mfg_power_off");
 			if (i == 0) {
-				system_halt();
+                system_poweroff();
 				while (true)
 					kiwi_usleep(100000);
 			}

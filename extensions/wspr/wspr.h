@@ -366,6 +366,7 @@ typedef struct {
 #define YIELD_EVERY_N_TIMES 64
 
 void wspr_init();
+void wspr_update_rgrid(char *rgrid);
 bool wspr_update_vars_from_config(bool called_at_init_or_restart);
 void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps);
 void wspr_decode(int rx_chan);

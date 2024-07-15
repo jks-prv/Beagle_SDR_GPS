@@ -44,6 +44,7 @@ typedef struct {
 	int instance;
 	conn_t *arun_csnd, *arun_cext;
 	double arun_dial_freq_kHz;
+    int spot_count;
 
 	bool test;
 	u1_t start_test;
@@ -57,7 +58,6 @@ ft8_conf_t ft8_conf;
 typedef struct {
     int num_autorun;
     char *rcall;
-    char rgrid[LEN_GRID];
     latLon_t r_loc;
 	bool syslog, spot_log;
 } ft8_conf2_t;
@@ -244,6 +244,18 @@ bool ft8_msgs(char *msg, int rx_chan)
 	return false;
 }
 
+void ft8_update_rgrid(char *rgrid)
+{
+    kiwi_strncpy(ft8_conf.rgrid, rgrid, LEN_GRID);
+    //printf("ft8_conf.rgrid %s\n", ft8_conf.rgrid);
+    
+    // update grid shown in user lists when there haven't been any new spots recently
+    for (int ch = 0; ch < MAX_RX_CHANS; ch++) {
+        if (ft8[ch].autorun)
+            ft8_update_spot_count(ch, 0);
+    }
+}
+
 // catch changes to reporter call/grid from admin page FT8 config (also called during initialization)
 bool ft8_update_vars_from_config(bool called_at_init_or_restart)
 {
@@ -274,14 +286,15 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     cfg_default_string("ft8.grid", s, &update_cfg);
 	cfg_string_free(s);
     s = (char *) cfg_string("ft8.grid", NULL, CFG_REQUIRED);
-	kiwi_strncpy(ft8_conf2.rgrid, s, LEN_GRID);
+	kiwi_strncpy(ft8_conf.rgrid, s, LEN_GRID);
     wspr_set_latlon_from_grid(s);
 	cfg_string_free(s);
-	grid_to_latLon(ft8_conf2.rgrid, &ft8_conf2.r_loc);
+	grid_to_latLon(ft8_conf.rgrid, &ft8_conf2.r_loc);
 	if (ft8_conf2.r_loc.lat != 999.0)
 		latLon_deg_to_rad(ft8_conf2.r_loc);
     
-    // Make sure ft8.autorun holds *correct* count of non-preemptible autorun processes.
+    // Make sure ft8.autorun holds *correct* count of non-preemptable autorun processes.
+    // For the benefit of refusing enable of public listing if there are no non-preemptable autoruns.
     // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
     // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
     // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
@@ -303,7 +316,7 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
             printf("FT8 autorun: Only works on Kiwis configured for 12 kHz wide channels\n");
             num_autorun = num_non_preempt = 0;
         }
-        if (ft8_conf2.rcall == NULL || *ft8_conf2.rcall == '\0' || ft8_conf2.rgrid[0] == '\0') {
+        if (ft8_conf2.rcall == NULL || *ft8_conf2.rcall == '\0' || ft8_conf.rgrid[0] == '\0') {
             printf("FT8 autorun: reporter callsign and grid square fields must be entered on FT8 section of admin page\n");
             num_autorun = num_non_preempt = 0;
         }
@@ -327,7 +340,7 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     ft8_conf2.syslog = ft8_conf.syslog = cfg_default_bool("ft8.syslog", false, &update_cfg);
     ft8_conf2.spot_log = cfg_default_bool("ft8.spot_log", false, &update_cfg);
 
-	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf2.rgrid=<%s> ft8_conf.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf2.rgrid, ft8_conf.GPS_update_grid);
+	//printf("ft8_update_vars_from_config: rcall <%s> ft8_conf.rgrid=<%s> ft8_conf.GPS_update_grid=%d\n", ft8_conf2.rcall, ft8_conf.rgrid, ft8_conf.GPS_update_grid);
     return update_cfg;
 }
 
@@ -343,8 +356,11 @@ void ft8_update_spot_count(int rx_chan, u4_t spot_count)
 {
     ft8_t *e = &ft8[rx_chan];
     if (e->autorun) {
-        input_msg_internal(e->arun_csnd, (char *) "SET geoloc=%d%%20decoded%s",
-            spot_count, e->arun_csnd->arun_preempt? ",%20preemptible" : "");
+        if (spot_count == 0) spot_count = e->spot_count;
+        const char *pre = e->arun_csnd->arun_preempt? (ft8_conf.GPS_update_grid? ",%20pre" : ",%20preemptable") : "";
+        const char *rgrid = ft8_conf.GPS_update_grid? stprintf(",%%20%s", ft8_conf.rgrid) : "";
+        input_msg_internal(e->arun_csnd, (char *) "SET geoloc=%d%%20decoded%s%s", spot_count, pre, rgrid);
+        e->spot_count = spot_count;
     }
 }
 
@@ -358,7 +374,10 @@ static void ft8_autorun(int instance, bool initial)
     char *ident_user;
     asprintf(&ident_user, "FT%d-autorun", ft4? 4:8);
     char *geoloc;
-    asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
+    const char *pre = preempt? (ft8_conf.GPS_update_grid? ",%20pre" : ",%20preemptable") : "";
+    const char *rgrid = ft8_conf.GPS_update_grid? stprintf(",%%20%s", ft8_conf.rgrid) : "";
+    printf("ft8_autorun preempt=%d rgrid=%s GPS_update_grid=%d\n", preempt, ft8_conf.rgrid, ft8_conf.GPS_update_grid);
+    asprintf(&geoloc, "0%%20decoded%s%s", pre, rgrid);
 
 	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8,
 	    WS_FL_IS_AUTORUN | (initial? WS_FL_INITIAL : 0),

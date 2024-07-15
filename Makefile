@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 686
+VERSION_MIN = 691
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -173,7 +173,7 @@ else
 endif
 
 PKGS = 
-PKGS_O3  = pkgs/utf8 pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA pkgs/ant_switch
+PKGS_O3 = pkgs/utf8 pkgs/mongoose pkgs/jsmn pkgs/sha256 pkgs/TNT_JAMA pkgs/ant_switch
 
 # Each extension can have an optional Makefile:
 # The extension can opt-out of being included via EXT_SKIP (e.g. BBAI only, not Debian 7 etc.)
@@ -446,6 +446,9 @@ skip_cert_check:
 
 /usr/bin/file:
 	-apt-get -y $(APT_GET_FORCE) install file
+
+/bin/nc:
+	-apt-get -y $(APT_GET_FORCE) install netcat
 
 ifeq ($(DEBIAN_VERSION),10)
     /usr/bin/connmanctl:
@@ -1335,6 +1338,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	            -sed -i -e 's:^#uboot_overlay_addr4=/lib/firmware/<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
                 # Debian 11
 	            -sed -i -e 's:^#uboot_overlay_addr4=<file4>.dtbo:uboot_overlay_addr4=/lib/firmware/cape-bone-kiwi-00A0.dtbo:' /boot/uEnv.txt
+	            #@cp -v $(DTS_DEP_SRC) $(DIR_DTB)
             else
 	            @echo "BBG_BBB: D8, GPIO at runtime via capemgr, SPI at boottime via uEnv.txt"
                 # ./k and init:kiwid load cape-bone-kiwi-00A0 via capemgr and run dtc if necessary
@@ -1979,7 +1983,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     prep_distro: clean_logs
 	    -systemctl --full --lines=250 stop kiwid.service || true
 	    -systemctl --full --lines=250 enable kiwid.service || true
-	    (cd $(DIR_CFG); jq '.onetime_password_check = false | .rev_auto = false | .rev_auto_user = "" | .rev_auto_host = ""' admin.json > /tmp/jq && mv /tmp/jq admin.json)
+	    (cd $(DIR_CFG); jq '.onetime_password_check = false | .rev_auto = false | .rev_auto_user = "" | .rev_auto_host = "" | .update_check = true | .update_install = true' admin.json > /tmp/jq && mv /tmp/jq admin.json)
 	    (cd $(DIR_CFG); rm -f .do_once.dep .keyring4.dep frpc.ini seq_serno)
 	    -rm -f /tmp/.kiwi* /root/.ssh/auth* /root/.ssh/known*
 	    -rm -f build.log
@@ -1987,10 +1991,45 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	    -cp unix_env/shadow /etc/shadow
 	    sum *.bit
 
+    JA := jq "." /root/kiwi.config/admin.json
+    JK := jq "." /root/kiwi.config/kiwi.json
+
+    check_distro:
+	    @echo "want: 127.0.0.1 kiwisdr found"
+	    -@grep kiwisdr /etc/hosts
+	    @echo "want: kiwisdr found"
+	    -@grep kiwisdr /etc/hostname
+	    @echo "want: DHCP=ipv4"
+	    -@grep dhcp -i /etc/systemd/network/eth*
+	    @echo "want:       lTPmWl28Q"
+	    -@grep root /etc/shadow
+	    @echo "want:  rcdjoac1gVi9g"
+	    -@grep debian /etc/shadow
+	    @echo "want: sdr_hu_dom_sel = 2"
+	    @(cd $(DIR_CFG); $(JK) | grep dom_sel)
+	    @echo "want: onetime_password_check = false"
+	    @(cd $(DIR_CFG); $(JA) | grep onetime)
+	    @echo "want: update_check, update_install = true"
+	    @(cd $(DIR_CFG); $(JA) | grep update_)
+	    @echo 'want: rev_auto = false, rev_user, rev_host = ""'
+	    @(cd $(DIR_CFG); $(JA) | grep rev_auto)
+	    @echo 'want: admin_password = ""'
+	    @(cd $(DIR_CFG); $(JA) | grep admin_pa)
+	    @echo "want: file to be found"
+	    -@ls -la unix_env/reflash_delay_update
+	    @echo "want: enabled/enabled"
+	    -@make status | grep "/etc/systemd/system/kiwid.service;"
+
     /usr/bin/xz:
 	    apt-get -y $(APT_GET_FORCE) install xz-utils
 
 
+    # Use "make backup_zero" below to make filesystem holes zeros for better compression.
+    #
+    # DANGER: DD_SIZE must be larger than the partition "used" size computed by the "d.mb" command alias.
+    # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
+    # filled with zeroed bytes (which of course is a disaster).
+    #
     ifeq ($(BBAI_64),true)
         SD_CARD_MMC_COPY := 1
         SD_CARD_MMC_PART := p2
@@ -2024,13 +2063,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	        (cd /root/$(REPO_NAME)/tools; bash ./kiwiSDR-make-microSD-flasher-from-eMMC.sh)
         endif
 
-    # Use "make backup_zero" above to make filesystem holes zeros for better compression.
-    #
-    # DANGER: DD_SIZE must be larger than the partition "used" size computed by the "d.mb" command alias.
-    # Otherwise the image file will have strange effects like /boot/uEnv.txt being the correct size but
-    # filled with zeroed bytes (which of course is a disaster).
-    #
-    TO_IMG = ~/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
+    # copy to debian dir because scp from laptop can't login as root with a password
+    TO_IMG = /home/debian/KiwiSDR_$(VER)_$(PLAT)_Debian_$(DISTRO_DEBIAN_VER).img.xz
 
     create_img_from_sd: /usr/bin/xz
 	    @echo "--- this takes about an hour"

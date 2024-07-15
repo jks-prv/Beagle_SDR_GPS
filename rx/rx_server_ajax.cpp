@@ -438,7 +438,7 @@ fail:
 		break;
 
 	// SECURITY:
-	//	SNR data be requested by anyone.
+	//	SNR data can be requested by anyone.
 	//  Measurement request restricted to the local network.
 	//	Returns JSON
 	case AJAX_SNR: {
@@ -533,9 +533,17 @@ fail:
 		}
 		//printf("/adc_ov REQUESTED from %s\n", ip_unforwarded);
 		
-        sb = kstr_asprintf(NULL, "{\"adc_ov\":%u}\n", dpump.rx_adc_ovfl_cnt);
-		if (mc->query && strcmp(mc->query, "reset") == 0)
-		    dpump.rx_adc_ovfl_cnt = 0;
+		int count = dpump.rx_adc_ovfl_cnt;
+		if (mc->query) {
+		    if (strcmp(mc->query, "reset") == 0) {
+		        dpump.rx_adc_ovfl_cnt = 0;
+		    } else {
+                asprintf(&sb, "/adc_ov: \"%s\" unrecognized, \"reset\" is the only recognized option\n", mc->query);
+                printf("%s", sb);
+                break;
+		    }
+		}
+        sb = kstr_asprintf(NULL, "{\"adc_ov\":%u}\n", count);
         return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
     }
     
@@ -552,9 +560,15 @@ fail:
         n = sscanf(mc->query, "%lf", &dial_freq_kHz);
         if (n == 1) {
             printf("/s_meter dial=%.2f freq_offset_kHz=%.2f ui_srate_kHz=%.2f ", dial_freq_kHz, freq_offset_kHz, ui_srate_kHz);
+            if (dial_freq_kHz < freq_offset_kHz || dial_freq_kHz > (freq_offset_kHz + ui_srate_kHz)) {
+                asprintf(&sb, "/s_meter: freq \"%s\" outside configured receiver range of %.2f - %.2f kHz\n",
+                    mc->query, freq_offset_kHz, freq_offset_kHz + ui_srate_kHz);
+                printf("%s", sb);
+                break;
+            }
             dial_freq_kHz -= freq_offset_kHz;
             dial_freq_kHz = CLAMP(dial_freq_kHz, 0, ui_srate_kHz);
-            printf("FINAL=%.2f\n", dial_freq_kHz);
+            printf("FINAL(offset removed)=%.2f\n", dial_freq_kHz);
         } else {
             asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query);
             printf("%s", sb);
@@ -691,7 +705,7 @@ fail:
 		else
 			status = "active";
 		
-		// number of channels preemptible, but only if external preemption enabled
+		// number of channels preemptable, but only if external preemption enabled
 		int preempt = 0;
 		if (any_preempt_autorun)
 		    rx_chan_free_count(RX_COUNT_ALL, NULL, NULL, &preempt);
@@ -734,7 +748,6 @@ fail:
 			"uptime=%d\n"
 			"gps_date=%d,%d\n"
 			"date=%s\n"
-			//"test=7\n"
 			"ip_blacklist=%s\n"
 			"dx_file=%d,%s,%d\n",
 			

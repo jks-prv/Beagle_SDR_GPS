@@ -220,8 +220,7 @@ void c2s_sound(void *param)
 	rx_common_init(conn);
 	conn->snd_cmd_recv_ok = false;
 	int rx_chan = conn->rx_channel;
-    bool isWB = (kiwi.isWB && rx_chan == 1);
-    int rx_chan_wb = isWB? 0 : rx_chan;
+    bool isWB = (kiwi.isWB && rx_chan == RX_CHAN0);
 
 	snd_t *s = &snd_inst[rx_chan];
 	wf_inst_t *wf = &WF_SHMEM->wf_inst[rx_chan];
@@ -1374,15 +1373,18 @@ void c2s_sound(void *param)
             
             if (isWB) {
                 static bool prt;
+                #define MIN_DIFF_PROC_CMD 16    // min buf diff before processing any commands
                 u4_t diff = (rx->wr_pos >= rx->rd_pos)? (rx->wr_pos - rx->rd_pos) : (n_dpbuf - rx->rd_pos + rx->wr_pos);
-                if (diff < 16) {
+                if (diff < MIN_DIFF_PROC_CMD) {
                     prt = false;
                     break;
                 }
-                if (!prt) {
-                    real_printf("%d ", diff); fflush(stdout);
-                    prt = true;
-                }
+                #if 0
+                    if (!prt) {
+                        real_printf("%d ", diff); fflush(stdout);
+                        prt = true;
+                    }
+                #endif
             } else {
                 break;
             }

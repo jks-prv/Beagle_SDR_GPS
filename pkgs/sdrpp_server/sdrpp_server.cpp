@@ -170,7 +170,7 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
     #endif
 
     #ifdef DIRECT
-        rx_chan_t *rxc = &rx_channels[RX_CHAN1];
+        rx_chan_t *rxc = &rx_channels[RX_CHAN0];
         bw = wb_rate;
         srate = bw * 2;
         freq = 14040000;
@@ -203,8 +203,8 @@ void sdrpp_accept(struct mg_connection *mc, void *ev_data)
         #ifdef CAMP
         #else
             rxc->busy = true;
-            rx_enable(RX_CHAN1, RX_CHAN_ENABLE);
-            rx_enable(RX_CHAN1, RX_DATA_ENABLE);
+            rx_enable(RX_CHAN0, RX_CHAN_ENABLE);
+            rx_enable(RX_CHAN0, RX_DATA_ENABLE);
         #endif
     #endif
 
@@ -318,7 +318,7 @@ void sdrpp_in(struct mg_connection *mc, void *ev_data)
                     if (sdrpp_WR_tid != -1) {
                         #ifdef CAMP
                         #else
-                            rx_chan_t *rxc = &rx_channels[RX_CHAN1];
+                            rx_chan_t *rxc = &rx_channels[RX_CHAN0];
                             rxc->wb_task = sdrpp_WR_tid;
                         #endif
                         TaskWakeup(sdrpp_WR_tid);
@@ -429,7 +429,7 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
         #endif
     #else
         #ifdef DIRECT
-            rx_chan_t *rxc = &rx_channels[RX_CHAN1];
+            rx_chan_t *rxc = &rx_channels[RX_CHAN0];
             #ifdef CAMP
                 if (!rxc->busy) {
                     //real_printf("."); fflush(stdout);
@@ -438,7 +438,7 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
                 }
             #endif
             
-            rx_dpump_t *rx = &rx_dpump[RX_CHAN1];
+            rx_dpump_t *rx = &rx_dpump[RX_CHAN0];
             while (rx->wr_pos == RD_POS) {
                 TaskSleepReason("check pointers");
             }
@@ -502,6 +502,8 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
     #ifdef IQ16
         for (int j = 0; j < num_samps; j++, in++) {
             #ifdef DIRECT
+
+                // zoom in fully to see the picket
                 //#define PICKET
                 #ifdef PICKET
                     u2_t i, q;
@@ -589,9 +591,9 @@ static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
             #ifdef DIRECT
                 #ifdef CAMP
                 #else
-                    rx_chan_t *rxc = &rx_channels[RX_CHAN1];
+                    rx_chan_t *rxc = &rx_channels[RX_CHAN0];
                     rxc->wb_task = 0;
-                    rx_enable(RX_CHAN1, RX_CHAN_FREE);
+                    rx_enable(RX_CHAN0, RX_CHAN_FREE);
                 #endif
             #endif
 

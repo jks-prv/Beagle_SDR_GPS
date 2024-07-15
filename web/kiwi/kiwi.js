@@ -4,6 +4,7 @@
 
 var kiwi = {
    d: {},      // debug
+   init_cfg: false,
    
    KiwiSDR_1: 1,
    KiwiSDR_2: 2,
@@ -46,7 +47,7 @@ var kiwi = {
    conn_tstamp: 0,
    isOffset: false,
    loaded_files: {},
-   WSPR_rgrid: '',
+   GPS_auto_grid: '',
    GPS_fixes: 0,
    wf_fps: 0,
    is_multi_core: 0,
@@ -83,6 +84,7 @@ var kiwi = {
    mode_menu: [ 'AM', 'AMN', 'AMW', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
                 'IQ', 'DRM', 'SAM', 'SAU', 'SAL', 'SAS', 'QAM' ],
 
+   tab_s: [ 'last', 'Off', 'Stat', 'User', 'AGC', 'Audio', 'WF', 'RF' ],
    
    ITU_s: [
       'any',
@@ -97,7 +99,6 @@ var kiwi = {
    BAND_SCALE_ONLY: 4,
    BAND_MENU_ONLY: 5,
 
-   
    RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3, RX_WB:4,
    
    NAM:0, DUC:1, PUB:2, SIP:3, REV:4,
@@ -196,7 +197,7 @@ function kiwi_bodyonload(error)
 	   
 	   // for testing a clean webpage, e.g. kiwi:8073/test
 	   /*
-	   var url = window.location.href;
+	   var url = kiwi_url();
       console.log('url='+ url);
 	   if (url.endsWith('test')) {
 	      console.log('test page..');
@@ -357,7 +358,7 @@ function kiwi_ask_pwd_cb(path, val, first)
 
 function kiwi_queue_or_camp_cb(path, val, first)
 {
-   var url = window.location.href;
+   var url = kiwi_url();
    console.log(url);
    url = url + kiwi_add_search_param(window.location, 'camp');
    console.log('--> '+ url);
@@ -439,7 +440,7 @@ function kick_other_admin_cb()
 {
 	console.log('kick_other_admin_cb');
 	msg_send('SET kick_admins');
-   setTimeout(function() { window.location.reload(true); }, 1000);
+   setTimeout(function() { window.location.reload(); }, 1000);
 }
 
 function kiwi_open_ws_cb2(p)
@@ -533,7 +534,6 @@ function kiwi_get_init_settings()
 	//console.log('$ freq_dsp_1Hz='+ kiwi_storeInit('freq_dsp_1Hz'));
 
 	w3_innerHTML('rx-antenna', 'Antenna: '+ ext_get_cfg_param_string('rx_antenna'));
-   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '', EXT_NO_SAVE);
 }
 
 
@@ -588,6 +588,7 @@ function cfg_save_json(id, path, val)
 	//console.log('cfg_save_json: BEGIN from='+ id +' path='+ path + (isArg(val)? (' val='+ val) : ''));
 	//if (path.includes('kiwisdr_com_register')) kiwi_trace();
 	//if (path.includes('rev_')) kiwi_trace();
+	//if (path.includes('rx_gps')) kiwi_trace();
 
 	var s;
 	if (path.startsWith('adm.')) {
@@ -2297,7 +2298,7 @@ function kiwi_ip_limit_pwd_cb(pwd)
 {
    console.log('kiwi_ip_limit_pwd_cb pwd='+ pwd);
 	kiwi_storeWrite('iplimit', encodeURIComponent(pwd));
-   window.location.reload(true);
+   window.location.reload();
 }
 
 function kiwi_show_error_ask_exemption_cb(path, val, first)
@@ -2367,6 +2368,7 @@ function kiwi_down(type, reason)
 	kiwi_show_msg(s);
 }
 
+// called from both admin and user connections
 function stats_init()
 {
    msg_send('SET GET_CONFIG');
@@ -2735,12 +2737,12 @@ function user_cb(obj)
       if (i == rx_chan && isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz && !confirmation.displayed) {
          var s =
             w3_div('',
-               'Frequency scale offset changed. Page must be reloaded.',
-               w3_inline('w3-halign-space-around/',
-                  w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload')
-               )
+               'Frequency scale offset changed. Page will be reloaded.'
+               //w3_inline('w3-halign-space-around/', w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload'))
             );
-         confirmation_show_content(s, 425, 100);
+         confirmation_show_content(s, 425, 50, null, 'red');
+         //console.log("kiwi_open_or_reload_page({ url:'reload', delay:2000 })");
+         kiwi_open_or_reload_page({ url:'reload', delay:2000 });
       }
 
       //if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
@@ -2756,7 +2758,7 @@ function user_cb(obj)
 	
 }
 
-function freq_offset_page_reload() { window.location.reload(true); }
+//function freq_offset_page_reload() { window.location.reload(); }
 
 
 ////////////////////////////////
@@ -3054,8 +3056,10 @@ function kiwi_msg(param, ws)
 		
 		case "cfg_loaded":
 			console.log('### cfg_loaded');
-         owrx_init_cfg();
-         w3_call('ant_switch_user_refresh');
+			if (!kiwi.init_cfg) {
+            owrx_init_cfg();        // do only once
+            kiwi.init_cfg = true;
+         }
 			break;
 		
 		case "no_admin_conns":
@@ -3155,11 +3159,16 @@ function kiwi_msg(param, ws)
 
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
-				   kiwi.WSPR_rgrid = decodeURIComponent(o.gr);
+				   kiwi.GPS_auto_grid = decodeURIComponent(o.gr);
+				   kiwi.GPS_auto_latlon = decodeURIComponent(o.gl);
 				   kiwi.GPS_fixes = o.gf;
-				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
+				   //console.log('stats_cb kiwi.GPS_auto_grid='+ kiwi.GPS_auto_grid);
 				}
 				
+				// present in both admin & user
+				w3_call('update_web_grid');
+				w3_call('update_web_map');
+
 				kiwi_snr_stats(o.sa, o.sh);
 				
 				w3_call('config_status_cb', o);

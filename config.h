@@ -55,7 +55,7 @@ typedef enum { ESPEED_AUTO = 0, ESPEED_10M = 1, ESPEED_100M = 2 } espeed_e;
 #define PROXY_SERVER_HOST   "proxy.kiwisdr.com"
 #define PROXY_SERVER_PORT   8073
 
-extern int fw_sel, fpga_id, rx_chans, rx_all_chans, rx_buf_chans, rx_wb_buf_chans, wf_chans, wb_chans,
+extern int fw_sel, fpga_id, rx_chans, rx_wb_buf_chans, wf_chans, wb_chans,
     nrx_bufs, nrx_samps_wb, nrx_samps, nrx_samps_loop, nrx_samps_rem,
     snd_rate, wb_rate, rx_decim;
 
