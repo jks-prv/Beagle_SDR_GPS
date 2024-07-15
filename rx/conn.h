@@ -45,6 +45,7 @@ typedef struct conn_st {
 	int rx_channel;
 	struct mg_connection *mc;
 	bool internal_connection, internal_want_snd, internal_want_wf;
+	bool ip_trace;
 
 	char remote_ip[NET_ADDRSTRLEN];
 	int remote_port;

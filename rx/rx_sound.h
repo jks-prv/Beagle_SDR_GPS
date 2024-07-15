@@ -28,7 +28,7 @@ Boston, MA  02110-1301, USA.
 #include "ext.h"
 
 
-//#define TR_SND_CMDS
+#define TR_SND_CMDS     0
 #define SM_SND_DEBUG	false
 
 #define SND_INSTANCE_FFT_PASSBAND   0

@@ -236,7 +236,7 @@ void rx_common_init(conn_t *conn)
 	    send_msg(conn, false, "MSG is_multi_core");
 }
 
-bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
+bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 {
 	int i, j, k, n, seq;
 	const char *stream_name = rx_streams[stream_type].uri;
@@ -244,6 +244,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	char *sb;
 	int slen;
 	bool ok, err;
+	
+    if (keep_alive) *keep_alive = false;
 	
 	if (mc == NULL) {
 	    //cprintf(conn, "### cmd but mc is null <%s>\n", cmd);
@@ -295,6 +297,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
 	case CMD_KEEPALIVE:
         if (strcmp(cmd, "SET keepalive") == 0) {
             conn->keepalive_time = timer_sec();
+            if (keep_alive) *keep_alive = true;
 
             // for STREAM_EXT send a roundtrip keepalive
             if (conn->type == STREAM_EXT) {
@@ -541,6 +544,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd)
                     pwd_printf("TLIMIT-IP connecting LIMIT OKAY cur:%d < lim:%d for %s\n", ipl_cur_mins, ip_limit_mins, conn->remote_ip);
                 }
             }
+
+            const char *ip_trace = admcfg_string("ip_trace", NULL, CFG_OPTIONAL);
+            if (kiwi_nonEmptyStr(ip_trace) && strcmp(conn->remote_ip, ip_trace) == 0) {
+                pwd_printf("IP_TRACE: %s\n", conn->remote_ip);
+                conn->ip_trace = true;
+            }
+            cfg_string_free(ip_trace);
 
             // Let client know who we think they are.
             // Use public ip of Kiwi server when client connection is on local subnet.
