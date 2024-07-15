@@ -195,7 +195,10 @@ void rx_server_remove(conn_t *c)
     #endif
 	c->mc = NULL;
 
-    if (c->isMaster && c->arrived) rx_loguser(c, LOG_LEAVING);
+    if (c->isMaster) {
+        if (c->arrived) rx_loguser(c, LOG_LEAVING);
+        clprintf(c, "--- connection closed -----------------------------------------------------\n");
+    }
 	webserver_connection_cleanup(c);
 	kiwi_free("ident_user", c->ident_user);
 	kiwi_asfree(c->geo);

@@ -428,7 +428,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 pwd_debug = false;
             }
             
-            pwd_lprintf("PWD new connection --------------------------------------------------------\n");
+            clprintf(conn, "--- new connection --------------------------------------------------------\n");
         
             if (conn->internal_connection) {
                 is_local_e = IS_LOCAL;
