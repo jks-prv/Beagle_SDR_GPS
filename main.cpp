@@ -423,13 +423,13 @@ int main(int argc, char *argv[])
         snd_rate = SND_RATE_WB;
         
         switch (wb_sel) {
-            case  72: rx1_decim =          926; rx2_decim =            6; break;
-            case 108: rx1_decim =          617; rx2_decim =            9; break;
-            case 144: rx1_decim =          463; rx2_decim =           12; break;
-            case 192: rx1_decim =          347; rx2_decim =           16; break;
-            case 204: rx1_decim =          327; rx2_decim =           17; break;
-            case 240: rx1_decim =          278; rx2_decim =           20; break;
-            case 300: rx1_decim =          222; rx2_decim =           25; break;
+            case  72: rx1_decim = 926; rx2_decim =  6; break;
+            case 108: rx1_decim = 617; rx2_decim =  9; break;
+            case 144: rx1_decim = 463; rx2_decim = 12; break;
+            case 192: rx1_decim = 347; rx2_decim = 16; break;
+            case 204: rx1_decim = 327; rx2_decim = 17; break;
+            case 240: rx1_decim = 278; rx2_decim = 20; break;
+            case 300: rx1_decim = 222; rx2_decim = 25; break;
             default: printf("wb_sel=%d\n", wb_sel); panic("bad wb_sel"); break;
         }
         
