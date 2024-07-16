@@ -1134,8 +1134,10 @@ void SNR_meas(void *param)
                 TaskSleepMsec(900 / SNR_MEAS_SPEED);
             }
             //printf("SNR_meas DONE nsamps=%d\n", nsamps);
-            for (i = 0; i < WF_WIDTH; i++) {
-                dB_raw[i] /= nsamps;
+            if (nsamps) {
+                for (i = 0; i < WF_WIDTH; i++) {
+                        dB_raw[i] /= nsamps;
+                }
             }
             
             int f_lo = freq_offset_kHz, f_hi = freq_offmax_kHz;
