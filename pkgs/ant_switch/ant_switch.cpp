@@ -363,6 +363,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
 {
 	int n = 0;
 
+    if (rx_chan == -1) return true;
 	antsw_rcprintf(rx_chan, "ant_switch_msgs rx=%d <%s>\n", rx_chan, msg);
 	
     if (strcmp(msg, "SET antsw_GetAntenna") == 0) {
