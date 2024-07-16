@@ -15,9 +15,9 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
-module receiver (
+module RECEIVER (
 	input wire		   adc_clk,
 	input wire signed [ADC_BITS-1:0] adc_data,
 	input wire         adc_ovfl,
@@ -206,25 +206,27 @@ module receiver (
 	wire [V_RX_CHANS-1:0] rxn_sel_C = 1 << rx_channel_C;
 
 	wire [V_RX_CHANS-1:0] rxn_avail_A;
-	wire [V_RX_CHANS*16-1:0] rxn_data_A;
+	wire [V_RX_CHANS*16-1:0] rxn_dout_A;
 	
-	// Verilog note: if rd_getI & rd_getQ are not declared before use in arrayed module RX below
+	// Verilog note: if rd_i & rd_q are not declared before use in arrayed module RX below
 	// then automatic fanout of single-bit signal to all RX instances doesn't occur and
 	// an "undriven" error for rd_* results.
-	wire rd_getI, rd_getQ;
+	wire rd_i, rd_q;
 
-	rx #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
+	RX #(.IN_WIDTH(RX_IN_WIDTH)) rx_inst [V_RX_CHANS-1:0] (
 		.adc_clk		(adc_clk),
 		.adc_data		(rx_data),
-		.rd_getI        (rd_getI),
-		.rd_getQ        (rd_getQ),
-		// o
+		
+		.rx_sel_C		(rxn_sel_C),
+
+		.rd_i			(rd_i),
+		.rd_q			(rd_q),
+		.rx_dout_A		(rxn_dout_A),
 		.rx_avail_A		(rxn_avail_A),
-		.rx_dout_A		(rxn_data_A),
 
 		.cpu_clk		(cpu_clk),
 		.freeze_tos_A   (freeze_tos_A),
-		.rx_sel_C		(rxn_sel_C),
+		
 		.set_rx_freqH_C	(set_rx_freqH_C),
 		.set_rx_freqL_C	(set_rx_freqL_C)
 	);
@@ -242,9 +244,9 @@ module receiver (
 
 	wire set_nsamps_A;
 	SYNC_PULSE sync_set_nsamps_A (.in_clk(cpu_clk), .in(set_rx_nsamps_C), .out_clk(adc_clk), .out(set_nsamps_A));
-    reg [7:0] nrx_samps_A;
+    reg [7:0] nrx_samps;
     always @ (posedge adc_clk)
-        if (set_nsamps_A) nrx_samps_A <= freeze_tos_A;
+        if (set_nsamps_A) nrx_samps <= freeze_tos_A;
     
 	reg [47:0] ticks_latched_A;
 	always @ (posedge adc_clk)
@@ -253,23 +255,24 @@ module receiver (
 
 	rx_audio_mem rx_audio_mem_inst (
 		.adc_clk		(adc_clk),
-		.nrx_samps      (nrx_samps_A),
-		.rx_avail_A     (rxn_avail_A[0]),   // all DDCs should signal available at the same time since decimation is the same
-		.rxn_din_A      (rxn_data_A),
-		.ticks_A        (ticks_latched_A),
-        // o
+		
+		.rxn_dout_A     (rxn_dout_A),
 		.ser            (ser),
-		.rd_getI        (rd_getI),
-		.rd_getQ        (rd_getQ),
+		.rd_i			(rd_i),
+		.rd_q			(rd_q),
+		.rx_rd_C        (rx_rd_C),
+		.rx_dout_C      (rx_dout_C),
+		
+		.ticks_A        (ticks_latched_A),
 		
 		.cpu_clk        (cpu_clk),
+		.nrx_samps      (nrx_samps),
+		.rx_avail_A     (rxn_avail_A[0]),   // all DDCs should signal available at the same time since decimation is the same
+
 		.get_rx_srq_C   (get_rx_srq_C),
 		.get_rx_samp_C  (get_rx_samp_C),
 		.reset_bufs_C   (reset_bufs_C),
-		.get_buf_ctr_C  (get_buf_ctr_C),
-		// o
-		.rx_rd_C        (rx_rd_C),
-		.rx_dout_C      (rx_dout_C)
+		.get_buf_ctr_C  (get_buf_ctr_C)
     );
 
 

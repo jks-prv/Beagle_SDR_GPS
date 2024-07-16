@@ -4,7 +4,6 @@
 
 var kiwi = {
    d: {},      // debug
-   init_cfg: false,
    
    KiwiSDR_1: 1,
    KiwiSDR_2: 2,
@@ -43,11 +42,10 @@ var kiwi = {
    tlimit_exempt_by_pwd: [],
    admin_save_pwd: false,
 
-   stats_interval: 10000,
    conn_tstamp: 0,
    isOffset: false,
    loaded_files: {},
-   GPS_auto_grid: '',
+   WSPR_rgrid: '',
    GPS_fixes: 0,
    wf_fps: 0,
    is_multi_core: 0,
@@ -84,7 +82,6 @@ var kiwi = {
    mode_menu: [ 'AM', 'AMN', 'AMW', 'USB', 'USN', 'LSB', 'LSN', 'CW', 'CWN', 'NBFM', 'NNFM',
                 'IQ', 'DRM', 'SAM', 'SAU', 'SAL', 'SAS', 'QAM' ],
 
-   tab_s: [ 'last', 'Off', 'Stat', 'User', 'AGC', 'Audio', 'WF', 'RF' ],
    
    ITU_s: [
       'any',
@@ -99,7 +96,8 @@ var kiwi = {
    BAND_SCALE_ONLY: 4,
    BAND_MENU_ONLY: 5,
 
-   RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3, RX_WB:4,
+   
+   RX4_WF4:0, RX8_WF2:1, RX3_WF3:2, RX14_WF0:3,
    
    NAM:0, DUC:1, PUB:2, SIP:3, REV:4,
    
@@ -197,7 +195,7 @@ function kiwi_bodyonload(error)
 	   
 	   // for testing a clean webpage, e.g. kiwi:8073/test
 	   /*
-	   var url = kiwi_url();
+	   var url = window.location.href;
       console.log('url='+ url);
 	   if (url.endsWith('test')) {
 	      console.log('test page..');
@@ -358,7 +356,7 @@ function kiwi_ask_pwd_cb(path, val, first)
 
 function kiwi_queue_or_camp_cb(path, val, first)
 {
-   var url = kiwi_url();
+   var url = window.location.href;
    console.log(url);
    url = url + kiwi_add_search_param(window.location, 'camp');
    console.log('--> '+ url);
@@ -440,7 +438,7 @@ function kick_other_admin_cb()
 {
 	console.log('kick_other_admin_cb');
 	msg_send('SET kick_admins');
-   setTimeout(function() { window.location.reload(); }, 1000);
+   setTimeout(function() { window.location.reload(true); }, 1000);
 }
 
 function kiwi_open_ws_cb2(p)
@@ -534,6 +532,7 @@ function kiwi_get_init_settings()
 	//console.log('$ freq_dsp_1Hz='+ kiwi_storeInit('freq_dsp_1Hz'));
 
 	w3_innerHTML('rx-antenna', 'Antenna: '+ ext_get_cfg_param_string('rx_antenna'));
+   kiwi.WSPR_rgrid = ext_get_cfg_param_string('WSPR.grid', '', EXT_NO_SAVE);
 }
 
 
@@ -588,7 +587,6 @@ function cfg_save_json(id, path, val)
 	//console.log('cfg_save_json: BEGIN from='+ id +' path='+ path + (isArg(val)? (' val='+ val) : ''));
 	//if (path.includes('kiwisdr_com_register')) kiwi_trace();
 	//if (path.includes('rev_')) kiwi_trace();
-	//if (path.includes('rx_gps')) kiwi_trace();
 
 	var s;
 	if (path.startsWith('adm.')) {
@@ -2267,18 +2265,40 @@ function gps_stats_cb(acquiring, tracking, good, fixes, adc_clock, adc_gps_clk_c
 	}
 }
 
+function admin_stats_cb(audio_dropped, underruns, seq_errors, dp_resets, dp_hist_cnt, dp_hist, in_hist_cnt, in_hist)
+{
+   if (audio_dropped == undefined) return;
+   
+	var el = w3_el('id-msg-errors');
+	if (el) el.innerHTML = 'Stats: '+
+	   audio_dropped.toUnits() +' dropped, '+
+	   underruns.toUnits() +' underruns, '+
+	   seq_errors.toUnits() +' sequence, '+
+	   dp_resets.toUnits() +' realtime';
+
+	el = w3_el('id-status-dp-hist');
+	if (el) {
+	   var s = 'Datapump: ';
+		for (var i = 0; i < dp_hist_cnt; i++) {
+		   s += (i? ', ':'') + dp_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
+
+	el = w3_el('id-status-in-hist');
+	if (el) {
+	   var s = 'SoundInQ: ';
+		for (var i = 0; i < in_hist_cnt; i++) {
+		   s += (i? ', ':'') + in_hist[i].toUnits();
+		}
+      el.innerHTML = s;
+	}
+}
+
 function kiwi_too_busy(rx_chans)
 {
 	var s = 'Sorry, the KiwiSDR server is too busy right now ('+ rx_chans +' users max). <br>' +
 	'There is also a limit on the total number of channel queuers and campers. <br>' +
-	'Please check <a href="http://rx.kiwisdr.com" target="_self">rx.kiwisdr.com</a> for more KiwiSDR receivers available world-wide.';
-	kiwi_show_msg(s);
-}
-
-function kiwi_wb_only()
-{
-	var s = 'Sorry, this KiwiSDR is configured for non-web, wideband connections only. <br>' +
-	'See the Kiwi forum for details about wideband mode. <br>' +
 	'Please check <a href="http://rx.kiwisdr.com" target="_self">rx.kiwisdr.com</a> for more KiwiSDR receivers available world-wide.';
 	kiwi_show_msg(s);
 }
@@ -2298,7 +2318,7 @@ function kiwi_ip_limit_pwd_cb(pwd)
 {
    console.log('kiwi_ip_limit_pwd_cb pwd='+ pwd);
 	kiwi_storeWrite('iplimit', encodeURIComponent(pwd));
-   window.location.reload();
+   window.location.reload(true);
 }
 
 function kiwi_show_error_ask_exemption_cb(path, val, first)
@@ -2368,7 +2388,8 @@ function kiwi_down(type, reason)
 	kiwi_show_msg(s);
 }
 
-// called from both admin and user connections
+var stats_interval = 10000;
+
 function stats_init()
 {
    msg_send('SET GET_CONFIG');
@@ -2379,11 +2400,9 @@ function stats_update()
 {
    //console.log('SET STATS_UPD ch='+ rx_chan);
 	msg_send('SET STATS_UPD ch='+ rx_chan);
-	
-   // align requesting stats until stats interval
 	var now = new Date();
-	var aligned_interval = Math.ceil(now/kiwi.stats_interval) * kiwi.stats_interval - now;
-	if (aligned_interval < kiwi.stats_interval/2) aligned_interval += kiwi.stats_interval;
+	var aligned_interval = Math.ceil(now/stats_interval)*stats_interval - now;
+	if (aligned_interval < stats_interval/2) aligned_interval += stats_interval;
 	//console.log('STATS_UPD aligned_interval='+ aligned_interval);
 	setTimeout(stats_update, aligned_interval);
 }
@@ -2737,12 +2756,12 @@ function user_cb(obj)
       if (i == rx_chan && isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz && !confirmation.displayed) {
          var s =
             w3_div('',
-               'Frequency scale offset changed. Page will be reloaded.'
-               //w3_inline('w3-halign-space-around/', w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload'))
+               'Frequency scale offset changed. Page must be reloaded.',
+               w3_inline('w3-halign-space-around/',
+                  w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload')
+               )
             );
-         confirmation_show_content(s, 425, 50, null, 'red');
-         //console.log("kiwi_open_or_reload_page({ url:'reload', delay:2000 })");
-         kiwi_open_or_reload_page({ url:'reload', delay:2000 });
+         confirmation_show_content(s, 425, 100);
       }
 
       //if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
@@ -2758,7 +2777,7 @@ function user_cb(obj)
 	
 }
 
-//function freq_offset_page_reload() { window.location.reload(); }
+function freq_offset_page_reload() { window.location.reload(true); }
 
 
 ////////////////////////////////
@@ -3056,10 +3075,8 @@ function kiwi_msg(param, ws)
 		
 		case "cfg_loaded":
 			console.log('### cfg_loaded');
-			if (!kiwi.init_cfg) {
-            owrx_init_cfg();        // do only once
-            kiwi.init_cfg = true;
-         }
+         owrx_init_cfg();
+         w3_call('ant_switch_user_refresh');
 			break;
 		
 		case "no_admin_conns":
@@ -3154,23 +3171,18 @@ function kiwi_msg(param, ws)
 				   cpu_stats_cb(o, o.ct, o.ce, o.fc);
 				xfer_stats_cb(o.ac, o.wc, o.fc, o.ah, o.as);
 				extint.srate = o.sr;
-				extint.wb_srate = Math.round(o.wsr / 1e3);
 				extint.nom_srate = o.nsr;
 
 				gps_stats_cb(o.ga, o.gt, o.gg, o.gf, o.gc, o.go);
 				if (o.gr) {
-				   kiwi.GPS_auto_grid = decodeURIComponent(o.gr);
-				   kiwi.GPS_auto_latlon = decodeURIComponent(o.gl);
+				   kiwi.WSPR_rgrid = decodeURIComponent(o.gr);
 				   kiwi.GPS_fixes = o.gf;
-				   //console.log('stats_cb kiwi.GPS_auto_grid='+ kiwi.GPS_auto_grid);
+				   //console.log('stat kiwi.WSPR_rgrid='+ kiwi.WSPR_rgrid);
 				}
 				
-				// present in both admin & user
-				w3_call('update_web_grid');
-				w3_call('update_web_map');
-
 				kiwi_snr_stats(o.sa, o.sh);
 				
+				admin_stats_cb(o.ad, o.au, o.ae, o.ar, o.an, o.ap, o.an2, o.ai);
 				w3_call('config_status_cb', o);
 				time_display_cb(o);
 			}
@@ -3229,10 +3241,6 @@ function kiwi_msg(param, ws)
 			kiwi_too_busy(parseInt(param[1]));
 			break;
 
-		case "wb_only":
-			kiwi_wb_only();
-			break;
-
 		case "monitor":
 			kiwi_monitor();
 			break;
@@ -3256,7 +3264,6 @@ function kiwi_msg(param, ws)
 
 		// can't simply come from 'cfg.*' because config isn't available without a web socket
 		case "reason_disabled":
-		   //console.log('reason_disabled param1=<'+ param[1] +'>');
 			reason_disabled = 'User connections disabled.'+
 			   ((param[1] != '')? ('<br>Reason: '+ w3_json_to_html('reason_disabled', param[1])) : '');
 			break;
@@ -3289,9 +3296,8 @@ function kiwi_msg(param, ws)
 			break;
 
 		case 'kiwi_kick':
-		   var p = decodeURIComponent(param[1]).split(',');
+		   var p = param[1].split(',');
 		   var kicked = +p[0];
-		   //console.log('kiwi_kick kicked='+ kicked);
 		   var s = ext_get_cfg_param_string(kicked? 'cfg.reason_kicked' : 'cfg.reason_disabled');
 		   //console.log('kick_kick p1=<'+ p[1] +'> s=<'+ s +'>');
 		   var s = w3_json_to_html('kiwi_kick', p[1]) + ((s != '')? ('<br>Reason: '+ s) : '');

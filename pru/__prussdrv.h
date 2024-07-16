@@ -63,9 +63,7 @@
 
 #define DISABLE_L3RAM_SUPPORT
 
-#ifndef PAGE_SIZE
- #define PAGE_SIZE                     4096
-#endif
+#define	PAGE_SIZE                     4096
 
 #define PRUSS_V1_STR                  "AM18XX"
 #define PRUSS_V2_STR                  "AM33XX"

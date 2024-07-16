@@ -366,7 +366,6 @@ typedef struct {
 #define YIELD_EVERY_N_TIMES 64
 
 void wspr_init();
-void wspr_update_rgrid(char *rgrid);
 bool wspr_update_vars_from_config(bool called_at_init_or_restart);
 void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps);
 void wspr_decode(int rx_chan);
@@ -390,4 +389,4 @@ int unpk_(u1_t *decdata, char *call_loc_pow, char *callsign, char *grid, int *dB
 int snr_comp(const void *elem1, const void *elem2);
 int freq_comp(const void *elem1, const void *elem2);
 
-void wspr_set_latlon_from_grid(char *grid);
+void set_reporter_grid(char *grid);

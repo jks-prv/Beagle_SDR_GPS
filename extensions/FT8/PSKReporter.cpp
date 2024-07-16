@@ -398,7 +398,7 @@ static void PSKreport(void *param)      // task
     pr->send_info_desc_interval = 60;
     s4_t delta_msec = 0;
     
-    void *udp = udp_connect(pr->upload_url);
+    struct mg_connection *mg = web_connect(pr->upload_url);
 
 	while (1) {
         pr->send_info_desc_interval--;
@@ -459,8 +459,8 @@ static void PSKreport(void *param)      // task
             pr->spots[ping_pong], pr->sent_info_desc[ping_pong]? "(and info desc) " : "", pr->upload_url);
         pr->sent_info_desc[ping_pong] = false;
         pr->spots[ping_pong] = 0;
-        udp_send(udp, bbp, total_len);
-        //pr_printf("PSK udp_send %d\n", total_len);
+        size_t n = mg_write(mg, bbp, total_len);
+        //pr_printf("PSK UDP mg_write n=%d|%d\n", n, total_len);
         
         for (int rxc = 0; rxc < MAX_RX_CHANS; rxc++) {
             pr->num_uploads[rxc] = pr->pending_uploads[rxc];

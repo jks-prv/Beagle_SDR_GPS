@@ -1123,7 +1123,7 @@ function w3_hide(el_id)
 	if (!el) return el;
 	
    //w3_console.log(el, 'w3_hide BEGIN');
-	el = w3_iterate_classList(el, function(className, idx) {
+	var el = w3_iterate_classList(el, function(className, idx) {
       //console.log('w3_hide CONSIDER '+ className);
 	   if (className.startsWith('w3-show-')) {
          //console.log('w3_hide REMOVE '+ className);
@@ -1689,7 +1689,7 @@ function w3_psa_mix(psa, extra_prop, extra_style, extra_attr)
 
 function w3_set_psa(el, psa)
 {
-   el = w3_el(el);
+   var el = w3_el(el);
    if (!el || isEmptyString(psa)) return null;
    psa = psa.split('/')[0];
    psa = psa.split('|');
@@ -1789,9 +1789,7 @@ function w3_do_when_rendered(id, func, arg, poll_ms)
 {
    var el = w3_el(id);
    poll_ms = isNumber(poll_ms)? poll_ms : 500;
-   rend = isArg(el);
-   //console.log('id='+ id +' ms='+ poll_ms +' rend='+ rend +' arg='+ arg);
-   if (!rend) {
+   if (isNoArg(el)) {
       setTimeout(function () {
          w3_do_when_rendered(id, func, arg, poll_ms);
       }, poll_ms);
@@ -1849,7 +1847,7 @@ function w3_elementAtPointer(x, y)
 
 function w3_event_log(el, id, event_name)
 {
-   el = w3_el(el);
+   var el = w3_el(el);
    if (el == null) return;
    el.addEventListener(event_name,
       function() {
@@ -1862,7 +1860,7 @@ function w3_event_log(el, id, event_name)
 // observe element event behavior
 function w3_event_listener(id, el)
 {
-   el = w3_el(el);
+   var el = w3_el(el);
    if (!el) return null;
    if (!w3int.eventListener[id]) {
       w3_event_log(el, id, 'mouseup');
@@ -2231,7 +2229,7 @@ function w3int_radio_click(ev, path, cb, cb_param)
 // deprecated (still used by antenna switch ext)
 function w3_radio_btn(text, path, isSelected, save_cb, prop)
 {
-	prop = (arguments.length > 4)? arguments[4] : null;
+	var prop = (arguments.length > 4)? arguments[4] : null;
 	var _class = ' id-'+ path + (isSelected? (' '+ w3_highlight_color) : '') + (prop? (' '+prop) : '');
 	var oc = 'onclick="w3int_radio_click(event, '+ sq(path) +', '+ sq(save_cb) +')"';
 	var s = '<button class="w3-btn w3-ext-btn'+ _class +'" '+ oc +'>'+ text +'</button>';
@@ -2271,10 +2269,6 @@ function w3_radio_button_get_param(psa, text, path, selected_if_val, init_val, c
 var w3_SWITCH_YES_IDX = 0, w3_SWITCH_NO_IDX = 1;
 
 function w3_switch_s(idx) { return ((idx == w3_SWITCH_YES_IDX)? 'YES' : 'NO'); }
-
-function w3_switch_val2idx(val) { return (val? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX); }
-
-function w3_switch_idx2val(idx) { return ((idx == w3_SWITCH_YES_IDX)? 1:0); }
 
 function w3_switch(psa, text_0, text_1, path, text_0_selected, cb, cb_param)
 {
@@ -2356,6 +2350,11 @@ function w3_switch_set_value(path, switch_idx)
 			el.click();
 		}
 	});
+}
+
+function w3_switch_idx(val)
+{
+   return (val? w3_SWITCH_YES_IDX : w3_SWITCH_NO_IDX);
 }
 
 
@@ -2521,7 +2520,7 @@ function w3int_button(psa, path, text, cb, cb_param)
 	// w3-round-large listed first so its '!important' can be overriden by subsequent '!important's
 	var default_style = (psa.includes('w3-round') || psa.includes('w3-circle'))? '' : ' w3-round-6px';
 	var noactive = psa.includes('w3-noactive')? ' class-button-noactive w3-ext-btn-noactive' : '';
-	var right = psa.includes('w3-btn-right')? 'w3-ialign-right' : '';
+	var right = psa.includes('w3-right')? 'w3-ialign-right' : '';
    var psa3 = w3_psa3(psa);
    var psa_outer = w3_psa(psa3.left, right);
 	var psa_inner = w3_psa(psa3.right, path +' w3-btn w3-ext-btn'+ default_style + noactive, '', onclick);
@@ -2622,7 +2621,7 @@ function w3_icon(psa, fa_icon, size, color, cb, cb_param)
 
 function w3_spin(el, cond)
 {
-   el = w3_el(el);
+   var el = w3_el(el);
    if (!el) return null;
    cond = isArg(cond)? cond : true;
    w3_remove_then_add(el, 'fa-spin', cond? 'fa-spin':'');
@@ -2961,11 +2960,11 @@ function w3_textarea(psa, label, path, val, rows, cols, cb)
 	var onkeydown = ' onkeydown="w3int_input_keydown(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var onkeyup = ' onkeyup="w3int_input_keyup(event, '+ sq(path) +', '+ sq(cb) +')"';
 	var events = (path && !custom)? (onchange + onkeydown + onkeyup) : '';
+	var val = val || '';
 	var bold = !psa.includes('w3-label-not-bold');
    var psa3 = w3_psa3(psa);
    var psa_label = w3_psa_mix(psa3.middle, (label != '' && bold)? 'w3-bold':'');
 	var psa_inner = w3_psa(psa3.right, 'w3-input w3-border w3-hover-shadow '+ id + spacing, '', 'rows='+ dq(rows) +' cols='+ dq(cols));
-	val = val || '';
 
 	var s =
 	   w3_div(psa3.left,
@@ -3048,13 +3047,13 @@ function w3_checkbox(psa, label, path, checked, cb, cb_param)
 }
 
 // used when current value should come from config param
-function w3_checkbox_get_param(psa, label, path, cb, init_val, cb_param)
+function w3_checkbox_get_param(psa, label, path, cb, init_val)
 {
    var update_path_var = psa.includes('w3-update');
    var save = psa.includes('w3-defer')? EXT_SAVE_DEFER : undefined;
 	var cur_val = ext_get_cfg_param(path, (init_val == undefined)? null : init_val, save, update_path_var);
 	//console.log('w3_checkbox_get_param: path='+ path +' update_path_var='+ update_path_var +' cur_val='+ cur_val +' init_val='+ init_val);
-	return w3_checkbox(psa, label, path, cur_val, cb, cb_param);
+	return w3_checkbox(psa, label, path, cur_val, cb);
 }
 
 function w3_checkbox_get(path)
@@ -3347,7 +3346,7 @@ function w3_select_get_param(psa, label, title, path, opts, cb, init_val, cb_par
 
 function w3_select_enum(path, func)
 {
-   path = w3_el(path);
+   var path = w3_el(path);
    if (!path) return;
 	w3_iterate_children(path, func);
 }
@@ -3436,27 +3435,25 @@ function w3int_slider_wheel(evt, path, cb, cb_param, need_shift_s)
 
 function w3_slider_wheel(cb, el, cur, slow, fast)
 {
-   el = w3_el(el);
+   var el = w3_el(el);
    if (!el) return null;
    var evt = w3int.rate_limit_evt[cb];
 	//event_dump(evt, cb, 1);
-   console.log(cb +' need_shift='+ w3int.rate_limit_need_shift[cb] +' shiftKey='+ evt.shiftKey +' button='+ evt.button +' buttons='+ evt.buttons);
+   //console.log(cb +' need_shift='+ w3int.rate_limit_need_shift[cb] +' shiftKey='+ evt.shiftKey);
 	if (w3int.rate_limit_need_shift[cb] && !evt.shiftKey)
 	   return null;
    var x = evt.deltaX;
    var y = evt.deltaY;
    var ay = Math.abs(y);
-   var up_down = ((x < 0 && y <= 0) || (x >= 0 && y < 0));
+   //var up_down = ((x < 0 && y <= 0) || (x >= 0 && y < 0));
    //console.log(x +' '+ y +' '+ (up_down? 'U':'D') +' '+ w3_id(evt.target));
-   up_down = up_down? 1 : -1;
-   var speed = up_down * ((ay < 50)? slow : fast);
-   //console.log('y='+ y +' '+ speed);
-   var nval = cur + speed;
-   //console.log('w3_wheel '+ cb +' min='+ el.min +' max='+ el.max +' step='+ el.step +' cur='+ cur +' speed='+ speed +' nval='+ nval);
+   var up_down = (ay < 50)? slow : fast;
+   if (y > 0) up_down = -up_down;
+   //console.log(x +' '+ y +' '+ up_down);
+   var nval = cur + up_down;
+   //console.log('w3_wheel '+ cb +' min='+ el.min +' max='+ el.max +' step='+ el.step +' cur='+ cur +' up_down='+ up_down +' nval='+ nval);
    return w3_clamp(nval, +el.min, +el.max);
 }
-
-//function w3int_slider_mobile(evt) { evt.preventDefault(); }
 
 function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 {
@@ -3473,14 +3470,13 @@ function w3_slider(psa, label, path, val, min, max, step, cb, cb_param)
 	var oc = ' oninput="w3int_slider_change(event, 0, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
 	// change event fires when the slider is done moving
 	var os = ' onchange="w3int_slider_change(event, 1, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
-   //var om = kiwi_isMobile()? ' ontouchstart="w3int_slider_mobile(event)"' : '';
-   
+
    var ow = '';
    if (psa.includes('w3-wheel')) {
       var need_shift = psa.includes('w3-wheel-shift')? 1:0;
       var cb_wheel = removeEnding(cb, '_cb') + '_wheel_cb';
       ow = ' onwheel="w3int_slider_wheel(event, '+ sq(path) +', '+ sq(cb_wheel) +', '+ sq(cb_param) +', '+ sq(need_shift) +')"';
-      w3int.rate_limit[cb_wheel] = kiwi_rateLimit(cb_wheel, 170 /* msec */);
+      w3int.rate_limit[cb_wheel] = kiwi_rateLimit(cb_wheel, 170);
    }
 
    var psa3 = w3_psa3(psa);
@@ -3566,7 +3562,7 @@ function w3_menu_items(id, arr, max_vis)
 	w3int.menu_cur_id = id;
    
    var s = '';
-   var i, idx = 0, prop, attr;
+   var idx = 0, prop, attr;
    var items;
 
    if (isArray(arr)) {
@@ -3574,12 +3570,12 @@ function w3_menu_items(id, arr, max_vis)
    } else {
       // isObject(arr)
       items = [];
-      for (i=1; i < arguments.length; i++)
+      for (var i=1; i < arguments.length; i++)
          items.push(arguments[i]);
    }
 
    if (w3int.menu_debug) canvas_log('#='+ items.length);
-   for (i=0; i < items.length; i++) {
+   for (var i=0; i < items.length; i++) {
    if (w3int.menu_debug) canvas_log('i='+ i +' '+ items[i]);
       if (items[i] == null) continue;
       prop = 'w3-menu ';
@@ -3910,13 +3906,13 @@ function w3_string_old_set_cfg_cb(path, val, first)
 
 function w3_string_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+	console.log('w3_string_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
    w3_json_set_cfg_cb(path, val, first);
 }
 
 function w3_json_set_cfg_cb(path, val, first)
 {
-	//console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
+	console.log('w3_json_set_cfg_cb: path='+ path +' '+ typeof(val) +' <'+ val +'> first='+ first);
 
 	// verify that value is valid JSON
 	var v = val;
@@ -3969,7 +3965,6 @@ var w3_MENU_PREV = -1;
 // cb_param = { dir:w3_MENU_{NEXT,PREV}, id:'...', func:'...', (optional, to skip non-numeric menu items) isNumeric:true }
 function w3_select_next_prev_cb(path, cb_param, first)
 {
-   var val;
 	if (dbgUs) console.log('w3_select_next_prev_cb cb_param='+ decodeURIComponent(cb_param));
    var cbp = w3_cb_param_decode(cb_param);
    if (!isObject(cbp)) {
@@ -3983,7 +3978,7 @@ function w3_select_next_prev_cb(path, cb_param, first)
    var menu_s, el;
    
    for (var i = 0; (el = w3_el(menu_s = cbp.id + i)) != null; i++) {
-      val = el.value;
+      var val = el.value;
       if (dbgUs) console.log('menu_s='+ menu_s +' value='+ val);
       if (val == -1) continue;
       
@@ -4078,16 +4073,6 @@ function w3_table_cells(psa)
 // containers
 ////////////////////////////////
 
-// If any psa prop is of the form N:prop then only use prop if N == current arg number
-// e.g.
-// w3_inline('foo/bar 1:baz', w3_div('zero'), w3_div('one'), w3_div('two')) =>
-// <div class="foo">
-//    <div class="bar zero"> ... </div>
-//    <div class="bar baz one"> ... </div>
-//    <div class="bar two"> ... </div>
-// </div>
-// This is a generalization of the w3-btn-right feature of w3int_button()
-
 function w3_inline(psa, attr)
 {
 	var narg = arguments.length;
@@ -4105,6 +4090,7 @@ function w3_inline(psa, attr)
          if (dump) console.log('w3_inline psa_outer='+ psa_outer +' psa_inner='+ psa_inner);
       var s = '<div w3d-inlo '+ psa_outer +'>';
       for (var i = 1; i < narg; i++) {
+         var psa;
          var a = arguments[i];
          if (!a) continue;
          if (dump) console.log('w3_inline i='+ i +' a='+ a);
@@ -4118,8 +4104,15 @@ function w3_inline(psa, attr)
             a = arguments[i];
             psa_merge = true;
          } else {
-            psa = '';
+            var psa = '';
             if (psa_inner != '') {
+               // if any psa prop is of the form N:prop then only use prop if N == current arg number
+               // e.g.
+               // w3_inline('foo/bar 1:baz', w3_div('#0'), w3_div('#1'), w3_div('#2')) =>
+               // <div class="foo">
+               //    <div class="bar #0">
+               //    <div class="bar baz #1">
+               //    <div class="bar #2">
                var psa3r = '';
                var a1 = psa3.right.split(' ');
                a1.forEach(
@@ -4243,7 +4236,7 @@ function w3_span(psa)
 function w3_divs(psa, attr)
 {
    var narg = arguments.length;
-   var s, args;
+   var s;
 
    if (psa == '' && attr == '') {
       console.log('### w3_divs OLD API 1 DEPRECATED');
@@ -4257,7 +4250,7 @@ function w3_divs(psa, attr)
       console.log('### w3_divs OLD API 2 DEPRECATED');
       //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
-      args = Array.prototype.splice.call(arguments, 0);
+      var args = Array.prototype.splice.call(arguments, 0);
       args.splice(1, 1);
       s = w3_div.apply(null, args);
       //console.log(s);
@@ -4267,7 +4260,7 @@ function w3_divs(psa, attr)
       console.log('### w3_divs OLD API 3 DEPRECATED');
       //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
-      args = Array.prototype.splice.call(arguments, 0);
+      var args = Array.prototype.splice.call(arguments, 0);
       args.splice(0, 1);
       s = w3_divs.apply(null, args);
       //console.log(s);
@@ -4277,7 +4270,7 @@ function w3_divs(psa, attr)
       console.log('### w3_divs OLD API 4 DEPRECATED');
       //console.log('prop=<'+ psa +'> attr=<'+ attr +'>');
       //kiwi_trace();
-      args = Array.prototype.splice.call(arguments, 2);
+      var args = Array.prototype.splice.call(arguments, 2);
       args.splice(0, 0, arguments[0] +'/'+ arguments[1]);
       s = w3_divs.apply(null, args);
       //console.log(s);
