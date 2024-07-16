@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.691  July 15, 2024
+v1.691,692  July 15, 2024
     New passband adjustment methods:
         If you scroll the audio tab down a bit you'll see it now has passband adjustment sliders.
         This is especially useful for mobile devices where most of the desktop mechanisms for

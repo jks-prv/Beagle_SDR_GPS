@@ -10162,6 +10162,8 @@ function keyboard_shortcut_init()
          w3_inline_percent('w3-padding-tiny', '!', 25, 'toggle aperture manual/auto menu'),
          w3_inline_percent('w3-padding-tiny', '$', 25, 'toggle 1 Hz frequency readout'),
          w3_inline_percent('w3-padding-tiny', '%', 25, 'toggle tuning lock'),
+         w3_inline_percent('w3-padding-tiny', '^', 25, 'toggle mouse wheel tune/zoom'),
+         w3_inline_percent('w3-padding-tiny', '&', 25, 'toggle snap to nearest'),
          w3_inline_percent('w3-padding-tiny', '@ alt-@', 25, 'open DX label filter, quick clear'),
          w3_inline_percent('w3-padding-tiny', '\\ |', 25, 'toggle (& open) DX stored/EiBi/community database,<br>alt to toggle <x1>filter by time/day-of-week</x1> checkbox'),
          w3_inline_percent('w3-padding-tiny', 'x y', 25, 'toggle visibility of control panels, top bar'),
@@ -10208,7 +10210,7 @@ function keyboard_shortcut_init()
 
 function keyboard_shortcut_help()
 {
-   confirmation_show_content(shortcut.help, 550, 705);   // height +15 or 20 per added line
+   confirmation_show_content(shortcut.help, 550, 745);   // height +15 or 20 per added line
 }
 
 function freq_input_help()
@@ -10338,6 +10340,8 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    case 'e': extension_scroll(1); break;
    case 'E': extension_scroll(-1); break;
    case '~': admin_page_cb(); break;
+   case '^': canvas_mouse_wheel_set(owrx.wheel_tunes ^ 1); break;
+   case '&': wf_snap(owrx.wf_snap ^ 1); break;
    case '?': case 'h': keyboard_shortcut_help(); break;
    case 'H':
       if (extint.current_ext_name)

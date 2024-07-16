@@ -864,7 +864,7 @@ bool wakeup_reg_kiwisdr_com(wakeup_reg_e wakeup_reg)
 static void reg_public(void *param)
 {
 	char *cmd_p;
-	int retrytime_mins;
+	u4_t retrytime_mins;
 	
     NET_WAIT_COND("mac", "reg_kiwisdr_com", net.mac_valid);
     char *kiwisdr_com = DNS_lookup_result("reg_kiwisdr_com", "kiwisdr.com", &net.ips_kiwisdr_com);

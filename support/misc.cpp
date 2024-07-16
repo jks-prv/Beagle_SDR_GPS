@@ -184,6 +184,7 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 // note the conn_t difference below
 // rx_chan == SM_SND_ADM_ALL means send to all sound and admin connections
 // rx_chan == SM_RX_CHAN_ALL means send to all connected channels
+// rx_chan == SM_ADMIN_ALL   means send to all admin connections
 int snd_send_msg(int rx_chan, bool debug, const char *msg, ...)
 {
     int rv = -1;
