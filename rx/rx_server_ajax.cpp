@@ -35,7 +35,6 @@ Boston, MA  02110-1301, USA.
 #include "net.h"
 #include "dx.h"
 #include "rx.h"
-#include "rx_server.h"
 #include "rx_server_ajax.h"
 #include "rx_util.h"
 #include "security.h"
@@ -54,7 +53,7 @@ Boston, MA  02110-1301, USA.
 
 // process non-websocket connections
 // check_ip_blacklist() done by caller
-char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data)
+char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded)
 {
 	int i, j, n;
 	char *sb, *sb2, *sb3;
@@ -83,10 +82,10 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data
 		)
 			return NULL;
 
-	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query);
+	//printf("rx_server_ajax: uri=<%s> qs=<%s>\n", uri, mc->query_string);
 	
 	// these require a query string
-	if (mc->query == NULL && (st->type == AJAX_PHOTO || st->type == AJAX_DX)) {
+	if (mc->query_string == NULL && (st->type == AJAX_PHOTO || st->type == AJAX_DX)) {
 		lprintf("rx_server_ajax: missing query string! uri=<%s>\n", uri);
 		return NULL;
 	}
@@ -110,19 +109,19 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data
 	// Using AJAX to upload a file to the server is required because browser javascript doesn't have access to the
 	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_PHOTO: {
-		char *vname, *fname;
+		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
 		const char *data = NULL;
 		int data_len = 0, rc = 0;
 		
-		printf("PHOTO UPLOAD REQUESTED from %s\n", ip_unforwarded);
-		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query, current_authkey);
+		printf("PHOTO UPLOAD REQUESTED from %s len=%d\n", ip_unforwarded, mc->content_len);
+		//printf("PHOTO UPLOAD REQUESTED key=%s ckey=%s\n", mc->query_string, current_authkey);
 		
 		if (!isLocalIP) rc = 5;
 
 		if (rc == 0) {
             int key_cmp = -1;
-            if (mc->query && current_authkey) {
-                key_cmp = strcmp(mc->query, current_authkey);
+            if (mc->query_string && current_authkey) {
+                key_cmp = strcmp(mc->query_string, current_authkey);
                 kiwi_asfree(current_authkey);
                 current_authkey = NULL;
             }
@@ -131,21 +130,8 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data
         }
 		
 		if (rc == 0) {
-            #ifdef MONGOOSE_NEW_API
-                struct mg_http_message *hm = (struct mg_http_message *) ev_data;
-                struct mg_http_part part;
-                mg_http_next_multipart(hm->body, 0, &part);
-                vname = mg_str_to_cstr(&part.name);
-                fname = mg_str_to_cstr(&part.filename);
-                data = part.body.buf;
-                data_len = part.body.len;
-            #else
-		        char _vname[64], _fname[64];		// mg_parse_multipart() checks size of these
-                mg_parse_multipart(mc->content, mc->content_len,
-                	_vname, sizeof(_vname), _fname, sizeof(_fname), &data, &data_len);
-                vname = _vname;
-		        fname = _fname;
-            #endif
+			mg_parse_multipart(mc->content, mc->content_len,
+				vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
 			
 			if (data_len < PHOTO_UPLOAD_MAX_SIZE) {
 				FILE *fp;
@@ -174,9 +160,6 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data
 			system("mv " DIR_CFG "/photo.upload.tmp " DIR_CFG "/photo.upload");
 		
 		printf("AJAX_PHOTO: data=%p data_len=%d \"%s\" rc=%d\n", data, data_len, fname, rc);
-        #ifdef MONGOOSE_NEW_API
-		    kiwi_asfree(vname); kiwi_asfree(fname);
-		#endif
 		asprintf(&sb, "{\"r\":%d}", rc);
 		break;
 	}
@@ -192,18 +175,17 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data
 	// Using AJAX to upload a file to the server is required because browser javascript doesn't have access to the
 	// filesystem of the client. But a FormData() object passed to kiwi_ajax_send() can specify a file.
 	case AJAX_DX: {
-		char *vname, *fname;
-		const char *data = NULL;
-		int type, idx, rc = 0, line = 0, status, key_cmp, data_len;
+		char vname[64], fname[64];		// mg_parse_multipart() checks size of these
+		const char *data;
+		int type, idx, rc = 0, line, status, key_cmp, data_len;
         char **s_a = NULL;
         int s_size = 0;
 		char *r_buf = NULL;
-		n = 0;
 		
 		key_cmp = -1;
-		if (mc->query && current_authkey) {
-			key_cmp = strcmp(mc->query, current_authkey);
-            //printf("DX UPLOAD: AUTH key=%s ckey=%s %s\n", mc->query, current_authkey, key_cmp? "FAIL" : "OK");
+		if (mc->query_string && current_authkey) {
+			key_cmp = strcmp(mc->query_string, current_authkey);
+            //printf("DX UPLOAD: AUTH key=%s ckey=%s %s\n", mc->query_string, current_authkey, key_cmp? "FAIL" : "OK");
 		}
         kiwi_asfree(current_authkey);
         current_authkey = NULL;
@@ -217,22 +199,9 @@ char *rx_server_ajax(struct mg_connection *mc, char *ip_forwarded, void *ev_data
         TMEAS(u4_t start = timer_ms();)
         TMEAS(printf("DX UPLOAD: START saving to dx.json\n");)
 
-        #ifdef MONGOOSE_NEW_API
-            struct mg_http_message *hm = (struct mg_http_message *) ev_data;
-            struct mg_http_part part;
-            mg_http_next_multipart(hm->body, 0, &part);
-            vname = mg_str_to_cstr(&part.name);
-            fname = mg_str_to_cstr(&part.filename);
-            data = part.body.buf;
-            data_len = part.body.len;
-        #else
-            char _vname[64], _fname[64];		// mg_parse_multipart() checks size of these
-            mg_parse_multipart(mc->content, mc->content_len,
-                _vname, sizeof(_vname), _fname, sizeof(_fname), &data, &data_len);
-            vname = _vname;
-            fname = _fname;
-        #endif
-		printf("DX UPLOAD: vname=%s fname=%s data=%p data_len=%d\n", vname, fname, data, data_len);
+        mg_parse_multipart(mc->content, mc->content_len,
+            vname, sizeof(vname), fname, sizeof(fname), &data, &data_len);
+		//printf("DX UPLOAD: vname=%s fname=%s\n", vname, fname);
         
         if (data_len >= DX_UPLOAD_MAX_SIZE) { rc = 2; goto fail; }
         
@@ -407,9 +376,6 @@ fail:
 		printf("DX UPLOAD: \"%s\" \"%s\" data_len=%d %s %s rc=%d line=%d nfields=%d\n",
 		    vname, fname, data_len, ip_unforwarded, rc? "ERROR" : "OK", rc, line, n);
 		asprintf(&sb, "{\"rc\":%d, \"line\":%d, \"nfields\":%d}", rc, line, n);
-        #ifdef MONGOOSE_NEW_API
-		    kiwi_asfree(vname); kiwi_asfree(fname);
-		#endif
 	    TMEAS(u4_t now = timer_ms(); printf("DX UPLOAD: DONE %.3f sec\n", TIME_DIFF_MS(now, start));)
 		break;
 	}
@@ -432,18 +398,18 @@ fail:
 			printf("/users NON_LOCAL FETCH ATTEMPT from %s\n", ip_unforwarded);
 			return (char *) -1;
 		}
-		sb = rx_users(IS_ADMIN);
+		sb = rx_users(true);
 		printf("/users REQUESTED from %s\n", ip_unforwarded);
 		return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
 		break;
 
 	// SECURITY:
-	//	SNR data can be requested by anyone.
+	//	SNR data be requested by anyone.
 	//  Measurement request restricted to the local network.
 	//	Returns JSON
 	case AJAX_SNR: {
-        //printf("/snr qs=<%s>\n", mc->query);
-        if (mc->query && strncmp(mc->query, "meas", 4) == 0) {
+        //printf("/snr qs=<%s>\n", mc->query_string);
+        if (mc->query_string && strncmp(mc->query_string, "meas", 4) == 0) {
             if (isLocalIP) {
                 if (SNR_meas_tid) {
                     TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));
@@ -507,10 +473,10 @@ fail:
         c = (ctr_t*) &adc_ctr->word[0];
         u4_t adc_count = (c->d3 << 24) | (c->d2 << 16) | (c->d1 << 8) | c->d0;
         
-        //printf("/adc qs=<%s>\n", mc->query);
+        //printf("/adc qs=<%s>\n", mc->query_string);
         u4_t level = 0;
         // "%i" so decimal or hex beginning with 0x can be specified
-        if (mc->query && sscanf(mc->query, "level=%i", &level) == 1) {
+        if (mc->query_string && sscanf(mc->query_string, "level=%i", &level) == 1) {
             adc_level = level & ((1 << (ADC_BITS-1)) - 1);
             //printf("/adc SET level=%d(0x%x)\n", adc_level, adc_level);
             #define COUNT_ADC_OVFL 0x2000
@@ -533,44 +499,30 @@ fail:
 		}
 		//printf("/adc_ov REQUESTED from %s\n", ip_unforwarded);
 		
-		int count = dpump.rx_adc_ovfl_cnt;
-		if (mc->query) {
-		    if (strcmp(mc->query, "reset") == 0) {
-		        dpump.rx_adc_ovfl_cnt = 0;
-		    } else {
-                asprintf(&sb, "/adc_ov: \"%s\" unrecognized, \"reset\" is the only recognized option\n", mc->query);
-                printf("%s", sb);
-                break;
-		    }
-		}
-        sb = kstr_asprintf(NULL, "{\"adc_ov\":%u}\n", count);
+        sb = kstr_asprintf(NULL, "{\"adc_ov\":%u}\n", dpump.rx_adc_ovfl_cnt);
+		if (mc->query_string && strcmp(mc->query_string, "reset") == 0)
+		    dpump.rx_adc_ovfl_cnt = 0;
         return sb;		// NB: return here because sb is already a kstr_t (don't want to do kstr_wrap() below)
     }
     
 	// SECURITY:
 	//	Returns simple S-meter value
 	case AJAX_S_METER: {
-	    if (mc->query == NULL) {
+	    if (mc->query_string == NULL) {
             asprintf(&sb, "/s_meter: missing freq, try my_kiwi:8073/s-meter/?(freq in kHz)\n");
             printf("%s", sb);
             break;
 	    }
 	    
         double dial_freq_kHz;
-        n = sscanf(mc->query, "%lf", &dial_freq_kHz);
+        n = sscanf(mc->query_string, "%lf", &dial_freq_kHz);
         if (n == 1) {
             printf("/s_meter dial=%.2f freq_offset_kHz=%.2f ui_srate_kHz=%.2f ", dial_freq_kHz, freq_offset_kHz, ui_srate_kHz);
-            if (dial_freq_kHz < freq_offset_kHz || dial_freq_kHz > (freq_offset_kHz + ui_srate_kHz)) {
-                asprintf(&sb, "/s_meter: freq \"%s\" outside configured receiver range of %.2f - %.2f kHz\n",
-                    mc->query, freq_offset_kHz, freq_offset_kHz + ui_srate_kHz);
-                printf("%s", sb);
-                break;
-            }
             dial_freq_kHz -= freq_offset_kHz;
             dial_freq_kHz = CLAMP(dial_freq_kHz, 0, ui_srate_kHz);
-            printf("FINAL(offset removed)=%.2f\n", dial_freq_kHz);
+            printf("FINAL=%.2f\n", dial_freq_kHz);
         } else {
-            asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query);
+            asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query_string);
             printf("%s", sb);
             break;
         }
@@ -705,7 +657,7 @@ fail:
 		else
 			status = "active";
 		
-		// number of channels preemptable, but only if external preemption enabled
+		// number of channels preemptible, but only if external preemption enabled
 		int preempt = 0;
 		if (any_preempt_autorun)
 		    rx_chan_free_count(RX_COUNT_ALL, NULL, NULL, &preempt);
@@ -718,18 +670,17 @@ fail:
 		if (!admcfg_bool("GPS_tstamp", NULL, CFG_REQUIRED)) tdoa_ch = -1;
 		
 		bool has_20kHz = (snd_rate == SND_RATE_3CH);
-		bool has_WB = (fw_sel == FW_SEL_SDR_WB);
 		bool has_GPS = (clk.adc_gps_clk_corrections > 8);
 		bool has_tlimit = (inactivity_timeout_mins || ip_limit_mins);
 		bool has_masked = (dx.masked_len > 0);
 		bool has_limits = (has_tlimit || has_masked);
-		bool has_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
+		bool have_DRM_ext = (DRM_enable && (snd_rate == SND_RATE_4CH));
 		dx_db_t *dx_db = &dx.dx_db[DB_STORED];
 		
 		asprintf(&sb,
 			"status=%s\n%soffline=%s\n"
 			"name=%s\n"
-			"sdr_hw=KiwiSDR %d v%d.%d%s%s%s%s%s%s%s%s%s ⁣\n"
+			"sdr_hw=KiwiSDR %d v%d.%d%s%s%s%s%s%s%s%s ⁣\n"
 			"op_email=%s\n"
 			"bands=%.0f-%.0f\nfreq_offset=%.3f\n"
 			"users=%d\nusers_max=%d\npreempt=%d\n"
@@ -748,6 +699,7 @@ fail:
 			"uptime=%d\n"
 			"gps_date=%d,%d\n"
 			"date=%s\n"
+			//"test=7\n"
 			"ip_blacklist=%s\n"
 			"dx_file=%d,%s,%d\n",
 			
@@ -767,14 +719,13 @@ fail:
 			// Resulting hex UTF-16 field can be entered below.
 
 			has_20kHz?              " ⁣ 🎵 20 kHz" : "",
-			has_WB?                 " ⁣ 🌀 Wideband" : "",
 			has_GPS?                " ⁣ 📡 GPS" : "",
 			has_limits?             " ⁣ " : "",
 			has_tlimit?             "⏳" : "",
 			has_masked?             "🚫" : "",
-			has_limits?             " Limits" : "",
-			has_DRM_ext?            " ⁣ 📻 DRM" : "",
-			antsw.isConfigured?     " ⁣ 📶 Ant-Switch" : "",
+			has_limits?             " LIMITS" : "",
+			have_DRM_ext?           " ⁣ 📻 DRM" : "",
+			antsw.isConfigured?     " ⁣ 📶 ANT-SWITCH" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
 			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset_kHz,

@@ -444,16 +444,6 @@ static int _upload_task(void *param)
     return 0;
 }
 
-static void wspr_update_spot_count(int rx_chan)
-{
-    wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
-    if (w->autorun) {
-        const char *pre = w->arun_csnd->arun_preempt? (wspr_c.GPS_update_grid? ",%20pre" : ",%20preemptable") : "";
-        const char *rgrid = wspr_c.GPS_update_grid? stprintf(",%%20%s", wspr_c.rgrid) : "";
-        input_msg_internal(w->arun_csnd, (char *) "SET geoloc=%d%%20decoded%s%s", w->arun_decoded, pre, rgrid);
-    }
-}
-
 void WSPR_Deco(void *param)
 {
     int rx_chan = (int) FROM_VOID_PARAM(param);
@@ -580,8 +570,6 @@ void WSPR_Deco(void *param)
                             rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
                         else
                             rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%s\"\n", w->iwbp? "IWBP" : "WSPR", w->spot_log);
-                    } else {
-                        non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }
                     kiwi_asfree(cmd);
                 #else
@@ -619,7 +607,8 @@ void WSPR_Deco(void *param)
                 non_blocking_cmd_system_child("kiwi.wsprnet.org", w->arun_stat_cmd, NO_WAIT);
 		    }
 		    if (w->arun_decoded > w->arun_last_decoded) {
-		        wspr_update_spot_count(w->rx_chan);
+		        input_msg_internal(w->arun_csnd, (char *) "SET geoloc=%d%%20decoded%s",
+		            w->arun_decoded, w->arun_csnd->arun_preempt? ",%20preemptible" : "");
 		        w->arun_last_decoded = w->arun_decoded;
             }
 		}
@@ -952,20 +941,6 @@ bool wspr_msgs(char *msg, int rx_chan)
 	return false;
 }
 
-void wspr_update_rgrid(char *rgrid)
-{
-    kiwi_strncpy(wspr_c.rgrid, rgrid, LEN_GRID);
-    wspr_set_latlon_from_grid((char *) wspr_c.rgrid);
-    printf("wspr_c.rgrid %s\n", wspr_c.rgrid);
-    
-    // update grid shown in user lists when there haven't been any new spots recently
-    for (int ch = 0; ch < MAX_RX_CHANS; ch++) {
-        wspr_t *w = &WSPR_SHMEM->wspr[ch];
-        if (w->autorun)
-            wspr_update_spot_count(ch);
-    }
-}
-
 // catch changes to reporter call/grid from admin page WSPR config (also called during initialization)
 bool wspr_update_vars_from_config(bool called_at_init_or_restart)
 {
@@ -992,10 +967,9 @@ bool wspr_update_vars_from_config(bool called_at_init_or_restart)
     s = (char *) cfg_string("WSPR.grid", NULL, CFG_REQUIRED);
 	kiwi_strncpy(wspr_c.rgrid, s, LEN_GRID);
 	cfg_string_free(s);
-    wspr_set_latlon_from_grid((char *) wspr_c.rgrid);
+    set_reporter_grid((char *) wspr_c.rgrid);
 
-    // Make sure WSPR.autorun holds *correct* count of non-preemptable autorun processes.
-    // For the benefit of refusing enable of public listing if there are no non-preemptable autoruns.
+    // Make sure WSPR.autorun holds *correct* count of non-preemptible autorun processes.
     // If Kiwi was previously configured for a larger rx_chans, and more than rx_chans worth
     // of autoruns were enabled, then with a reduced rx_chans it is essential not to count
     // the ones beyond the rx_chans limit. That's why "i < rx_chans" appears below and
@@ -1061,9 +1035,7 @@ void wspr_autorun(int instance, bool initial)
     char *ident_user;
     asprintf(&ident_user, "%s-autorun", iwbp? "IWBP" : "WSPR");
     char *geoloc;
-    const char *pre = preempt? (wspr_c.GPS_update_grid? ",%20pre" : ",%20preemptable") : "";
-    const char *rgrid = wspr_c.GPS_update_grid? stprintf(",%%20%s", wspr_c.rgrid) : "";
-    asprintf(&geoloc, "0%%20decoded%s%s", pre, rgrid);
+    asprintf(&geoloc, "0%%20decoded%s", preempt? ",%20preemptible" : "");
 
 	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_WSPR,
         WS_FL_IS_AUTORUN | (initial? WS_FL_INITIAL : 0),

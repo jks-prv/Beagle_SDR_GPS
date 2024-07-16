@@ -15,7 +15,7 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2014-2023 John Seamons, ZL4VO/KF6VO
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -25,21 +25,24 @@ Boston, MA  02110-1301, USA.
 	
 module rx_audio_mem (
 	input wire		   adc_clk,
-    input  wire [ 7:0] nrx_samps,
-	input  wire		   rx_avail_A,
-    input  wire [V_RX_CHANS*16-1:0] rxn_din_A,
-    input  wire [47:0] ticks_A,
+
+    input  wire [V_RX_CHANS*16-1:0] rxn_dout_A,
     output wire        ser,
-    output reg         rd_getI,
-    output reg         rd_getQ,
+    output reg         rd_i,
+    output reg         rd_q,
+    output wire        rx_rd_C,
+    output wire [15:0] rx_dout_C,
+
+    input  wire [47:0] ticks_A,
 
 	input  wire		   cpu_clk,
+    input  wire [ 7:0] nrx_samps,
+	input  wire		   rx_avail_A,
+
 	input  wire		   get_rx_srq_C,
 	input  wire		   get_rx_samp_C,
 	input  wire		   reset_bufs_C,
-	input  wire		   get_buf_ctr_C,
-    output wire        rx_rd_C,
-    output wire [15:0] rx_dout_C
+	input  wire		   get_buf_ctr_C
 	);
 	
 `include "kiwi.gen.vh"
@@ -60,15 +63,14 @@ module rx_audio_mem (
     
     while (adc_clk) {
     	if (reset_bufs_A) {	// reset state machine
-    		transfer = count = rd_getI = rd_getQ = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;
+    		transfer = count = rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;
     	} else
     	
-		if (rx_avail_A) transfer = 1;	// happens at audio rate (e.g. 12 kHz, 83.3 us, => 5555 ADC clk ticks available)
+		if (rx_avail_A) transfer = 1;	// happens at audio rate (e.g. 12 kHz, 83.3 us)
 		
 		// state machine timing:
-		// for the case of nrx_samps = 170, RX_CHANS = 4
-    	// count iq3 rxn
-    	// ----- --- ---
+		// for the case of nrx_samps = 170, R_CHANS = 4
+    	// count     rxn
     	// cnt00 i   rx0
     	// cnt00 q   rx0
     	// cnt00 iq3 rx0	3w moved
@@ -95,7 +97,7 @@ module rx_audio_mem (
     	// -srq e_cpu-
     	
 		//  another way of looking at the state machine timing:
-		//  for the case of nrx_samps = 170, RX_CHANS = 4
+		//  for the case of nrx_samps = 170, R_CHANS = 4
 		//  count:  0                   1           168(nrx-2)          169(nrx-1)            170     0
 		//  rxn:    rx0 rx1 rx2 rx3 rx4 rx0 ... rx4 rx0 rx1 rx2 rx3 rx4 rx0 rx1 rx2 rx3 rx4|3 rx3 rx4 rx0
 		//  iq3:    iq3 iq3 iq3 iq3     iq3 ...     iq3 iq3 iq3 iq3     iq3 iq3 iq3 iq3 XYZ   xxC
@@ -134,20 +136,20 @@ module rx_audio_mem (
                     inc_A = 0;
                     count++;
                 }
-                rd_getI = rd_getQ = 0;
+                rd_i = rd_q = 0;
             } else {
                 // step through all channels: rxn = 0..V_RX_CHANS-1
                 switch (move) {		// move i, q, iq3 on each channel
-                    case 0: rd_getI = 1; rd_getQ = 0; move = 1; tsel = 0; break;
-                    case 1: rd_getI = 0; rd_getQ = 1; move = 2; tsel = 1; break;
-                    case 2: rd_getI = 0; rd_getQ = 0; move = 0; tsel = 2; rxn++; break;
-                    case 3: rd_getI = 0; rd_getQ = 0; move = 0; tsel = 0; break;	// unused
+                    case 0: rd_i = 1; rd_q = 0; move = 1; tsel = 0; break;
+                    case 1: rd_i = 0; rd_q = 1; move = 2; tsel = 1; break;
+                    case 2: rd_i = 0; rd_q = 0; move = 0; tsel = 2; rxn++; break;
+                    case 3: rd_i = 0; rd_q = 0; move = 0; tsel = 0; break;	// unused
                 }
                 wr = 1;     // start a sequential string of iq3 * rxn channel data writes
                 inc_A = 0;
             }
         } else {
-            rd_getI = rd_getQ = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;       // idle when no transfer
+            rd_i = rd_q = move = wr = rxn = inc_A = use_ts = use_ctr = tsel = 0;       // idle when no transfer
         }
     
     */
@@ -160,8 +162,8 @@ module rx_audio_mem (
 		begin
 			transfer <= 0;
 			count <= 0;
-			rd_getI <= 0;
-			rd_getQ <= 0;
+			rd_i <= 0;
+			rd_q <= 0;
 			move <= 0;
 			wr <= 0;
 			rxn <= 0;
@@ -215,17 +217,17 @@ module rx_audio_mem (
 					inc_A <= 0;
 					count <= count + 1;
 				end
-				rd_getI <= 0;
-				rd_getQ <= 0;
+				rd_i <= 0;
+				rd_q <= 0;
 			end
 			else
 			begin
                 // step through all channels: rxn = 0..V_RX_CHANS-1
 				case (move)
-					0: begin rd_getI <= 1; rd_getQ <= 0;					move <= 1; tsel <= 0; end
-					1: begin rd_getI <= 0; rd_getQ <= 1;					move <= 2; tsel <= 1; end
-					2: begin rd_getI <= 0; rd_getQ <= 0; rxn <= rxn + 1;	move <= 0; tsel <= 2; end
-					3: begin rd_getI <= 0; rd_getQ <= 0;					move <= 0; tsel <= 0; end
+					0: begin rd_i <= 1; rd_q <= 0;					move <= 1; tsel <= 0; end
+					1: begin rd_i <= 0; rd_q <= 1;					move <= 2; tsel <= 1; end
+					2: begin rd_i <= 0; rd_q <= 0; rxn <= rxn + 1;	move <= 0; tsel <= 2; end
+					3: begin rd_i <= 0; rd_q <= 0;					move <= 0; tsel <= 0; end
 				endcase
 				wr <= 1;    // start a sequential string of iq3 * rxn channel data writes
 				inc_A <= 0;
@@ -234,8 +236,8 @@ module rx_audio_mem (
 		else
 		begin
 		    // idle when no transfer
-			rd_getI <= 0;
-			rd_getQ <= 0;
+			rd_i <= 0;
+			rd_q <= 0;
 			move <= 0;
 			wr <= 0;
 			rxn <= 0;
@@ -259,8 +261,8 @@ module rx_audio_mem (
 
 	assign ser = srq_out;
 
-	wire [15:0] rx_din_A;
-	MUX #(.WIDTH(16), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_din_A), .sel(rxn_d[L2RX:0]), .out(rx_din_A));
+	wire [15:0] rx_dout_A;
+	MUX #(.WIDTH(16), .SEL(V_RX_CHANS)) rx_mux(.in(rxn_dout_A), .sel(rxn_d[L2RX:0]), .out(rx_dout_A));
 	
 	reg  [15:0] buf_ctr;
 	wire [15:0] buf_ctr_C;
@@ -306,7 +308,7 @@ module rx_audio_mem (
 	wire [15:0] din =
 	    use_ts?
 	        ( (tsel == 0)? ticks_A[15 -:16] : ( (tsel == 1)? ticks_A[31 -:16] : ticks_A[47 -:16]) ) :
-	        ( use_ctr? buf_ctr : rx_din_A );
+	        ( use_ctr? buf_ctr : rx_dout_A );
     wire [15:0] dout;
 
     // Transfer size is 1012 16-bit words to match 2kB limit of SPI transfers,

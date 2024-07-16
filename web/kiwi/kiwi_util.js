@@ -612,16 +612,6 @@ Number.prototype.withSign = function()
 
 var kHz = function(f) { return (f / 1e3).toFixed(3) +'k'; };
 
-// need symmetry for negative f in passband calcs
-function _10Hz(f) {
-   var step = 10;
-   if (f >= 0) {
-      return Math.trunc(f/step) * step;
-   } else {
-      return -(Math.ceil(-f/step) * step);
-   }
-}
-
 // like setTimeout() except also calls once immediately
 function kiwi_setTimeout(func, msec, param)
 {
@@ -694,11 +684,9 @@ function console_log()
 // prints: "<id>: 'actual_arg0_name'=<arg0_value> 'actual_arg1_name'=<arg1_value> ..."
 //
 // So this works for:
-// local/global simple vars (incl obj): YES
+// local/global simple (incl obj): YES
 // local obj deref: NO
-// global deref (but FQN only): YES (specify FQN as a string)
-//
-// e.g. console_nv('screen_char', {r}, {c}, 'kiwi.d.p.nrows')
+// global deref (FQN only): YES (use string arg)
 function console_nv()
 {
    var s;
@@ -772,29 +760,25 @@ function canvas_log_int(s)
       el.style.left = '';
       el.style.right = '';
       if (kiwi_isMobile()) {
-      
-         // see ext.js for table of device w/h values
-         // these assume portrait orientation
-         var w = screen.width;
-         var h = screen.height;
-         if (w >= 600 && h >= 950) {   // iPad & tablets
-            //el.style.top = '36px';     // top
-            el.style.top = '200px';    // bottom
+         var w = window.innerWidth;
+         var h = window.innerHeight;
+         if (w <= 768 && h >= 600) {    // iPad & tablets
+            el.style.top = '36px';
             //el.style.bottom = '0';
             //el.style.right = '0';
             el.style.left = '0';
             el.style.width = '350px';
             //el.style.height = '300px';
             el.style.height = '400px';
-         } else {                      // phones
-            el.style.top = '36px';     // top
-            //el.style.top = '300px';    // bottom
+         } else {
+            el.style.top = '36px';
+            //el.style.top = '300px';
             el.style.right = '0';
             //el.style.width = '350px';
             el.style.width = '150px';
             el.style.height = '150px';
          }
-      } else {                         // non-mobile
+      } else {
          el.style.bottom = '0';
          el.style.left = '0';
          el.style.width = '350px';
@@ -819,7 +803,7 @@ function canvas_log(s)
 {
    if (!isString(s)) s = s.toString();
    if (isUndefined(owrx.news_acc_s)) owrx.news_acc_s = '<br>';
-   var d = new Date(), ts = '';
+   var d = new Date(), ts = '';;
    var time = d.toTimeString().slice(4,8);
    if (time != kiwi_util.last_time) {
       ts = time +' ';
@@ -844,12 +828,6 @@ function canvas_log2(s)
       toggle_or_set_hide_bars(owrx.HIDE_BANDBAR);
    w3_innerHTML('id-rx-title', kiwi.log2_seq +': '+ s);
    kiwi.log2_seq++;
-}
-
-function canvas_catch_log(ex)
-{
-   canvas_log(ex.toString());
-   canvas_log(ex.stack);
 }
 
 
@@ -961,20 +939,13 @@ function key_stringify(evt)
 function event_dump(evt, id, oneline)
 {
    var k = evt.key || '(no key)';
-   var tgt_id, ct_id;
-
-   var button = "LMR"[evt.button];
-   var buttons = '';
-   if (evt.buttons & 1) buttons += 'L';
-   if (evt.buttons & 4) buttons += 'M';   // yes, 4 is middle
-   if (evt.buttons & 2) buttons += 'R';
+   var ct_id;
 
    if (oneline) {
       var trel = (isDefined(evt.relatedTarget) && evt.relatedTarget)? (' Trel='+ evt.relatedTarget.id) : '';
       var key = key_stringify(evt);
-      tgt_id = evt.target? evt.target.id : '(null)';
       ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
-      console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' b='+ button +' bs='+ buttons +' T='+ tgt_id +' Tcur='+ ct_id + trel);
+      console.log('event_dump '+ id +' |'+ evt.type +'| k='+ key +' T='+ evt.target.id +' Tcur='+ ct_id + trel);
    } else {
       console.log('================================');
       if (isNoArg(evt)) {
@@ -986,7 +957,11 @@ function event_dump(evt, id, oneline)
       console.log('key: '+ key_stringify(evt));
       ct_id = evt.currentTarget? evt.currentTarget.id : '(null)';
       console.log('this.id='+ this.id +' tgt.name='+ evt.target.nodeName +' tgt.id='+ evt.target.id +' ctgt.id='+ ct_id);
-      console.log('button='+ button +' buttons='+ buttons +' detail='+ evt.detail);
+      var buttons = '';
+      if (evt.buttons & 1) buttons += 'L';
+      if (evt.buttons & 4) buttons += 'M';   // yes, 4 is middle
+      if (evt.buttons & 2) buttons += 'R';
+      console.log('button='+ "LMR"[evt.button] +' buttons='+ buttons +' detail='+ evt.detail);
       
       if (evt.type.startsWith('touch')) {
          console.log('pageX='+ evt.pageX +' clientX='+ evt.clientX +' screenX='+ evt.screenX);
@@ -1010,8 +985,7 @@ function event_dump(evt, id, oneline)
    }
 }
 
-// NB: returns a function reference
-function kiwi_rateLimit(cb, msec)
+function kiwi_rateLimit(cb, time)
 {
    var waiting = false;
    var rtn = function() {
@@ -1024,7 +998,7 @@ function kiwi_rateLimit(cb, msec)
             w3_call(cb);
          else
             cb.apply(this, args);
-      }, msec);
+      }, time);
    };
    return rtn;
 }
@@ -1294,7 +1268,7 @@ function kiwi_timestamp_filename(pre, post)
 
 function kiwi_clean_html(s)
 {
-   return s.replace(/\&/g, '&amp;').replace(/</g, '&lt;').replace(/\>/g, '&gt;');
+   return s.replace(/\&/g, '&amp;').replace(/\</g, '&lt;').replace(/\>/g, '&gt;');
 }
 
 function kiwi_clean_newline(s)
@@ -1306,12 +1280,6 @@ function kiwi_clean_newline(s)
 function kiwi_SSL()
 {
    return window.location.protocol +'//';
-}
-
-// returns the entire url including port and query string
-function kiwi_url()
-{
-   return window.location.href;
 }
 
 // returns http[s]://host[:port]
@@ -1337,40 +1305,24 @@ function kiwi_remove_protocol(url)
    return url.replace(/^http:\/\//, '').replace(/^https:\/\//, '');
 }
 
-function kiwi_open_or_reload_page(obj)   // { url, hp, path, qs, tab, delay }
+function kiwi_open_or_reload_page(obj)   // { url, hp, path, qs, tab }
 {
    var url = w3_opt(obj, 'url', null);
-   if (url == 'reload')
-      url = kiwi_url();
-   else
    if (isNull(url)) {
       var host_port = w3_opt(obj, 'hp', kiwi_host_port());
       var pathname = w3_opt(obj, 'path', '', '/');
-      var query = w3_opt(obj, 'qs', '', '/?');
-      url = kiwi_SSL() + host_port + pathname + query;
+      var query_string = w3_opt(obj, 'qs', '', '/?');
+      url = kiwi_SSL() + host_port + pathname + query_string;
    }
-   var delay = w3_opt(obj, 'delay', 0);
-   console.log('kiwi_open_or_reload_page: '+ url +' delay='+ delay);
-   
-   var reload = function() {
-      var rv;
-      if (w3_opt(obj, 'tab', false)) {
-         rv = window.open(url, '_blank');
-      } else {
-         window.location.href = url;
-         rv = true;
-      }
-      return rv;
-   };
-   
-   var rval;
-   if (delay) {
-      setTimeout(function(url) { reload(); }, delay);
-      rval = true;
+   console.log('kiwi_open_or_reload_page: '+ url);
+   var rv;
+   if (w3_opt(obj, 'tab')) {
+      rv = window.open(url, '_blank');
    } else {
-      rval = reload();
+      window.location.href = url;
+      rv = true;
    }
-   return rval;
+   return rv;
 }
 
 function kiwi_add_end(s, end)
@@ -2170,7 +2122,7 @@ function page_draw_pie(which_s) {
 	      kiwi_open_or_reload_page({ url:kiwi.reload_url });
 	   } else {
          try {
-            window.location.reload();
+            window.location.reload(true);
          } catch(ex) {
             console.log('RELOAD FAILED?');
             console.log(ex);
@@ -2297,7 +2249,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	
 	var no_wf = kiwi_url_param('no_wf');
 	var tstamp = (w3_opt(opt, 'new_ts') == true)? ((new Date()).getTime()) : kiwi.conn_tstamp;
-	ws_url = ws_protocol + ws_url +'/ws/'+ (no_wf? 'no_wf/':'kiwi/') + tstamp +'/'+ stream;
+	ws_url = ws_protocol + ws_url +'/'+ (no_wf? 'no_wf/':'kiwi/') + tstamp +'/'+ stream;
 	var qs = w3_opt(opt, 'qs');
 	if (isString(qs))
 	   ws_url += '?'+ qs;
@@ -2306,7 +2258,7 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
 	   ws_url += window.location.search;      // pass query string to support "&foff="
 	if (no_wf) wf.no_wf = true;
 	
-	console.log('$$open_websocket '+ ws_url);
+	//console.log('open_websocket '+ ws_url);
 	var ws = new WebSocket(ws_url);
 	wsockets.push( { 'ws':ws, 'name':stream } );
 	ws.up = false;

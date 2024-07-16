@@ -220,14 +220,11 @@ static void ll_printf(u4_t type, conn_t *conn, const char *fmt, va_list ap)
 	// for logging, don't print an empty line at all
 	if ((type & (PRINTF_REG | PRINTF_LOG)) && (!background_mode || strcmp(start_s, "\n") != 0)) {
 
-		// Remove non-ASCII since "systemctl status" gives [blob] message
-		// unlike "systemctl log" which prints correctly.
-		// Seems to no longer be true, at least with Debian 11
-		/*
-            int sl = strlen(buf);
-            for (i=0; i < sl; i++)
-                if (buf[i] > 0x7f) buf[i] = '?';
-		*/
+		// remove non-ASCII since "systemctl status" gives [blob] message
+		// unlike "systemctl log" which prints correctly
+		int sl = strlen(buf);
+		for (i=0; i < sl; i++)
+			if (buf[i] > 0x7f) buf[i] = '?';
 
 		kstr_t *ks = NULL;
 		bool want_logged = (type & PRINTF_LOG);

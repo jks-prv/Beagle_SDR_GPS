@@ -31,8 +31,6 @@ typedef struct {
 	conn_t *conn;       // the STREAM_SOUND conn or STREAM_WATERFALL for WF-only connections
 	ext_t *ext;
 	int cfg_update_seq;
-	u4_t wr, rd;
-    tid_t wb_task;
 
 	int n_camp;
 	conn_t *camp_conn[N_CAMP];
@@ -47,7 +45,7 @@ extern volatile u4_t audio_bytes[], waterfall_bytes[], waterfall_frames[], http_
 void rx_server_init();
 void rx_server_remove(conn_t *c);
 void rx_common_init(conn_t *conn);
-bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive = NULL);
+bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd);
 const char *rx_conn_type(conn_t *c);
 
 typedef enum { WS_MODE_ALLOC, WS_MODE_LOOKUP, WS_MODE_CLOSE, WS_INTERNAL_CONN } websocket_mode_e;

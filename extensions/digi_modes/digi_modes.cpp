@@ -2,10 +2,13 @@
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
+#include "kiwi.h"
+#include "coroutines.h"
+#include "conn.h"
 #include "rx_util.h"
 #include "data_pump.h"
 #include "mem.h"
-#include "printf.h"
+#include "misc.h"
 #include "rsid.h"
 
 #include <stdio.h>

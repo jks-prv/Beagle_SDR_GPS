@@ -3,7 +3,6 @@
 var ft8 = {
    ext_name: 'FT8',     // NB: must match FT8.cpp:ft8_ext.name
    first_time: true,
-   focus_interval: null,
    
    callsign: '',
    grid: '',
@@ -174,7 +173,7 @@ function ft8_controls_setup()
                ),
 
                w3_div('cl-ft8-text', 'reporter call '+ callsign),
-               w3_div('id-ft8-rgrid cl-ft8-text', 'reporter grid '+ grid + (cfg.ft8.GPS_update_grid? ' (GPS)':'')),
+               w3_div('cl-ft8-text', 'reporter grid '+ grid),
                w3_button('w3-padding-smaller w3-css-yellow', 'Clear', 'ft8_clear_button_cb'),
                (dbgUs? w3_button('w3-padding-smaller w3-aqua', 'Test', 'ft8_test_cb') : '')
             )
@@ -228,17 +227,6 @@ function ft8_controls_setup()
    }
 }
 
-function FT8_focus()
-{
-   ft8_check_GPS_update_grid();
-   ft8.focus_interval = setInterval(function() { ft8_check_GPS_update_grid(); }, 10000);
-}
-
-function FT8_blur()
-{
-   kiwi_clearInterval(ft8.focus_interval);
-}
-
 function ft8_freq_cb(path, idx, first)
 {
 	if (first) return;
@@ -248,24 +236,24 @@ function ft8_freq_cb(path, idx, first)
    ext_tune(freq, 'usb', ext_zoom.ABS, 11);
    var mode = menu_item.last_disabled;
    w3_select_value(path, idx);   // for benefit of direct callers
-	//console.log('ft8_freq_cb: path='+ path +' idx='+ idx +' freq='+ freq +' mode='+ mode);
+	console.log('ft8_freq_cb: path='+ path +' idx='+ idx +' freq='+ freq +' mode='+ mode);
 	
 	if (mode != ft8.mode_s[ft8.mode]) {
 	   ft8.mode ^= 1;
 	   ft8_mode_cb('ft8.mode', ft8.mode);
-	   //console.log('ft8_freq_cb: changing mode to '+ ft8.mode);
+	   console.log('ft8_freq_cb: changing mode to '+ ft8.mode);
 	}
 }
 
 function ft8_mode_cb(path, idx, first)
 {
 	if (first) return;
-	//console.log('ft8_mode_cb: idx='+ idx);
+	console.log('ft8_mode_cb: idx='+ idx);
    idx = +idx;
 	w3_set_value(path, idx);
    ft8.mode = idx? ft8.FT4 : ft8.FT8;
 	ext_send('SET ft8_protocol='+ ft8.mode);
-   //console.log('ft8_mode_cb: changing mode to '+ ft8.mode);
+   console.log('ft8_mode_cb: changing mode to '+ ft8.mode);
 }
 
 function ft8_clear_button_cb(path, idx, first)
@@ -281,63 +269,31 @@ function ft8_test_cb()
    ext_send('SET ft8_test');
 }
 
-
-////////////////////////////////
-// admin
-////////////////////////////////
-
-function ft8_input_grid_cb(path, val, first, cb_a)
-{
-   val = val.trim();
-   var from_gps = (cb_a[1] && cb_a[1] == 'gps')? true : false;
-   //console.log('ft8_input_grid_cb val='+ val +' from_gps='+ from_gps);
-   
-	// don't update cfg from a continuous GPS update -- only show in field
-   if (!from_gps)
-	   w3_string_set_cfg_cb(path, val);
-
-	w3_set_value(path, val);
-
-	// need this because ft8_check_GPS_update_grid() runs asynch of server sending updated value via 10s status
-	ft8.grid = val;
-}
-
 // called to display HTML for configuration parameters in admin interface
 function FT8_config_html()
 {
    var s =
       w3_div('w3-show-inline-block w3-width-full',
          w3_col_percent('w3-container/w3-margin-bottom',
-            w3_input_get('w3-restart', 'Reporter callsign', 'ft8.callsign', 'w3_string_set_cfg_cb', ''), 32,
+            w3_input_get('w3-restart', 'Reporter callsign', 'ft8.callsign', 'w3_string_set_cfg_cb', ''), 22,
             '', 3,
-            w3_div('',
-               w3_inline('w3-halign-space-between/',
-                  w3_label('w3-bold', 'Reporter grid square '),
-                  w3_button('id-ft8-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS')
-               ),
-               w3_input_get('', '', 'ft8.grid', 'ft8_input_grid_cb', '', '6-character grid square location'
-               )
-            ), 30,
+            w3_input_get('id-ft8-grid w3-restart', w3_label('w3-bold', 'Reporter grid square ') +
+               w3_div('id-ft8-grid-set cl-admin-check w3-blue w3-btn w3-round-large w3-margin-B-2 w3-hide', 'set from GPS'),
+               'ft8.grid', 'w3_string_set_cfg_cb', '', '6-character grid square location'
+               ), 22,
             '', 3,
-            w3_input_get('', 'SNR correction', 'ft8.SNR_adj', 'w3_num_set_cfg_cb', ''), 12,
+            w3_input_get('', 'SNR correction', 'ft8.SNR_adj', 'w3_num_set_cfg_cb', ''), 22,
             '', 3,
-            w3_input_get('', 'dT correction', 'ft8.dT_adj', 'w3_num_set_cfg_cb', ''), 12
+            w3_input_get('', 'dT correction', 'ft8.dT_adj', 'w3_num_set_cfg_cb', ''), 22
          ),
 
          w3_col_percent('w3-container w3-margin-T-8 w3-margin-B-16/',
-            w3_divs('w3-center w3-tspace-8',
-               w3_switch_label('w3-center', 'Update grid continuously<br>from GPS?', 'Yes', 'No', 'cfg.ft8.GPS_update_grid', cfg.ft8.GPS_update_grid, 'ft8_GPS_update_grid_cb'),
-               w3_text('w3-text-black w3-center',
-                  'Useful for Kiwis in motion <br> (e.g. marine mobile)'
-               )
-            ), 23,
-            '&nbsp;', 3,
             w3_divs('w3-center w3-tspace-8',
                w3_switch_label('w3-center', 'Log decodes to<br>syslog?', 'Yes', 'No', 'ft8.syslog', cfg.ft8.syslog, 'admin_radio_YN_cb'),
                w3_text('w3-text-black w3-center',
                   'Use with care as over time <br> filesystem can fill up.'
                )
-            ), 23
+            ), 22
          ),
 
          '<hr>',
@@ -380,7 +336,7 @@ function FT8_config_html()
 	      s2 +=
 	         w3_div('',
 	            w3_select_get_param(f1, 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8.autorun_u, 'ft8_autorun_select_cb'),
-	            w3_select_get_param(f2, '', 'preemptable?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_autorun_select_cb')
+	            w3_select_get_param(f2, '', 'preemptible?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_autorun_select_cb')
 	            //w3_select_get_param(f2, '', 'start UTC', 'ft8.start'+ i, ft8.sched_u, 'ft8_autorun_sched_cb', 0, 0),
 	            //w3_select_get_param(f2, '', 'stop UTC', 'ft8.stop'+ i, ft8.sched_u, 'ft8_autorun_sched_cb', 0, 1)
 	         );
@@ -388,18 +344,6 @@ function FT8_config_html()
 	   s += w3_inline('w3-margin-bottom/', s2);
 	}
 	w3_innerHTML('id-ft8-admin-autorun', s);
-}
-
-function ft8_GPS_update_grid_cb(path, idx, first)
-{
-	var enabled = w3_switch_idx2val(+idx);
-	//console.log('ft8_GPS_update_grid_cb: first='+ first +' enabled='+ enabled);
-
-	if (!first) {
-	   ext_send("ADM get_gps_info");    // NB: must be sent as ADM command
-	}
-	
-	admin_bool_cb(path, enabled, first);
 }
 
 function ft8_autorun_public_check()
@@ -438,7 +382,7 @@ function ft8_autorun_select_cb(path, idx, first)
 
 function ft8_autorun_sched_cb(path, idx, first, cbp)
 {
-   //console.log('ft8_autorun_sched_cb path='+ path +' idx='+ idx +' cbp='+ cbp +' first='+ first);
+   console.log('ft8_autorun_sched_cb path='+ path +' idx='+ idx +' cbp='+ cbp +' first='+ first);
 }
 
 function ft8_autorun_all_regular_cb(path, idx, first)
@@ -459,8 +403,6 @@ function FT8_config_focus()
 {
    //console.log('ft8_config_focus');
    ft8_autorun_public_check();
-   ft8_check_GPS_update_grid();
-   ft8.focus_interval = setInterval(function() { ft8_check_GPS_update_grid(); }, 10000);
 
    var el = w3_el('id-ft8-grid-set');
 	if (el) el.onclick = function() {
@@ -469,45 +411,17 @@ function FT8_config_focus()
 	};
 }
 
-function FT8_config_blur()
-{
-   //console.log('FT8_config_blur');
-   kiwi_clearInterval(ft8.focus_interval);
-}
-
-// should be okay that this is called via a timeout from both admin and user contexts
-function ft8_check_GPS_update_grid()
-{
-   var auto = kiwi.GPS_auto_grid;
-   var ok = isNonEmptyString(auto);
-   //console.log('ft8_check_GPS_update_grid '+ (isAdmin()? 'ADMIN' : 'USER') +' GPS_update_grid='+ cfg.ft8.GPS_update_grid +' kiwi.GPS_auto_grid='+ auto +' w3_get_value(ft8.grid)='+ w3_get_value('ft8.grid') +' cfg.ft8.grid='+ cfg.ft8.grid);
-
-   if (cfg.ft8.GPS_update_grid && ok && ft8.grid != auto) {
-      ft8.grid = auto;
-      if (isAdmin()) {
-         w3_set_value('id-ft8.grid', ft8.grid);
-         w3_input_change('ft8.grid', 'ft8_input_grid_cb', 'gps');
-      } else {
-         w3_innerHTML('id-ft8-rgrid', 'reporter grid<br>'+ ft8.grid + (auto? ' (GPS)':''));
-      }
-      //console.log('ft8_check_GPS_update_grid SET ft8.grid='+ ft8.grid);
-   }
-
-   if (isAdmin()) {
-      if (kiwi.GPS_fixes) w3_show_inline_block('id-ft8-grid-set');
-      ft8.single_shot_update = false;
-   }
-}
-
-// called from receipt of an "ADM get_gps_info_cb" in admin_recv()
-// which is the callback to us sending an on-demand "ADM get_gps_info" above
-function FT8_gps_info_cb()
+function FT8_gps_info_cb(o)
 {
    //console.log('FT8_gps_info_cb');
    if (!cfg.ft8.GPS_update_grid && !ft8.single_shot_update) return;
-   ft8.grid = kiwi.GPS_auto_grid;
-   w3_set_value('id-ft8.grid', ft8.grid);
-   w3_input_change('ft8.grid', 'ft8_input_grid_cb', 'gps');    // for w3-restart
+   //console.log(o);
+   var ft8_gps = kiwi_JSON_parse('FT8_gps_info_cb', o);
+   if (ft8_gps) {
+      //console.log(ft8_gps);
+      w3_set_value('id-ft8-grid', ft8_gps.grid);
+      w3_input_change('ft8.grid');     // for w3-restart
+   }
    ft8.single_shot_update = false;
 }
 

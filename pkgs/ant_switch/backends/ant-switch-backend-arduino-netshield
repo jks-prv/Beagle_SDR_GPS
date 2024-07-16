@@ -59,7 +59,7 @@ AntSW_SetAddress() {
 AntSW_Initialize() {
   	ARDUINOURL="http://"$NETSHIELD_IP
 	CURLEXEC=`which curl`
-	CURLOPTS=" --silent --connect-timeout 4"
+	CURLOPTS=" --silent --connect-timeout 2"
 }
 
 AntSW_GroundAll() {

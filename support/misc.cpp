@@ -163,7 +163,7 @@ void send_msg_buf(conn_t *c, char *s, int slen)
         }
 
         if (cmd_debug) cmd_debug_print(c, s, slen, true);
-        mg_ws_send(c->mc, s, slen, WEBSOCKET_OP_BINARY);
+        mg_websocket_write(c->mc, WEBSOCKET_OPCODE_BINARY, s, slen);
     }
 }
 
@@ -184,7 +184,6 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 // note the conn_t difference below
 // rx_chan == SM_SND_ADM_ALL means send to all sound and admin connections
 // rx_chan == SM_RX_CHAN_ALL means send to all connected channels
-// rx_chan == SM_ADMIN_ALL   means send to all admin connections
 int snd_send_msg(int rx_chan, bool debug, const char *msg, ...)
 {
     int rv = -1;
@@ -268,7 +267,7 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 	va_end(ap);
 	size_t slen = strlen(s);
 	if (debug) printf("send_msg_mc: %d <%s>\n", slen, s);
-    mg_ws_send(mc, s, slen, WEBSOCKET_OP_BINARY);
+	mg_websocket_write(mc, WEBSOCKET_OPCODE_BINARY, s, slen);
 	kiwi_asfree(s, "send_msg_mc");
 }
 

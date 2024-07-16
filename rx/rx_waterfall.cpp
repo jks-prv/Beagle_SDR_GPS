@@ -57,7 +57,7 @@ Boston, MA  02110-1301, USA.
 
 //#define WF_INFO
 //#define WF_APER_INFO
-#define TR_WF_CMDS      0
+//#define TR_WF_CMDS
 #define SM_WF_DEBUG		false
 //#define WF_SPEC_INV_DEBUG
 
@@ -92,6 +92,10 @@ static const char *interp_s[] = { "max", "min", "last", "drop", "cma" };
     #define WFSleepReasonUsec(r, t) kiwi_usleep(t)
     #define WFNextTask(r)
 #endif
+
+struct iq_t {
+	u2_t i, q;
+} __attribute__((packed));
 
 #define	WF_OUT_HDR	((int) (sizeof(wf_pkt_t) - sizeof(out->un)))
 #define	WF_OUT_NOM	((int) (WF_OUT_HDR + sizeof(out->un.buf)))
@@ -336,19 +340,21 @@ void c2s_waterfall(void *param)
 			#endif
 
 			// SECURITY: this must be first for auth check
-            bool keep_alive;
-			if (rx_common_cmd(STREAM_WATERFALL, conn, cmd, &keep_alive)) {
-                if ((conn->ip_trace || (TR_WF_CMDS && tr_cmds < 32)) && !keep_alive) {
-                    clprintf(conn, "WF #%02d [rx_common_cmd] <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
-                    tr_cmds++;
-                }
+			if (rx_common_cmd(STREAM_WATERFALL, conn, cmd)) {
+                #ifdef TR_WF_CMDS
+                    if (tr_cmds++ < 32)
+                        clprintf(conn, "WF #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+                #endif
 				continue;
 			}
 			
-            if (conn->ip_trace || (TR_WF_CMDS && tr_cmds < 32)) {
-                clprintf(conn, "WF #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
-                tr_cmds++;
-            }
+			#ifdef TR_WF_CMDS
+				if (tr_cmds++ < 32) {
+					clprintf(conn, "WF #%02d <%s> cmd_recv 0x%x/0x%x\n", tr_cmds, cmd, cmd_recv, CMD_ALL);
+				} else {
+					//cprintf(conn, "WF <%s> cmd_recv 0x%x/0x%x\n", cmd, cmd_recv, CMD_ALL);
+				}
+			#endif
 
             u2_t key = str_hash_lookup(&wf_cmd_hash, cmd);
             bool did_cmd = false;
