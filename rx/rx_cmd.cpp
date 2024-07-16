@@ -241,8 +241,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	int i, j, k, n, seq;
 	const char *stream_name = rx_streams[stream_type].uri;
 	struct mg_connection *mc = conn->mc;
-    int chan = conn->rx_channel;
-    int chan_a = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : chan;
 	char *sb;
 	int slen;
 	bool ok, err;
@@ -303,8 +301,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 
             // for STREAM_EXT send a roundtrip keepalive
             if (conn->type == STREAM_EXT) {
-                if (chan == -1) return true;
-                ext_send_msg(chan, false, "MSG keepalive");
+                if (conn->rx_channel == -1) return true;
+                ext_send_msg(conn->rx_channel, false, "MSG keepalive");
             }
             
             // for STREAM_ADMIN and STREAM_MFG send a roundtrip keepalive so admin client can tell
@@ -319,8 +317,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
 	    break;
 	
-	// SECURITY: make sure none of these options set privileged state
-	// arg check: OK
 	case CMD_OPTIONS:
 	    u4_t options;
         n = sscanf(cmd, "SET options=%d", &options);
@@ -332,9 +328,15 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
 	    break;
 	
+	case CMD_KICK_ADMINS:
+        if (kiwi_str_begins_with(cmd, "SET kick_admins")) {
+            rx_server_kick(KICK_ADMIN);
+            return true;
+        }
+        break;
+	
 	// SECURITY: auth command here is the only one allowed before auth check below
-	// (excluding keepalive & options above)
-	// arg check: OK?
+	// (excluding keepalive, options & kick_admins above)
 	case CMD_AUTH:
         if (kiwi_str_begins_with(cmd, "SET auth")) {
     
@@ -751,7 +753,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             #endif
             
             //pwd_printf("DUP_IP badp=%d skip_dup_ip_check=%d stream_snd_or_wf=%d\n", badp, skip_dup_ip_check, stream_snd_or_wf);
-            //pwd_printf("DUP_IP rx%d %s %s\n", chan, uri, conn->remote_ip);
+            //pwd_printf("DUP_IP rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
         
             // only SND connection has tlimit_exempt_by_pwd
             if (stream_wf && conn->other && conn->other->tlimit_exempt_by_pwd) skip_dup_ip_check = true;
@@ -760,11 +762,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             bool skip_admin = (type_admin && allow);
             if (no_dup_ip && !skip_admin && badp == BADP_OK && !skip_dup_ip_check && stream_snd_or_wf) {
                 conn_t *c = conns;
-                //pwd_printf("DUP_IP NEW rx%d %s %s\n", chan, uri, conn->remote_ip);
+                //pwd_printf("DUP_IP NEW rx%d %s %s\n", conn->rx_channel, uri, conn->remote_ip);
                 for (i=0; i < N_CONNS; i++, c++) {
                     bool snd_wf = (c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
                     if (!c->valid || c->internal_connection || !snd_wf) continue;
-                    if (c->rx_channel == chan) continue;    // skip our own entry
+                    if (c->rx_channel == conn->rx_channel) continue;    // skip our own entry
                     //pwd_printf("DUP_IP CHK rx%d %s %s\n", c->rx_channel, rx_conn_type(c), c->remote_ip);
                     if (strcmp(conn->remote_ip, c->remote_ip) == 0) {
                         //pwd_printf("DUP_IP MATCH\n");
@@ -778,7 +780,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             send_msg(conn, false, "MSG chan_no_pwd=%d", rx_chan_no_pwd());  // potentially corrected from cfg.chan_no_pwd
             send_msg(conn, false, "MSG chan_no_pwd_true=%d", rx_chan_no_pwd(PWD_CHECK_YES));
             if (badp == BADP_OK && (stream_snd || conn->type == STREAM_ADMIN)) {
-                send_msg(conn, false, "MSG is_local=%d,%d,%d", chan, is_local? 1:0, conn->tlimit_exempt_by_pwd);
+                send_msg(conn, false, "MSG is_local=%d,%d,%d", conn->rx_channel, is_local? 1:0, conn->tlimit_exempt_by_pwd);
                 //pdb_printf("PWD %s %s\n", type_m, uri);
             }
             send_msg(conn, false, "MSG max_camp=%d", N_CAMP);
@@ -802,8 +804,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 
                 if (type_admin) {
                     conn->auth_admin = true;
+                    int chan = conn->rx_channel;
 
-                    // give admin auth to all associated conns of this chan
+                    // give admin auth to all associated conns of this rx_channel
                     if (!stream_admin_or_mfg && chan != -1) {
                         conn_t *c = conns;
                         for (int i=0; i < N_CONNS; i++, c++) {
@@ -883,24 +886,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    }
 	    break;
 
-	// SECURITY: should be okay: checks for conn->auth_admin first
-	case CMD_KICK_ADMINS:
-        if (kiwi_str_begins_with(cmd, "SET kick_admins")) {
-		    if (!conn->auth_admin) {
-                cprintf(conn, "kick_admins: NO ADMIN AUTH %s\n", conn->remote_ip);
-                return true;
-            }
-            rx_server_kick(KICK_ADMIN);
-            return true;
-        }
-        break;
-	
 
 ////////////////////////////////
 // saved config
 ////////////////////////////////
 
-	// SECURITY: save_config() checks via calling admin_auth_okay() and rx_auth_okay()
     case CMD_SAVE_CFG:
     case CMD_SAVE_DXCFG:
     case CMD_SAVE_ADM:
@@ -919,7 +909,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
     dx_t *dp, *ldp, *upd;
 
 	// SECURITY: should be okay: checks for conn->auth_admin first
-	// arg check: FIXME
     case CMD_DX_UPD:
         if (kiwi_str_begins_with(cmd, "SET DX_UPD")) {
             if (conn->auth_admin == false) {
@@ -927,7 +916,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 return true;
             }
         
-            dx_db_t *dx_db = dx.rx_db[chan_a];
+            int chan = (conn->type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
+            dx_db_t *dx_db = dx.rx_db[chan];
             double freq = 0;
             int gid = -999;
             int low_cut, high_cut, mkr_off, sig_bw, flags, begin, end, new_len;
@@ -1108,7 +1098,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
 	    break;
 
-	// arg check: FIXME
     case CMD_DX_FILTER:
         if (kiwi_str_begins_with(cmd, "SET DX_FILTER")) {
             char *filter_ident_m, *filter_notes_m;
@@ -1158,10 +1147,10 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
     // With params associated with dx list searching.
     // Returning counts of the number of types used.
     
-	// arg check: FIXME
     case CMD_MARKER:
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
             int type = conn->type;
+            int chan = (type == STREAM_ADMIN)? MAX_RX_CHANS : conn->rx_channel;
             double freq, min, max, bw;
             int db, zoom = -1, width, dir = 1, filter_tod = 0, anti_clutter = 0, clutter_filtered = 0;
             int idx1, idx2;
@@ -1175,8 +1164,8 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 cprintf(conn, "--- DX_MKR [%s]\n", cmd);
             }
             
-            if (chan_a == -1 || (type != STREAM_ADMIN && type != STREAM_SOUND && type != STREAM_WATERFALL && type != STREAM_EXT)) {
-                lprintf("CMD_MARKER bad caller: chan=%d type=%d\n", chan_a, type);
+            if (chan == -1 || (type != STREAM_ADMIN && type != STREAM_SOUND && type != STREAM_WATERFALL && type != STREAM_EXT)) {
+                lprintf("CMD_MARKER bad caller: chan=%d type=%d\n", chan, type);
                 return true;
             }
 
@@ -1232,11 +1221,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             dx_lastx = 0;
             const char *db_s[] = { "stored", "EiBi", "community" };
         
-            dx_db_t *dx_db = dx.rx_db[chan_a];
+            dx_db_t *dx_db = dx.rx_db[chan];
             if (db != dx_db->db) {
                 if (db < 0 || db >= DB_N) db = 0;
                 dx_db = &dx.dx_db[db];
-                dx.rx_db[chan_a] = dx_db;
+                dx.rx_db[chan] = dx_db;
                 if (dx_db->db == DB_EiBi && !dx_db->init) {
                     dx_eibi_init();
                     dx_db->init = true;
@@ -1726,7 +1715,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	// SECURITY: should be okay: checks for conn->auth_admin first
     case CMD_DX_SET:
         if (conn->auth_admin == false) {
-            cprintf(conn, "DX_SET NO ADMIN AUTH %s\n", conn->remote_ip);
+            cprintf(conn, "CMD_DX_SET NO ADMIN AUTH %s\n", conn->remote_ip);
             return true;
         }
 
@@ -1743,12 +1732,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 
     case CMD_GET_CONFIG:
         if (strcmp(cmd, "SET GET_CONFIG") == 0) {
-            rx_send_config((chan >= 0)? chan : SM_SND_ADM_ALL);
+            rx_send_config((conn->rx_channel > 0)? conn->rx_channel : SM_SND_ADM_ALL);
             return true;
         }
 	    break;
 	
-	// arg check: OK
     case CMD_STATS_UPD:
         if (kiwi_str_begins_with(cmd, "SET STATS_UPD")) {
             int ch;
@@ -1817,7 +1805,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 // UI
 ////////////////////////////////
 
-	// arg check: OK
     case CMD_REQUIRE_ID:
         int require_id;
         if (sscanf(cmd, "SET require_id=%d", &require_id) == 1) {
@@ -1826,7 +1813,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
         break;
 
-	// arg check: OK
     case CMD_IDENT_USER:
         if (kiwi_str_begins_with(cmd, "SET ident_user=")) {
             
@@ -1912,7 +1898,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
 	    break;
 
-	// arg check: OK
     case CMD_NEED_STATUS:
         n = sscanf(cmd, "SET need_status=%d", &j);
         if (n == 1) {
@@ -1924,7 +1909,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
 	    break;
 	
-	// arg check: OK
     case CMD_GEO_LOC: {
         char *geo_m = NULL;
         n = sscanf(cmd, "SET geoloc=%127ms", &geo_m);
@@ -1944,7 +1928,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    break;
 	}
 
-	// arg check: OK
     case CMD_GEO_JSON: {
         char *geojson_m = NULL;
         n = sscanf(cmd, "SET geojson=%256ms", &geojson_m);
@@ -1957,7 +1940,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    break;
     }
 	
-	// arg check: OK
     case CMD_BROWSER: {
         char *browser_m = NULL;
         n = sscanf(cmd, "SET browser=%256m[^\n]", &browser_m);
@@ -1973,12 +1955,11 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	
 #ifdef USE_SDR
     // used by signal generator etc.
-	// arg check: OK
     case CMD_WF_COMP: {
         int wf_comp;
         n = sscanf(cmd, "SET wf_comp=%d", &wf_comp);
         if (n == 1) {
-            c2s_waterfall_compression(chan, wf_comp? true:false);
+            c2s_waterfall_compression(conn->rx_channel, wf_comp? true:false);
             //printf("### SET wf_comp=%d\n", wf_comp);
             return true;
         }
@@ -2009,7 +1990,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 
     case CMD_ANT_SWITCH: {
         if (kiwi_str_begins_with(cmd, "SET antsw_")) {
-            if (ant_switch_msgs(cmd, chan))
+            if (ant_switch_msgs(cmd, conn->rx_channel))
                 return true;
         }
         break;
@@ -2021,27 +2002,25 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 
     case CMD_PREF_EXPORT: {
         if (kiwi_str_begins_with(cmd, "SET pref_export")) {
-            #if 0
-                kiwi_asfree(conn->pref_id);
-                kiwi_asfree(conn->pref);
-                n = sscanf(cmd, "SET pref_export id=%64ms pref=%4096ms", &conn->pref_id, &conn->pref);
-                if (n != 2) {
-                    cprintf(conn, "pref_export n=%d\n", n);
-                    return true;
+            kiwi_asfree(conn->pref_id);
+            kiwi_asfree(conn->pref);
+            n = sscanf(cmd, "SET pref_export id=%64ms pref=%4096ms", &conn->pref_id, &conn->pref);
+            if (n != 2) {
+                cprintf(conn, "pref_export n=%d\n", n);
+                return true;
+            }
+            cprintf(conn, "pref_export id=<%s> pref= %d <%s>\n",
+                conn->pref_id, strlen(conn->pref), conn->pref);
+
+            // remove prior exports from other channels
+            conn_t *c;
+            for (c = conns; c < &conns[N_CONNS]; c++) {
+                if (c == conn) continue;
+                if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
+                    kiwi_asfree(c->pref_id); c->pref_id = NULL;
+                    kiwi_asfree(c->pref); c->pref = NULL;
                 }
-                cprintf(conn, "pref_export id=<%s> pref= %d <%s>\n",
-                    conn->pref_id, strlen(conn->pref), conn->pref);
-    
-                // remove prior exports from other channels
-                conn_t *c;
-                for (c = conns; c < &conns[N_CONNS]; c++) {
-                    if (c == conn) continue;
-                    if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
-                        kiwi_asfree(c->pref_id); c->pref_id = NULL;
-                        kiwi_asfree(c->pref); c->pref = NULL;
-                    }
-                }
-            #endif
+            }
         
             return true;
         }
@@ -2050,32 +2029,29 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	
     case CMD_PREF_IMPORT: {
         if (kiwi_str_begins_with(cmd, "SET pref_import")) {
-            #if 0
-                kiwi_asfree(conn->pref_id);
-                n = sscanf(cmd, "SET pref_import id=%64ms", &conn->pref_id);
-                if (n != 1) {
-                    cprintf(conn, "pref_import n=%d\n", n);
-                    return true;
+            kiwi_asfree(conn->pref_id);
+            n = sscanf(cmd, "SET pref_import id=%64ms", &conn->pref_id);
+            if (n != 1) {
+                cprintf(conn, "pref_import n=%d\n", n);
+                return true;
+            }
+            cprintf(conn, "pref_import id=<%s>\n", conn->pref_id);
+
+            conn_t *c;
+            for (c = conns; c < &conns[N_CONNS]; c++) {
+                // allow self-match if (c == conn) continue;
+                if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
+                    cprintf(conn, "pref_import ch%d MATCH ch%d\n", conn->rx_channel, c->rx_channel);
+                    send_msg(conn, false, "MSG pref_import_ch=%d pref_import=%s", c->rx_channel, c->pref);
+                    break;
                 }
-                cprintf(conn, "pref_import id=<%s>\n", conn->pref_id);
-    
-                conn_t *c;
-                for (c = conns; c < &conns[N_CONNS]; c++) {
-                    // allow self-match if (c == conn) continue;
-                    if (c->pref_id && c->pref && strcmp(c->pref_id, conn->pref_id) == 0) {
-                        cprintf(conn, "pref_import ch%d MATCH ch%d\n", chan, c->rx_channel);
-                        send_msg(conn, false, "MSG pref_import_ch=%d pref_import=%s", c->rx_channel, c->pref);
-                        break;
-                    }
-                }
-                if (c == &conns[N_CONNS]) {
-                    cprintf(conn, "pref_import NOT FOUND\n", conn->pref_id);
-                    send_msg(conn, false, "MSG pref_import=null");
-                }
-    
-                kiwi_asfree(conn->pref_id); conn->pref_id = NULL;
-            #endif
-            
+            }
+            if (c == &conns[N_CONNS]) {
+                cprintf(conn, "pref_import NOT FOUND\n", conn->pref_id);
+                send_msg(conn, false, "MSG pref_import=null");
+            }
+
+            kiwi_asfree(conn->pref_id); conn->pref_id = NULL;
             return true;
         }
 	    break;
@@ -2089,7 +2065,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
     // DEPRECATED
     // Replaced by "--tlimit-pw" option that specifies an actual time limit exemption password.
     // But silently accept for backward compatibility with old versions of kiwiclient still in use.
-	// arg check: OK
     case CMD_OVERRIDE: {
         int inactivity_timeout;
         n = sscanf(cmd, "SET OVERRIDE inactivity_timeout=%d", &inactivity_timeout);
@@ -2105,7 +2080,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 ////////////////////////////////
 
 	// SECURITY: only used during debugging
-	// arg check: OK
     case CMD_NOCACHE:
         n = sscanf(cmd, "SET nocache=%d", &i);
         if (n == 1) {
@@ -2116,7 +2090,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    break;
 
 	// SECURITY: only used during debugging
-	// arg check: OK
     case CMD_CTRACE:
         n = sscanf(cmd, "SET ctrace=%d", &i);
         if (n == 1) {
@@ -2127,7 +2100,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    break;
 
 	// SECURITY: only used during debugging
-	// arg check: OK
     case CMD_DEBUG_VAL:
         n = sscanf(cmd, "SET dbug_v=%d,%d", &i, &j);
         if (n == 2) {
@@ -2157,7 +2129,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    break;
 
 	// SECURITY: only used during debugging
-	// arg check: OK
     case CMD_DEVL: {
 	    double pf;
         n = sscanf(cmd, "SET devl.p%d=%lf", &i, &pf);
@@ -2231,7 +2202,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	    break;
 
 	// SECURITY: should be okay: checks for conn->auth_admin first
-	// arg check: OK
     case CMD_CLK_ADJ: {
         int clk_adj;
         n = sscanf(cmd, "SET clk_adj=%d", &clk_adj);
@@ -2265,7 +2235,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
 	
 	// kiwiclient still uses "SET geo=" which is shorter than the max_hash_len
 	// so must be checked manually
-	// arg check: OK
     char *geo_m = NULL;
     n = sscanf(cmd, "SET geo=%127ms", &geo_m);
     if (n == 1) {
