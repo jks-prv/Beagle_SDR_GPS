@@ -392,10 +392,37 @@ void c2s_admin(void *param)
 ////////////////////////////////
 
 #ifdef USE_SDR
+            i = strcmp(cmd, "SET xfer_stats");
+            if (i == 0) {
+                rx_chan_t *rx;
+                int underruns = 0, seq_errors = 0;
+            
+                for (rx = rx_channels, i=0; rx < &rx_channels[rx_chans]; rx++, i++) {
+                    if (rx->busy) {
+                        conn_t *c = rx->conn;
+                        if (c && c->valid && c->arrived && c->type == STREAM_SOUND && c->ident_user != NULL) {
+                            underruns += c->audio_underrun;
+                            seq_errors += c->sequence_errors;
+                        }
+                    }
+                }
+        
+                int n_dpbuf = kiwi.isWB? N_WB_DPBUF : N_DPBUF;
+                sb = kstr_asprintf(NULL, "{\"ad\":%d,\"au\":%d,\"ae\":%d,\"ar\":%d,\"ar2\":%d,\"an\":%d,\"an2\":%d,",
+                    dpump.audio_dropped, underruns, seq_errors, dpump.resets, dpump.in_hist_resets, nrx_bufs, n_dpbuf);
+                sb = kstr_cat(sb, kstr_list_int("\"ap\":[", "%u", "],", (int *) dpump.hist, nrx_bufs));
+                sb = kstr_cat(sb, kstr_list_int("\"ai\":[", "%u", "]", (int *) dpump.in_hist, n_dpbuf));
+                sb = kstr_cat(sb, "}");
+                send_msg(conn, false, "ADM xfer_stats_cb=%s", kstr_sp(sb));
+                kstr_free(sb);
+                continue;
+            }
+
             i = strcmp(cmd, "SET dpump_hist_reset");
             if (i == 0) {
-                dpump.force_reset = true;
-                dpump.resets = 0;
+                memset(dpump.hist, 0, sizeof(dpump.hist));
+                memset(dpump.in_hist, 0, sizeof(dpump.in_hist));
+                dpump.resets = dpump.in_hist_resets = 0;
                 continue;
             }
 #endif
@@ -521,6 +548,13 @@ void c2s_admin(void *param)
                 continue;
             }
     
+            i = strcmp(cmd, "SET stop_proxy");
+            if (i == 0) {
+                lprintf("PROXY: stopping frpc\n");
+                system("killall -q frpc");
+                continue;
+            }
+    
             int reg, rev_auto;
             char *user_m = NULL, *host_m = NULL;
             n = sscanf(cmd, "SET rev_register reg=%d user=%256ms host=%256ms auto=%d", &reg, &user_m, &host_m, &rev_auto);
@@ -555,6 +589,7 @@ void c2s_admin(void *param)
                     // NB: can't use e.g. non_blocking_cmd() here to get the authorization status
                     // because frpc doesn't fork and return on authorization success.
                     // So the non_blocking_cmd() will hang.
+		            lprintf("PROXY: starting frpc\n");
                     system("killall -q frpc; sleep 1");
                     if (background_mode)
                         system("/usr/local/bin/frpc -c " DIR_CFG "/frpc.ini &");
@@ -1367,6 +1402,17 @@ void c2s_admin(void *param)
             }
 
             // compute grid from GPS on-demand (similar to "SET admin_update")
+            //
+            // NB: The C-side extension will get their rgrid values updated when the
+            // js-side modifies the corresponding cfg.grid value and the C-side
+            // update_vars_from_config() => {wspr,ft8}_update_vars_from_config() is called.
+            //
+            // Or when rx_util.cpp::on_GPS_solution() is being called on each GPS solution and
+            // {wspr_c,ft8_conf}.GPS_update_grid is true. This is how a WSPR/FT8 autorun would
+            // see a GPS auto grid change when there are no admin or user connections.
+            //
+            // So we don't need to set e.g. {wspr_c,ft8_conf}.rgrid here.
+            
             i = strcmp(cmd, "ADM get_gps_info");
             if (i == 0) {
                 if (gps.StatLat) {
@@ -1376,10 +1422,7 @@ void c2s_admin(void *param)
                     loc.lon = gps.sgnLon;
                     if (latLon_to_grid6(&loc, grid6) == 0) {
                         grid6[6] = '\0';
-                        send_msg_encoded(conn, "ADM", "gps_info", "{\"grid\":\"%s\"}", grid6);
-                        kiwi_strncpy(wspr_c.rgrid, grid6, LEN_GRID);
-                        //kiwi_strncpy(ft8_conf2.rgrid, grid6, LEN_GRID);
-                        //jksx FIXME need to do more when setting grid?
+                        send_msg_encoded(conn, "ADM", "get_gps_info_cb", "{\"grid\":\"%s\"}", grid6);
                     }
                 }
                 continue;

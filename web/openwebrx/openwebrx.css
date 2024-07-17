@@ -477,7 +477,7 @@ html, body
 .class-spectrum-dB-tooltip
 {
     background-color: #999999 !important;
-    width: 140px !important;
+    width: 140px;
     margin-left: -70px !important;
 	z-index: 106;
 }

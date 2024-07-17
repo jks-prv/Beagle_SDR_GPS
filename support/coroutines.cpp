@@ -516,7 +516,7 @@ void TaskDump(u4_t flags)
     
     if (flags & TDUMP_HIST) {
         lfprintf(printf_type, "\n");
-        lfprintf(printf_type, "HIST: ");
+        lfprintf(printf_type, "HIST:           ");
         for (j = 0; j < N_HIST; j++) {
             if (task_all_hist[j])
                 lfprintf(printf_type, "%d|%sm ", task_all_hist[j], hist_name[j]);
@@ -529,7 +529,7 @@ void TaskDump(u4_t flags)
 		if (!t->valid)
 			continue;
 		if (flags & TDUMP_HIST) {
-		    lfprintf(printf_type, "T%03d  ", i);
+		    lfprintf(printf_type, "T%03d %-10s ", i, t->name);
 		    for (j = 0; j < N_HIST; j++) {
 		        if (t->hist[j])
 		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);

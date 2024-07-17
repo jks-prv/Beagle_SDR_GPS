@@ -8,6 +8,9 @@
 var admin_sdr = {
    ext_cur_nav: null,
    
+   comp_s: [ 'last', 'on', 'off' ],
+   setup_s: [ 'show all', 'RF spec + WF', 'WF only', 'DX labels only', 'top bar only' ],
+
    pmi: 0,
    pbm: 'am',
    pbl: 0,
@@ -56,6 +59,33 @@ var admin_sdr = {
    _last_: 0
 };
 
+function update_web_grid()
+{
+   //console.log('update_web_grid cfg.GPS_update_web_grid='+ TF(cfg.GPS_update_web_grid));
+   if (isEmptyString(kiwi.GPS_auto_grid)) return;
+   
+   if (admin.current_tab_name == 'webpage') {
+      if (cfg.GPS_update_web_grid) {
+         w3_set_value('index_html_params.RX_QRA', kiwi.GPS_auto_grid);
+         w3_input_change('index_html_params.RX_QRA', 'webpage_input_grid_cb', 'gps');
+      }
+   }
+}
+
+function update_web_map()
+{
+   //console.log('update_web_map cfg.GPS_update_web_lores|hires='+ TF(cfg.GPS_update_web_lores) +'|'+ TF(cfg.GPS_update_web_hires));
+   if (isEmptyString(kiwi.GPS_auto_latlon)) return;
+   
+   if (admin.current_tab_name == 'webpage') {
+      if (cfg.GPS_update_web_lores || cfg.GPS_update_web_hires) {
+         w3_set_value('rx_gps', kiwi.GPS_auto_latlon);
+         w3_input_change('rx_gps', 'webpage_input_gps_cb', 'gps');
+      }
+   }
+}
+
+
 ////////////////////////////////
 // config
 ////////////////////////////////
@@ -99,18 +129,17 @@ function config_html()
 	var s1 =
 		'<hr>' +
 		w3_text('w3-margin-B-8 w3-text-teal w3-bold', 'Initial values for:') +
-		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb|3'),
+		w3_inline_percent('w3-margin-bottom w3-text-teal/w3-container',
+			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb|3'), 33,
 			w3_inline('/w3-halign-space-around/w3-center',
 				w3_select('', 'Mode', '', 'init.mode', mode_menu_idx, kiwi.mode_menu, 'config_mode_cb'),
 				w3_select('', 'Colormap', '', 'init.colormap', init_colormap, kiwi.cmap_s, 'admin_select_cb'),
 				w3_select('', 'Aperture', '', 'init.aperture', init_aperture, kiwi.aper_s, 'config_aperture_cb'),
-            w3_div('w3-center w3-tspace-8',
-               w3_select('w3-width-auto', 'MW chan', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb')
-            )
-         ),
-         w3_slider('id-rf-attn//', 'RF Attn (default value at restart)', 'init.rf_attn', init_rf_attn,
-            0, 31.5, 0.5, 'config_rf_attn_cb')
+            w3_select('', 'MW chan', '', 'init.AM_BCB_chan', init_AM_BCB_chan, AM_BCB_chan_i, 'admin_select_cb'),
+				w3_select('', 'Audio Comp', '', 'init.comp', cfg.init.comp, admin_sdr.comp_s, 'admin_select_cb'),
+				w3_select('', 'Display setup', '', 'init.setup', cfg.init.setup, admin_sdr.setup_s, 'admin_select_cb'),
+				w3_select('', 'Option bar', '', 'init.tab', cfg.init.tab, kiwi.tab_s, 'admin_select_cb')
+         )
 		) +
 
 		w3_third('w3-text-teal', 'w3-container',
@@ -129,6 +158,12 @@ function config_html()
          w3_div('id-wfmin-error w3-margin-T-8 w3-red w3-hide', 'Waterfall min must be < max'),
          w3_div('id-wfmax-error w3-margin-T-8 w3-red w3-hide', 'Waterfall max must be > min'),
          w3_div('id-zoom-error w3-margin-T-8 w3-red w3-hide', 'Zoom must be 0 to 14')
+      ) +
+      
+      w3_third('w3-text-teal w3-margin-top', 'w3-container',
+         w3_slider('id-rf-attn//', 'RF Attn (default value at restart)', 'init.rf_attn', init_rf_attn,
+            0, 31.5, 0.5, 'config_rf_attn_cb'),
+         '', ''
       ) +
       
       w3_div('w3-margin-bottom');
@@ -180,7 +215,8 @@ function config_html()
 				w3_div('w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
-				)
+				),
+            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select('w3-width-auto', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
@@ -192,11 +228,13 @@ function config_html()
 			w3_div('',
             w3_checkbox_get_param('//w3-label-inline', 'Show 1 Hz frequency resolution', 'show_1Hz', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user names to user connections', 'show_user', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation info to users', 'show_geo', 'admin_bool_cb', true),
-            w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true),
-            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true)
          )
 		) +
+
+		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_input_get('', 'S-meter calibration (dB)', 'S_meter_cal', 'admin_int_cb'),
 			w3_divs('/w3-center',
@@ -216,7 +254,11 @@ function config_html()
          )
 		) +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
-			w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb'),
+		   w3_div('',
+			   w3_input_get('', 'Waterfall calibration (dB)', 'waterfall_cal', 'admin_int_cb'),
+            w3_checkbox_get_param('w3-margin-T-8/w3-label-inline/', 'Disable WF-min zoom correction', 'no_zoom_corr', 'admin_bool_cb', false),
+            w3_div('w3-text-black w3-margin-L-24', 'Disable not recommended. <br> Normal WF-min correction is 3 dB / zoom step.')
+         ),
 			w3_div('w3-center w3-tspace-8',
 				w3_select('w3-width-auto', 'ITU region', '', 'init.ITU_region', init_ITU_region, ITU_region_i, 'admin_select_cb'),
 				w3_div('w3-text-black',
@@ -832,45 +874,63 @@ function webpage_html()
 			w3_div('id-webpage-status-preview w3-text-black w3-background-pale-aqua', '')
 		) +
 		
-		w3_divs('w3-margin-top/w3-container',
-			w3_input('', 'Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_html_cb')
+		w3_half('w3-margin-top w3-margin-bottom', 'w3-container',
+			w3_input('', 'Window/tab title', 'index_html_params.PAGE_TITLE', '', 'webpage_html_cb'),
+			w3_input('w3-restart', 'Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
 		);
 	
 	var s2 =
-		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
-			w3_input('', 'Location', 'index_html_params.RX_LOC', '', 'webpage_html_cb'),
-			w3_input('/w3-label-not-bold/',
-            w3_inline('/w3-margin-R-8',
-               w3_label('w3-bold', 'Grid square (4/6 char)'),
-               w3_button('id-webpage-grid-check cl-admin-check w3-green w3-round-large w3-margin-B-2'),
-               w3_button('id-webpage-grid-set cl-admin-check w3-blue w3-round-large w3-margin-B-2 w3-hide', 'set from GPS')
-            ), 'index_html_params.RX_QRA', '', 'webpage_input_grid'
-			)
+			w3_input('', 'Location (name)', 'index_html_params.RX_LOC', '', 'webpage_html_cb'),
+		   w3_div('',
+            w3_input('', 'Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
+            '&nbsp;'
+         )
 		) +
 
 		w3_half('', 'w3-container',
 		   w3_div('',
-            w3_input('', 'Altitude (ASL meters)', 'index_html_params.RX_ASL', '', 'webpage_string_cb'),
-            '&nbsp;'
+            w3_inline('/w3-margin-R-8',
+               w3_label('w3-bold', 'Grid square (4/6 char)'),
+               w3_button('id-webpage-grid-check cl-admin-check w3-green w3-round-large w3-margin-B-2'),
+               w3_button('id-webpage-grid-set cl-admin-check w3-blue w3-round-large w3-margin-B-2 w3-hide', 'set from GPS')
+            ),
+
+            w3_inline('w3-halign-space-between/',
+               w3_input('/w3-label-not-bold/', '', 'index_html_params.RX_QRA', '', 'webpage_input_grid_cb'),
+               w3_checkbox_get_param('//w3-label-inline', 'Continuous update from GPS', 'GPS_update_web_grid', 'admin_bool_cb', false)
+            )
          ),
          
          w3_div('',
-            w3_input('/w3-label-not-bold/', 
-               w3_inline('/w3-margin-R-8',
-                  w3_label('w3-bold', 'Map (Google format or lat, lon) ') +
-                  w3_button('id-webpage-map-check cl-admin-check w3-green w3-round-large w3-margin-B-2'),
-                  w3_inline('id-webpage-gps-set w3-hide/w3-margin-R-8',
-                     w3_label('w3-text-black w3-normal', 'set from GPS:'),
-                     w3_button('cl-admin-check w3-blue w3-round-large w3-margin-B-2', 'lo res', 'webpage_set_gps_cb', 0),
-                     w3_button('cl-admin-check w3-red w3-round-large w3-margin-B-2', 'hi res', 'webpage_set_gps_cb', 1)
-                  )
-               ), 'index_html_params.RX_GMAP', '', 'webpage_input_map'
+            w3_inline('/w3-margin-R-8',
+               w3_label('w3-bold', 'Location (lat, lon) '),
+               w3_button('id-webpage-map-check cl-admin-check w3-green w3-round-large w3-margin-B-2'),
+               w3_inline('id-webpage-gps-set w3-hide/w3-margin-R-8',
+                  w3_label('w3-text-black w3-normal', 'set from GPS:'),
+                  w3_button('cl-admin-check w3-blue w3-round-large w3-margin-B-2', 'lo res', 'webpage_set_gps_cb', 0),
+                  w3_button('cl-admin-check w3-red w3-round-large w3-margin-B-2', 'hi res', 'webpage_set_gps_cb', 1)
+               )
             ),
+
+            w3_inline('w3-halign-space-between/',
+               w3_input('/w3-label-not-bold/', '', 'rx_gps', '', 'webpage_input_gps_cb'),
+               w3_inline('/w3-margin-R-8',
+                  w3_label('w3-bold', 'Continuous update from GPS: '),
+                  w3_checkbox_get_param('/w3-label-inline/id-webpage-lores', 'lo res', 'GPS_update_web_lores', 'webpage_update_gps_cb', false, 0),
+                  w3_checkbox_get_param('/w3-label-inline/id-webpage-hires', 'hi res', 'GPS_update_web_hires', 'webpage_update_gps_cb', false, 1)
+               )
+            ),
+
 				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
          )
 		) +
 		
+		w3_half('w3-margin-bottom w3-valign', 'w3-container',
+			w3_input('', 'Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
+         w3_checkbox_get_param('w3-margin-T-20//w3-label-inline', 'Display owner/admin email link on KiwiSDR main page?', 'contact_admin', 'admin_bool_cb', true)
+		) +
+
 		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 			w3_inline('w3-halign-space-between/',
@@ -973,9 +1033,16 @@ function webpage_user_login_save_cb(path)
    w3_schedule_highlight(el);
 }
 
-function webpage_input_grid(path, val)
+function webpage_input_grid_cb(path, val, first, cb_a)
 {
-	webpage_string_cb(path, val);
+   var from_gps = (cb_a[1] && cb_a[1] == 'gps')? true : false;
+
+	// don't update cfg from a continuous GPS update -- only show in field
+	if (!from_gps)
+	   webpage_string_cb(path, val);
+	else
+	   ext_send('SET reload_index_params');
+
 	webpage_update_check_grid();
 }
 
@@ -985,16 +1052,100 @@ function webpage_update_check_grid()
 	w3_el('webpage-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
 }
 
-function webpage_input_map(path, val)
+function webpage_set_gps_cb(path, val)
 {
-	webpage_string_cb(path, val.trim());
+   console.log('webpage_set_gps_cb path='+ path +' val='+ val);
+   var hires = +val;
+   if (hires)
+      alert(
+      'CAUTION: Specifying full GPS resolution causes the\n' +
+      'user page [map] link, and map.kiwisdr.com map pin,\n' +
+      'to show your exact location.\n\n' +
+      'Please be sure this is what you intend.'
+      );
+   var resolution = hires? 6:2;
+   var lat = (+admin.status.lat).toFixed(resolution);
+   var lon = (+admin.status.lon).toFixed(resolution);
+   w3_set_value('rx_gps', '('+ lat +', '+ lon +')');
+   w3_input_change('rx_gps', 'webpage_input_gps_cb');
+}
+
+function webpage_update_gps_cb(path, val, first, cbp)
+{
+	//console.log('webpage_update_gps_cb: path='+ path +' val='+ val +' first='+ first +' cbp='+ cbp);
+   if (first) return;
+   var which = +cbp;
+   w3_checkbox_set(path, val);      // for benefit of direct call below
+   admin_bool_cb(path, val, first);
+   
+   // force uncheck other one of lores/hires pair
+   if (val == true) {
+      var other = 'GPS_update_web_'+ ['lores','hires'][which ^ 1];
+      webpage_update_gps_cb(other, false);
+   }
+
+   if (which == 1 && val)
+      setTimeout(       // needed so checkbox is checked before alert panel shows
+         function() {
+            alert(
+            'CAUTION: Specifying full GPS resolution causes the\n' +
+            'user page [map] link, and map.kiwisdr.com map pin,\n' +
+            'to show your exact location.\n\n' +
+            'Please be sure this is what you intend.'
+            );
+         }, 1
+      );
+}
+
+function webpage_input_gps_cb(path, val, first, cb_a)
+{
+   var from_gps = (cb_a[1] && cb_a[1] == 'gps')? true : false;
+   //console.log('webpage_input_gps_cb path='+ path +' val='+ val +' first='+ first +' from_gps='+ from_gps);
+   var set_cfg = false;
+   var lat = 0, lon = 0;
+   var re = /([-]?\d*\.?\d+)/g;
+   var resolution = 2;
+   
+   for (var i = 0; i < 2; i++) {
+      var p = re.exec(val);
+      //console.log(p);
+      if (p) {
+         if (i) lon = parseFloat(p[0]); else lat = parseFloat(p[0]);
+         
+         // reduce displayed resolution if lat/lon both nn.nn0000 or nn.nn
+         if (!p[0].endsWith('0000') && (p[0][p[0].length-3] != '.')) resolution = 6;
+      }
+   }
+   
+   val = '('+ lat.toFixed(resolution) +', '+ lon.toFixed(resolution) +')';
+
+	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
+	   val = '(0.000000, 0.000000)';
+	   set_cfg = true;
+	}
+
+	if (val == '(0.000000, 0.000000)') {
+		w3_flag('rx_gps');
+
+      // clear registration state
+      kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_SWITCH_NO_IDX);
+	} else {
+		w3_unflag('rx_gps');
+	}
+	
+	// don't update cfg from a continuous GPS update -- only show in field
+	if (set_cfg || first || (!first && !from_gps))
+	   w3_string_set_cfg_cb(path, val, first);
+	
+	w3_set_value(path, val);
 	webpage_update_check_map();
 }
 
 function webpage_update_check_map()
 {
-	var map = ext_get_cfg_param_string('index_html_params.RX_GMAP');
-	w3_el('webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ map +'" target="_blank">check map</a>';
+	var gps = w3_get_value('id-rx_gps');
+	gps = gps.substring(1, gps.length-1);		// remove parens
+	w3_el('id-webpage-map-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
 }
 
 function webpage_photo_uploaded(obj)
@@ -1103,10 +1254,12 @@ function webpage_focus()
 	admin_set_decoded_value('index_html_params.RX_LOC');
 	admin_set_decoded_value('index_html_params.RX_QRA');
 	admin_set_decoded_value('index_html_params.RX_ASL');
-	admin_set_decoded_value('index_html_params.RX_GMAP');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_HEIGHT');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_TITLE');
 	admin_set_decoded_value('index_html_params.RX_PHOTO_DESC');
+	admin_set_decoded_value('rx_gps');
+	admin_set_decoded_value('rx_antenna');
+	admin_set_decoded_value('admin_email');
 
 	admin_set_decoded_value('owner_info');
 	w3_el('id-webpage-owner-info-preview').innerHTML = admin_preview_status_box('owner_info_1', cfg.owner_info);
@@ -1117,40 +1270,28 @@ function webpage_focus()
 	w3_el('id-webpage-grid-set').onclick = function() {
 		var val = admin.status.grid;
 		w3_set_value('index_html_params.RX_QRA', val);
-		w3_input_change('index_html_params.RX_QRA', 'webpage_input_grid');
+		w3_input_change('index_html_params.RX_QRA', 'webpage_input_grid_cb');
 	};
 
 	// get updates while the webpage tab is selected
 	admin_update_start();
 }
 
-function webpage_set_gps_cb(path, val)
+function webpage_blur()
 {
-   console.log('webpage_set_gps_cb path='+ path +' val='+ val);
-   var hires = +val;
-   if (hires)
-      alert(
-      'CAUTION: Specifying full GPS resolution causes the ' +
-      'user page [map] link to show your exact location. \n' +
-      'Please be sure this is what you intend.'
-      );
-   var resolution = hires? 6:2;
-   var lat = (+admin.status.lat).toFixed(resolution);
-   var lon = (+admin.status.lon).toFixed(resolution);
-   w3_set_value('index_html_params.RX_GMAP', '('+ lat +', '+ lon +')');
-   w3_input_change('index_html_params.RX_GMAP', 'webpage_input_map');
+   admin_update_stop();
 }
 
 function webpage_string_cb(path, val)
 {
-   console_nv('webpage_string_cb', {path}, {val});
+   //console_nv('webpage_string_cb', {path}, {val});
 	w3_string_set_cfg_cb(path, val);
 	ext_send_after_cfg_save('SET reload_index_params');
 }
 
 function webpage_html_cb(path, val)
 {
-   console_nv('webpage_html_cb', {path}, {val});
+   //console_nv('webpage_html_cb', {path}, {val});
 	w3_json_set_cfg_cb(path, val);
 	ext_send_after_cfg_save('SET reload_index_params');
 }
@@ -1170,11 +1311,6 @@ function webpage_photo_height_cb(path, val)
 	}
 }
 
-function webpage_blur()
-{
-   admin_update_stop();
-}
-
 
 ////////////////////////////////
 // public
@@ -1186,13 +1322,13 @@ function kiwi_reg_html()
 		w3_div('',
          w3_div('w3-margin-T-10 w3-valign',
             '<header class="w3-container w3-yellow"><h5>' +
-            'More information on <a href="http://kiwisdr.com/quickstart/index.html#id-config-kiwi-reg" target="_blank">kiwisdr.com</a><br><br>' +
+            'More information on <a href="http://kiwisdr.com/info#id-config-kiwi-reg" target="_blank">kiwisdr.com</a><br><br>' +
 
             'To list your Kiwi on <a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a> ' +
             'edit the fields below and set the "<i>Register</i>" switch to <b>Yes</b>. ' +
             'Look for a successful status result within a few minutes.<br>' +
             
-            'The "<i>Location (lat, lon)</i>" field must be set properly for your Kiwi to be listed in the correct location on ' +
+            'The "<i>Location (lat, lon)</i>" field must be set properly for your Kiwi to be listed at the correct location on ' +
             '<a href="http://map.kiwisdr.com" target="_blank">map.kiwisdr.com</a>' +
 
             '</h5></header>'
@@ -1216,49 +1352,9 @@ function kiwi_reg_html()
 		'<hr>' +
 		w3_half('w3-margin-bottom w3-restart', 'w3-container',
 			w3_input('', 'Name', 'rx_name', '', 'w3_string_set_cfg_cb'),
-			w3_input('', 'Location', 'rx_location', '', 'w3_string_set_cfg_cb')
+			w3_input('', 'Location (name)', 'rx_location', '', 'w3_string_set_cfg_cb')
 		) +
 
-		w3_half('w3-margin-bottom', 'w3-container',
-			w3_input('', 'Admin email', 'admin_email', '', 'w3_string_set_cfg_cb'),
-			w3_input('w3-restart', 'Antenna', 'rx_antenna', '', 'w3_string_set_cfg_cb')
-		) +
-
-		w3_inline_percent('w3-margin-bottom w3-restart/w3-container',
-			w3_input('/w3-label-not-bold/',
-            w3_inline('/w3-margin-R-8',
-               w3_label('w3-bold', 'Grid square (4/6 char)'),
-               w3_button('id-public-grid-check cl-admin-check w3-green w3-round-large w3-margin-B-2'),
-               w3_button('id-public-grid-set cl-admin-check w3-blue w3-round-large w3-margin-B-2 w3-hide', 'set from GPS')
-            ), 'rx_grid', '', 'public_check_grid_cb'
-			) + '&nbsp;', 40,
-			
-			w3_div('',
-            w3_input('/w3-label-not-bold/',
-               w3_inline('/w3-margin-R-8',
-                  w3_label('w3-bold', 'Location (lat, lon)'),
-                  w3_button('id-public-gps-check cl-admin-check w3-green w3-round-large w3-margin-B-2'),
-                  w3_inline('id-public-gps-set w3-hide/w3-margin-R-8',
-                     w3_label('w3-text-black w3-normal', 'set from GPS:'),
-                     w3_button('cl-admin-check w3-blue w3-round-large w3-margin-B-2', 'lo res', 'public_set_gps_cb', 0),
-                     w3_button('cl-admin-check w3-red w3-round-large w3-margin-B-2', 'hi res', 'public_set_gps_cb', 1)
-                  )
-               ), 'rx_gps', '', 'public_check_gps_cb'
-            ),
-				w3_div('w3-text-black', 'Format: (nn.nnnnnn, nn.nnnnnn)')
-			), 40,
-			
-			w3_input_get('', 'Altitude (ASL meters)', 'rx_asl', 'admin_int_cb') + '&nbsp;'
-		) +
-
-		'<hr>' +
-		w3_half('w3-margin-bottom', 'w3-container',
-         w3_switch_label('w3-label-inline w3-label-left', 'Display owner/admin email link on KiwiSDR main page?',
-            'Yes', 'No', 'contact_admin', cfg.contact_admin, 'admin_radio_YN_cb'),
-		   ''
-		) +
-
-		'<hr>' +
 		w3_half('w3-margin-bottom', 'w3-container',
 		   w3_div('',
             w3_input_get('', 'Coverage frequency low (kHz)', 'sdr_hu_lo_kHz', 'admin_int_cb'),
@@ -1271,6 +1367,16 @@ function kiwi_reg_html()
 			),
          w3_input_get('', 'Coverage frequency high (kHz)', 'sdr_hu_hi_kHz', 'admin_int_cb')
       ) +
+
+		'<hr>' +
+		w3_text('w3-margin-left w3-text-black',
+		   'Fields on the <x1>Webpage</x1> tab used by public registration process: ' +
+		   'Antenna, Altitude, Location (lat, lon) <br><br>' +
+		   'Note that the two "Location (name)" fields, here and on the <x1>Webpage</x1> tab, are distinct. <br>' +
+		   'Allowing different location content to appear on the user webpage versus what appears on the ' +
+		   '<a href="http://rx.kiwisdr.com" target="_blank">rx.kiwisdr.com</a> listing.'
+		) +
+
       '<hr>';
 
 	return w3_div('id-public w3-text-teal w3-hide', s1 + s2);
@@ -1292,19 +1398,19 @@ function kiwisdr_com_register_cb(path, idx, first)
    
    if (idx == w3_SWITCH_YES_IDX && (no_url || bad_ip || no_passwordless_channels || no_rx_gps || autorun_full)) {
       if (no_url)
-         text = 'Error, you must first setup a valid Kiwi connection URL on the admin "connect" tab';
+         text = 'Error, you must first setup a valid Kiwi connection URL on the "connect" tab';
       else
       if (bad_ip)
-         text = 'Error, must be a public (not local) IP address on the admin "connect" tab';
+         text = 'Error, must be a public (not local) IP address on the "connect" tab';
       else
       if (no_passwordless_channels)
-         text = 'Error, must have at least one user channel that doesn\'t require a password (see admin "security" tab)';
+         text = 'Error, must have at least one user channel that doesn\'t require a password (see "security" tab)';
       else
       if (no_rx_gps)
-         text = 'Error, you must first set a valid entry in the "<i>Location (lat, lon)</i>" field';
+         text = 'Error, you must first set a valid entry on the webpage tab "<i>Location (lat, lon)</i>" field';
       else
       if (autorun_full)
-         text = 'Error, cannot have WSPR/FT8 autorun enabled on ALL channels!';
+         text = 'Error, cannot have non-preemptable WSPR/FT8 autorun enabled on ALL channels!';
       w3_switch_set_value(path, w3_SWITCH_NO_IDX);    // force back to 'no'
       idx = w3_SWITCH_NO_IDX;
       error = true;
@@ -1329,103 +1435,12 @@ function public_focus()
 {
 	admin_set_decoded_value('rx_name');
 	admin_set_decoded_value('rx_location');
-	admin_set_decoded_value('rx_antenna');
-	admin_set_decoded_value('rx_grid');
-	admin_set_decoded_value('rx_gps');
-	admin_set_decoded_value('admin_email');
-
-	// The default in the factory-distributed kiwi.json is the kiwisdr.com NZ location.
-	// Detect this and ask user to change it so the Kiwi map doesn't end up with multiple SDRs
-	// defined at the kiwisdr.com location.
-	var gps = ext_get_cfg_param_string('rx_gps');
-	public_check_gps_cb('rx_gps', gps, /* first */ true);
-	
-	public_update_check_grid();
-	public_update_check_map();
-	
-	w3_el('id-public-grid-set').onclick = function() {
-		var val = admin.status.grid;
-		w3_set_value('rx_grid', val);
-		w3_input_change('rx_grid', 'public_check_grid_cb');
-	};
 
 	// get updates while the public tab is selected
    admin_update_start();
    	
 	// display initial switch state
-	kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_switch_idx(adm.kiwisdr_com_register), /* first */ true);
-}
-
-function public_set_gps_cb(path, val)
-{
-   console.log('public_set_gps_cb path='+ path +' val='+ val);
-   var hires = +val;
-   if (hires)
-      alert(
-      'CAUTION: Specifying full GPS resolution causes the ' +
-      'map.kiwisdr.com map pin to show your exact location. \n' +
-      'Please be sure this is what you intend.'
-      );
-   var resolution = hires? 6:2;
-   var lat = (+admin.status.lat).toFixed(resolution);
-   var lon = (+admin.status.lon).toFixed(resolution);
-   w3_set_value('rx_gps', '('+ lat +', '+ lon +')');
-   w3_input_change('rx_gps', 'public_check_gps_cb');
-}
-
-function public_check_grid_cb(path, val)
-{
-	w3_string_set_cfg_cb(path, val);
-	public_update_check_grid();
-}
-
-function public_update_check_grid()
-{
-	var grid = ext_get_cfg_param('rx_grid');
-	w3_el('id-public-grid-check').innerHTML = '<a href="http://www.levinecentral.com/ham/grid_square.php?Grid='+ grid +'" target="_blank">check grid</a>';
-}
-
-function public_check_gps_cb(path, val, first)
-{
-   console.log('public_check_gps_cb path='+ path +' val='+ val +' first='+ first);
-   var set_cfg = false;
-   var lat = 0, lon = 0;
-   var re = /([-]?\d*\.?\d+)/g;
-   for (var i = 0; i < 2; i++) {
-      var p = re.exec(val);
-      //console.log(p);
-      if (p) {
-         if (i) lon = parseFloat(p[0]); else lat = parseFloat(p[0]);
-      }
-   }
-   
-   val = '('+ lat.toFixed(6) +', '+ lon.toFixed(6) +')';
-
-	if (val == '(-37.631120, 176.172210)' || val == '(-37.631120%2C%20176.172210)') {
-	   val = '(0.000000, 0.000000)';
-	   set_cfg = true;
-	}
-
-	if (val == '(0.000000, 0.000000)') {
-		w3_flag('rx_gps');
-
-      // clear registration state
-      kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_SWITCH_NO_IDX);
-	} else {
-		w3_unflag('rx_gps');
-	}
-	
-	if (!first || set_cfg)
-	   w3_string_set_cfg_cb(path, val, first);
-	w3_set_value(path, val);
-	public_update_check_map();
-}
-
-function public_update_check_map()
-{
-	var gps = ext_get_cfg_param_string('rx_gps');
-	gps = gps.substring(1, gps.length-1);		// remove parens
-	w3_el('id-public-gps-check').innerHTML = '<a href="https://google.com/maps/place/'+ gps +'" target="_blank">check map</a>';
+	kiwisdr_com_register_cb('adm.kiwisdr_com_register', w3_switch_val2idx(adm.kiwisdr_com_register), /* first */ true);
 }
 
 function public_blur()
@@ -1549,7 +1564,7 @@ function dx_html()
       w3_inline('w3-margin-T-16 w3-halign-space-between/',
          w3_inline('/w3-margin-between-16 w3-valign',
             w3_button(dx.button_section, '-', 'dx_expand_cb', 0),
-            w3_link(dx.link1, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-list', 'Stored DX labels'),
+            w3_link(dx.link1, 'http://kiwisdr.com/info#id-config-DX-list', 'Stored DX labels'),
             w3_text('id-dx-list-saved w3-margin-left w3-padding-medium w3-text-black w3-hide', 'Changes saved')
          ),
          w3_inline('/w3-margin-between-16 w3-valign',
@@ -1585,7 +1600,7 @@ function dx_html()
       w3_inline('w3-margin-T-24 w3-halign-space-between/',
          w3_inline('/w3-margin-between-16 w3-valign',
             w3_button(dx.button_section, '+', 'dx_expand_cb', 1),
-            w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-DX-type', 'DX type menu'),
+            w3_link(dx.link2, 'http://kiwisdr.com/info#id-config-DX-type', 'DX type menu'),
             w3_text('w3-margin-left w3-text-black',
                'Defines content of <b>Type</b> menu in <i>DX labels</i> section above.<br>' +
                'Follow link at left for important info before making changes.'),
@@ -1604,7 +1619,7 @@ function dx_html()
       w3_inline('w3-margin-T-24 w3-halign-space-between/',
          w3_inline('/w3-margin-between-16 w3-valign',
             w3_button(dx.button_section, '+', 'dx_expand_cb', 2),
-            w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-bars', 'Band bars'),
+            w3_link(dx.link2, 'http://kiwisdr.com/info#id-config-band-bars', 'Band bars'),
             w3_text('w3-margin-left w3-text-black',
                'Defines content of band bars and <b>select band</b> menu on user page.<br>' +
                'Follow link at left for important info before making changes.'),
@@ -1623,7 +1638,7 @@ function dx_html()
       w3_inline('w3-margin-TB-24 w3-halign-space-between/',
          w3_inline('/w3-margin-between-16 w3-valign',
             w3_button(dx.button_section, '+', 'dx_expand_cb', 3),
-            w3_link(dx.link2, 'http://kiwisdr.com/quickstart/index.html#id-config-band-svc', 'Band service menu'),
+            w3_link(dx.link2, 'http://kiwisdr.com/info#id-config-band-svc', 'Band service menu'),
             w3_text('w3-margin-left w3-text-black',
                'Defines content of <b>Service</b> menu in <i>Band bars</i> section above.<br>' +
                'Follow link at left for important info before making changes.'),

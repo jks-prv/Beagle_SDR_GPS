@@ -23,7 +23,7 @@ Boston, MA  02110-1301, USA.
 //
 // Implements fixed and 2**n variable decimation (R).
 //
-// NB: when variable decimation is specified by .DECIMATION(<0) then .GROWTH() must
+// NB: when variable decimation is specified by .DECIM_TYPE(<0) then .GROWTH() must
 // specify for the largest expected decimation.
 //
 // Fixed differential delay (D) = 1
@@ -42,9 +42,9 @@ module cic_prune_var (
 `include "kiwi.gen.vh"
 
     // design parameters
-    parameter INCLUDE = "required";
+    parameter INC_FILE = "required";
     parameter STAGES = "required";
-    parameter DECIMATION = "required";  
+    parameter DECIM_TYPE = "required";  
     parameter IN_WIDTH = "required";
     parameter GROWTH = "required";
     parameter OUT_WIDTH = "required";
@@ -58,8 +58,9 @@ module cic_prune_var (
     wire [MD-1:0] decim;
     
     generate
-        if (DECIMATION < 0) begin assign decim = decimation; end	// variable
-        if (DECIMATION > 0) begin assign decim = DECIMATION; end	// fixed
+        if (DECIM_TYPE < 0)  begin assign decim = decimation; end	// variable (DECIM_TYPE is MAX pow2)
+        if (DECIM_TYPE > 0)  begin assign decim = DECIM_TYPE; end	// fixed
+        if (DECIM_TYPE == 0) begin assign decim = 1 << (MD+1); end  // error
     endgenerate
     
     always @(posedge clock)
@@ -83,32 +84,48 @@ module cic_prune_var (
     wire signed [OUT_WIDTH-1:0] out;
     
     generate
-        if (INCLUDE == "rx1" && RX1_DECIM == RX1_STD_DECIM)
-        begin : rx1_12k
-            `include "cic_rx1_12k.vh"
-        end
+        if (INC_FILE == "rx1")
+        begin : rx1
+            if (RX1_DECIM == RX1_STD_DECIM)
+            begin : rx1_12k
+                `include "cic_rx1_12k.vh"
+            end else
         
-        if (INCLUDE == "rx2" && RX2_DECIM == RX2_STD_DECIM)
-        begin : rx2_12k
-            `include "cic_rx2_12k.vh"
+            if (RX1_DECIM == RX1_WIDE_DECIM)
+            begin : rx1_20k
+                `include "cic_rx1_20k.vh"
+            end else
+            
+            if (RX1_DECIM == RX1_WB_DECIM)
+            begin : rx1_wb
+                `include "cic_rx1_wb.vh"
+            end
         end
-        
-        if (INCLUDE == "rx1" && RX1_DECIM == RX1_WIDE_DECIM)
-        begin : rx1_20k
-            `include "cic_rx1_20k.vh"
-        end
-        
-        if (INCLUDE == "rx2" && RX2_DECIM == RX2_WIDE_DECIM)
-        begin : rx2_20k
-            `include "cic_rx2_20k.vh"
+
+        if (INC_FILE == "rx2")
+        begin : rx2
+            if (RX2_DECIM == RX2_STD_DECIM)
+            begin : rx2_12k
+                `include "cic_rx2_12k.vh"
+            end else
+            
+            if (RX2_DECIM == RX2_WIDE_DECIM)
+            begin : rx2_20k
+                `include "cic_rx2_20k.vh"
+            end else
+            
+            if (RX2_DECIM == RX2_WB_DECIM)
+            begin : rx2_wb
+                `include "cic_rx2_wb.vh"
+            end
         end
     
-        if (INCLUDE == "wf1")
+        if (INC_FILE == "wf1")
         begin : wf1
             `include "cic_wf1.vh"
         end
         
-        if (INCLUDE == "wf2")
+        if (INC_FILE == "wf2")
         begin : wf2
             `include "cic_wf2.vh"
         end
@@ -148,7 +165,7 @@ module cic_prune_var (
 	localparam ACC_R16K		= IN_WIDTH + GROWTH_R16K;
 	
     generate
-        if (DECIMATION == -1)
+        if (DECIM_TYPE == -1)
         begin
         
         always @(posedge clock)
@@ -157,7 +174,7 @@ module cic_prune_var (
     endgenerate
     
     generate
-        if (DECIMATION == -64)
+        if (DECIM_TYPE == -64)
         begin
         
         always @(posedge clock)
@@ -175,7 +192,7 @@ module cic_prune_var (
     endgenerate
     
     generate
-        if (DECIMATION == -2048)
+        if (DECIM_TYPE == -2048)
         begin
         
         always @(posedge clock)
@@ -198,7 +215,7 @@ module cic_prune_var (
     endgenerate
     
     generate
-        if (DECIMATION == -4096)
+        if (DECIM_TYPE == -4096)
         begin
         
         always @(posedge clock)
@@ -222,7 +239,7 @@ module cic_prune_var (
     endgenerate
     
     generate
-        if (DECIMATION == -8192)
+        if (DECIM_TYPE == -8192)
         begin
         
         always @(posedge clock)
@@ -247,7 +264,7 @@ module cic_prune_var (
     endgenerate
     
     generate
-        if (DECIMATION == -16384)
+        if (DECIM_TYPE == -16384)
         begin
         
         always @(posedge clock)
@@ -274,7 +291,7 @@ module cic_prune_var (
     
     // for fixed decimation case only need to sign-extend IN_WIDTH input to fill ACC_WIDTH of first integrator
     generate
-        if (DECIMATION > 0)
+        if (DECIM_TYPE > 0)
         begin
     
         always @(posedge clock)
@@ -286,7 +303,7 @@ module cic_prune_var (
     // for fixed and variable decimation cases the generated code takes "out" from top OUT_WIDTH bits of last comb stage
     
     generate
-        if (DECIMATION < 0)
+        if (DECIM_TYPE < 0)
         begin
             always @(posedge clock)
                 if (out_strobe)
@@ -298,7 +315,7 @@ module cic_prune_var (
     endgenerate
     
     generate
-        if (DECIMATION > 0)
+        if (DECIM_TYPE > 0)
         begin
             always @(posedge clock)
                 if (out_strobe) out_data <= out;

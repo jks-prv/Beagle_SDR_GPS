@@ -15,10 +15,9 @@ Boston, MA  02110-1301, USA.
 --------------------------------------------------------------------------------
 */
 
-// Copyright (c) 2015 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2024 John Seamons, ZL4VO/KF6VO
 
-#ifndef _DATA_PUMP_H_
-#define _DATA_PUMP_H_
+#pragma once
 
 #include "types.h"
 #include "spi.h"
@@ -27,13 +26,16 @@ Boston, MA  02110-1301, USA.
 typedef struct {
 	u2_t i, q;
 	u1_t q3, i3;	// NB: endian swap
-} __attribute__((packed)) rx_iq_t;
+} __attribute__((packed)) iq3_t;
 			
 typedef struct {
 	u2_t i, q;
-} __attribute__((packed)) wf_iq_t;
+} __attribute__((packed)) iq_t;
 
-#define N_DPBUF	32
+#define N_DPBUF	    32
+#define N_WB_DPBUF  256
+
+#define N_IN_HIST_MAX   N_WB_DPBUF
 
 typedef struct {
 	struct {
@@ -45,6 +47,9 @@ typedef struct {
 		    u4_t in_seq[N_DPBUF];
 		#endif
 		
+		//TYPECPX wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
+		TYPECPX24 wb_samps[N_WB_DPBUF][MAX_WB_SAMPS];
+
 		TYPECPX agc_samples_c[FASTFIR_OUTBUF_SIZE];
 
 		TYPEREAL demod_samples_r[FASTFIR_OUTBUF_SIZE];
@@ -67,41 +72,11 @@ typedef struct {
     TYPECPX iq_samples[N_DPBUF][FASTFIR_OUTBUF_SIZE];
 } iq_buf_t;
 
-typedef struct {
-    iq_buf_t iq_buf[MAX_RX_CHANS];
-} rx_shmem_t;
-
-#include "shmem_config.h"
-
-#ifdef DRM
-    // RX_SHMEM_DISABLE defined by DRM.h
-#else
-    #ifdef MULTI_CORE
-        //#define RX_SHMEM_DISABLE_TEST
-        #ifdef RX_SHMEM_DISABLE_TEST
-            #warning dont forget to remove RX_SHMEM_DISABLE_TEST
-            #define RX_SHMEM_DISABLE
-        #else
-            // shared memory enabled
-        #endif
-    #else
-        #define RX_SHMEM_DISABLE
-    #endif
-#endif
-
-#include "shmem.h"
-
-#ifdef RX_SHMEM_DISABLE
-    extern rx_shmem_t *rx_shmem_p;
-    #define RX_SHMEM rx_shmem_p
-#else
-    #define RX_SHMEM (&shmem->rx_shmem)
-#endif
+#include "data_pump_shmem.h"
 
 typedef struct {
     u4_t resets, hist[MAX_NRX_BUFS];
-    bool force_reset;
-    u4_t in_hist[N_DPBUF];
+    u4_t in_hist_resets, in_hist[N_IN_HIST_MAX];
     int rx_adc_ovfl;
     u4_t rx_adc_ovfl_cnt;
     int audio_dropped;
@@ -111,5 +86,5 @@ extern dpump_t dpump;
 
 void data_pump_start_stop();
 void data_pump_init();
-
-#endif
+void data_pump_startup();
+void data_pump_dump();

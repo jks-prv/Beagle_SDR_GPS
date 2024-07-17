@@ -127,9 +127,9 @@ function noise_filter_controls_html()
 			w3_divs('/w3-tspace-8',
 				w3_inline('w3-gap-16/',
 				   w3_div('w3-text-aqua', '<b>Noise filter</b>'),
-				   w3_select('w3-text-red||title="noise filter selection"', '', 'filter', 'nr_algo', noise_filter.algo, noise_filter.menu_s, 'nr_algo_cb', 'm'),
+				   w3_select('w3-text-red||title="noise filter selection"', '', 'type', 'nr_algo', noise_filter.algo, noise_filter.menu_s, 'nr_algo_cb', 'm'),
 				   w3_button('w3-padding-tiny w3-yellow', 'Defaults', 'noise_filter_load_defaults'),
-               w3_button('id-noise-filter-help-btn w3-right w3-green w3-small w3-padding-small', 'help', 'noise_filter_help')
+               w3_button('id-noise-filter-help-btn w3-btn-right w3-green w3-small w3-padding-small', 'help', 'noise_filter_help')
 				),
             w3_div('w3-margin-LR-16', s)
          )

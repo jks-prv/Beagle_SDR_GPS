@@ -46,6 +46,7 @@
 					0x08c 0x2f	/* p818 2_1  gpio io: rx pdis m7 */
 					0x020 0x2f	/* p819 0_22 gpio io: rx pdis m7 */
 					0x07c 0x2f	/* p826 1_29 gpio io: rx pdis m7 */
+					0x0a8 0x2f	/* p843 2_08 gpio io: rx pdis m7 */
 				>;
 			};
 		};

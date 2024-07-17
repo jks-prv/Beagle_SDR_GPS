@@ -30,6 +30,11 @@ typedef struct {
 } tDComplex;
 
 typedef struct {
+	s4_t re;
+	s4_t im;
+} tIComplex24;
+
+typedef struct {
 	s2_t left;
 	s2_t right;
 } tStereo16;
@@ -93,6 +98,7 @@ typedef struct {
  #define MFFTW_EXECUTE fftwf_execute
 #endif
 
+#define TYPECPX24       tIComplex24
 #define TYPESTEREO16    tStereo16
 #define TYPESTEREO24    tStereo24
 #define TYPEMONO16      s2_t

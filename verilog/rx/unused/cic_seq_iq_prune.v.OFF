@@ -37,9 +37,9 @@ module cic_seq_iq_prune (
 	);
 
     // design parameters
-    parameter INCLUDE = "required";
+    parameter INC_FILE = "required";
     parameter STAGES = "required";
-    parameter DECIMATION = "required";  
+    parameter DECIM_TYPE = "required";  
     parameter IN_WIDTH = "required";
     parameter GROWTH = "required";
     parameter OUT_WIDTH = "required";
@@ -55,7 +55,7 @@ module cic_seq_iq_prune (
     always @(posedge clock)
       if (in_strobe)
         begin
-        if (sample_no == (DECIMATION-1))
+        if (sample_no == (DECIM_TYPE-1))
           begin
           sample_no <= 0;
           integ_strobe <= 1;
@@ -72,12 +72,12 @@ module cic_seq_iq_prune (
     wire signed [ACC_WIDTH-1:0] integ_out_i, integ_out_q;
     
     generate
-        if (INCLUDE == "rx3" && RX2_DECIM == RX2_STD_DECIM)
+        if (INC_FILE == "rx3" && RX2_DECIM == RX2_STD_DECIM)
         begin : rx3_12k
             `include "cic_rx3_12k.vh"
         end
         
-        if (INCLUDE == "rx3" && RX2_DECIM == RX2_WIDE_DECIM)
+        if (INC_FILE == "rx3" && RX2_DECIM == RX2_WIDE_DECIM)
         begin : rx3_20k
             `include "cic_rx3_20k.vh"
         end
