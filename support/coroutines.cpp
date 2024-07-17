@@ -392,7 +392,7 @@ void TaskDump(u4_t flags)
     if (flags & TDUMP_CLR_HIST) {
         memset(task_all_hist, 0, sizeof(task_all_hist));
         lfprintf(printf_type, "HIST: cleared\n");
-        return;
+        //return;
     }
 
 	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
