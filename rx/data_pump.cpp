@@ -434,6 +434,7 @@ static void data_pump(void *param)
 
 		evDP(EC_EVENT, EV_DPUMP, -1, "data_pump", evprintf("WAKEUP: SPI CTRL_SND_INTR %d",
 			GPIO_READ_BIT(SND_INTR)));
+		TaskStat(TSTAT_INCR|TSTAT_ZERO, 0, "dp");
 
 		snd_service();
 		
