@@ -30,6 +30,7 @@
 #include "spi.h"
 #include "printf.h"
 #include "services.h"
+#include "rx_util.h"
 
 typedef struct {
 	int lo_dop, ca_sft;
@@ -166,8 +167,25 @@ void GPSstat(STAT st, double d, int i, int j, int k, int m, double d2) {
             break;
         case STAT_LON:
         	gps.sgnLon = d;
+
+            if (kiwi.test_marine_mobile) {
+                static int delta, adj;
+                if (delta == 0) delta = -3;
+                gps.sgnLon += adj;
+                adj += delta;
+                if (gps.sgnLon < 10) delta = 3;
+                if (gps.sgnLon > 170) delta = -3;
+                latLon_t loc;
+                char grid6[6 + SPACE_FOR_NULL];
+                loc.lat = gps.sgnLat;
+                loc.lon = gps.sgnLon;
+                latLon_to_grid6(&loc, grid6);
+                printf("TEST_MM %f %f %s\n", gps.sgnLat, gps.sgnLon, grid6);
+            }
+            
             gps.StatLon = fabs(d);
             gps.StatEW = d<0?'W':'E';
+            on_GPS_solution();
             break;
         case STAT_ALT:
             gps.StatAlt = d;

@@ -55,7 +55,7 @@ function waterfall_controls_setup()
                   w3_slider('id-wfext-aper-param-slider', 'Parameter', 'wfext.aper_param', wfext.aper_param, 0, 10, 1, 'waterfall_aper_param_cb')
                ),
                w3_div('id-wfext-aper-param-field'),
-               w3_button('id-wfext-aper-autoscale class-button w3-right w3-selection-green w3-font-11_25px||title="waterfall auto scale"', 'Auto<br>Scale', 'wf_autoscale_cb')
+               w3_button('id-wfext-aper-autoscale class-button w3-btn-right w3-selection-green w3-font-11_25px||title="waterfall auto scale"', 'Auto<br>Scale', 'wf_autoscale_cb')
             )
          ),
          

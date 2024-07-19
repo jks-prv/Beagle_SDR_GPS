@@ -52,7 +52,7 @@ typedef struct {
     int last_adc_clk_corrections;
     int adc_gps_clk_corrections;    // GPS-derived corrections
     int temp_correct_offset;
-    double adc_clock_base, gps_secs;
+    double adc_clock_base, gps_secs, adc_clock_corrected;
     int manual_adj;
     u64_t ticks;                    // ticks value captured at the corresponding gps_secs
 } clk_t;

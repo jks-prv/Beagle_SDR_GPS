@@ -34,14 +34,18 @@ typedef enum { ESPEED_AUTO = 0, ESPEED_10M = 1, ESPEED_100M = 2 } espeed_e;
 #define FW_SEL_SDR_RX8_WF2  1
 #define FW_SEL_SDR_RX3_WF3  2
 #define FW_SEL_SDR_RX14_WF0 3
-#define N_FW_SEL            4
+#define FW_SEL_SDR_WB       4
+#define N_FW_SEL            5
 
 #define MAX_RX_CHANS    16      // must be pow2, see coroutines.h:CTF_CHANNEL
 #define MAX_WF_CHANS    4
+#define MAX_WB_CHANS    1
 #define MAX_NRX_BUFS    16      // for RXBUF_SIZE_14CH
 #define MAX_NRX_SAMPS   226     // for nch = 3
 #define NRX_SAMPS_CHANS(nch)    ((NRX_SPI - NRX_OVHD) / NRX_IQW / nch);
 //                              (((2048-1) - (3+1+1)) / 3 / nch) = 680 / nch
+#define MAX_WB_SAMPS    1024
+
 
 #define N_CONN_ADMIN        8   // simultaneous admin connections
 
@@ -51,8 +55,9 @@ typedef enum { ESPEED_AUTO = 0, ESPEED_10M = 1, ESPEED_100M = 2 } espeed_e;
 #define PROXY_SERVER_HOST   "proxy.kiwisdr.com"
 #define PROXY_SERVER_PORT   8073
 
-extern int fw_sel, fpga_id, rx_chans, wf_chans, nrx_bufs, nrx_samps, nrx_samps_loop, nrx_samps_rem,
-    snd_rate, rx_decim;
+extern int fw_sel, fpga_id, rx_chans, rx_wb_buf_chans, wf_chans, wb_chans,
+    nrx_bufs, nrx_samps_wb, nrx_samps, nrx_samps_loop, nrx_samps_rem,
+    snd_rate, wb_rate, rx_decim;
 
 // INET6_ADDRSTRLEN (46) plus some extra in case ipv6 scope/zone is an issue
 // can't be in net.h due to #include recursion problems

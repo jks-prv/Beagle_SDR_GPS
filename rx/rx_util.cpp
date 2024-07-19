@@ -106,7 +106,7 @@ void rx_loguser(conn_t *c, logtype_e type)
                 float f_kHz = (float) c->freqHz / kHz + freq_offset_kHz;
                 int f = (int) floorf(f_kHz);
                 bool freq_trig = (
-                    (f >= (2941-10) && f <= (3900+10)) ||
+                    (f >= (2941-10) && f < 3500) ||     // stay outside 80m ham band
                     (f >= (4654-10) && f <= (4687+10)) ||
                     (f >= (5451-10) && f <= (5720+10)) ||
                     (f >= (6529-10) && f <= (6712+10)) ||
@@ -163,9 +163,9 @@ void rx_loguser(conn_t *c, logtype_e type)
 	kiwi_asfree(s);
 }
 
-int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt)
+int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt, int *busy)
 {
-	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0, preempt_cnt = 0;
+	int i, free_cnt = 0, free_idx = -1, heavy_cnt = 0, preempt_cnt = 0, busy_cnt = 0;
 	rx_chan_t *rx;
 
     // When configuration has a limited number of channels with waterfalls
@@ -181,6 +181,7 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt
                 heavy_cnt++; \
             if (rx->conn && rx->conn->arun_preempt) \
                 preempt_cnt++; \
+            busy_cnt++; \
         } else { \
             free_cnt++; \
             if (free_idx == -1) free_idx = i; \
@@ -199,6 +200,7 @@ int rx_chan_free_count(rx_free_count_e flags, int *idx, int *heavy, int *preempt
 	if (idx != NULL) *idx = free_idx;
 	if (heavy != NULL) *heavy = heavy_cnt;
 	if (preempt != NULL) *preempt = preempt_cnt;
+	if (busy != NULL) *busy = busy_cnt;
 	return free_cnt;
 }
 
@@ -229,12 +231,12 @@ int rx_count_server_conns(conn_count_e type, u4_t flags, conn_t *our_conn)
         // if type == EXTERNAL_ONLY don't count internal connections so e.g. WSPR autorun won't prevent updates
         bool sound = (c->type == STREAM_SOUND && ((type == EXTERNAL_ONLY)? !c->internal_connection : true));
         
-        // don't count preemptible internal connections since they can be kicked
+        // don't count preemptable internal connections since they can be kicked
         if (sound && (type == INCLUDE_INTERNAL) && (flags & EXCEPT_PREEMPTABLE) && c->arun_preempt)
             sound = false;
 
 	    if (type == TDOA_USERS) {
-	        if (sound && c->ident_user && kiwi_str_begins_with(c->ident_user, "TDoA_service"))
+	        if (sound && kiwi_str_begins_with(c->ident_user, "TDoA_service"))
 	            users++;
 	    } else
 	    if (type == EXT_API_USERS) {
@@ -655,42 +657,60 @@ void show_conn(const char *prefix, u4_t printf_type, conn_t *cd)
         lprintf("        user=<%s> isUserIP=%d geo=<%s>\n", cd->ident_user, cd->isUserIP, cd->geo);
 }
 
-void dump()
+static void dump_task(void *param)
 {
 	int i;
-	
-	lprintf("\n");
-	lprintf("dump --------\n");
-	lprintf("rf_attn_dB=%.1f\n", kiwi.rf_attn_dB);
-	lprintf("\n");
-	
-	for (i=0; i < rx_chans; i++) {
-		rx_chan_t *rx = &rx_channels[i];
-		lprintf("RX%d en%d busy%d conn-%2s %2.0f %2.0f %p\n", i, rx->chan_enabled, rx->busy,
-			rx->conn? stprintf("%02d", rx->conn->self_idx) : "",
-			//toUnits(audio_bytes[i], 0), toUnits(waterfall_bytes[i], 1),   // %6s
-			audio_kbps[i], waterfall_kbps[i],
-			rx->conn? rx->conn : 0);
-	}
 
-	conn_t *cd;
-	int nconn = 0;
-	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (cd->valid) nconn++;
-	}
-	lprintf("\n");
-	lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/Preempt/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, Kicked/AwaitPwd\n",
-	    nconn, N_CONNS, is_locked);
+    while (1) {
+        TaskSleep();
+    
+        lprintf("\n");
+        lprintf("dump --------\n");
+        lprintf("rf_attn_dB=%.1f\n", kiwi.rf_attn_dB);
+        lprintf("\n");
+        
+        for (i=0; i < rx_chans; i++) {
+            rx_chan_t *rx = &rx_channels[i];
+            lprintf("RX%d chan_en=%d data_en=%d busy=%d conn-%2s %2.0f %2.0f %p %d|w %d|r\n",
+                i, rx->chan_enabled, rx->data_enabled, rx->busy,
+                rx->conn? stprintf("%02d", rx->conn->self_idx) : "",
+                //toUnits(audio_bytes[i], 0), toUnits(waterfall_bytes[i], 1),   // %6s
+                audio_kbps[i], waterfall_kbps[i],
+                rx->conn? rx->conn : 0, rx->wr, rx->rd);
+        }
+    
+        conn_t *cd;
+        int nconn = 0;
+        for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+            if (cd->valid) nconn++;
+        }
+        lprintf("\n");
+        lprintf("CONNS: used %d/%d is_locked=%d  ______ => *auth, Kiwi, Admin, Master, Internal/Preempt/ExtAPI, DetAPI, Local/ForceNotLocal, ProtAuth, Kicked/AwaitPwd\n",
+            nconn, N_CONNS, is_locked);
+    
+        for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
+            if (!cd->valid) continue;
+            show_conn("", PRINTF_LOG, cd);
+        }
+        
+        TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
+        lock_dump();
+        ip_blacklist_dump(false);
+        mt_dump();
+        data_pump_dump();
+    }
+}
 
-	for (cd = conns, i=0; cd < &conns[N_CONNS]; cd++, i++) {
-		if (!cd->valid) continue;
-        show_conn("", PRINTF_LOG, cd);
-	}
-	
-	TaskDump(TDUMP_LOG | TDUMP_HIST | PRINTF_LOG);
-	lock_dump();
-	ip_blacklist_dump(false);
-	mt_dump();
+static tid_t dump_tid;
+
+void dump()
+{
+	TaskWakeup(dump_tid);
+}
+
+void dump_init()
+{
+	dump_tid = CreateTask(dump_task, NULL, MAIN_PRIORITY);
 }
 
 // can optionally configure SIG_DEBUG to call this debug handler
@@ -857,11 +877,12 @@ void geoloc_task(void *param)
         clprintf(conn, "GEOLOC: for %s FAILED for all geo servers\n", ip);
 }
 
-char *rx_users(bool include_ip)
+char *rx_users(bool isAdmin)
 {
     int i, n;
     rx_chan_t *rx;
-    bool show_geo = include_ip || cfg_bool("show_geo", NULL, CFG_REQUIRED);
+    bool show_geo = isAdmin || cfg_true("show_geo");
+    bool show_user = isAdmin || cfg_true("show_user");
     bool need_comma = false;
     char *sb = (char *) "[", *sb2;
     
@@ -923,11 +944,20 @@ char *rx_users(bool include_ip)
                 u4_t r_min = t % 60; t /= 60;
                 u4_t r_hr = t;
 
-                char *user = (c->isUserIP || !c->ident_user)? NULL : kiwi_str_encode(c->ident_user);
+                //printf("rx%d ext_api=%d ident_user=<%s>\n", i, c->ext_api, c->ident_user);
+                char *user;
+                if (c->isUserIP || !c->ident_user)
+                    user = NULL;
+                else
+                if (!show_user && !c->ext_api)
+                    user = strdup("(private)");
+                else
+                    user = kiwi_str_encode(c->ident_user);
+                
                 bool show = show_geo || c->internal_connection;
                 char *geo = show? (c->geo? kiwi_str_encode(c->geo) : NULL) : NULL;
                 char *ext = ext_users[i].ext? kiwi_str_encode((char *) ext_users[i].ext->name) : NULL;
-                const char *ip = include_ip? c->remote_ip : "";
+                const char *ip = isAdmin? c->remote_ip : "";
                 asprintf(&sb2, "%s{\"i\":%d,\"n\":\"%s\",\"g\":\"%s\",\"f\":%d,"
                     "\"m\":\"%s\",\"z\":%d,"
                     "\"wf\":%d,"
@@ -959,6 +989,7 @@ char *rx_users(bool include_ip)
         need_comma = true;
     }
 
+    //printf("rx_users: foff %.3f\n", freq_offset_kHz);
     sb = kstr_cat(sb, "]\n");
     return sb;
 }
@@ -1071,7 +1102,7 @@ void SNR_meas(void *param)
     do {
         static int meas_idx;
 	
-        for (int loop = 0; loop == 0 && snr_meas_interval_hrs; loop++) {   // so break can be used below
+        for (int loop = 0; loop == 0 && (snr_meas_interval_hrs || !regular_wakeup); loop++) {   // so break can be used below
             if (internal_conn_setup(ICONN_WS_WF, &iconn, 0, PORT_BASE_INTERNAL_SNR, WS_FL_PREEMPT_AUTORUN | WS_FL_NO_LOG,
                 NULL, 0, 0, 0,
                 "SNR-measure", "internal%20task", "SNR",
@@ -1119,8 +1150,10 @@ void SNR_meas(void *param)
                 TaskSleepMsec(900 / SNR_MEAS_SPEED);
             }
             //printf("SNR_meas DONE nsamps=%d\n", nsamps);
-            for (i = 0; i < WF_WIDTH; i++) {
-                dB_raw[i] /= nsamps;
+            if (nsamps) {
+                for (i = 0; i < WF_WIDTH; i++) {
+                        dB_raw[i] /= nsamps;
+                }
             }
             
             int f_lo = freq_offset_kHz, f_hi = freq_offmax_kHz;
@@ -1154,7 +1187,32 @@ void SNR_meas(void *param)
         //TaskSleepSec(60);
         // if disabled check again in an hour to see if re-enabled
         u64_t hrs = snr_meas_interval_hrs? snr_meas_interval_hrs : 1;
+        
+        // a !regular_wakeup occurs where there is an on-demand request, such as the admin control tab
+        // "measure SNR now" button or the /snr?meas control URL
         regular_wakeup = (bool) FROM_VOID_PARAM(TaskSleepSec(hrs * 60 * 60));
         //TaskSleepSec(60);
     } while (1);
+}
+
+void on_GPS_solution()
+{
+    //printf("on_GPS_solution: WSPR_auto=%d FT8_auto=%d haveLat=%d\n", wspr_c.GPS_update_grid, ft8_conf.GPS_update_grid, (gps.StatLat != 0));
+    if (gps.StatLat) {
+        if (wspr_c.GPS_update_grid || ft8_conf.GPS_update_grid) {
+            latLon_t loc;
+            loc.lat = gps.sgnLat;
+            loc.lon = gps.sgnLon;
+            if (latLon_to_grid6(&loc, kiwi.grid6) == 0) {   // see also gps/stat.cpp::TEST_MM
+                if (wspr_c.GPS_update_grid)
+                    wspr_update_rgrid(kiwi.grid6);
+                if (ft8_conf.GPS_update_grid)
+                    ft8_update_rgrid(kiwi.grid6);
+            }
+        }
+        
+        int res= cfg_true("GPS_update_web_hires")? 6:2;
+        kiwi_snprintf_buf(kiwi.latlon_s, "(%.*f, %.*f)", res, gps.sgnLat, res, gps.sgnLon);
+        //printf("on_GPS_solution: %s %s\n", kiwi.grid6, kiwi.latlon_s);
+    }
 }

@@ -1,4 +1,4 @@
-[updated 24 May 2024]
+[updated 10 July 2024]
 
 [![KiwiSDR](http://www.kiwisdr.com/ks/kiwi2.780px.jpg)](http://www.kiwisdr.com/ks/kiwi2.1024px.jpg)
 
@@ -9,17 +9,17 @@ Click image for full size.
 KiwiSDR
 =======
 
-Software-defined Radio (SDR) and GPS for the BeagleBone Black
+Software-defined Radio (SDR) and GPS for the BeagleBone
 ----------------------------------------------------------------------
 
-An add-on board ("cape") that turns your Beagle into a web-accessible shortwave receiver.
+An add-on board ("cape") that turns your BeagleBone into a web-accessible shortwave receiver.
 
 ### Details
 
 * Listen live: [List](http://rx.kiwisdr.com), [Map](http://map.kiwisdr.com)
 * [Online Store](https://kiwisdr.nz)
 * [Project webpage](http://www.kiwisdr.com)
-* [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/quickstart/)
+* [Operating information: installation, operation, FAQ](http://www.kiwisdr.com/info)
 * [User Forum](http://forum.kiwisdr.com)
 * Latest [source code commits](https://github.com/jks-prv/Beagle_SDR_GPS/commits/master)
 * [Design review document](http://kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf)
@@ -36,6 +36,7 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 * LTC/Analog Devices 14-bit 65 MHz ADC.
 * Xilinx/AMD Artix-7 A35 FPGA.
 * Maxim/Analog Devices MAX2769B GPS front-end.
+* Kiwi board works with BeagleBone Green, Black, BBAI or BBAI-64.
 
 ### Features
 * Open Source.
@@ -43,14 +44,16 @@ This SDR is a bit different. It has a web interface that can be used by up to fo
 * Each connection tunes an independent receiver channel over the entire spectrum.
 * Waterfall tunes independently of audio and includes zooming and panning.
 * Multi-channel, parallel DDC design using bit-width optimized CIC filters.
-* Built-in signal decoding: CW DRM FAX FSK FT8 HFDL IBP NAVTEX SSTV TDoA WSPR and more.
+* Built-in signal decoding: ALE CW DRM FAX FSK FT8 HFDL IBP NAVTEX/DSC SSTV TDoA WSPR and more.
 * Good performance at VLF/LF since we personally spend time monitoring those frequencies.
 * Automatic frequency calibration via received GPS timing.
 * Easy hardware and software setup. Browser-based configuration interface.
 * KiwiSDR 2 features:
+    * Reverse proxy service enabled by default to ease network installation.
     * 0 - 31.5 dB electronic attenuator.
     * External ADC clock input.
     * Built-in self test for checking the RF path.
+    * 5V input reverse polarity protection.
 
 ### Status
 
@@ -63,12 +66,12 @@ A second generation device, the [KiwiSDR 2](https://forum.kiwisdr.com/index.php?
 We wanted to design an SDR that provides certain features, at a low price point, that we felt weren't covered by current devices. The SDR must be web-accessible and simple to setup and use.
 We also wanted to provide a self-contained platform for experimentation with SDR and GPS techniques. The TDoA extension is an example.
 
-Most importantly, we wanted to see a significant number of web-enabled, wide-band SDRs deployed in diverse locations world-wide because that makes possible some really interesting applications and experiments. Over 600 Kiwis are publicly available currently.
+Most importantly, we wanted to see a significant number of web-enabled, wide-band SDRs deployed in diverse locations world-wide because that makes possible some really interesting applications and experiments. Over 700 Kiwis are publicly available currently.
 
 ### Operation
 
 Users can purchase just the KiwiSDR board or a complete unit consisting of the board, BeagleBone Green (software pre-installed), enclosure, and GPS antenna (see [here](http://www.kiwisdr.com/)).
-The software will try to automatically open up an incoming port through whatever Internet firewall/router may exist on the local network, but the user may have to perform this step manually. A reverse proxy solution is available.
+The software will try to automatically open up an incoming port through whatever Internet firewall/router may exist on the local network, but the user may have to perform this step manually. A reverse proxy service is available.
 
 An antenna solution must be provided. An adequate power supply (e.g. 5V @ 2A) will also be required.
 

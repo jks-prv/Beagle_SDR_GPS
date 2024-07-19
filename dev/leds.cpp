@@ -196,10 +196,8 @@ static void led_num(int n, int ndigits, int flags)
 // 0:'brighest', 1:'medium', 2:'dimmer', 3:'dimmest', 4:'off'
 static int pwm_off_time_ms[] = { 0, 5, 10, 20, -1 };   // 0 = full brightness (no PWM), -1 = no LEDs at all
 
-static void led_reporter(void *param)
+static void led_display_info()
 {
-    set_cpu_affinity(1);
-
     bool error;
     int ip_error;
     u1_t a, b, c, d;
@@ -248,6 +246,29 @@ static void led_reporter(void *param)
         led_cylon(1, LED_DLY_POST_CYLON);
         led_set(1,1,1,1, 5000);
         led_set(0,0,0,0, 3000);
+    }
+}
+
+static void led_reporter(void *param)
+{
+    set_cpu_affinity(1);
+    
+    while (1) {
+        #if defined(OPTION_MONITOR_BOOT_BTN) && defined(CPU_AM3359)
+            static bool init;
+            if (!init) {
+                GPIO_INPUT(BOOT_BTN);
+                init = true;
+            }
+            real_printf("boot_btn=%d\n", GPIO_READ_BIT(BOOT_BTN));
+            if (!disable_led_task)
+                led_display_info();
+            else
+                kiwi_msleep(1000);
+        #else
+            led_display_info();
+        #endif
+        
     }
 }
 

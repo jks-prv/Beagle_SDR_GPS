@@ -30,6 +30,20 @@
 #define	EV_WS           9
 #define NEVT			10
 
+
+// measure general task switching times
+#if 0
+	#define EV_MEAS
+    #define EV_MEAS_NEXTTASK
+#endif
+
+// measure sound runtimes
+#if 0
+	#define EV_MEAS
+    #define EV_MEAS_NEXTTASK
+    #define EV_MEAS_SND
+#endif
+
 // FAX extension latency
 #if 0
 	#define EV_MEAS
@@ -76,6 +90,7 @@
 	#define EV_MEAS_DPUMP_CHUNK
 #endif
 
+// measure waterfall chunk processing
 #if 0
 	#ifdef SND_SEQ_CHECK
 		#define EV_MEAS

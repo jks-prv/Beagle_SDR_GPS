@@ -32,7 +32,7 @@ Boston, MA  02110-1301, USA.
 #define	Q	1
 #define	NIQ	2
 
-// for backward compatibility with old versions of the antenna switch extension
+#define RX_CHAN0  0
 #define RX_CHANS 32
 
 // The hardware returns RXO_BITS (typically 24-bits) and scaling down by RXOUT_SCALE
@@ -60,17 +60,24 @@ typedef struct {
     int restart_delay;
 
     bool ext_clk;
+    bool isWB;
     bool allow_admin_conns;
     bool spectral_inversion, spectral_inversion_lockout;
     bool require_id;
+    bool test_marine_mobile;
     
     float rf_attn_dB;
+    
+    bool RsId;
     
     int CAT_fd, CAT_ch;
     
     // lat/lon returned by ipinfo lookup
 	bool ipinfo_ll_valid;
 	float ipinfo_lat, ipinfo_lon;
+	char grid6[6 + SPACE_FOR_NULL];
+	
+	char latlon_s[32];
 	
 	// low-res lat/lon from timezone process
 	int lowres_lat, lowres_lon;
@@ -103,7 +110,6 @@ extern char **main_argv;
 extern u4_t ov_mask, snd_intr_usec;
 extern float g_genfreq, g_genampl, g_mixfreq, max_thr;
 extern double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
-#define freq_offset freq_offset_kHz     // ant switch ext compatibility
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern kstr_t *cpu_stats_buf;
 extern char *tzone_id, *tzone_name;

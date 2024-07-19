@@ -279,7 +279,7 @@ nbuf_t *nbuf_dequeue(ndesc_t *nd)
 	lock_leave(&nd->lock);
 	
 	assert(!nb || (nb && !nb->done));
-	//assert(!nb || ((nb->mc->remote_port == nd->mc->remote_port) && (strcmp(nb->mc->remote_ip, nd->mc->remote_ip) == 0)));
+	//assert(!nb || ((nb->mc->rem.port == nd->mc->rem.port) && (strcmp(nb->mc->remote_ip, nb->mc->remote_ip) == 0)));
 	if (nb) check_nbuf(nb);
 	return nb;
 }

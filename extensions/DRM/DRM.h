@@ -1,12 +1,8 @@
 #pragma once
 
 #include "types.h"
-#include "config.h"
-#include "datatypes.h"
-#include "coroutines.h"
-#include "timing.h"
-#include "str.h"
-#include "ext.h"
+#include "datatypes.h"      // TYPESTEREO16
+#include "coroutines.h"     // tid_t
 
 #define DRM_CHECKING
 #ifdef DRM_CHECKING

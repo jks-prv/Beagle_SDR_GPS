@@ -149,6 +149,8 @@ struct wf_inst_t {
 	bool check_overlapped_sampling, overlapped_sampling;
 	int samp_wait_ms, chunk_wait_us;
 	
+	u4_t last_frames_ms, waterfall_frames;
+	
 	int aper, aper_algo;
 	float aper_param;
 	int need_autoscale, done_autoscale, sent_autoscale, avg_clear, signal, noise;

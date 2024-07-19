@@ -1,6 +1,7 @@
 #include "kiwi.h"
 #include "printf.h"
 #include "debug.h"
+#include "mem.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -115,16 +116,19 @@ static void evdump(evdump_e type, int lo, int hi)
                     lfprintf(printf_type, "-------  ");
                 }
             #endif
+            
                 if (e->state)
-                    lfprintf(printf_type, "%19s ", ev_state_s[e->state]);
+                    lfprintf(printf_type, "%20s ", ev_state_s[e->state]);
                 else
                     lfprintf(printf_type, "%12s:P%d:T%03d ", e->task, e->tprio, e->tid);
+
             #if 0
                 if (e->rx_chan != 255)
                     lfprintf(printf_type, "ch%d ", e->rx_chan);
                 else
                     lfprintf(printf_type, "    ");
             #endif
+
                 lfprintf(printf_type, "%-14s | %s\n", e->s, e->s2);
         #endif
 
@@ -165,18 +169,23 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	u64_t now_us = timer_us64();
 	int free_s2 = 0;
 	
-	// Using -O3 constant strings can get allocated on off byte boundaries
+	// Using -O3 constant strings can get allocated on odd byte boundaries
 	// causing our scheme of using the low-order bit to mark malloced pointers to fail.
-	// It's not really possible to access the "_end" symbol in cpp it seems.
+	// It's not really possible to access the "_end" symbol in cpp anymore it seems.
 	// And the advent of ASLR makes it moot in any case.
 	// But we observe that low addresses always seem to be used for string constants.
 	// So we use an empirical value. We'll get a double-free detect failure if this number isn't correct.
 	
-	#define EV_HIGHEST_ADDR_CONST_STRINGS ((char *) 0x100000)
-    if (s2 > EV_HIGHEST_ADDR_CONST_STRINGS && ((u64_t) s2 & EV_MALLOCED)) {
-        free_s2 = EV_MALLOCED;
-        s2 = (char*) ((u64_t) s2 & ~EV_MALLOCED);
-    }
+	#define EV_AUTO_FREE_CONST_STRINGS
+	#ifdef EV_AUTO_FREE_CONST_STRINGS
+        #define EV_HIGHEST_ADDR_CONST_STRINGS ((char *) 0x200000)
+        if (s2 > EV_HIGHEST_ADDR_CONST_STRINGS && ((u64_t) s2 & EV_MALLOCED)) {
+            free_s2 = EV_MALLOCED;
+            s2 = (char*) ((u64_t) s2 & ~EV_MALLOCED);
+        }
+    #else
+        printf("s2=%p\n", s2);
+    #endif
 	
 	assert(event >= 0 && event < NEVT);
 	
@@ -192,9 +201,11 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 	e = &evs[evc];
 
 	// keep memory from filling up with un-freed vasprintf()s from evprintf()
-	if (e->prev_valid && e->free_s2) {
-		kiwi_asfree((void*) e->s2);
-	}
+	#ifdef EV_AUTO_FREE_CONST_STRINGS
+        if (e->prev_valid && e->free_s2) {
+            kiwi_asfree((void*) e->s2);
+        }
+	#endif
 	memset(e, 0, sizeof(*e));
 	
 	//if (cmd == EC_DUMP && param > 0 && ev_dump_ms) return;

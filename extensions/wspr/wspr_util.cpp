@@ -405,7 +405,7 @@ int freq_comp(const void *elem1, const void *elem2)
 	return r;
 }
 
-void set_reporter_grid(char *grid)
+void wspr_set_latlon_from_grid(char *grid)
 {
 	grid_to_latLon(grid, &wspr_c.r_loc);
 	if (wspr_c.r_loc.lat != 999.0)

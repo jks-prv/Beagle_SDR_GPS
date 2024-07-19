@@ -2,6 +2,153 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.694  July 20, 2024
+    New passband adjustment methods:
+        If you scroll the audio tab down a bit you'll see it now has passband adjustment sliders.
+        This is especially useful for mobile devices where most of the desktop mechanisms for
+        passband adjustment don't apply. Very small screens, like phones, are difficult sometimes
+        to touch the round part of the slider if two of them are close together. What you can do
+        instead is touch the line part of the slider to make it jump to that position. Now it'll be
+        easier to touch the round part and begin sliding the control smoothly.
+        
+        The spectrum passband marker (if it is being shown) now allows you to click-drag its outer
+        edges to adjust the passband. Just as you would click-drag the sloping parts of the
+        green passband graphic on the frequency scale. Hover over the outer edges of the passband
+        marker. The cursor shape will change and the passband edge value and bandwidth will be
+        shown. Now click and drag to adjust the passband.
+
+    Mouse wheel tuning: (thanks PSO, G8JNJ, et al)
+        The mouse wheel can now tune the frequency as well as adjusting the zoom.
+        The right-click menu has a new entry controlling whether tune or zoom is the default.
+        This setting is remembered in browser storage for the next time this Kiwi is visited.
+        Depressing the wheel button while moving the wheel will temporarily select the opposite
+        action, e.g. zooming if the wheel is set for tuning. This also applies to laptop trackpads
+        that been configured for mouse wheel emulation, e.g. two finger up/down swipe.
+        
+        Frequency tuning step size: When wheel tuning the same modifier keys work as with the
+        tuning shortcut keys (i.e. 'j', 'i', left-arrow, right-arrow). Namely, of the three tuning
+        rates as shown by hovering over the - - - + + + buttons the slowest rate (typically 10 Hz)
+        is selected by using no modifier key. The middle rate with the shift key and the fastest
+        rate using the control or alt/option key.
+        
+        In lieu of the modifier keys there is also a simplistic two-speed detection of the wheel
+        velocity. If the wheel is moved quickly enough it "locks" into moving at the fastest rate.
+        It continues at that rate, even if the wheel is moved more slowly, until some time after
+        the wheel stops. The passband color turns orange until the fast rate unlocks.
+        If "snap to nearest" from the right-click menu is enabled then the fastest tuning rate is
+        always used.
+        
+        Refinement of the two-speed algorithm is going to take some effort. Unfortunately there is
+        no way for Javascript code to determine the characteristics of the actual wheel/trackpad
+        device (DPI, sensitivity etc). So the control panel user tab has some presets and fields
+        where you can alter some parameters. We can add new presets as experience is gained with
+        various mouse wheel types.
+        
+        There are currently two presets and a "custom" menu entry 
+        
+        All of this assumes the cursor is positioned in the waterfall or spectrum. As before the
+        mouse wheel modifies the passband if the cursor is on the frequency scale (in combination
+        with the modifier keys mentioned above).
+
+    Right-click menu:
+        When the right-click menu is opened, and you decide you don't want to make a menu selection,
+        the menu can now be dismissed by right clicking again (or single clicking) anywhere.
+        Previously the most convenient way was to use the escape key. But this of course doesn't
+        exist on mobile devices.
+        
+    WSPR extension spots will now upload again to wsprnet.org (thanks Nate, et al)
+    
+    Operating Information document: (kiwisdr.com/info)
+        A description of all the query/control URLs has been added: kiwisdr.com/info#id-urls
+        A few more of the available mobile gestures are described: kiwisdr.com/info#id-user-mobile
+    
+    User names composed of certain UTF-8 characters and lengths: (thanks OZ6F, RZ3DVP)
+        1. Can no longer cause the admin users tab to stop displaying.
+        2. Are now correctly shown in the admin log and system log.
+    
+    Antenna switch: (thanks S57RM, N8OOU, SM0OHC, et al)
+        Arduino Netshield backend script: Increased curl timeout value from 2 to 4 seconds per
+        suggestion by N8OOU. Note that until recently the timeout value had always been 1 second.
+        It was changed to 2 seconds when the antenna switch code was integrated into the Kiwi server
+        to match all the other backend script curl timeout values.
+        
+        Implemented queued delivery of commands to backend scripts. Should help with switches that
+        are slow to respond. Tested by introducing an artificial 5 second delay into the Beagle-GPIO
+        backend. Seems to work including with antenna mixing.
+        
+        Added a new admin setting: "Ground antennas when no users connected?" This is opposed to the
+        previous behavior where if none of the "Default antenna" checkboxes were ticked then
+        grounding of the antenna was performed when there were no users. But the first user to
+        connect had to select an antenna (assuming users even had permission to do so).
+        Now the grounding of antennas when there are no users and the specification of a default
+        antenna are decoupled. If no-user grounding is in effect the default antenna will be
+        selected when the first user connects. This is useful for example if you have a Kiwi where
+        you'd like to keep the antennas grounded when the Kiwi is not in use
+        (for lightning/static protection).
+        
+        If the user page needs to be reloaded because a selected antenna specifies a new frequency
+        offset (e.g. going from HF to 2 meters) then the user page will be reloaded without
+        requiring a confirmation. I.e. the notification box shown no longer has an "OK" button.
+        The page simply reloads after a few seconds.
+        
+        Fix bug causing value of "Deny antenna mixing?" setting not to be saved across page reloads.
+        
+        Install netcat utility needed by kmtronix-UDP switch backend script.
+
+        New shell alias "aah" to see all antenna switch frontend script aliases.    
+    
+    Admin config tab: (thanks Tremolat, G8JNJ, Ben, et al)
+        New checkbox "Show user names to user connections". When checked will show "(private)" in
+        place of usual user name displayed in the user tab of the main control panel. The user name
+        is still shown on the admin status tab and /users URL query.
+        
+        New "initial value" menus for audio compression, display setup and option bar.
+        (thanks HB9TMC, N6GN)
+        
+        By special request: Checkbox below WF cal slider to disable the automatic correction
+        that is applied to the WF-min slider (3 dB per zoom step). It is not recommended that you
+        set this option as it causes undesirable results. But it also provides a good learning
+        opportunity why 3 dB correction is needed every time the WF bandwidth changes by 2x.
+        Think SSB vs CW filters and why a narrower filter has a lower noise floor.
+    
+    Admin webpage and public tabs: (thanks ZL2LD)
+        In an effort to simplify things there has been a general rearrangement and elimination of
+        duplicate fields on the webpage and public tabs:
+        
+        1) The lat/lon, grid square and altitude fields have been removed from the public tab.
+        When publicly registering a Kiwi these values are now taken from the webpage tab where they
+        were duplicated. So there is now only one place where you need to set these values.
+        See below for an explanation of the new "continuous update" feature.
+        
+        2) The admin email and antenna fields have moved to the webpage tab where they more
+        properly belong.
+        
+        3) There remain two separate "location (name)" fields on the webpage and public tabs.
+        Because you may want different location content to appear on the user page top bar
+        versus what's displayed on your rx.kiwisdr.com public listing.
+    
+    Marine mobile grid square and lat/lon tracking: (thanks S50SVM/MM)
+        All of the lat/lon and grid square fields now have the ability to be continuously updated
+        by the GPS. So this includes the fields on the admin webpage tab as well as the FT8 and WSPR
+        extension tabs. Previously this only existed for the WSPR tab. Although all the grid and
+        lat/lon fields had (and continue to have) a button to do a one-time update from GPS.
+        
+        Setting continuous update will cause the values displayed on the user page top bar,
+        rx.kiwisdr.com public listing, /staus query etc to update as the GPS returns a new location.
+        In addition the updated values are used for FT8 and WSPR spots.
+        
+        For FT8/WSPR autorun when continuous update is active the grid is added to all the user
+        lists where the decode count is shown. So for example in the user tab the previous
+        "(N decoded)" becomes "(N decoded, GRID)". And when preemption is enabled for an autorun
+        "(N decoded, preemptable)" becomes "(N decoded, GRID, pre)".
+
+    SNR measurement:
+        Measuring SNR on-demand will now work even though the periodic "SNR measurement interval"
+        setting on the admin control tab is set to "disable". On-demand means the "Measure SNR now"
+        button on the admin control tab or use of the "/snr?meas" control URL.
+    
+    Fixed the anti-HFDL monitoring countermeasure so it does not exclude the 80m ham band.
+
 v1.687,688  June 25, 2024
     Automatically rebuild proxy configuration file when necessary.
 
@@ -933,7 +1080,7 @@ v1.594  Apr 12, 2023
     which is an averaged measurement of the full-scale overflow signal produced by the ADC itself.
     Complete discussion on the forum.
     
-    The SNR measurement process will now run if a preemptible autorun channel is available (thanks Martin).
+    The SNR measurement process will now run if a preemptable autorun channel is available (thanks Martin).
 
     Admin page, control tab. New checkbox:
     "Non-Kiwi connections (kiwirecorder, TDoA) can preempt autorun processes"
@@ -943,7 +1090,7 @@ v1.594  Apr 12, 2023
 
 v1.593  Apr 11, 2023
     Fixed problem where new user connections were incorrectly being redirected even though
-    preemptible autorun processes exist.
+    preemptable autorun processes exist.
 
     Fixed problem where camping a channel sometimes resulted in very low volume because the wrong
     initial compression state was being used.
@@ -952,9 +1099,9 @@ v1.592  Apr 10, 2023
     Reverted change causing NBFM distortion (thanks Glenn).
 
     FT8/WSPR autorun preemption: A new menu on the autorun configuration section allows you to
-    specify if an autorun process is preemptible. I.e. a new incoming user connection will
+    specify if an autorun process is preemptable. I.e. a new incoming user connection will
     kick the autorun process off the channel and take its place. Every 10 seconds autorun processes
-    will attempt to fill empty channels. Kiwirecorder connections should not interrupt preemptible
+    will attempt to fill empty channels. Kiwirecorder connections should not interrupt preemptable
     autoruns. Only Kiwi user connections. (thanks Martin)
 
     WSPR extension:
@@ -2638,7 +2785,7 @@ v1.390  April 23, 2020
     
     Added synchronous AM (SAM) demodulators from Warren Pratt's wdsp package via the
         Teensy-ConvolutionSDR implementation: github.com/DD4WH/Teensy-ConvolutionSDR
-        See the Kiwi operation manual for more information: kiwisdr.com/quickstart/index.html#id-faq-sam
+        See the Kiwi operation manual for more information: kiwisdr.com/info#id-faq-sam
         Synchronous AM modes: SAM, SAL, SAU, SAS
     
     User interface changes:
@@ -3620,7 +3767,7 @@ v1.215  August 3, 2018
     Other ADC clock control improvements in IQ extension and "cal ADC clock" menu item.
     Fix race causing incorrect inactivity timeouts under certain circumstances.
     Passband can be specified in the "f=" URL parameter, format same as frequency entry box.
-        See: kiwisdr.com/quickstart/index.html#id-user-tune
+        See: kiwisdr.com/info#id-user-tune
         This is an alternative to specifying the passband alone with "pbw=" or "pb=" parameters.
 
 v1.214  August 1, 2018
@@ -3855,7 +4002,7 @@ v1.175  Mar 5, 2018
 
 v1.174  Feb 23, 2018
     Display DHCP/static IP address on Beagle LEDs.
-        See kiwisdr.com/quickstart/index.html#id-leds
+        See kiwisdr.com/info#id-leds
 
 v1.173  Feb 14, 2018
     Check against bad GPS az/el solutions.

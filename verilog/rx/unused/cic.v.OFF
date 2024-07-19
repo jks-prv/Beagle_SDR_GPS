@@ -23,7 +23,7 @@ Boston, MA  02110-1301, USA.
 //
 // implements fixed and 2**n variable decimation (R) without any register pruning
 //
-// NB: when variable decimation is specified by .DECIMATION(<0) then .GROWTH() must
+// NB: when variable decimation is specified by .DECIM_TYPE(<0) then .GROWTH() must
 // specify for the largest expected decimation.
 //
 // Fixed differential delay (D) = 1
@@ -41,7 +41,7 @@ module cic (
 
 // design parameters
 parameter STAGES = "required";
-parameter DECIMATION = "required";  
+parameter DECIM_TYPE = "required";  
 parameter IN_WIDTH = "required";
 parameter GROWTH = "required";
 parameter OUT_WIDTH = "required";
@@ -62,8 +62,8 @@ initial sample_no = {MD{1'b0}};
 wire [MD-1:0] decim;
 
 generate
-	if (DECIMATION < 0) begin assign decim = decimation; end	// variable
-	if (DECIMATION > 0) begin assign decim = DECIMATION; end	// fixed
+	if (DECIM_TYPE < 0) begin assign decim = decimation; end	// variable
+	if (DECIM_TYPE > 0) begin assign decim = DECIM_TYPE; end	// fixed
 endgenerate
 
 always @(posedge clock)
@@ -193,7 +193,7 @@ endgenerate
 	localparam LSB_R16K		= ACC_R16K - OUT_WIDTH;
 	
 generate
-	if (DECIMATION == -64)
+	if (DECIM_TYPE == -64)
 	begin
 	
 	always @(posedge clock)
@@ -211,7 +211,7 @@ generate
 endgenerate
 
 generate
-	if (DECIMATION == -2048)
+	if (DECIM_TYPE == -2048)
 	begin
 	
 	always @(posedge clock)
@@ -234,7 +234,7 @@ generate
 endgenerate
 
 generate
-	if (DECIMATION == -4096)
+	if (DECIM_TYPE == -4096)
 	begin
 	
 	always @(posedge clock)
@@ -258,7 +258,7 @@ generate
 endgenerate
 
 generate
-	if (DECIMATION == -16384)
+	if (DECIM_TYPE == -16384)
 	begin
 	
 	always @(posedge clock)
@@ -284,7 +284,7 @@ generate
 endgenerate
 
 generate
-	if (DECIMATION > 0)
+	if (DECIM_TYPE > 0)
 	begin
 	
 	localparam MSB = ACC_WIDTH - 1;
