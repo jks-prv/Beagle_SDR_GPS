@@ -8853,6 +8853,7 @@ function dx_label_render_cb(arr)
 
 function dx_filter(shift_plus_ctl_alt)
 {
+   //console.log('dx_filter shift_plus_ctl_alt='+ shift_plus_ctl_alt);
    if (shift_plus_ctl_alt == true) {
       dx_filter_opt_cb('dx.filter_case', 0);
       dx_filter_opt_cb('dx.filter_grep', 0);
@@ -8877,16 +8878,23 @@ function dx_filter(shift_plus_ctl_alt)
             // there is no clear advantage in using it. E.g. it doesn't do partial matching like grep. So you have to type
             // "*pattern*" to duplicate what simply typing "pattern" to grep would do. Neither of them has the syntax of e.g.
             // simple search engines which is what the user probably really wants.
-            w3_inline('',
-               w3_text('', 'pattern match:'),
+            //w3_inline('',
+               //w3_text('', 'pattern match:'),
                //w3_checkbox('w3-label-inline w3-label-not-bold', 'wildcard', 'dx.filter_wild', dx.filter_wild, 'dx_filter_opt_cb'),
-               w3_checkbox('w3-margin-left w3-label-inline w3-label-not-bold', 'grep', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb')
-            )
+            //)
+
+            w3_checkbox('w3-margin-left w3-label-inline w3-label-not-bold', 'grep pattern match', 'dx.filter_grep', dx.filter_grep, 'dx_filter_opt_cb'),
+            w3_button('w3-aqua w3-small w3-padding-small', 'reset', 'dx_filter_reset_cb')
          )
       );
 
    confirmation_show_content(s, 450, 140, dx_filter_panel_close);
    w3_field_select('id-dx-filter-ident', {mobile:1});    // select the field
+}
+
+function dx_filter_reset_cb(el, val)
+{
+   dx_filter(true);
 }
 
 function dx_filter_panel_close()
@@ -11182,20 +11190,20 @@ function panels_setup()
 		('<span style="font-size: 15pt; font-weight: bold;">Welcome!</span>' +
 		'&nbsp;&nbsp;&nbsp;Project website: <a href="http://kiwisdr.com" target="_blank">kiwisdr.com</a>&nbsp;&nbsp;&nbsp;&nbsp;Here are some tips:' +
 		'<ul style="padding-left: 12px;">' +
-		'<li> Windows: Firefox, Chrome & Edge work; IE does not work. </li>' +
-		'<li> Mac & Linux: Safari, Firefox, Chrome & Opera should work fine. </li>' +
-		'<li> Open and close the panels by using the circled arrows at the top right corner. </li>' +
+		'<li> Show and hide the panels by using the circled arrows at the top right corner. </li>' +
+		'<li> Most major browsers should work fine (except for Internet Explorer). </li>' +
+		'<li> There is no support for small-screen mobile devices currently. </li>' +
 		'<li> You can click and/or drag almost anywhere on the page to change settings. </li>' +
-		'<li> Enter a numeric frequency in the box marked "kHz" at right. </li>' +
+		'<li> Enter a numeric frequency (in kHz) in the box at right (top left corner). </li>' +
 		'<li> Or use the "select band" menu to jump to a pre-defined band. </li>' +
 		'<li> Use the zoom icons to control the waterfall span. </li>' +
-		'<li> Tune by clicking on the waterfall, spectrum or the cyan/red-colored station labels. </li>' +
+		'<li> Tune by clicking on the waterfall, spectrum or the multi-colored station labels. </li>' +
 		'<li> Control-shift or alt-shift click in the waterfall to lookup frequency in online databases. </li>' +
 		'<li> Control or alt click to page spectrum down and up in frequency. </li>' +
-		'<li> Adjust the "WF min" slider for best waterfall colors or use the "Auto Scale" button. </li>' +
+		'<li> Adjust the "WF floor/min" slider for best waterfall colors. </li>' +
 		"<li> Type 'h' or '?' to see the list of keyboard shortcuts. </li>" +
 		'<li> See the <a href="http://www.kiwisdr.com/info" target="_blank">Operating information</a> page ' +
-		     'and <a href="http://kiwisdr.com/docs/KiwiSDR/KiwiSDR.design.review.pdf" target="_blank">Design review document</a>. </li>' +
+		      'and <a href="https://forum.kiwisdr.com" target="_blank">KiwiSDR Forum</a>. </li>' +
 		'</ul>');
 
 
