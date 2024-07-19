@@ -320,7 +320,7 @@ conn_t *rx_server_websocket(websocket_mode_e mode, struct mg_connection *mc, u4_
     conn_printf("URI_TS <%s> web_socket=%d <%s> %lld <%s>\n", uri_ts, isWebSocket, type_m, tstamp, uri_m);
     
     if (strcmp(type_m, "kiwi") == 0) {
-	    isKiwi_UI = true;
+	    isKiwi_UI = internal? false : true;
     } else
     if (strcmp(type_m, "no_wf") == 0) {
 	    isKiwi_UI = true;
