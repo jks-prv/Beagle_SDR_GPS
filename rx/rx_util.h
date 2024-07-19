@@ -109,6 +109,6 @@ void geoloc_task(void *param);
 int rx_mode2enum(const char *mode);
 const char * rx_enum2mode(int e);
 void debug_init();
-void _dump();
+void dump_init();
 void rx_send_config(int rx_chan);
 void on_GPS_solution();

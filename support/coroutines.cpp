@@ -378,6 +378,7 @@ void TaskDump(u4_t flags)
 	float f_idle = ((float) idle_us) / 1e6;
 	idle_us = 0;
 	u4_t printf_type = flags & PRINTF_FLAGS;
+    NextTask("TaskDump");
 	
 	TASK *ct = cur_task;
 
@@ -392,7 +393,6 @@ void TaskDump(u4_t flags)
     if (flags & TDUMP_CLR_HIST) {
         memset(task_all_hist, 0, sizeof(task_all_hist));
         lfprintf(printf_type, "HIST: cleared\n");
-        //return;
     }
 
 	ct->flags |= CTF_NO_CHARGE;     // don't charge the current task with the time to print all this
@@ -489,6 +489,7 @@ void TaskDump(u4_t flags)
 		if (t->flags & CTF_PRIO_INVERSION)
 			lfprintf(printf_type, " InversionSaved=%d", t->saved_priority), detail = true;
 		if (detail) lfprintf(printf_type, "\n");
+        NextTask("TaskDump");
 
         /*
 		if ((t->no_run_same > 200) && ev_dump) {
@@ -502,6 +503,7 @@ void TaskDump(u4_t flags)
 		if (t->s1_func & TSTAT_ZERO) t->stat1 = 0;
 		if (t->s2_func & TSTAT_ZERO) t->stat2 = 0;
 	}
+
 	f_sum += f_idle;
 	float f_pct = f_idle/f_elapsed*100;
 	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
@@ -511,6 +513,7 @@ void TaskDump(u4_t flags)
 	//if (f_remain > 0.01)
 	//lfprintf(printf_type, "Tttt Pd# cccccccc xxx.xxx xxxxx.xxx xxx.x%%
 	  lfprintf(printf_type, "Linux             %7.3f           %5.1f%%\n", f_remain, f_pct);
+    NextTask("TaskDump");
 
     const char *hist_name[N_HIST] = { "<1", "1", "2", "4", "8", "16", "32", "64", "128", "256", "512", ">=1k" };
     
@@ -522,6 +525,7 @@ void TaskDump(u4_t flags)
                 lfprintf(printf_type, "%d|%sm ", task_all_hist[j], hist_name[j]);
         }
         lfprintf(printf_type, " \n");
+        NextTask("TaskDump");
     }
 
 	for (i=0; i <= max_task; i++) {
@@ -535,6 +539,7 @@ void TaskDump(u4_t flags)
 		            lfprintf(printf_type, "%d|%sm ", t->hist[j], hist_name[j]);
 		    }
 		    lfprintf(printf_type, " \n");
+            NextTask("TaskDump");
 		}
 	}
 }

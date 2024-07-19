@@ -357,8 +357,6 @@ void web_server(void *param)
 	
 	while (1) {
 		mg_mgr_poll(server, 0);
-		
-        if (kiwi.dump) _dump();
 
 		//#define MEAS_WEB_SERVER
 		#ifdef MEAS_WEB_SERVER

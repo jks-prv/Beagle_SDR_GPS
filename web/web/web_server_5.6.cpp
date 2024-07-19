@@ -292,8 +292,6 @@ void web_server(void *param)
         for (mc = mg_next(server, NULL); mc != NULL; mc = mg_next(server, mc)) {
             iterate_callback(mc, MG_EV_POLL);
         }
-        
-        if (kiwi.dump) _dump();
 		
 		//#define MEAS_WEB_SERVER
 		#ifdef MEAS_WEB_SERVER

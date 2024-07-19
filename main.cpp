@@ -41,6 +41,7 @@ Boston, MA  02110-1301, USA.
 #include "shmem.h"      // shmem_init()
 #include "debug.h"
 #include "fpga.h"
+#include "rx_util.h"
 
 #include "other.gen.h"
 
@@ -197,6 +198,7 @@ int main(int argc, char *argv[])
 		if (ARG("-gps_debug")) { gps_debug = -1; ARGL(gps_debug); } else
 		if (ARG("-stats") || ARG("+stats")) { print_stats = STATS_TASK; ARGL(print_stats); } else
 		if (ARG("-gpio")) { ARGL(gpio_test_pin); } else
+		if (ARG("-rsid")) kiwi.RsId = true; else
 		if (ARG("-v")) {} else      // dummy arg so Kiwi version can appear in e.g. htop
 		
 		if (ARG("-test")) { ARGL(test_flag); printf("test_flag %d(0x%x)\n", test_flag, test_flag); } else
@@ -326,6 +328,7 @@ int main(int argc, char *argv[])
     debug_printfs |= kiwi_file_exists(DIR_CFG "/opt.debug")? 1:0;
 
 	TaskInit();
+	dump_init();
 	misc_init();
     cfg_reload();
 

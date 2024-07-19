@@ -54,7 +54,7 @@ typedef struct {
     model_e model;
     platform_e platform;
     int current_nusers;
-    bool dbgUs, dump;
+    bool dbgUs;
     #define RESTART_DELAY_30_SEC 1
     #define RESTART_DELAY_MAX 7
     int restart_delay;
@@ -67,6 +67,8 @@ typedef struct {
     bool test_marine_mobile;
     
     float rf_attn_dB;
+    
+    bool RsId;
     
     int CAT_fd, CAT_ch;
     
