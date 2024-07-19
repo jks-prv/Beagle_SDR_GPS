@@ -328,8 +328,6 @@ void c2s_sound(void *param)
 
 	nbuf_t *nb = NULL;
 
-u4_t jksx_tstart_cmd;
-bool jksx_cmdgo;
 	while (TRUE) {
 		// reload freq NCO if adc clock has been corrected
 		// reload freq NCO if spectral inversion changed
@@ -354,7 +352,6 @@ bool jksx_cmdgo;
             }
         #endif
 
-if (jksx_cmdgo) { jksx_tstart_cmd = timer_us(); jksx_cmdgo = false; }
 		if (nb) web_to_app_done(conn, nb);
 		n = web_to_app(conn, &nb);
 		if (n) {
@@ -362,7 +359,6 @@ if (jksx_cmdgo) { jksx_tstart_cmd = timer_us(); jksx_cmdgo = false; }
 		    continue;
 		}
         check(nb == NULL);
-u4_t jksx_diff_cmd = timer_us() - jksx_tstart_cmd; if (jksx_diff_cmd > 8000) { real_printf("%.1fc ", (float)jksx_diff_cmd/1000); fflush(stdout); }
 
 		if (!do_sdr) {
 			NextTask("SND skip");
@@ -529,7 +525,7 @@ u4_t jksx_diff_cmd = timer_us() - jksx_tstart_cmd; if (jksx_diff_cmd > 8000) { r
             u1_t *bp_wb_u1    = out_pkt_wb.u1;
             s2_t *bp_wb_s2    = out_pkt_wb.s2;
 
-u4_t jksx_tstart_snd;
+            evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "do..");
             do {    // while (bc < LOOP_BC)
                 while (rx->wr_pos == rx->rd_pos) {
                     evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "sleeping");
@@ -556,7 +552,6 @@ u4_t jksx_tstart_snd;
                         }
                     #else
                         TaskSleepReason("check pointers");
-jksx_tstart_snd = timer_us();
                     #endif
                 }
                 
@@ -636,6 +631,7 @@ jksx_tstart_snd = timer_us();
                             m_NoiseProc_snd[rx_chan].ProcessBlanker(ns_in, in_samps_c, in_samps_c);
                     #endif
                     
+                    evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "PB_FIR..");
                     fir_samps_c = &iq->iq_samples[iq->iq_wr_pos][0];
                     ns_out  = m_PassbandFIR[rx_chan].ProcessData(rx_chan, ns_in, in_samps_c, fir_samps_c);
                     fir_pos = m_PassbandFIR[rx_chan].FirPos();
@@ -669,6 +665,7 @@ jksx_tstart_snd = timer_us();
                         }
                     #endif
                     
+                    evSnd(EC_EVENT, EV_SND, -1, "rx_snd", evprintf("PB_FIR=%d", ns_out));
                     if (ns_out == 0)
                         continue;
                     
@@ -794,6 +791,8 @@ jksx_tstart_snd = timer_us();
                     
                     */
                     
+                    evSnd(EC_EVENT, EV_SND, -1, "rx_snd", evprintf("mode=%d", s->mode));
+
                     switch (s->mode) {
                     
                     case MODE_AM:
@@ -932,6 +931,7 @@ jksx_tstart_snd = timer_us();
                     default:
                         panic("mode");
                     }
+                    evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "..mode");
             
                     if (do_de_emp) {    // !IQ_or_DRM_or_stereo
                         if (isNBFM) {
@@ -1071,6 +1071,7 @@ jksx_tstart_snd = timer_us();
                 // copy to output buffer and send to client
                 ////////////////////////////////
                 
+                evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "copy..");
                 #define SILENCE_VALUE 1     // non-zero to prevent triggering the Firefox "goes silent" watchdog
                 //bool send_silence = (masked || s->squelched || squelched_overload);
                 bool send_silence = masked;     // enforced on server side to prevent clients from cheating
@@ -1191,7 +1192,7 @@ jksx_tstart_snd = timer_us();
                     if (receive_real_tid != (tid_t) NULL)
                         TaskWakeupFP(receive_real_tid, TWF_CHECK_WAKING, TO_VOID_PARAM(rx_chan));
         
-                    if (kiwi.dbgUs)
+                    if (kiwi.RsId)
                         m_RsId[rx_chan].receive(ns_out, out_samps_s2);
     
                     if (send_silence) {
@@ -1294,11 +1295,11 @@ jksx_tstart_snd = timer_us();
                     }
                 #endif
     
+                evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "..copy");
             } while (bc < LOOP_BC);     // multiple loops when compressing
-u4_t jksx_diff_snd = timer_us() - jksx_tstart_snd; if (jksx_diff_snd > 10000) { real_printf("%.1fs ", (float)jksx_diff_snd/1000); fflush(stdout); }
+            evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "..while");
 
             NextTask("s2c begin");
-u4_t jksx_tstart_fin = timer_us();
                     
             // send s-meter data with each audio packet
             // -127 -126 .. 3.4 dBm => 0 1 .. 130.4 (+127) => 0 10 .. 1304 (*10)
@@ -1341,6 +1342,7 @@ u4_t jksx_tstart_fin = timer_us();
             int aud_bytes;
             int c2s_sound_camp(rx_chan_t *rxc, conn_t *conn, u1_t flags, char *bp, int bytes, int aud_bytes, bool masked_area);
     
+            evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "app_to_web..");
             if (isWB) {
                 // allow GPS timestamps to be seen by internal extensions
                 // but selectively remove from external connections (see admin page security tab)
@@ -1373,11 +1375,11 @@ u4_t jksx_tstart_fin = timer_us();
                 if (rxc->n_camp)
                     aud_bytes += c2s_sound_camp(rxc, conn, *flags, (char*) &s->out_pkt_real, bytes, aud_bytes, masked_area);
             }
+            evSnd(EC_EVENT, EV_SND, -1, "rx_snd", "..app_to_web");
     
             audio_bytes[rx_chan] += aud_bytes;
             audio_bytes[rx_chans] += aud_bytes;     // [rx_chans] is the sum of all audio channels
     
-u4_t jksx_diff_fin = timer_us() - jksx_tstart_fin; if (jksx_diff_fin > 10000) { real_printf("%.1ff ", (float)jksx_diff_fin/1000); fflush(stdout); }
             NextTask("s2c end");
             
             if (isWB) {
@@ -1398,7 +1400,6 @@ u4_t jksx_diff_fin = timer_us() - jksx_tstart_fin; if (jksx_diff_fin > 10000) { 
                 break;
             }
         } while(1);
-jksx_cmdgo = true;
 	}
 }
 
