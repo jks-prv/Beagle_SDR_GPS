@@ -63,23 +63,23 @@ AntSW_Initialize() {
 }
 
 AntSW_GroundAll() {
-	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=g
+	ignore=`$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=g`
 }
 
 AntSW_SelectAntenna() {
-	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=$1
+	ignore=`$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=$1`
 }
 
 AntSW_AddAntenna() {
-	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=+$1
+	ignore=`$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=+$1`
 }
 
 AntSW_RemoveAntenna() {
-	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=-$1
+	ignore=`$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=-$1`
 }
 
 AntSW_ToggleAntenna() {
-	$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=t$1
+	ignore=`$CURLEXEC $CURLOPTS $ARDUINOURL/?cmd=t$1`
 }
 
 AntSW_ShowSelected() {
