@@ -266,8 +266,7 @@ static int ev_handler(struct mg_connection *mc, int ev)
             
         case MG_EV_CLOSE:
             rx_server_websocket(WS_MODE_CLOSE, mc);
-            free(mc->cache_info);
-            mc->cache_info = NULL;
+            kiwi_asfree_set_null(mc->cache_info);
             mc->connection_param = NULL;
             return MG_TRUE;
             

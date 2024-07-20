@@ -260,8 +260,6 @@ void mg_ev_setup_api_compat(struct mg_connection *mc)
 // (prompted by data coming into web server)
 static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
 {
-    web_mg_t *wm;
-
     switch (ev) {
         case MG_EV_OPEN:
             ev_http_prf("ev_handler_http %s\n", mg_ev_names[ev]);
@@ -285,12 +283,7 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             return;
             
         case MG_EV_HTTP_HDRS:
-            ev_http_prf("ev_handler_http %s mc=%p ev_data=%p fn_data=%p\n", mg_ev_names[ev], mc, ev_data, mc? mc->fn_data : NULL);
-            if (mc->fn_data == NULL) {
-                mc->fn_data = malloc(sizeof(web_mg_t));
-                wm = (web_mg_t *) mc->fn_data;
-                memset(wm, 0, sizeof(web_mg_t));
-            }
+            ev_http_prf("ev_handler_http %s mc=%p ev_data=%p\n", mg_ev_names[ev], mc, ev_data);
             if (mc->cache_info == NULL) {
                 mc->cache_info = malloc(sizeof(cache_info_t));
                 memset(mc->cache_info, 0, sizeof(cache_info_t));
@@ -300,13 +293,17 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
             
         case MG_EV_HTTP_MSG: {
             struct mg_http_message *hm = (struct mg_http_message *) ev_data;
-            wm = (web_mg_t *) mc->fn_data;
-            wm->hm = hm;
-            if (!wm->init) {
+            if (!mc->init) {
                 mc->uri = mg_str_to_cstr(&hm->uri);
                 mc->query = mg_str_to_cstr(&hm->query);
-                wm->init = true;
+                
+                // must capture these before mg_ws_upgrade() below
+                mc->x_real_ip = mg_str_to_cstr(mg_http_get_header(hm, "X-Real-IP"));
+                mc->x_fwd_for = mg_str_to_cstr(mg_http_get_header(hm, "X-Forwarded-For"));
+                mc->hm = hm;
+                mc->init = true;
             }
+            
 	        u64_t tstamp;
             if (kiwi_str_begins_with(mc->uri, "/ws/") ||
                 // kiwirecorder
@@ -329,17 +326,13 @@ static void ev_handler_http(struct mg_connection *mc, int ev, void *ev_data)
         case MG_EV_CLOSE:
             rx_server_websocket(WS_MODE_CLOSE, mc);
             //ev_http_prf("ev_handler_http %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            wm = (web_mg_t *) mc->fn_data;
-            if (wm) {
-                if (wm->init) {
-                    free(mc->uri);
-                    free(mc->query);
-                }
-                free(mc->fn_data);
-                mc->fn_data = NULL;
+            if (mc->init) {
+                kiwi_asfree_set_null(mc->uri);
+                kiwi_asfree_set_null(mc->query);
+                kiwi_asfree_set_null(mc->x_real_ip);
+                kiwi_asfree_set_null(mc->x_fwd_for);
             }
-            free(mc->cache_info);
-            mc->cache_info = NULL;
+            kiwi_asfree_set_null(mc->cache_info);
             mc->connection_param = NULL;
             return;
 

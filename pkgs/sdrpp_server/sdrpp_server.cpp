@@ -561,8 +561,6 @@ void sdrpp_out(struct mg_connection *mc, void *ev_data)
 
 static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
 {
-    web_mg_t *wm;
-
     switch (ev) {
         case MG_EV_OPEN:
             sdrpp_dprf("sdrpp_handler %s\n", mg_ev_names[ev]);
@@ -586,7 +584,7 @@ static void sdrpp_handler(struct mg_connection *mc, int ev, void *ev_data)
             
         case MG_EV_CLOSE: {
             sdrpp_dprf("sdrpp_handler %s %s:%d\n", mg_ev_names[ev], mc->remote_ip, mc->remote_port);
-            //sdrpp_dprf("sdrpp_handler %s init=%d free wm=%p\n", mg_ev_names[ev], wm? wm->init : -1, wm);
+            //sdrpp_dprf("sdrpp_handler %s init=%d\n", mg_ev_names[ev]);
 
             #ifdef DIRECT
                 #ifdef CAMP

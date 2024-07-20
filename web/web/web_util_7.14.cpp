@@ -39,6 +39,7 @@ void mg_response_complete(struct mg_connection *mc)
 char *mg_str_to_cstr(mg_str *mgs)
 {
     char *cstr;
+    if (mgs == NULL) return NULL;
     cstr = (mgs->buf && mgs->len)? mg_mprintf("%.*s", mgs->len, mgs->buf) : strdup("");
     return cstr;
 }
@@ -47,10 +48,22 @@ char *mg_str_to_cstr(mg_str *mgs)
 // caller must free() result
 const char *mg_get_header(struct mg_connection *mc, const char *name)
 {
-    web_mg_t *web_mg = (web_mg_t *) (mc->fn_data);
-    if (!web_mg || !web_mg->hm) return NULL;
-    struct mg_str *hdr_str = mg_http_get_header(web_mg->hm, name);
-    return hdr_str? mg_str_to_cstr(hdr_str) : NULL;
+    const char *rv;
+    
+    if (mc->is_websocket) {
+        if (strcmp(name, "X-Real-IP") == 0) {
+            rv = mc->x_real_ip? strdup(mc->x_real_ip) : NULL;
+        } else
+        if (strcmp(name, "X-Forwarded-For") == 0) {
+            rv = mc->x_fwd_for? strdup(mc->x_fwd_for) : NULL;
+        } else {
+            printf("mg_get_header: is_websocket name=%s\n", name);
+            rv = NULL;
+        }
+    } else {
+        rv = mc->hm? mg_str_to_cstr(mg_http_get_header(mc->hm, name)) : NULL;
+    }
+    return rv;
 }
 
 void mg_free_header(const char *header)
@@ -356,11 +369,5 @@ int web_ev_request(struct mg_connection *mc, int ev, void *ev_data)
     }
 
     int rv = web_request(mc, ev, ev_data);
-
-    // in case MG_EV_CLOSE doesn't occur for some reason
-    kiwi_asfree(mc->fn_data);
-    mc->fn_data = NULL;
-    free(mc->cache_info);
-    mc->cache_info = NULL;
     return rv;
 }
