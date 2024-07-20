@@ -313,6 +313,9 @@ function ant_switch_process_reply(ant_selected_antenna) {
       // antenna changed.
       need_to_inform = true;
       ant_sw.exantennas = ant_selected_antenna;
+      
+      // need to re-evaluate auto aperture because antenna might have significantly different gain
+      w3_call('waterfall_maxmin_cb');
    }
    
    if (ant_selected_antenna == 'g') {
