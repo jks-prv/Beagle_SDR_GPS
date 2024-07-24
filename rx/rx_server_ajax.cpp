@@ -556,19 +556,19 @@ fail:
             break;
 	    }
 	    
-        double dial_freq_kHz;
+        double dial_freq_kHz, if_freq_kHz;
         n = sscanf(mc->query, "%lf", &dial_freq_kHz);
         if (n == 1) {
-            printf("/s_meter dial=%.2f freq_offset_kHz=%.2f ui_srate_kHz=%.2f ", dial_freq_kHz, freq_offset_kHz, ui_srate_kHz);
-            if (dial_freq_kHz < freq_offset_kHz || dial_freq_kHz > (freq_offset_kHz + ui_srate_kHz)) {
+            printf("/s_meter dial_freq_kHz=%.2f freq.offset_kHz=%.2f freq.offmax_kHz=%.2f ", dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+            if (!rx_freq_inRange(dial_freq_kHz)) {
                 asprintf(&sb, "/s_meter: freq \"%s\" outside configured receiver range of %.2f - %.2f kHz\n",
-                    mc->query, freq_offset_kHz, freq_offset_kHz + ui_srate_kHz);
+                    mc->query, freq.offset_kHz, freq.offmax_kHz);
                 printf("%s", sb);
                 break;
             }
-            dial_freq_kHz -= freq_offset_kHz;
-            dial_freq_kHz = CLAMP(dial_freq_kHz, 0, ui_srate_kHz);
-            printf("FINAL(offset removed)=%.2f\n", dial_freq_kHz);
+            if_freq_kHz = dial_freq_kHz - freq.offset_kHz;
+            if_freq_kHz = CLAMP(if_freq_kHz, 0, ui_srate_kHz);
+            printf("if_freq_kHz=%.2f\n", if_freq_kHz);
         } else {
             asprintf(&sb, "/s_meter: freq parse error \"%s\", just enter freq in kHz\n", mc->query);
             printf("%s", sb);
@@ -578,7 +578,7 @@ fail:
         internal_conn_t iconn;
         #define CW_BFO 500
         bool ok = internal_conn_setup(ICONN_WS_SND, &iconn, 0, PORT_BASE_INTERNAL_S_METER, WS_FL_PREEMPT_AUTORUN | WS_FL_NO_LOG,
-            "cwn", CW_BFO-30, CW_BFO+30, dial_freq_kHz - CW_BFO/1e3, "S-meter", NULL, "S-meter");
+            "cwn", CW_BFO-30, CW_BFO+30, if_freq_kHz - CW_BFO/1e3, "S-meter", NULL, "S-meter");
         if (!ok) {
             asprintf(&sb, "s-meter: all channels busy\n");
             break;
@@ -608,7 +608,7 @@ fail:
         }
         
         internal_conn_shutdown(&iconn);
-        asprintf(&sb, "/s-meter: %.2f kHz %d dBm\n", dial_freq_kHz + freq_offset_kHz, sMeter_dBm);
+        asprintf(&sb, "/s-meter: %.2f kHz %d dBm\n", if_freq_kHz + freq.offset_kHz, sMeter_dBm);
         cprintf(iconn.csnd, "%s", sb);
 		break;
 	}
@@ -777,7 +777,7 @@ fail:
 			antsw.isConfigured?     " ⁣ 📶 Ant-Switch" : "",
 
 			(s3 = cfg_string("admin_email", NULL, CFG_OPTIONAL)),
-			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq_offset_kHz,
+			(float) kiwi_reg_lo_kHz * kHz, (float) kiwi_reg_hi_kHz * kHz, freq.offset_kHz,
 			users, users_max, preempt,
 			avatar_ctime,
 			gps_loc,

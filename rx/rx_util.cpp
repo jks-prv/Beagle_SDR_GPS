@@ -58,6 +58,30 @@ Boston, MA  02110-1301, USA.
 
 rx_util_t rx_util;
 
+freq_t freq;
+
+void rx_set_freq(double freq_with_offset_kHz, double foff_kHz)
+{
+    if (foff_kHz != -1) rx_set_freq_offset_kHz(foff_kHz);
+    freq.f_kHz = freq_with_offset_kHz;
+    freq.f_Hz = (u4_t) (freq.f_kHz * 1e3);
+    freq.baseband_kHz = freq_with_offset_kHz - freq.offset_kHz;
+    freq.baseband_Hz = (u4_t) (freq.baseband_kHz * 1e3);
+}
+
+void rx_set_freq_offset_kHz(double foff_kHz)
+{
+    freq.isOffset = (foff_kHz != 0);
+    freq.offset_kHz = foff_kHz;
+    freq.offmax_kHz = foff_kHz + ui_srate_kHz;
+    freq.offset_Hz = (u4_t) (foff_kHz * 1e3);
+}
+
+bool rx_freq_inRange(double freq_kHz)
+{
+    return (freq_kHz >= freq.offset_kHz && freq_kHz <= freq.offmax_kHz);
+}
+
 conn_t *conn_other(conn_t *conn, int type)
 {
     conn_t *cother = conn->other;
@@ -103,7 +127,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 	if (type == LOG_ARRIVED) {
         #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
             if (strcmp(c->ident_user, "kiwi_nc.py") == 0) {
-                float f_kHz = (float) c->freqHz / kHz + freq_offset_kHz;
+                float f_kHz = (float) c->freqHz / kHz + freq.offset_kHz;
                 int f = (int) floorf(f_kHz);
                 bool freq_trig = (
                     (f >= (2941-10) && f < 3500) ||     // stay outside 80m ham band
@@ -144,7 +168,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 	    mode_s = rx_enum2mode(c->mode);
 	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
+		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq.offset_kHz,
 			mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
 			c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
 			c->geo? " ":"", c->geo? c->geo:"", s);
@@ -152,7 +176,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 
     #ifdef OPTION_LOG_WF_ONLY_UPDATES
         if (c->type == STREAM_WATERFALL && type == LOG_UPDATE) {
-            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq_offset_kHz,
+            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq.offset_kHz,
 			    mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
                 c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
                 c->geo? " ":"", c->geo? c->geo:"", s);
@@ -974,7 +998,7 @@ char *rx_users(bool isAdmin)
                     #else
                         0.,
                     #endif
-                    freq_offset_kHz, rx->n_camp,
+                    freq.offset_kHz, rx->n_camp,
                     extint.notify_chan, extint.notify_seq);
                 kiwi_ifree(user, "rx_users user");
                 kiwi_ifree(geo, "rx_users geo");
@@ -989,7 +1013,7 @@ char *rx_users(bool isAdmin)
         need_comma = true;
     }
 
-    //printf("rx_users: foff %.3f\n", freq_offset_kHz);
+    //printf("rx_users: foff %.3f\n", freq.offset_kHz);
     sb = kstr_cat(sb, "]\n");
     return sb;
 }
@@ -1025,10 +1049,10 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
 {
     static int dB[WF_WIDTH];
     int i, rv = 0, len = 0, masked = 0;
-    int b_lo = f_lo - freq_offset_kHz, b_hi = f_hi - freq_offset_kHz;
+    int b_lo = f_lo - freq.offset_kHz, b_hi = f_hi - freq.offset_kHz;
     int start = (float) WF_WIDTH * b_lo / ui_srate_kHz;
     int stop  = (float) WF_WIDTH * b_hi / ui_srate_kHz;
-    //printf("b_lo=%d b_hi=%d fo=%d s/s=%d/%d\n", b_lo, b_hi, (int) freq_offset_kHz, start, stop);
+    //printf("b_lo=%d b_hi=%d fo=%d s/s=%d/%d\n", b_lo, b_hi, (int) freq.offset_kHz, start, stop);
 
     for (i = (int) start; i < stop; i++) {
         if (dB_raw[i] <= -190) {
@@ -1053,7 +1077,7 @@ int SNR_calc(SNR_meas_t *meas, int meas_type, int f_lo, int f_hi)
         // Antenna disconnect detector
         // Rules based on observed cases. Avoiding false-positives is very important.
         // Disconnected if:
-        // 1) freq_offset_kHz == 0 (via meas_type == SNR_MEAS_HF),
+        // 1) freq.offset_kHz == 0 (via meas_type == SNR_MEAS_HF),
         //      i.e. no V/UHF transverter setups that might be inherently quiet when no signals.
         // 2) HF snr <= 3
         // 3) Not greater than 2 peaks stronger than -100 dBm
@@ -1156,7 +1180,7 @@ void SNR_meas(void *param)
                 }
             }
             
-            int f_lo = freq_offset_kHz, f_hi = freq_offmax_kHz;
+            int f_lo = freq.offset_kHz, f_hi = freq.offmax_kHz;
             
             snr_all = SNR_calc(meas, SNR_MEAS_ALL, f_lo, f_hi);
 
@@ -1178,9 +1202,9 @@ void SNR_meas(void *param)
             #endif
 
             if (!regular_wakeup) {
-                printf("SNR_meas: admin measure now %d:%d\n", snr_all, freq_offset_kHz? -1 : snr_HF);
+                printf("SNR_meas: admin measure now %d:%d\n", snr_all, freq.offset_kHz? -1 : snr_HF);
                 snd_send_msg(SM_SND_ADM_ALL, SM_NO_DEBUG,
-                    "MSG snr_stats=%d,%d", snr_all, freq_offset_kHz? -1 : snr_HF);
+                    "MSG snr_stats=%d,%d", snr_all, freq.offset_kHz? -1 : snr_HF);
             }
         }
         

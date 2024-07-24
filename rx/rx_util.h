@@ -46,6 +46,14 @@ typedef struct {
 
 extern rx_util_t rx_util;
 
+typedef struct {
+    u4_t   f_Hz,  baseband_Hz,  offset_Hz;
+    double f_kHz, baseband_kHz, offset_kHz, offmax_kHz;
+    bool isOffset;
+} freq_t;
+
+extern freq_t freq;
+
 #define SNR_MEAS_MAX    (24 * 7)
 
 #define SNR_MEAS_ALL    0
@@ -94,6 +102,10 @@ int rx_count_server_conns(conn_count_e type, u4_t flags = 0, conn_t *our_conn = 
 enum kick_e { KICK_CHAN, KICK_USERS, KICK_ALL, KICK_ADMIN };
 const char * const kick_s[] = { "KICK_CHAN", "KICK_USERS", "KICK_ALL", "KICK_ADMIN" };
 void rx_server_kick(kick_e kick, int chan = -1);
+
+void rx_set_freq(double freq_with_offset_kHz, double foff_kHz = -1);
+void rx_set_freq_offset_kHz(double foff_kHz);
+bool rx_freq_inRange(double freq_kHz);
 
 conn_t *conn_other(conn_t *conn, int type);
 void show_conn(const char *prefix, u4_t printf_type, conn_t *cd);

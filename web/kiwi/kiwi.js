@@ -2733,7 +2733,7 @@ function user_cb(obj)
       }
       
       // detect change in frequency scale offset
-      //if (i == rx_chan) console.log('$obj.fo='+ obj.fo +' freq_offset_kHz='+ kiwi.freq_offset_kHz);
+      //if (i == rx_chan) console.log('$obj.fo='+ obj.fo +' freq.offset_kHz='+ kiwi.freq_offset_kHz);
       if (i == rx_chan && isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz && !confirmation.displayed) {
          var s =
             w3_div('',
@@ -3145,7 +3145,7 @@ function kiwi_msg(param, ws)
 				decodeURIComponent(o.d), decodeURIComponent(o.t));
 			break;
 
-		case "stats_cb":     // in response to "SET STATS_UPD"
+		case "stats_cb":     // in response to "SET STATS_UPD" (from both user and admin)
 			//console.log('stats_cb='+ param[1]);
 			var o = kiwi_JSON_parse('stats_cb', param[1]);
 			if (o) {
@@ -3171,7 +3171,7 @@ function kiwi_msg(param, ws)
 
 				kiwi_snr_stats(o.sa, o.sh);
 				
-				w3_call('config_status_cb', o);
+				w3_call('config_status_cb', o);     // admin only
 				time_display_cb(o);
 			}
 			break;
@@ -3305,6 +3305,14 @@ function kiwi_msg(param, ws)
 		   var p = param[1].split(',');
          kiwi_snr_stats(p[0], p[1]);
          break;
+
+		case "extint_list_json":
+			extint_list_json(param[1]);
+			
+			if (!isAdmin()) {
+			   owrx_msg_cb(['have_ext_list']);
+			}
+			break;
 
 		default:
 		   if (param[0].startsWith('antsw_')) {

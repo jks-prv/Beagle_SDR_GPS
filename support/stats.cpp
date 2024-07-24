@@ -334,7 +334,7 @@ static void called_every_second()
                 kick = true;
             } else {
                 #ifdef OPTION_DENY_APP_FINGERPRINT_CONN
-                    float f_kHz = (float) c->freqHz / kHz + freq_offset_kHz;
+                    float f_kHz = (float) c->freqHz / kHz + freq.offset_kHz;
                     // 58.59 175.781
                     float floor_kHz = floorf(f_kHz);
                     bool freq_trig = (floor_kHz == 58.0f || floor_kHz == 175.0f);

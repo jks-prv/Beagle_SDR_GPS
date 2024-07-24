@@ -27,6 +27,7 @@ Boston, MA  02110-1301, USA.
 #include "cfg.h"
 #include "gps.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "ext_int.h"
 #include "ant_switch.h"
 
@@ -64,7 +65,7 @@ double ext_get_displayed_freq_kHz(int rx_chan)
 {
     conn_t *conn = rx_channels[rx_chan].conn;
     if (conn == NULL) return 0;
-    return ((double) conn->freqHz / kHz + freq_offset_kHz);
+    return ((double) conn->freqHz / kHz + freq.offset_kHz);
 }
 
 int ext_get_mode(int rx_chan)

@@ -65,7 +65,7 @@ typedef struct conn_st {
 	int task;
 	bool stop_data, kick, arun_preempt, preempted;
 	bool foff_set;
-	double foff;
+	double foff;        // offset set via URL
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
 	bool ident, arrived;
