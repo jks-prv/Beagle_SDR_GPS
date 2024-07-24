@@ -2,6 +2,27 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.695  July 25, 2024
+    Antenna switch:
+        If in auto aperture mode an antenna change now causes an auto scale since the new antenna
+        might have a significantly different gain.
+        
+        Arduino-based backends now correctly turn the antenna selection buttons green.
+        
+        Currently, the selected antenna's "frequency scale offset" field can conflict with the
+        frequency scale offset set elsewhere. E.g. on the admin config tab or via a URL parameter
+        or the right-click menu. Example: The default antenna has an offset of zero (HF) but the
+        admin config tab offset is 140000 kHz (2m). As a stopgap you can now enter an antenna
+        offset value of "-1" (minus one) and no offset change will occur as antennas are changed.
+    
+    WSPR/FT8:
+        Autoruns are restarted when frequency offset is changed.
+        
+        Added UHF/VHF frequencies to FT8 extension and autorun menus.
+        Including 40680 kHz (8m) for both.
+    
+    User tab: Added menu to reverse sense of wheel/trackpad direction.
+
 v1.694  July 20, 2024
     New passband adjustment methods:
         If you scroll the audio tab down a bit you'll see it now has passband adjustment sliders.
