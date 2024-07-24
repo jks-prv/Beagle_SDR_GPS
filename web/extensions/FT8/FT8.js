@@ -8,35 +8,74 @@ var ft8 = {
    callsign: '',
    grid: '',
    
+   PASSBAND_LO: 100,
+   PASSBAND_HI: 3100,
+
    mode: 0,
    FT8: 0,
    FT4: 1,
    mode_s: ['FT8', 'FT4'],
 
+   // yes, there are really no assigned FT4 freqs for 160m and 60m
    freq_s: {
       'FT8': [ '1840', '3573', '5357', '7074', '10136', '14074', '18100', '21074', '24915', '28074' ],
       'FT4': [ '3575.5', '7047.5', '10140', '14080', '18104', '21140', '24919', '28180' ]
    },
-   PASSBAND_LO: 100,
-   PASSBAND_HI: 3100,
 
-   // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
-   console_status_msg_p: {
-      no_decode: true, scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true,
-      cols: 135, max_lines: 1024
+   freq_xvtr_s: {
+      'FT8': [ '40680', '50313', '50323', '70154', '70190', '144174', '222065','432174', '1296174' ],
+      'FT4': [ '50318', '144150' ]
    },
 
-   log_mins: 0,
-   log_interval: null,
-   log_txt: '',
+   autorun_u: {
+          0: [ 'regular use' ],  // NB: using a numeric key (zero) suppresses the disabled menu entry
+      'FT8': [ '1840', '3573', '5357', '7074', '10136', '14074', '18100', '21074', '24915', '28074',
+               '40680', '50313', '50323', '70154', '70190', '144174', '222065','432174', '1296174'
+             ],
+      'FT4': [ '3575.5', '7047.5', '10140', '14080', '18104', '21140', '24919', '28180',
+               '50318', '144150'
+             ]
+   },
 
-   // order matches FT8.cpp:ft8_cfs[]
-   // only add new entries to the end so as not to disturb existing values stored in config
-   // yes, there are really no assigned FT4 freqs for 160m and 60m
-   autorun_u: [
-      'regular use',
-      'FT8-160m', 'FT8-80m', 'FT8-60m', 'FT8-40m', 'FT8-30m', 'FT8-20m', 'FT8-17m', 'FT8-15m', 'FT8-12m', 'FT8-10m',
-                  'FT4-80m',            'FT4-40m', 'FT4-30m', 'FT4-20m', 'FT4-17m', 'FT4-15m', 'FT4-12m', 'FT4-10m'
+   // translates menu order to cfg value which then has to match order of FT8.cpp:ft8_cfs[]
+   // assign new cfg values so as not to disturb existing values stored in cfg
+   menu_i_to_cfg_i: [
+      0,    //  0 regular use
+      
+      -1,   //  1 FT8 label
+      1,    //  2 160m
+      2,    //  2 80m
+      3,    //  3 60m
+      4,    //  4 40m
+      5,    //  5 30m
+      6,    //  6 20m
+      7,    //  7 17m
+      8,    //  8 15m
+      9,    //  9 12m
+      10,   // 10 10m
+
+      19,   // 11 8m
+      20,   // 12 6m
+      21,   // 13 6m
+      22,   // 14 4m
+      23,   // 15 4m
+      24,   // 16 2m
+      25,   // 17 220
+      26,   // 18 440
+      27,   // 19 1296
+      
+      -1,   // 20 FT4 label
+      11,   // 21 80m
+      12,   // 22 40m
+      13,   // 23 30m
+      14,   // 24 20m
+      15,   // 25 17m
+      16,   // 26 15m
+      17,   // 27 12m
+      18,   // 28 10m
+      
+      28,   // 29 6m
+      29,   // 30 2m
    ],
 
    PREEMPT_NO: 0,
@@ -47,6 +86,16 @@ var ft8 = {
       '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
       '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00',
    ],
+
+   // must set "remove_returns" so output lines with \r\n (instead of \n alone) don't produce double spacing
+   console_status_msg_p: {
+      no_decode: true, scroll_only_at_bottom: true, process_return_alone: false, remove_returns: true,
+      cols: 135, max_lines: 1024
+   },
+
+   log_mins: 0,
+   log_interval: null,
+   log_txt: '',
 
    last_last: 0
 };
@@ -147,6 +196,26 @@ function ft8_controls_setup()
    ft8.grid = grid;
    if (grid == '') grid = '(not set)';
    
+   // re-define band menu if downconverter in use
+   var r = ext_get_freq_range();
+   if (r.lo_kHz > 32000 && r.hi_kHz > 32000) {
+      new_s = {};
+      w3_obj_enum(ft8.freq_xvtr_s,
+         function(key, i, o) {
+            var a = kiwi_deep_copy(o);
+            for (var j = 0; j < a.length; j++) {
+               var f_kHz = +a[j];
+               if (f_kHz < r.lo_kHz || f_kHz > r.hi_kHz) {
+                  a[j] = undefined;
+               }
+            }
+            console.log(a);
+            new_s[key] = kiwi_array_remove_undefined(a);
+         }
+      );
+      ft8.freq_s = new_s;
+   }
+
    var url =
       'https://pskreporter.info/pskmap.html?preset'+ ((ft8.callsign != '')? ('&callsign='+ ft8.callsign) : '') +
       '&txrx=rx&mode=FT8&timerange=86400&blankifnone=1&hidepink=1&hidelight=1&showlines=1&mapCenter=35,13,2';
@@ -245,10 +314,12 @@ function ft8_freq_cb(path, idx, first)
    idx = +idx;
 	var menu_item = w3_select_get_value('id-ft8-freq', idx);
 	var freq = +(menu_item.option);
-   ext_tune(freq, 'usb', ext_zoom.ABS, 11);
+	var r = ext_get_freq_range();
+	var fo_kHz = freq - r.offset_kHz;
+   ext_tune(fo_kHz, 'usb', ext_zoom.ABS, 11);
    var mode = menu_item.last_disabled;
    w3_select_value(path, idx);   // for benefit of direct callers
-	//console.log('ft8_freq_cb: path='+ path +' idx='+ idx +' freq='+ freq +' mode='+ mode);
+	//console.log('ft8_freq_cb: path='+ path +' idx='+ idx +' fo_kHz='+ fo_kHz +' mode='+ mode);
 	
 	if (mode != ft8.mode_s[ft8.mode]) {
 	   ft8.mode ^= 1;
@@ -354,8 +425,9 @@ function FT8_config_html()
                w3_div('w3-margin-T-10 w3-valign',
                   '<header class="id-ft8-warn-full w3-container w3-yellow"><h6>' +
                   'If your Kiwi is publicly listed you must <b>not</b> configure all the channels to use FT8-autorun!<br>' +
-                  'This defeats the purpose of making your Kiwi public and public registration will be disabled<br>' +
-                  'until you make at least one channel available for connection. Check the Admin Public tab.' +
+                  '(unless at least one is set to preemptable) This defeats the purpose of making your Kiwi <br>' +
+                  'public and public registration will be disabled until you make at least one channel available <br>' +
+                  'for connection. Check the Admin Public tab.' +
                   '</h6></header>'
                ),
                
@@ -377,10 +449,12 @@ function FT8_config_html()
       var f1 = 'w3-margin-right w3-defer';
       var f2 = f1 +' w3-margin-T-8';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
+	      var arun = w3_array_el_seq(ft8.menu_i_to_cfg_i, +cfg.ft8['autorun'+ i]);
+	      console.log('ft8.autorun'+ i +'='+ cfg.ft8['autorun'+ i] +' arun='+ arun);
 	      s2 +=
 	         w3_div('',
-	            w3_select_get_param(f1, 'Autorun '+ i, 'FT8 band', 'ft8.autorun'+ i, ft8.autorun_u, 'ft8_autorun_select_cb'),
-	            w3_select_get_param(f2, '', 'preemptable?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_autorun_select_cb')
+	            w3_select_hier(f1, '', 'freq', 'ft8.autorun'+ i, arun, ft8.autorun_u, 'ft8_autorun_select_cb'),
+	            w3_select_get_param(f2, '', 'preemptable?', 'ft8.preempt'+ i, ft8.preempt_u, 'ft8_preempt_select_cb')
 	            //w3_select_get_param(f2, '', 'start UTC', 'ft8.start'+ i, ft8.sched_u, 'ft8_autorun_sched_cb', 0, 0),
 	            //w3_select_get_param(f2, '', 'stop UTC', 'ft8.stop'+ i, ft8.sched_u, 'ft8_autorun_sched_cb', 0, 1)
 	         );
@@ -421,6 +495,7 @@ function ft8_autorun_public_check()
 
 function ft8_autorun_restart_cb()
 {
+   console.log('ft8_autorun_restart_cb');
    ft8_autorun_public_check();
    w3_hide('id-ft8-restart');
    ext_send("ADM ft8_autorun_restart");  // NB: must be sent as ADM command
@@ -428,7 +503,18 @@ function ft8_autorun_restart_cb()
 
 function ft8_autorun_select_cb(path, idx, first)
 {
-   //console.log('ft8_autorun_select_cb: path='+ path +' idx='+ idx +' first='+ first);
+   console.log('ft8_autorun_select_cb path='+ path +' idx='+ idx +' cfg_i='+ ft8.menu_i_to_cfg_i[+idx]);
+   admin_select_cb(path, ft8.menu_i_to_cfg_i[+idx], first);
+   w3_select_value(path, +idx);
+   if (first) return;
+   w3_show('id-ft8-restart');
+	var el = w3_el('id-kiwi-container');
+	w3_scrollDown(el);   // keep menus visible
+}
+
+function ft8_preempt_select_cb(path, idx, first)
+{
+   //console.log('ft8_preempt_select_cb: path='+ path +' idx='+ idx +' first='+ first);
    admin_select_cb(path, idx, first);
    if (first) return;
    w3_show('id-ft8-restart');
