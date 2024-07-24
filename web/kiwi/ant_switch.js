@@ -315,6 +315,7 @@ function ant_switch_process_reply(ant_selected_antenna) {
       ant_sw.exantennas = ant_selected_antenna;
       
       // need to re-evaluate auto aperture because antenna might have significantly different gain
+      //console.log('ant_switch_process_reply: waterfall_maxmin_cb');
       w3_call('waterfall_maxmin_cb');
    }
    
@@ -349,20 +350,24 @@ function ant_switch_process_reply(ant_selected_antenna) {
             var s = 'ant_switch.ant'+ antN +'offset';
             var offset = ext_get_cfg_param(s, '', EXT_NO_SAVE);
             offset = +offset;
-            if (!isNumber(offset)) offset = 0;
-            if (offset != ant_sw.last_offset) {
-               //console.log('SET freq_offset='+ offset);
-               ext_send('SET antsw_freq_offset='+ offset);
-               ant_sw.last_offset = offset;
+            if (!isNumber(offset)) offset = -1;
+            if (offset != -1) {
+               console.log('ant='+ antN +' setting offset='+ offset +' last='+ ant_sw.last_offset);
+               if (offset != ant_sw.last_offset) {
+                  ext_send('SET antsw_freq_offset='+ offset);
+               }
+   
+               s = 'ant_switch.ant'+ antN +'high_side';
+               var high_side = ext_get_cfg_param(s, '', EXT_NO_SAVE);
+               if (high_side != ant_sw.last_high_side) {
+                  //console.log('SET high_side='+ high_side);
+                  ext_send('SET antsw_high_side='+ (high_side? 1:0));
+                  ant_sw.last_high_side = high_side;
+               }
+            } else {
+               console.log('ant='+ antN +' not setting offset');
             }
-
-            s = 'ant_switch.ant'+ antN +'high_side';
-            var high_side = ext_get_cfg_param(s, '', EXT_NO_SAVE);
-            if (high_side != ant_sw.last_high_side) {
-               //console.log('SET high_side='+ high_side);
-               ext_send('SET antsw_high_side='+ (high_side? 1:0));
-               ant_sw.last_high_side = high_side;
-            }
+            ant_sw.last_offset = offset;
          }
       }
    );
@@ -761,7 +766,8 @@ function ant_switch_config_html()
                
                   'Overrides frequency scale offset value on<br>' +
                   'config tab when any antenna selected. <br>' +
-                  'No effect if antenna mixing enabled.'
+                  'No effect if antenna mixing enabled. <br>' +
+                  'Use value "-1" to prevent any change.'
                ),
 
                w3_div('',
