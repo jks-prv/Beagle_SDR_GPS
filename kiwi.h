@@ -53,6 +53,7 @@ typedef enum { DAILY_RESTART_NO = 0, DAILY_RESTART = 1, DAILY_REBOOT = 2} daily_
 typedef struct {
     model_e model;
     platform_e platform;
+    
     int current_nusers;
     bool dbgUs;
     #define RESTART_DELAY_30_SEC 1
@@ -109,7 +110,7 @@ extern char **main_argv;
 
 extern u4_t ov_mask, snd_intr_usec;
 extern float g_genfreq, g_genampl, g_mixfreq, max_thr;
-extern double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
+extern double ui_srate, ui_srate_kHz;
 extern TYPEREAL DC_offset_I, DC_offset_Q;
 extern kstr_t *cpu_stats_buf;
 extern char *tzone_id, *tzone_name;

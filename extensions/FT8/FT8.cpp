@@ -20,6 +20,17 @@
 #include <strings.h>
 #include <sys/mman.h>
 
+// order matches ft8.autorun_u in FT8.js
+// only add new entries to the end so as not to disturb existing values stored in config
+#define N_FREQ 29
+static double ft8_autorun_dial[N_FREQ] = {      // usb carrier/dial freq
+    /* FT8 */ 1840, 3573, 5357, 7074,   10136, 14074, 18100, 21074, 24915, 28074,
+    /* FT4 */       3575.5,     7047.5, 10140, 14080, 18104, 21140, 24919, 28180,
+    /* FT8 */ 40680, 50313, 50323, 70154, 70190, 144174, 222065, 432174, 1296174,
+    /* FT4 */ 50318, 144150
+};
+static u1_t isFT4[N_FREQ] = { 0,0,0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0,0, 1,1 };
+
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
 
@@ -117,7 +128,13 @@ static void ft8_task(void *param)
 		if (e->last_freq_kHz != new_freq_kHz) {
 		    //rcprintf(rx_chan, "FT8: freq changed %d => %d\n", e->last_freq_kHz, new_freq_kHz);
 		    e->last_freq_kHz = new_freq_kHz;
-		    decode_ft8_protocol(rx_chan, conn->freqHz, e->proto);
+		    decode_ft8_protocol(rx_chan, conn->freqHz + ft8_conf.freq_offset_Hz, e->proto);
+		}
+		
+		// detect when freq offset changed so autorun can be restarted
+		if (e->autorun && !ft8_conf.arun_restart_offset && ft8_conf.freq_offset_Hz != freq.offset_Hz) {
+		    ft8_conf.arun_restart_offset = true;
+		    ft8_autorun_restart();
 		}
 
 		while (e->rd_pos != rx->real_wr_pos) {
@@ -187,7 +204,7 @@ bool ft8_msgs(char *msg, int rx_chan)
 	    e->proto = proto;
         conn_t *conn = rx_channels[rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
-        ft8_conf.freq_offset_Hz = (u4_t) (freq_offset_kHz * 1e3);
+        ft8_conf.freq_offset_Hz = freq.offset_Hz;
 		//rcprintf(rx_chan, "FT8 start %s\n", proto? "FT4" : "FT8");
 		decode_ft8_init(rx_chan, proto? 1:0);
 
@@ -210,7 +227,7 @@ bool ft8_msgs(char *msg, int rx_chan)
         conn_t *conn = rx_channels[rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
 		//rcprintf(rx_chan, "FT8 protocol %s freq %.2f\n", proto? "FT4" : "FT8", conn->freqHz/1e3);
-		decode_ft8_protocol(rx_chan, conn->freqHz, proto? 1:0);
+		decode_ft8_protocol(rx_chan, conn->freqHz + ft8_conf.freq_offset_Hz, proto? 1:0);
 		return true;
 	}
 
@@ -344,14 +361,6 @@ bool ft8_update_vars_from_config(bool called_at_init_or_restart)
     return update_cfg;
 }
 
-// order matches ft8.autorun_u in FT8.js
-// only add new entries to the end so as not to disturb existing values stored in config
-#define FT4_BAND_IDX 10
-static double ft8_cfs[] = {     // usb carrier/dial freq
-    /* FT8 */ 1840, 3573, 5357, 7074,   10136, 14074, 18100, 21074, 24915, 28074,
-    /* FT4 */       3575.5,     7047.5, 10140, 14080, 18104, 21140, 24919, 28180
-};
-
 void ft8_update_spot_count(int rx_chan, u4_t spot_count)
 {
     ft8_t *e = &ft8[rx_chan];
@@ -368,8 +377,16 @@ static void ft8_autorun(int instance, bool initial)
 {
     rx_util_t *r = &rx_util;
     int band = ft8_arun_band[instance]-1;
-    double dial_freq_kHz = ft8_cfs[band];
-    bool ft4 = (band >= FT4_BAND_IDX);
+    double dial_freq_kHz = ft8_autorun_dial[band];
+    double if_freq_kHz = dial_freq_kHz - freq.offset_kHz;
+    bool ft4 = (isFT4[band] != 0);
+
+	if (!rx_freq_inRange(dial_freq_kHz)) {
+	    printf("FT%d autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	        ft4? 4:8, band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+	    return;
+	}
+
     bool preempt = (ft8_arun_preempt[instance] != ARUN_PREEMPT_NO);
     char *ident_user;
     asprintf(&ident_user, "FT%d-autorun", ft4? 4:8);
@@ -381,7 +398,7 @@ static void ft8_autorun(int instance, bool initial)
 
 	bool ok = internal_conn_setup(ICONN_WS_SND | ICONN_WS_EXT, &iconn[instance], instance, PORT_BASE_INTERNAL_FT8,
 	    WS_FL_IS_AUTORUN | (initial? WS_FL_INITIAL : 0),
-        "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, dial_freq_kHz, ident_user, geoloc, "FT8");
+        "usb", FT8_PASSBAND_LO, FT8_PASSBAND_HI, if_freq_kHz, ident_user, geoloc, "FT8");
     free(ident_user); free(geoloc);
     if (!ok) {
         //printf("FT8 autorun: internal_conn_setup() FAILED instance=%d band=%d %s %.2f\n",
@@ -418,6 +435,7 @@ void ft8_autorun_start(bool initial)
         //printf("FT8 autorun_start: none configured\n");
         return;
     }
+    ft8_conf.arun_restart_offset = false;
 
     for (int instance = 0; instance < rx_chans; instance++) {
         int band = ft8_arun_band[instance];
@@ -432,7 +450,7 @@ void ft8_autorun_start(bool initial)
         for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
             if (r->arun_which[rx_chan] == ARUN_FT8 && r->arun_band[rx_chan] == band) {
                 //printf("FT8 autorun: instance=%d band=%d %.2f already running on rx%d\n",
-                //    instance, band, ft8_cfs[band], rx_chan);
+                //    instance, band, ft8_autorun_dial[band], rx_chan);
                 break;
             }
         }

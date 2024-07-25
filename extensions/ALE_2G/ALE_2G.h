@@ -14,6 +14,7 @@
 #include "data_pump.h"
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 #include "web.h"
+#include "rx_util.h"
 
 #include <sys/mman.h>
 

@@ -99,6 +99,7 @@ void c2s_admin_setup(void *param)
 	#endif
 	send_msg(conn, SM_NO_DEBUG, "ADM init=%d", rx_chans);
 	send_msg_encoded(conn, "ADM", "repo_git", "%s", REPO_GIT);
+	extint_send_extlist(conn);
 }
 
 void c2s_admin_shutdown(void *param)

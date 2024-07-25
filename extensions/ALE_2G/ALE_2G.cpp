@@ -147,7 +147,7 @@ static void ale_2g_task(void *param)
             if (e->use_new_resampler) {
                 int freqHz;
                 n = ale_2g_input(rx_chan, &e->inp, &freqHz);
-                double tuned_f1 = (double) freqHz / kHz + freq_offset_kHz;
+                double tuned_f1 = (double) freqHz / kHz + freq.offset_kHz;
                 
                 #if 0
                     double tuned_f2 = ext_get_displayed_freq_kHz(e->rx_chan);

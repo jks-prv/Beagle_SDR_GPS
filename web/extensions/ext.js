@@ -254,6 +254,13 @@ function ext_get_freq_range()
    return { lo_kHz: cfg.sdr_hu_lo_kHz + offset, hi_kHz: cfg.sdr_hu_hi_kHz + offset, offset_kHz: offset };
 }
 
+function ext_set_freq_offset(foff_kHz)
+{
+   //console.log('ext_set_freq_offset: SET foff_kHz='+ foff_kHz);
+   kiwi_set_freq_offset(foff_kHz);
+   ext_send('SET antsw_freq_offset='+ foff_kHz);
+}
+
 var ext_zoom = {
 	TO_BAND: 0,
 	IN: 1,
@@ -1213,6 +1220,17 @@ function extint_enum_names(func)
       func(i, value, id, id_en);
       value++;
    }
+}
+
+function extint_exts_call(func_s)
+{
+   extint_enum_names(
+      function(i, value, id, id_en) {
+         id_en = id_en.toLowerCase();
+         //console.log(id_en + func_s);
+         w3_call(id_en + func_s);
+      }
+   );
 }
 
 function ext_auth()

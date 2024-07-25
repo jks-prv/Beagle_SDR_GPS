@@ -474,14 +474,21 @@ char *kiwi_json_to_html(char *str, bool doBR)
 		} else
 		if (*s == '\\' && *(s+1) == 'n') {
 		    if (doBR) {
-                n += 2;     // \n => <br>
+                n += 2;     // \\n => <br>
                 s++;
                 // because larger output would overwrite input (they're same buffer otherwise)
                 mustCopy = true;
             } else {
-                n -= 2;     // \n => (removed)
+                #if 0
+                    n -= 2;     // \\n => (removed)
+                #else
+                    n--;        // \\n (2-char) => \n (1-char)
+                #endif
                 s++;
             }
+		} else
+		if (*s == '\\' && *(s+1) == 't') {
+		    n += 2;     // \\t => "    " (4-chars)
 		}
 		s++;
 	}
@@ -496,17 +503,27 @@ char *kiwi_json_to_html(char *str, bool doBR)
 
 	for (s = str; *s != '\0';) {
 		if (*s == '\\' && *(s+1) == '"') {
-			*o++ = '"';     // \" => "
+			*o++ = '"';     // \\" => "
 			s += 2;
 		} else
 		if (*s == '\\' && *(s+1) == 'n') {
 		    if (doBR) {
                 strncpy(o, "<br>", 4);
-                o += 4;         // \n => <br>
+                o += 4;     // \\n => <br>
                 s += 2;
             } else {
-                s += 2;
+                #if 0
+                    s += 2;     // leave \\n intact
+                #else
+                    *o++ = '\n';    // \\n (2-char) => \n (1-char)
+                    s += 2;
+                #endif
             }
+        } else
+		if (*s == '\\' && *(s+1) == 't') {
+                strncpy(o, "    ", 4);
+                o += 4;     // \\t => "    " (4-chars)
+                s += 2;
 		} else {
 			*o++ = *s++;
 		}

@@ -211,7 +211,7 @@ function config_html()
 		'<hr>' +
 		w3_third('w3-margin-bottom w3-text-teal', 'w3-container',
 			w3_div('',
-				w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'config_freq_offset'),
+				w3_input_get('', 'Frequency scale offset (kHz, 1 Hz resolution)', 'freq_offset', 'config_freq_offset_cb'),
 				w3_div('w3-text-black',
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
@@ -447,11 +447,11 @@ function config_mode_cb(path, idx, first)
    ext_set_cfg_param(path, mode_s, EXT_SAVE);
 }
 
-function config_freq_offset(path, val, first)
+function config_freq_offset_cb(path, val, first)
 {
    admin_float_cb(path, val, first, [0,3]);
-	//console.log('### config_freq_offset '+ path +'='+ val +' cfg.freq_offset='+ cfg.freq_offset);
-	kiwi_set_freq_offset(cfg.freq_offset);
+	//console.log('### config_freq_offset_cb '+ path +'='+ val +' cfg.freq_offset='+ cfg.freq_offset);
+	ext_set_freq_offset(cfg.freq_offset);
 }
 
 function config_spec_inv_cb(path, val, first)

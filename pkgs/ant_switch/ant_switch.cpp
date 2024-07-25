@@ -398,10 +398,14 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     if (n == 1) {
         //antsw_rcprintf(rx_chan, "ant_switch: freq_offset %d\n", freq_offset_ant);
         if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
+        
+            // FIXME jksx XXX
+            // This violates the cfg-db-single-writer restriction if the admin page is open.
+            // But it's necessary so the reloaded user page gets the new offset.
             cfg_set_float_save("freq_offset", (double) freq_offset_ant);
-            freq_offset_kHz = freq_offset_ant;
-            freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
-            antsw_printf("ant_switch FOFF %.3f\n", freq_offset_kHz);
+            
+            rx_set_freq_offset_kHz((double) freq_offset_ant);
+            antsw_printf("ant_switch FOFF %.3f\n", freq.offset_kHz);
         }
         return true;
     }

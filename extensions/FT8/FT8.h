@@ -10,6 +10,7 @@
 
 typedef struct {
     u4_t freq_offset_Hz;
+    bool arun_restart_offset;
     
     float SNR_adj;
     float dT_adj;

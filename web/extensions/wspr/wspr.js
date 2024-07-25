@@ -31,13 +31,67 @@ var wspr = {
    //hop_period: 6,
    SYNC: true,
    NO_SYNC: false,
+   
+   // order matches menu instantiation order and autorun wspr_main.cpp:wspr_cfs[]
+   // see: wsprnet.org/drupal/node/7352
+   // dial freq = cf - bfo, cf aka "tx freq"
+   // new entries can only be added at end due to limitations with autorun's wspr.autorun_u stored config value
+   // 9999 entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
+   center_freqs: [
+      137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13555.4, 9999
+   ],
+   
+   freqs_s: {
+      'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13, 'ism_6':14, 'ism_13':15, 'iwbp':16
+   },
+   
+   freqs_m: [
+      'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m', 'ISM_6', 'ISM_13', 'IWBP'
+   ],
+   
+   // freqs on github.com/HB9VQQ/WSPRBeacon are cf - 1.5 kHz BFO (dial frequencies)
+   // so we add 1.5 to those to get our cf values (same as regular WSPR wspr.center_freqs above)
+   cf_IWBP: [ 1838.1, 3570.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ],
+   
+   xvtr_center_freqs: [ 40680, 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ],
+   xvtr_freqs_m: [ '8m', '6m', '4m', '2m', '440', '1296' ],
 
-   // order matches wspr_main.cpp:wspr_cfs[]
-   // only add new entries to the end so as not to disturb existing values stored in config
    autorun_u: [
       'regular use', 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU',
       '40m', '30m', '20m', '17m', '15m', '12m', '10m',
-      '6m', '4m', '2m', '440', '1296', 'ISM_6', 'ISM_13', 'IWBP'
+      '8m', '6m', '4m', '2m', '440', '1296', 'ISM_6', 'ISM_13', 'IWBP'
+   ],
+   
+   // translates menu order to cfg value which then has to match order of wspr_main.cpp:wspr_cfs[]
+   // assign new cfg values so as not to disturb existing values stored in cfg
+   menu_i_to_cfg_i: [
+      0,    //  0 regular use
+      
+      1,    //  1 LF
+      2,    //  2 MF
+      3,    //  3 160m
+      4,    //  4 80m_JA
+      5,    //  5 80m
+      6,    //  6 60m
+      7,    //  7 60m_EU
+      8,    //  8 40m
+      9,    //  9 30m
+      10,   // 10 20m
+      11,   // 11 17m
+      12,   // 12 15m
+      13,   // 12 12m
+      14,   // 14 10m
+      
+      23,   // 15 8m
+      15,   // 16 6m
+      16,   // 17 4m
+      17,   // 18 2m
+      18,   // 19 440
+      19,   // 20 1296
+      
+      20,   // 21 ISM_6
+      21,   // 22 ISM_13
+      22,   // 23 IWBP
    ],
 
    PREEMPT_NO: 0,
@@ -336,31 +390,23 @@ function wspr_controls_setup()
    	wspr_config_okay = false;
    }
 
-   // re-define band menu if down-converter in use
+   // re-define band menu if downconverter in use
    var r = ext_get_freq_range();
    if (r.lo_kHz > 32000 && r.hi_kHz > 32000) {
-      var found = false;
-      var f_kHz;
-      for (i = 0; i < wspr_xvtr_center_freqs.length; i++) {
-         f_kHz = wspr_xvtr_center_freqs[i];
+      wspr.center_freqs = [];
+      wspr.freqs_s = {};
+      wspr.freqs_m = [];
+      var j = 0;
+      for (i = 0; i < wspr.xvtr_center_freqs.length; i++) {
+         var f_kHz = wspr.xvtr_center_freqs[i];
          if (f_kHz >= r.lo_kHz && f_kHz <= r.hi_kHz) {
-            found = true;
-            break;
+            wspr.center_freqs.push(f_kHz);
+            var s = wspr.xvtr_freqs_m[i];
+            wspr.freqs_m.push(s);
+            wspr.freqs_s[s] = j++;
          }
       }
-
-      //console.log('found='+ found +' i='+ i);
-      wspr_center_freqs = [];
-      wspr_freqs_s = {};
-      wspr_freqs_m = [];
-
-      if (found) {
-         wspr_center_freqs[0] = f_kHz;
-         var s = wspr_xvtr_freqs_s[i];
-         wspr_freqs_m = [ s ];
-         wspr_freqs_s[s] = 0;
-         if (wspr_init_band > 0) wspr_init_band = 0;
-      }
+      if (wspr_init_band > 0) wspr_init_band = 0;
    }
 
 	var controls_html =
@@ -368,7 +414,7 @@ function wspr_controls_setup()
 	   w3_div('id-wspr-controls-top',
          w3_inline('w3-halign-space-between w3-margin-B-4|width:83%/',
             w3_div('w3-medium w3-text-aqua cl-viewer-label', '<b>WSPR<br>viewer</b>'),
-            w3_select('w3-text-red', '', 'band', 'wspr_init_band', wspr_init_band, wspr_freqs_m, 'wspr_band_select_cb'),
+            w3_select('w3-text-red', '', 'band', 'wspr_init_band', wspr_init_band, wspr.freqs_m, 'wspr_band_select_cb'),
             w3_button('w3-ext-btn w3-padding-smaller', 'stop', 'wspr_stop_start_cb'),
             w3_button('cl-w3-ext-btn w3-padding-smaller w3-css-yellow', 'clear', 'wspr_clear_cb'),
             w3_button('cl-w3-ext-btn w3-padding-smaller w3-aqua||title="test spots NOT uploaded\nto wsprnet.org"',
@@ -444,10 +490,10 @@ function wspr_controls_setup()
 	if (p) {
       p = p.toLowerCase().split(',');
       p.forEach(function(a, i) {
-         if (i == 0 && isDefined(wspr_freqs_s[a])) {
-            var sel = wspr_freqs_s[a];
+         var sel = wspr.freqs_s[a];
+         if (i == 0 && isDefined(sel)) {
             //console.log('<'+ a +'> '+ i +' sel='+ sel);
-            var freq = wspr_center_freqs[sel];
+            var freq = wspr.center_freqs[sel];
             if (freq >= r.lo_kHz && freq <= r.hi_kHz)
                wspr_band_select_cb('wspr_init_band', sel, false);
             return;
@@ -643,8 +689,9 @@ function wspr_config_html()
                w3_div('w3-margin-T-10 w3-valign',
                   '<header class="id-wspr-warn-full w3-container w3-yellow"><h6>' +
                   'If your Kiwi is publicly listed you must <b>not</b> configure all the channels to use WSPR-autorun!<br>' +
-                  'This defeats the purpose of making your Kiwi public and public registration will be disabled<br>' +
-                  'until you make at least one channel available for connection. Check the Admin Public tab.' +
+                  '(unless at least one is set to preemptable) This defeats the purpose of making your Kiwi <br>' +
+                  'public and public registration will be disabled until you make at least one channel available <br>' +
+                  'for connection. Check the Admin Public tab.' +
                   '</h6></header>'
                ),
                
@@ -666,11 +713,12 @@ function wspr_config_html()
       var f1 = 'w3-margin-right w3-defer';
       var f2 = f1 +' w3-margin-T-8';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
-	      
+	      var arun = w3_array_el_seq(wspr.menu_i_to_cfg_i, +cfg.WSPR['autorun'+ i]);
+	      //console.log('WSPR.autorun'+ i +'='+ cfg.WSPR['autorun'+ i] +' arun='+ arun);
 	      s2 +=
 	         w3_div('',
-	            w3_select_get_param(f1, 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, wspr.autorun_u, 'wspr_autorun_select_cb'),
-	            w3_select_get_param(f2, '', 'preemptable?', 'WSPR.preempt'+ i, wspr.preempt_u, 'wspr_autorun_select_cb')
+	            w3_select(f1, 'Autorun '+ i, 'WSPR band', 'WSPR.autorun'+ i, arun, wspr.autorun_u, 'wspr_autorun_select_cb'),
+	            w3_select_get_param(f2, '', 'preemptable?', 'WSPR.preempt'+ i, wspr.preempt_u, 'wspr_preempt_select_cb')
 	            //w3_select_get_param(f2, '', 'start UTC', 'WSPR.start'+ i, wspr.sched_u, 'wspr_autorun_sched_cb', 0, 0),
 	            //w3_select_get_param(f2, '', 'stop UTC', 'WSPR.stop'+ i, wspr.sched_u, 'wspr_autorun_sched_cb', 0, 1)
 	         );
@@ -711,6 +759,7 @@ function wspr_autorun_public_check()
 
 function wspr_autorun_restart_cb()
 {
+   console.log('wspr_autorun_restart_cb');
    wspr_autorun_public_check();
    w3_hide('id-wspr-restart');
    ext_send("ADM wspr_autorun_restart");  // NB: must be sent as ADM command
@@ -718,11 +767,24 @@ function wspr_autorun_restart_cb()
 
 function wspr_autorun_select_cb(path, idx, first)
 {
+   //console.log('wspr_autorun_select_cb path='+ path +' idx='+ idx +' cfg_i='+ wspr.menu_i_to_cfg_i[+idx]);
+   admin_select_cb(path, wspr.menu_i_to_cfg_i[+idx], first);
+   if (first) return;
+   w3_show('id-wspr-restart');
+	var el = w3_el('id-kiwi-container');
+	w3_scrollDown(el);   // keep menus visible
+	
+}
+
+function wspr_preempt_select_cb(path, idx, first)
+{
+   //console.log('wspr_preempt_select_cb path='+ path +' idx='+ idx);
    admin_select_cb(path, idx, first);
    if (first) return;
    w3_show('id-wspr-restart');
 	var el = w3_el('id-kiwi-container');
 	w3_scrollDown(el);   // keep menus visible
+	
 }
 
 function wspr_autorun_sched_cb(path, idx, first, cbp)
@@ -991,34 +1053,15 @@ function wspr_draw_pie() {
    // long-running decode abort happens at 1:40, so should be safe to switch freq at 1:50
    if (wspr.IWBP && wspr_secs == (60 + 50) /* 1:50 */) {
       var deco_hop = Math.floor((min % wspr.hop_period) / 2);
-      var deco_cf = wspr_cf_IWBP[deco_hop];
+      var deco_cf = wspr.cf_IWBP[deco_hop];
 
       var hop = Math.floor(((min+1) % wspr.hop_period) / 2);
-      var cf = wspr_cf_IWBP[hop];
+      var cf = wspr.cf_IWBP[hop];
 
       //console.log('WSPR IWBP deco: #'+ deco_hop +'/'+ min +'m='+ deco_cf +' capture: #'+ hop +'/'+ ((min+1)%60) +'m='+ cf);
       wspr_change_freq(cf, deco_cf, wspr.NO_SYNC);
    }
 }
-
-// order matches menu instantiation order and autorun wspr_main.cpp:wspr_cfs[]
-// see: wsprnet.org/drupal/node/7352
-// dial freq = cf - bfo, cf aka "tx freq"
-// new entries can only be added at end due to limitations with autorun's wspr.autorun_u stored config value
-// 9999 entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
-var wspr_center_freqs = [ 137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13555.4, 9999 ];
-var wspr_freqs_s = { 'lf':0, 'mf':1, '160m':2, '80m_ja':3, '80m':4, '60m':5, '60m_eu':6, '40m':7, '30m':8, '20m':9, '17m':10, '15m':11, '12m':12, '10m':13, 'ism_6':14, 'ism_13':15, 'iwbp':16 };
-var wspr_freqs_m = [ 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU', '40m', '30m', '20m', '17m', '15m', '12m', '10m', 'ISM_6', 'ISM_13', 'IWBP' ];
-
-// freqs on github.com/HB9VQQ/WSPRBeacon are cf - 1.5 kHz BFO (dial frequencies)
-// so we add 1.5 to those to get our cf values (same as regular WSPR wspr_center_freqs above)
-var wspr_cf_IWBP = [ 1838.1, 3570.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ];
-//var wspr_cf_IWBP = [ 1838.1, 3570.1, 7040.1 ];
-//var wspr_cf_IWBP = [ 7040.1, 10140.2, 14097.1 ];
-
-// only one of these is chosen given our 30/32 MHz span
-var wspr_xvtr_center_freqs = [ 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ];
-var wspr_xvtr_freqs_s = [ '6m', '4m', '2m', '440', '1296' ];
 
 var wspr_rfreq=0, wspr_tfreq=0;
 var wspr_bfo = 750;
@@ -1029,14 +1072,14 @@ function wspr_freq(b)
    wspr_reset();
 
    var cf;
-   if (wspr_freqs_m[b] == 'IWBP') {
+   if (wspr.freqs_m[b] == 'IWBP') {
       wspr.IWBP = true;
 	   min = wspr_server_Date().getUTCMinutes();
       var hop = Math.floor((min % wspr.hop_period) / 2);
-      cf = wspr_cf_IWBP[hop];
+      cf = wspr.cf_IWBP[hop];
    } else {
       wspr.IWBP = false;
-      cf = wspr_center_freqs[b];
+      cf = wspr.center_freqs[b];
    }
    wspr_change_freq(cf, cf, wspr.SYNC);
 }

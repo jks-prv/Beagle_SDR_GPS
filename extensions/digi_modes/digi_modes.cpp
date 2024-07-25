@@ -159,7 +159,7 @@ bool digi_msgs(char *msg, int rx_chan)
         conn_t *conn = rx_channels[rx_chan].conn;
 		e->rsid = &m_RsId[rx_chan];
 		e->last_freq_kHz = conn->freqHz/1e3;
-        digi_conf.freq_offset_Hz = (u4_t) (freq_offset_kHz * 1e3);
+        digi_conf.freq_offset_Hz = freq.offset_Hz;
 		//rcprintf(rx_chan, "digi start\n");
 
 		if (digi_conf.tsamps != 0) {

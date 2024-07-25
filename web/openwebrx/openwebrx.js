@@ -70,6 +70,8 @@ var owrx = {
    wheel_poll: 0,
    wheel_fast: 0,
    wheel_unlock: 0,
+   wheel_dir: 0,
+   wheel_dir_s: [ 'normal', 'reverse' ],
 
    cfg_loaded: false,
    mobile: null,
@@ -2203,7 +2205,7 @@ function mk_freq_scale()
 	//console.log(spacing);
 	var marker_hz = Math.ceil(g_range.start_offset / spacing.smallbw) * spacing.smallbw;
 	var marker_hz_offset = marker_hz + kiwi.freq_offset_Hz - kiwi.offset_frac;
-   //console.log('mkfs z'+ zoom_level +' kiwi.freq_offset_kHz='+ kiwi.freq_offset_kHz +' offset_frac='+ kHz(kiwi.offset_frac) +' marker_hz='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset));
+   //console.log('mkfs z'+ zoom_level +' freq_offset_kHz='+ kiwi.freq_offset_kHz +' offset_frac='+ kHz(kiwi.offset_frac) +' marker_hz='+ kHz(marker_hz) +'|'+ kHz(marker_hz_offset));
 	text_y_pos = 22+10 + (kiwi_isFirefox()? 3:0);
 	var text_to_draw;
 	
@@ -3158,7 +3160,7 @@ function canvas_mousewheel_cb(evt)
    var x = evt.deltaX;
    var y = evt.deltaY;
    //var fwd_bak = (x < 0 || (x == 0 && y < 0));
-   var fwd_bak = ((x < 0 && y <= 0) || (x >= 0 && y < 0));
+   var fwd_bak = ((x < 0 && y <= 0) || (x >= 0 && y < 0)) ^ owrx.wheel_dir;
    var key_mod = shortcut_key_mod(evt);
    
    // wheel makes passband adjustment when cursor in frequency scale
@@ -3259,7 +3261,7 @@ function canvas_mouse_wheel_set(set)
 function wheel_dev_cb(path, idx, first)
 {
    idx = +idx;
-   if (first) idx = kiwi_storeRead('wheel_dev', idx);
+   if (first) idx = +kiwi_storeRead('wheel_dev', idx);
    owrx.wheel_dev = idx;
    console.log('wheel_dev_cb: idx='+ idx +' first='+ first);
 
@@ -3279,6 +3281,17 @@ function wheel_dev_cb(path, idx, first)
    w3_set_value('id-wheel-unlock', owrx.wheel_unlock);
    canvas_mousewheel_rlimit_tune = kiwi_rateLimit(canvas_mousewheel_cb, /* msec */ owrx.wheel_poll);
    console.log('wheel_dev_cb: wheel_poll='+ owrx.wheel_poll +' wheel_fast='+ owrx.wheel_fast +' wheel_unlock='+ owrx.wheel_unlock);
+}
+
+function wheel_dir_cb(path, idx, first)
+{
+   idx = +idx;
+   if (first) idx = +kiwi_storeRead('wheel_dir', idx);
+   owrx.wheel_dir = idx;
+   console.log('wheel_dir_cb: idx='+ idx +' first='+ first);
+
+   w3_set_value('id-wheel-dir', idx);     // for benefit of kiwi_storeRead() above
+   kiwi_storeWrite('wheel_dir', idx);
 }
 
 function wheel_param_cb(path, val, first, a_cb)
@@ -12711,6 +12724,7 @@ function users_setup()
          w3_div('w3-text-aqua', '<b>Mouse wheel / trackpad setup</b>'),
          w3_inline('w3-margin-T-8 w3-margin-R-8/',
             w3_select('id-wheel-dev w3-text-red||title=""', '', 'device preset', 'owrx.wheel_dev', owrx.wheel_dev, owrx.wheel_dev_s, 'wheel_dev_cb'),
+            w3_select('id-wheel-dir w3-text-red w3-margin-L-8||title=""', '', 'direction', 'owrx.wheel_dir', owrx.wheel_dir, owrx.wheel_dir_s, 'wheel_dir_cb'),
             w3_button('w3-green w3-small w3-padding-small w3-margin-R-4 w3-btn-right', 'help', 'wheel_help')
          ),
          w3_inline('w3-margin-T-8 w3-margin-B-8 w3-margin-R-8/w3-margin-between-8',
@@ -13148,10 +13162,9 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 	switch (param[0]) {
 		case "wf_setup":
 			   wf_init();
-			break;					
-		case "extint_list_json":
-			extint_list_json(param[1]);
-			
+			break;
+
+		case "have_ext_list":
 			// now that we have the list of extensions see if there is an override
 			//console.log('extint_list_json override_ext='+ override_ext +' waterfall_setup_done='+ waterfall_setup_done);
          w3_do_when_cond(
@@ -13168,67 +13181,84 @@ function owrx_msg_cb(param, ws)     // #msg-proc
          );
          // REMINDER: w3_do_when_cond() returns immediately
 			break;
+
 		case "bandwidth":
 			bandwidth = parseInt(param[1]);
 			break;		
 		case "center_freq":
 			center_freq = parseInt(param[1]);
 			break;
+
 		case "wf_fft_size":
 			wf_fft_size = parseInt(param[1]);
 			break;
+
 		case "wf_fps_max":
 			wf_fps_max = parseInt(param[1]);
 		   //console.log('# wf_fps_max='+ wf_fps_max);
 			break;
+
 		case "wf_fps":
 			wf_fps = parseInt(param[1]);
 		   //console.log('# wf_fps='+ wf_fps);
 			break;
+
 		case "wf_cal":    // for benefit of kiwirecorder as well
 		   wf.cal = parseInt(param[1]);
 		   break;
 		case "start":
 			bin_server = parseInt(param[1]);
 			break;
+
 		case "zoom":
 			zoom_server = parseInt(param[1]);
 			break;
+
 		case "zoom_max":
 			zoom_levels_max = parseInt(param[1]);
 			zoom_nom = Math.min(ZOOM_NOMINAL, zoom_levels_max);
 			break;
+
 		case "audio_init":
          toggle_or_set_audio(toggle_e.FROM_COOKIE | toggle_e.SET, 1);
 			audio_init(+param[1], btn_less_buffering, kiwi_toggle(toggle_e.FROM_COOKIE | toggle_e.SET, 1, 1, 'last_compression'));
 			break;
+
 		case "audio_camp":
          var p = param[1].split(',');
 			audio_camp(+p[0], +p[1], false, false);
 			break;
+
 		case "audio_rate":
 			audio_rate(parseFloat(param[1]));
 			break;
+
 		case "audio_adpcm_state":
          var p = param[1].split(',');
 			audio_adpcm_state(+p[0], +p[1]);
 			break;
+
 		case "audio_passband":
          var p = param[1].split(',');
 			audio_recompute_LPF(1, +p[0], +p[1]);
 			break;
+
 		case "audio_flags2":
 			audio_recv_flags2(param[1]);
 			break;
+
 		case "kiwi_up":
 			kiwi_up(parseInt(param[1]));
 			break;
+
 		case "gps":
 			toggle_or_set_spec(toggle_e.SET, spec.RF);
 			break;
+
 		case "fft_mode":
 			kiwi_fft_mode();
 			break;
+
 		case "maxdb":
 		   if (wf.aper != kiwi.APER_AUTO) {    // probably keyboard shortcut switched aperture mode
 		      //console.log($SKIP MSG maxdb wf.aper='+ wf.aper);
@@ -13238,6 +13268,7 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 		   //console.log('$SET wf.auto_maxdb='+ wf.auto_maxdb);
          setmaxdb(wf.auto_maxdb, {done:1, no_fsel:1});
 			break;
+
 		case "mindb":
 		   if (wf.aper != kiwi.APER_AUTO) {    // probably keyboard shortcut switched aperture mode
 		      //console.log($SKIP MSG mindb wf.aper='+ wf.aper);
@@ -13249,18 +13280,23 @@ function owrx_msg_cb(param, ws)     // #msg-proc
          w3_call('waterfall_maxmin_cb');
          set_ceilfloordb({done:1, no_fsel:1});
 			break;
+
 		case "max_thr":
 			owrx.overload_mute = Math.round(+param[1]);
 			break;
+
 		case "freq_offset":     // sent this way for benefit of kiwirecorder
 			break;
+
 		case "last_community_download":
 		   dx.last_community_download = decodeURIComponent(param[1]);
 		   break;
+		   
 		case "rf_attn":
 		   //console.log('UPD rf_attn='+ param[1]);
          rf_attn_cb(null, +param[1], false, false, /* ui_only */ true);
 		   break;
+		   
 		default:
 		   return false;
 	}

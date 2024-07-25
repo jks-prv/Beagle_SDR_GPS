@@ -79,7 +79,7 @@ static float window[NFFT];
 #define WSPR_BAND_IWBP 9999
 static double wspr_cfs[] = {
     137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1,
-    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13555.4, WSPR_BAND_IWBP
+    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13555.4, WSPR_BAND_IWBP, 40681.5
 };
 
 // freqs on github.com/HB9VQQ/WSPRBeacon are cf - 1.5 kHz BFO (dial frequencies)
@@ -262,7 +262,7 @@ void WSPR_FFT(void *param)
                 input_msg_internal(w->arun_cext, (char *) "SET dialfreq=%.2f centerfreq=%.2f cf_offset=%.0f",
                     deco_cf_kHz - AUTORUN_BFO/1e3, deco_cf_kHz, cfo);
 
-                double if_freq_kHz = (tune_cf_kHz - AUTORUN_BFO/1e3) - freq_offset_kHz;
+                double if_freq_kHz = (tune_cf_kHz - AUTORUN_BFO/1e3) - freq.offset_kHz;
                 input_msg_internal(w->arun_csnd, (char *) "SET mod=usb low_cut=%d high_cut=%d freq=%.3f",
                     AUTORUN_BFO - AUTORUN_FILTER_BW/2, AUTORUN_BFO + AUTORUN_FILTER_BW/2, if_freq_kHz);
 
@@ -663,6 +663,12 @@ void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 		return;
 	}
 	
+    // detect when freq offset changed so autorun can be restarted
+    if (w->autorun && !wspr_c.arun_restart_offset && wspr_c.freq_offset_Hz != freq.offset_Hz) {
+        wspr_c.arun_restart_offset = true;
+        wspr_autorun_restart();
+    }
+
     int min, sec; utc_hour_min_sec(NULL, &min, &sec);
 	if (sec != w->last_sec) {
 		if (min&1 && sec == 40)
@@ -911,6 +917,7 @@ bool wspr_msgs(char *msg, int rx_chan)
 	
 	if (strcmp(msg, "SET autorun") == 0) {
 	    w->autorun = true;
+        wspr_c.freq_offset_Hz = freq.offset_Hz;
 	    return true;
 	}
 
@@ -1047,13 +1054,12 @@ void wspr_autorun(int instance, bool initial)
     }
 
     double dial_freq_kHz = center_freq_kHz - AUTORUN_BFO/1e3;
-    double if_freq_kHz = (tune_freq_kHz - AUTORUN_BFO/1e3) - freq_offset_kHz;
+    double if_freq_kHz = (tune_freq_kHz - AUTORUN_BFO/1e3) - freq.offset_kHz;
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
-	double max_freq = freq_offset_kHz + ui_srate/1e3;
-	if (dial_freq_kHz < freq_offset_kHz || dial_freq_kHz > max_freq) {
-	    lprintf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
-	        band, dial_freq_kHz, freq_offset_kHz, max_freq);
+	if (!rx_freq_inRange(dial_freq_kHz)) {
+	    printf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	        band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
 	    return;
 	}
 
@@ -1095,7 +1101,7 @@ void wspr_autorun(int instance, bool initial)
 
 	clprintf(csnd, "WSPR autorun: START instance=%d rx_chan=%d band=%d%s off=%.2f if=%.2f tf=%.2f df=%.2f cf=%.2f cfo=%.0f\n",
 	    instance, rx_chan, band, iwbp? "(IWBP)" : "",
-	    freq_offset_kHz, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
+	    freq.offset_kHz, if_freq_kHz, tune_freq_kHz, dial_freq_kHz, center_freq_kHz, cfo);
 	
     conn_t *cext = iconn[instance].cext;
     w->arun_cext = cext;
@@ -1120,6 +1126,7 @@ void wspr_autorun_start(bool initial)
         //printf("WSPR autorun_start: none configured\n");
         return;
     }
+    wspr_c.arun_restart_offset = false;
 
     for (int instance = 0; instance < rx_chans; instance++) {
         int band = wspr_arun_band[instance];

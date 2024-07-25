@@ -348,6 +348,7 @@ function kiwi_string_to_hex(s, sep)
    return sa.join(sep || '');
 }
 
+// NB: don't use on an array (will return object, not array)
 function kiwi_shallow_copy(obj)
 {
    return Object.assign({}, obj);

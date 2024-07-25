@@ -22,6 +22,7 @@ Boston, MA  02110-1301, USA.
 #include "kiwi.h"
 #include "mode.h"
 #include "rx.h"
+#include "rx_util.h"
 #include "mem.h"
 #include "misc.h"
 #include "str.h"
@@ -126,7 +127,7 @@ void cfg_adm_transition()
 
 int inactivity_timeout_mins, ip_limit_mins;
 int S_meter_cal, waterfall_cal;
-double ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz;
+double ui_srate, ui_srate_kHz;
 int kiwi_reg_lo_kHz, kiwi_reg_hi_kHz;
 float max_thr;
 int n_camp;
@@ -150,11 +151,11 @@ void update_freqs(bool *update_cfg)
     int srate_idx = cfg_default_int("max_freq", 0, update_cfg);
 	ui_srate = srate_idx? 32*MHz : 30*MHz;
 	ui_srate_kHz = round(ui_srate/kHz);
-    freq_offset_kHz = cfg_default_float("freq_offset", 0, update_cfg);
-    //printf("foff: INIT %.3f\n", freq_offset_kHz);
-    freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
-	//printf("ui_srate=%.3f ui_srate_kHz=%.3f freq_offset_kHz=%.3f freq_offmax_kHz=%.3f\n",
-	//    ui_srate, ui_srate_kHz, freq_offset_kHz, freq_offmax_kHz);
+    double foff_kHz = cfg_default_float("freq_offset", 0, update_cfg);
+    rx_set_freq_offset_kHz(foff_kHz);
+    //printf("foff: INIT %.3f\n", foff_kHz);
+	//printf("ui_srate=%.3f ui_srate_kHz=%.3f freq.offset_kHz=%.3f freq.offmax_kHz=%.3f\n",
+	//    ui_srate, ui_srate_kHz, freq.offset_kHz, freq.offmax_kHz);
 }
 
 void update_vars_from_config(bool called_at_init)
@@ -176,9 +177,9 @@ void update_vars_from_config(bool called_at_init)
     inactivity_timeout_mins = cfg_default_int("inactivity_timeout_mins", 0, &up_cfg);
     ip_limit_mins = cfg_default_int("ip_limit_mins", 0, &up_cfg);
     
-	double prev_freq_offset_kHz = freq_offset_kHz;
+	double prev_freq_offset_kHz = freq.offset_kHz;
     update_freqs(&up_cfg);
-	if (freq_offset_kHz != prev_freq_offset_kHz) {
+	if (freq.offset_kHz != prev_freq_offset_kHz) {
 	    update_masked_freqs();
 	}
 

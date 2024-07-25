@@ -699,18 +699,10 @@ bool check_if_forwarded(const char *id, struct mg_connection *mc, char *remote_i
 {
     kiwi_strncpy(remote_ip, ip_remote(mc), NET_ADDRSTRLEN);     // unforwarded
     
-    #ifdef MG_API_NEW
-        // headers are invalid for websocket and internal connections
-        if (mc->is_websocket || !mc->connection_param) {
-            printf("check_if_forwarded: %s%s\n", mc->is_websocket? "WEBSOCKET ":"", !mc->connection_param? "INTERNAL":"");
-            return false;
-        }
-    #endif
-
     const char *x_real_ip = mg_get_header(mc, "X-Real-IP");
     const char *x_forwarded_for = mg_get_header(mc, "X-Forwarded-For");
     //printf("check_if_forwarded: x_real_ip=<%s> x_forwarded_for=<%s>\n", x_real_ip, x_forwarded_for);
-    //if (x_real_ip == NULL && x_forwarded_for == NULL) return;
+    if (x_real_ip == NULL && x_forwarded_for == NULL) return false;
 
     int n = 0;
     char *ip_r = NULL;

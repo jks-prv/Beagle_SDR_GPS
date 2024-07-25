@@ -2051,13 +2051,17 @@ struct mg_connection {
   unsigned is_writable : 1;    // Connection is ready to write
 
 #ifdef KIWISDR
+  bool init;
   char *uri;                  // URL-decoded URI
   char *query;                // URL part after '?', not including '?', or NULL
   char remote_ip[48];         // Max IPv6 string length is 45 characters
-  char local_ip[48];          // Max IPv6 string length is 45 characters
+  char local_ip[48];
+  char *x_real_ip;
+  char *x_fwd_for;
   uint16_t local_port;        // Local port (host order)
   uint16_t remote_port;       // Remote port (host order)
   unsigned te_chunked : 1;    // Transfer encoding chunked header sent
+  struct mg_http_message *hm;
   void *connection_param;     // Placeholder for connection-specific data
   void *cache_info;           // Cache info
 #endif

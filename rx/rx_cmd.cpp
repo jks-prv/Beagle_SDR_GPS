@@ -830,8 +830,9 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                     if (stream_snd || (stream_wf && conn->isMaster) || stream_mon || stream_admin_or_mfg) {
                     
                         // if freq offset was specified in URL apply it if conditions allow
-                        if (conn->foff_set && conn->foff != freq_offset_kHz) {
-                            cprintf(conn, "foff: new %.3lf current %.3lf\n", conn->foff, freq_offset_kHz);
+                        double foff = freq.offset_kHz;
+                        if (conn->foff_set && conn->foff != foff) {
+                            cprintf(conn, "foff: new %.3lf current %.3lf\n", conn->foff, foff);
                             if (!conn->isLocal) {
                                 cprintf(conn, "foff: not local conn\n");
                                 send_msg(conn, false, "MSG foff_error=0");
@@ -840,14 +841,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                                 cprintf(conn, "foff: admin conns exist\n");
                                 send_msg(conn, false, "MSG foff_error=1");
                             } else {
-		                        freq_offset_kHz = conn->foff;
-		                        freq_offmax_kHz = freq_offset_kHz + ui_srate_kHz;
-                                cfg_set_float("freq_offset", freq_offset_kHz);
+                                rx_set_freq_offset_kHz(foff);
+                                cfg_set_float("freq_offset", foff);
                                 printf("_cfg_save_json freq_offset\n");
 		                        cfg_save_json(cfg_cfg.json);    // we just checked that no admin connections exist
                                 update_freqs();
                                 update_masked_freqs();
-                                cprintf(conn, "foff: UPDATED %.3f\n", freq_offset_kHz);
+                                cprintf(conn, "foff: UPDATED %.3f\n", foff);
                             }
                             conn->foff_set = false;
                         }
@@ -928,7 +928,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             }
         
             dx_db_t *dx_db = dx.rx_db[chan_a];
-            double freq = 0;
+            double f_kHz = 0;
             int gid = -999;
             int low_cut, high_cut, mkr_off, sig_bw, flags, begin, end, new_len;
             flags = 0;
@@ -936,7 +936,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             char *text_m, *notes_m, *params_m;
             text_m = notes_m = params_m = NULL;
             n = sscanf(cmd, "SET DX_UPD g=%d f=%lf lo=%d hi=%d o=%d s=%d fl=%d b=%d e=%d i=%1024ms n=%1024ms p=%1024ms",
-                &gid, &freq, &low_cut, &high_cut, &mkr_off, &sig_bw, &flags, &begin, &end, &text_m, &notes_m, &params_m);
+                &gid, &f_kHz, &low_cut, &high_cut, &mkr_off, &sig_bw, &flags, &begin, &end, &text_m, &notes_m, &params_m);
             enum { DX_MOD_ADD = 12, DX_DEL = 2 };
             
             if (dx_print & DX_PRINT_UPD) {
@@ -944,15 +944,15 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 int type;
                 if (n == DX_MOD_ADD) {
                     const char * dx_mod_add_s[] = { "MOD", "ADD", "???" };
-                    if (gid != -1 && freq != -1) type = 0;
+                    if (gid != -1 && f_kHz != -1) type = 0;
                     else
                     if (gid == -1) type = 1; else type = 2;
                     cprintf(conn, "DX_UPD %s: n=%d #%d %8.2f %s lo=%d hi=%d off=%d sig_bw=%d flags=0x%x b=%d e=%d text=<%s> notes=<%s> params=<%s>\n",
-                        dx_mod_add_s[type], n, gid, freq, mode_lc[DX_DECODE_MODE(flags)], low_cut, high_cut, mkr_off, sig_bw, flags, begin, end,
+                        dx_mod_add_s[type], n, gid, f_kHz, mode_lc[DX_DECODE_MODE(flags)], low_cut, high_cut, mkr_off, sig_bw, flags, begin, end,
                         text_m, notes_m, params_m);
                 } else {
                     const char * dx_del_s[] = { "DEL", "CVT", "???" };
-                    if (gid != -1 && freq == -1) type = 0; else { if (gid == -9) type = 1; else type = 2; }
+                    if (gid != -1 && f_kHz == -1) type = 0; else { if (gid == -9) type = 1; else type = 2; }
                     cprintf(conn, "DX_UPD %s: n=%d #%d\n", dx_del_s[type], n, gid);
                 }
             }
@@ -978,14 +978,14 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 return true;
             }
 
-            //  gid freq    action
+            //  gid f_kHz   action
             //  !-1 -1      delete
             //  !-1 !-1     modify
             //  -1  x       add new
             //  -9  x       one-time addition of frequency offset
             
             if (gid == -9) {
-                if (freq_offset_kHz != 0) {
+                if (freq.offset_kHz != 0) {
                     system("cp " DIR_CFG "/dx.json " DIR_CFG "/dx.pre_convert.json");
                     dx_save_as_json(dx_db, DX_LABEL_FOFF_CONVERT);
                     kiwi_restart();
@@ -1002,7 +1002,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             bool need_sort = false;
             dx_t *dxp;
             if (gid >= -1 && gid < dx_db->actual_len) {
-                if (func == DX_DEL && gid != -1 && freq == -1) {
+                if (func == DX_DEL && gid != -1 && f_kHz == -1) {
                     // delete entry by forcing to top of list, then decreasing size by one before sort and save
                     dx_print_upd("DX_UPD %s delete entry #%d\n", conn->remote_ip, gid);
                     dxp = &dx_db->list[gid];
@@ -1013,7 +1013,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 if (func == DX_MOD_ADD) {
                     if (gid == -1) {
                         // new entry: add to end of list (in hidden slot), then sort will insert it properly
-                        dx_print_upd("DX_UPD %s adding new entry, freq=%.2f\n", conn->remote_ip, freq);
+                        dx_print_upd("DX_UPD %s adding new entry, freq=%.2f\n", conn->remote_ip, f_kHz);
                         assert(dx_db->hidden_used == false);		// FIXME need better serialization
                         dxp = &dx_db->list[dx_db->actual_len];
                         dx_db->hidden_used = true;
@@ -1022,21 +1022,21 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                         need_sort = true;
                     } else {
                         // modify entry
-                        dx_print_upd("DX_UPD %s modify entry #%d, freq=%.2f\n", conn->remote_ip, gid, freq);
+                        dx_print_upd("DX_UPD %s modify entry #%d, freq=%.2f\n", conn->remote_ip, gid, f_kHz);
                         dxp = &dx_db->list[gid];
                         new_len = dx_db->actual_len;
-                        if (dxp->freq != freq) {
+                        if (dxp->freq != f_kHz) {
                             need_sort = true;
                             dx_print_upd("DX_UPD modify, freq change, sort required (old freq=%.2f)\n", dxp->freq);
                         } else {
                             dx_print_upd("DX_UPD modify no freq change, no sort required\n");
                         }
                         if (begin == 0 && end == 0) {
-                            dx_print_upd("$DX_UPD why is b=e=0? idx=%d f=%.2f\n", gid, freq);
+                            dx_print_upd("$DX_UPD why is b=e=0? idx=%d f=%.2f\n", gid, f_kHz);
                             end = 2400;
                         }
                     }
-                    dxp->freq = freq;
+                    dxp->freq = f_kHz;
                     dxp->low_cut = low_cut;
                     dxp->high_cut = high_cut;
                     dxp->offset = mkr_off;
@@ -1162,7 +1162,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
     case CMD_MARKER:
         if (kiwi_str_begins_with(cmd, "SET MARKER")) {
             int type = conn->type;
-            double freq, min, max, bw;
+            double f_kHz, min, max, bw;
             int db, zoom = -1, width, dir = 1, filter_tod = 0, anti_clutter = 0, clutter_filtered = 0;
             int idx1, idx2;
             u4_t eibi_types_mask = 0;
@@ -1198,7 +1198,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 func = DX_ADM_MKRS;
                 db = DB_STORED;
             } else
-            if (sscanf(cmd, "SET MARKER search_freq=%lf", &freq) == 1) {
+            if (sscanf(cmd, "SET MARKER search_freq=%lf", &f_kHz) == 1) {
                 func = DX_ADM_SEARCH_FREQ;
                 db = DB_STORED;
             } else
@@ -1250,13 +1250,13 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         
             if (func == DX_ADM_SEARCH_FREQ) {
                 dx_t dx_min;
-                dx_min.freq = freq;
+                dx_min.freq = f_kHz;
                 dx_t *cur_list = dx_db->list;
                 int cur_len = dx_db->actual_len;
                 dx_list_first = &cur_list[0];
                 dx_list_last = &cur_list[cur_len];      // NB: addr of LAST+1 in list
                 dx_t *dp = (dx_t *) bsearch(&dx_min, cur_list, cur_len, sizeof(dx_t), bsearch_freqcomp);
-                dx_print_search(true, "DX_ADM_SEARCH_FREQ %.2f found #%d %.2f\n", freq, dp->idx, dp->freq);
+                dx_print_search(true, "DX_ADM_SEARCH_FREQ %.2f found #%d %.2f\n", f_kHz, dp->idx, dp->freq);
                 send_msg(conn, false, "MSG mkr_search_pos=0,%d", dp->idx);
                 DX_DONE();
                 return true;
@@ -1774,7 +1774,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                 sb = kstr_asprintf(sb, ",\"gl\":\"%s\"", kiwi_str_encode_static(kiwi.latlon_s));
                 //printf("status sending kiwi.grid6=<%s> kiwi.latlon_s=<%s>\n", kiwi.grid6, kiwi.latlon_s);
 
-                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq_offset_kHz? -1 : snr_HF,
+                sb = kstr_asprintf(sb, ",\"sa\":%d,\"sh\":%d,\"sl\":%d", snr_all, freq.isOffset? -1 : snr_HF,
                     kiwi.spectral_inversion_lockout? 1:0);
             #endif
 

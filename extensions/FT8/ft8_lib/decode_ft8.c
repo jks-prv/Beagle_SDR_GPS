@@ -49,7 +49,6 @@ typedef struct {
     bool debug;
     
     u4_t decode_time;
-    int freqHz;
     ftx_protocol_t protocol;
     char protocol_s[4];
     int have_call_and_grid;
@@ -503,7 +502,6 @@ void decode_ft8_setup(int rx_chan, int debug)
 void decode_ft8_samples(int rx_chan, TYPEMONO16 *samps, int nsamps, int _freqHz, u1_t *start_test)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
-    ft8->freqHz = _freqHz;
     if (!ft8->init) return;
 
     if (!ft8->tsync) {

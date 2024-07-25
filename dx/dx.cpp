@@ -113,8 +113,8 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 	TMEAS(u4_t start = timer_ms();)
 	TMEAS(printf("DX_UPD dx_save_as_json: START saving as dx-json, %d entries\n", dx_db->actual_len);)
 	
-	if (dx_label_foff_convert && freq_offset_kHz == 0) {
-	    lprintf("dx_save_as_json: DX_LABEL_FOFF_CONVERT requested, but freq offset is zero. Ignored!\n");
+	if (dx_label_foff_convert && !freq.isOffset) {
+	    lprintf("dx_save_as_json: DX_LABEL_FOFF_CONVERT requested, but freq not offset. Ignored!\n");
 	    dx_label_foff_convert = false;
 	}
 	
@@ -129,7 +129,7 @@ void dx_save_as_json(dx_db_t *dx_db, bool dx_label_foff_convert)
 	    
 	    double freq_kHz = dxp->freq;
 	    if (dx_label_foff_convert && freq_kHz <= 32000) {
-	        freq_kHz += freq_offset_kHz;
+	        freq_kHz += freq.offset_kHz;
 	        printf("DX CONVERT: %.2f => %.2f %s\n", dxp->freq, freq_kHz, ident);
 	    }
 	    int mode_i = DX_DECODE_MODE(dxp->flags);
@@ -285,17 +285,17 @@ void update_masked_freqs(dx_t *_dx_list, int _dx_list_len)
 
     dx.masked_len = 0;
     for (i = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
-        if ((dxp->flags & DX_TYPE) == DX_MASKED && dxp->freq >= freq_offset_kHz && dxp->freq <= freq_offmax_kHz)
+        if ((dxp->flags & DX_TYPE) == DX_MASKED && rx_freq_inRange(dxp->freq))
             dx.masked_len++;
     }
     kiwi_ifree(dx.masked_list, "dx masked"); dx.masked_list = NULL;
     if (dx.masked_len > 0) dx.masked_list = (dx_mask_t *) kiwi_imalloc("update_masked_freqs", dx.masked_len * sizeof(dx_mask_t));
 
     for (i = j = 0, dxp = _dx_list; i < _dx_list_len; i++, dxp++) {
-        if ((dxp->flags & DX_TYPE) == DX_MASKED && dxp->freq >= freq_offset_kHz && dxp->freq <= freq_offmax_kHz) {
+        if ((dxp->flags & DX_TYPE) == DX_MASKED && rx_freq_inRange(dxp->freq)) {
             dx_mask_t *dmp = &dx.masked_list[j++];
             int mode_i = DX_DECODE_MODE(dxp->flags);
-            int masked_f = roundf((dxp->freq - freq_offset_kHz) * kHz);     // masked freq list always baseband
+            int masked_f = roundf((dxp->freq - freq.offset_kHz) * kHz);     // masked freq list always baseband
             int hbw = mode_hbw[mode_i];
             int offset = mode_offset[mode_i];
             dmp->masked_lo = masked_f + offset + (dxp->low_cut? dxp->low_cut : -hbw);

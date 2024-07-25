@@ -105,12 +105,6 @@ enum { MG_FIRST_HEADER, MG_MIDDLE_HEADER, MG_LAST_HEADER };
 void mg_http_send_header(struct mg_connection *mc, const char *name, const char *v, int which = MG_MIDDLE_HEADER, size_t len = 0);
 
 
-typedef struct {
-    bool init;
-    struct mg_http_message *hm;
-} web_mg_t;
-
-
 extern embedded_files_t edata_embed[];
 extern embedded_files_t edata_always[];
 extern embedded_files_t edata_always2[];
