@@ -72,6 +72,28 @@ Boston, MA  02110-1301, USA.
 static int led_fd[NLED][2];
 static int led_delay_off;
 
+static void led_set_trig(int led, const char *s)
+{
+    int fd;
+    char *s1;
+    asprintf(&s1, "%s%d/trigger", LED_PATH, led);
+    scall("led open trig", (fd = open(s1, O_WRONLY)));
+    kiwi_asfree(s1);
+    scall("led write trig", write(fd, s, strlen(s)));
+    close(fd);
+}
+
+void led_set_debian()
+{
+    #ifdef CPU_BCM2837
+    #else
+        led_set_trig(0, "heartbeat");
+        led_set_trig(1, "mmc0");
+        led_set_trig(2, "cpu0");
+        led_set_trig(3, "mmc1");
+    #endif
+}
+
 static void led_set_one(int led, int v)
 {
     bool full_on = (led_delay_off == 0);
@@ -79,11 +101,7 @@ static void led_set_one(int led, int v)
     int fd = led_fd[led][0];
 
     if (!fd) {
-        asprintf(&s, "%s%d/trigger", LED_PATH, led);
-        scall("led open trig", (fd = open(s, O_WRONLY)));
-        kiwi_asfree(s);
-        scall("led write trig", write(fd, full_on? "none":"timer", full_on? 4:5));
-        close(fd);
+        led_set_trig(led, full_on? "none":"timer");
         
         if (full_on) {
             asprintf(&s, "%s%d/brightness", LED_PATH, led);

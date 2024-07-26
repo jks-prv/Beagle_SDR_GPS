@@ -144,6 +144,8 @@ void fpga_panic(int code, const char *s)
     }
     
     led_flash_all(32);
+    led_clear(1000);
+    led_set_debian();
     panic("FPGA panic");
 }
 
