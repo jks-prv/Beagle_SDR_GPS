@@ -68,12 +68,10 @@ int fw_sel, fpga_id, rx_chans, rx_wb_buf_chans, wf_chans, wb_chans, nrx_bufs,
     nrx_samps, nrx_samps_wb, nrx_samps_loop, nrx_samps_rem,
     snd_rate, wb_rate, rx_decim, rx1_decim, rx2_decim;
 
-int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, tone, down,
-	rx_cordic, rx_cic, rx_cic2, rx_dump, wf_cordic, wf_cic, wf_mult, wf_mult_gen, do_slice=-1,
+int p0=0, p1=0, p2=0, wf_sim, wf_real, wf_time, ev_dump=0, wf_flip, wf_start=1, down,
 	rx_yield=1000, gps_chans=GPS_MAX_CHANS, wf_max, rx_num, wf_num,
 	spi_clkg, spi_speed = SPI_48M, spi_mode = -1,
-	do_gps, do_sdr=1, navg=1, wf_olap, meas, spi_delay=100, do_fft, debian_ver, monitors_max,
-	noisePwr=-160, unwrap=0, rev_iq, ineg, qneg, fft_file, fftsize=1024, fftuse=1024, bg,
+	do_gps, do_sdr=1, wf_olap, meas, spi_delay=100, debian_ver, monitors_max, bg,
 	print_stats, ecpu_cmds, ecpu_tcmds, use_spidev, debian_maj, debian_min, test_flag, dx_print,
 	gps_debug, gps_var, gps_lo_gain, gps_cg_gain, use_foptim, is_locked, drm_nreg_chans;
 
@@ -193,7 +191,6 @@ int main(int argc, char *argv[])
 		if (ARG("-gps")) p_gps = -1; else
 		if (ARG("+sdr")) do_sdr = 1; else
 		if (ARG("-sdr")) do_sdr = 0; else
-		if (ARG("+fft")) do_fft = 1; else
 		if (ARG("-debug")) debug_printfs = true; else
 		if (ARG("-gps_debug")) { gps_debug = -1; ARGL(gps_debug); } else
 		if (ARG("-stats") || ARG("+stats")) { print_stats = STATS_TASK; ARGL(print_stats); } else
@@ -223,37 +220,13 @@ int main(int argc, char *argv[])
 		if (ARG("-dump") || ARG("+dump")) { ARGL(ev_dump); } else
 		if (ARG("-flip")) wf_flip = 1; else
 		if (ARG("-start")) wf_start = 1; else
-		if (ARG("-mult")) wf_mult = 1; else
-		if (ARG("-multgen")) wf_mult_gen = 1; else
 		if (ARG("-wmax")) wf_max = 1; else
 		if (ARG("-olap")) wf_olap = 1; else
 		if (ARG("-meas")) meas = 1; else
 		
-		// do_fft
-		if (ARG("-none")) unwrap = 0; else
-		if (ARG("-norm")) unwrap = 1; else
-		if (ARG("-rev")) unwrap = 2; else
-		if (ARG("-qi")) rev_iq = 1; else
-		if (ARG("-ineg")) ineg = 1; else
-		if (ARG("-qneg")) qneg = 1; else
-		if (ARG("-file")) fft_file = 1; else
-		if (ARG("-fftsize")) { ARGL(fftsize); } else
-		if (ARG("-fftuse")) { ARGL(fftuse); } else
-		if (ARG("-np")) { ARGL(noisePwr); } else
-
-		if (ARG("-rcordic")) rx_cordic = 1; else
-		if (ARG("-rcic")) rx_cic = 1; else
-		if (ARG("-rcic2")) rx_cic2 = 1; else
-		if (ARG("-rdump")) rx_dump = 1; else
-		if (ARG("-wcordic")) wf_cordic = 1; else
-		if (ARG("-wcic")) wf_cic = 1; else
-		if (ARG("-clkg")) spi_clkg = 1; else
-		
-		if (ARG("-avg")) { ARGL(navg); } else
-		if (ARG("-tone")) { ARGL(tone); } else
-		if (ARG("-slc")) { ARGL(do_slice); } else
 		if (ARG("-rx")) { ARGL(rx_num); } else
 		if (ARG("-wf")) { ARGL(wf_num); } else
+		if (ARG("-clkg")) spi_clkg = 1; else
 		if (ARG("-spispeed")) { ARGL(spi_speed); } else
 		if (ARG("-spimode")) { ARGL(spi_mode); } else
 		if (ARG("-spi")) { ARGL(spi_delay); } else
@@ -539,13 +512,6 @@ int main(int argc, char *argv[])
 
 		net.dna = fpga_dna();
 		printf("device DNA %08x|%08x\n", PRINTF_U64_ARG(net.dna));
-	}
-	
-	if (do_fft) {
-		printf("==== IQ %s\n", rev_iq? "reverse":"normal");
-		if (ineg) printf("==== I neg\n");
-		if (qneg) printf("==== Q neg\n");
-		printf("==== unwrap %s\n", (unwrap==0)? "none" : ((unwrap==1)? "normal":"reverse"));
 	}
 	
 	rx_server_init();
