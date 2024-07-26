@@ -32,6 +32,7 @@ Boston, MA  02110-1301, USA.
 #include "coroutines.h"
 #include "debug.h"
 #include "fpga.h"
+#include "leds.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -126,6 +127,28 @@ void printmem(const char *str, u2_t addr)
 	printf("%s %04x: %04x\n", str, addr, (int) getmem(addr));
 }
 
+void fpga_panic(int code, const char *s)
+{
+    lprintf("FPGA panic: code=%d %s\n", code, s);
+    led_clear(0);
+    
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            led_set(1,0,1,0, 500);
+            led_set(0,1,0,1, 500);
+        }
+        led_clear(1000);
+        #define LB(c,v) (((c) & (v))? 1:0)
+        led_set(LB(code,8), LB(code,4), LB(code,2), LB(code,1), 5000);
+        led_clear(1000);
+    }
+    
+    led_flash_all(32);
+    led_clear(1000);
+    led_set_debian();
+    panic("FPGA panic");
+}
+
 
 ////////////////////////////////
 // FPGA DNA
@@ -210,12 +233,12 @@ void fpga_init() {
 		GPIO_WRITE_BIT(FPGA_PGM, 0);	// assert FPGA_PGM LOW
 		for (i=0; i < 1*M && GPIO_READ_BIT(FPGA_INIT) == 1; i++)	// wait for FPGA_INIT to acknowledge init process
 			;
-		if (i == 1*M) panic("FPGA_INIT never went LOW");
+		if (i == 1*M) fpga_panic(1, "FPGA_INIT never went LOW");
 		spin_us(100);
 		GPIO_WRITE_BIT(FPGA_PGM, 1);	// de-assert FPGA_PGM
 		for (i=0; i < 1*M && GPIO_READ_BIT(FPGA_INIT) == 0; i++)	// wait for FPGA_INIT to complete
 			;
-		if (i == 1*M) panic("FPGA_INIT never went HIGH");
+		if (i == 1*M) fpga_panic(2, "FPGA_INIT never went HIGH");
 	}
 
 	// FPGA configuration bitstream
@@ -224,7 +247,7 @@ void fpga_init() {
     char *sum = non_blocking_cmd_fmt(NULL, "sum %s", file);
     lprintf("firmware: %s %.5s\n", file, kstr_sp(sum));
     fp = fopen(file, "rb");
-    if (!fp) panic("fopen config");
+    if (!fp) fpga_panic(3, "fopen config");
     kstr_free(sum);
     kiwi_asfree(file);
     kiwi_asfree(fpga_file);
@@ -287,14 +310,14 @@ void fpga_init() {
     fclose(fp);
 
 	if (GPIO_READ_BIT(FPGA_INIT) == 0)
-		panic("FPGA config CRC error");
+		fpga_panic(4, "FPGA config CRC error");
 
 	spin_ms(100);
 
 	// download embedded CPU program binary
 	const char *aout = background_mode? "/usr/local/bin/kiwid.aout" : (BUILD_DIR "/gen/kiwi.aout");
     fp = fopen(aout, "rb");
-    if (!fp) panic("fopen aout");
+    if (!fp) fpga_panic(5, "fopen aout");
 
 
     // download first 2k words via SPI hardware boot (SPIBUF_B limit)
@@ -309,7 +332,7 @@ void fpga_init() {
         // more favorable timing for kiwi.v:BBB_MISO
         if (spi_mode == -1)
             spi_mode = (kiwi.model == KiwiSDR_1)? SPI_KIWISDR_1_MODE : SPI_KIWISDR_2_MODE;
-        do {
+        for (i = 0; i < 10; i++) {
             spin_ms(100);
             spi_dev_mode(spi_mode);
             spin_ms(100);
@@ -322,7 +345,9 @@ void fpga_init() {
                 spi_mode = (spi_mode == SPI_KIWISDR_1_MODE)? SPI_KIWISDR_2_MODE : SPI_KIWISDR_1_MODE;
             } else
                 break;
-        } while (1);
+        }
+        if (i == 10)
+            fpga_panic(6, "FPGA not responding to ping1");
     #else
         spin_ms(100);
         printf("ping..\n");
@@ -331,7 +356,7 @@ void fpga_init() {
         if (ping->word[0] != 0xcafe) {
             lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
             evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-            kiwi_exit(-1);
+            fpga_panic(6, "FPGA not responding to ping1");
         }
     #endif
 
@@ -369,7 +394,7 @@ void fpga_init() {
 	if (ping->word[0] != 0xbabe) {
 		lprintf("FPGA not responding: 0x%04x\n", ping->word[0]);
 		evSpi(EC_DUMP, EV_SPILOOP, -1, "main", "dump");
-		kiwi_exit(-1);
+        fpga_panic(7, "FPGA not responding to ping2");
 	}
 
 	#ifdef USE_GPS
@@ -382,18 +407,18 @@ void fpga_init() {
 
 	if (stat.fpga_id != fpga_id) {
 		lprintf("FPGA ID %d, expecting %d\n", stat.fpga_id, fpga_id);
-		panic("mismatch");
+		fpga_panic(8, "mismatch");
 	}
 
 	if (stat.fw_id != (FW_ID >> 12)) {
 		lprintf("eCPU firmware ID %d, expecting %d\n", stat.fw_id, FW_ID >> 12);
-		panic("mismatch");
+		fpga_panic(9, "mismatch");
 	}
 
 	lprintf("FPGA version %d\n", stat.fpga_ver);
 	if (stat.fpga_ver != FPGA_VER) {
 		lprintf("\tbut expecting %d\n", FPGA_VER);
-		panic("mismatch");
+		fpga_panic(10, "mismatch");
 	}
 
     spi_dev_init2();

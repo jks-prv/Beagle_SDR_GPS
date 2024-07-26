@@ -19,4 +19,8 @@ Boston, MA  02110-1301, USA.
 
 #pragma once
 
+void led_clear(int msec);
+void led_flash_all(int n);
+void led_set_debian();
+void led_set(int l0, int l1, int l2, int l3, int msec);
 void led_task(void *param);
