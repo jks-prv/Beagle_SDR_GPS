@@ -111,7 +111,7 @@ static void led_set_one(int led, int v)
     }
 }
 
-static void led_set(int l0, int l1, int l2, int l3, int msec)
+void led_set(int l0, int l1, int l2, int l3, int msec)
 {
     if (l0 != 2) led_set_one(0, l0);
 
@@ -130,7 +130,7 @@ static void led_set(int l0, int l1, int l2, int l3, int msec)
     kiwi_msleep(msec);
 }
 
-static void led_clear(int msec)
+void led_clear(int msec)
 {
     led_set(0,0,0,0, msec);
 }
@@ -156,7 +156,7 @@ static void led_cylon(int n, int msec)
     kiwi_msleep(msec);
 }
 
-static void led_flash_all(int n)
+void led_flash_all(int n)
 {
     while (n--) {
         led_set(1,1,1,1, 30);
