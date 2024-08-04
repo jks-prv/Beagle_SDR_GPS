@@ -2,6 +2,49 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.696  August 5, 2024
+    Antenna switch:
+        Progress trying to get the frequency offset settings of the admin config (global)
+        and antenna switch (per-antenna) to play nice with each other.
+        
+            In the antenna description area of the admin > extensions > antenna switch page there is
+            a new menu called "Mode" for setting what kind of frequency offset and mixer injection
+            should be applied when each antenna is selected.
+        
+            "no offset" means nothing about the offset will be changed and the
+            "frequency scale offset" field to the right will be ignored.
+
+            "offset" means the frequency scale offset will be applied and user connections will be
+            reloaded (and autoruns restarted) to account for the change. Low-side mixer injection
+            for any downconverter is assumed for the "offset" mode.
+        
+            "hi side inj" is also an offset mode but sets up tuning of the Kiwi mixers to accomodate
+            downconverters using high-side mixer injection.
+        
+            The mode menu will be preset based on your pre-v1.696 settings. But you should review it
+            to make sure it is set to do what you want.
+        
+        The "cURL command arguments" field allows an arbitrary cURL command to be run when an
+        antenna is selected. This could be a command causing a network-enabled downconverter to
+        change setup such as frequency/band etc. More info: kiwisdr.com/info#id-antsw (thanks N6GN)
+        
+        SNR measurements are now skipped if the antenna is grounded because no users are connected
+        (if that option has been enabled) or if in thunderstorm mode. However, after a restart the
+        initial SNR measurement (to set the values on the user page and optional public listing)
+        is performed before any antenna grounding takes place. Also, an error is shown if forced
+        SNR measurement is attempted via the "/snr?meas" URL or "Measure SNR now" button on the
+        admin control tab if the antenna is grounded. (thanks Stefan)
+    
+    Admin console: Option on admin security tab restricting admin console to local network
+    connections only has been replaced with a new mechanism: See kiwisdr.com/info/#id-opt-dot
+    for details. (thanks LA6LU)
+    
+    Admin DX tab: Fixed problem where changes to non-DX label info (e.g. band bar info) was not
+    being seen by user connections consistently. (thanks Nhosker)
+    
+    Added new LED pattern if communication with FPGA fails. See kiwisdr.com/info for details.
+    Primarily a Kiwi manufacturing aid.
+
 v1.695  July 25, 2024
     Antenna switch:
         If in auto aperture mode an antenna change now causes an auto scale since the new antenna
