@@ -474,7 +474,7 @@ function control_html()
             w3_checkbox_get_param('//w3-label-inline', 'Timestamp SNR with local time', 'snr_local_time', 'admin_bool_cb', true),
             w3_inline('w3-margin-top w3-valign/',
                w3_button('w3-aqua', 'Measure SNR now', 'control_snr_measure_cb'),
-               w3_div('id-msg-snr w3-margin-left w3-text-black')
+               w3_div('id-msg-snr id-msg-snr-now w3-margin-left w3-text-black')
             )
          )
 		) +
@@ -3993,6 +3993,7 @@ function security_html()
 		);
 
    var s3 =
+      /*
 		'<hr>' +
 		w3_inline_percent('w3-container/w3-hspace-16 w3-text-teal',
 			w3_div('',
@@ -4005,6 +4006,17 @@ function security_html()
 				'to connections from the local network. This is an important ' +
 				'security enhancement. You might want to set to "No" if the ' +
 				'Kiwi has difficulty determining your local network address.'
+			), 33
+		) +
+		*/
+
+		'<hr>' +
+		w3_inline_percent('w3-container/w3-hspace-16',
+			w3_div('w3-text-teal w3-bold', 'Restrict console connections <br> to the local network?'), 25,
+			w3_div('w3-text-black',
+			   'This feature is now enabled by creating a file in the Kiwi configuration directory. See the ' +
+            w3_link('w3-link-darker-color', 'http://kiwisdr.com/info/#id-opt-dot', 'Operating Information') +
+			   ' for more information.'
 			), 33
 		) +
 
@@ -4607,6 +4619,12 @@ function admin_recv(data)
                //console.log(o);
 				   status_xfer_cb(o.ad, o.au, o.ae, o.ar, o.ar2, o.an, o.ap, o.an2, o.ai);
             }
+            break;
+         
+         case "rem_console_local":
+            console.log('rem_console_local');
+            delete adm.console_local;
+            cfg_save_json('rem_console_local', 'adm.console_local', 'DELETE');
             break;
 
 			default:

@@ -8393,6 +8393,7 @@ function dx_update()
 	wf_send('SET MARKER db='+ dx.db +' min='+ min +' max='+ max +
 	   ' zoom='+ zoom_level +' width='+ waterfall_width +' eibi_types_mask='+ dx.eibi_types_mask.toHex() +
 	   ' filter_tod='+ dx.filter_tod[dx.db] +' anti_clutter='+ anti_clutter);
+	// responds with "MSG mkr="
 	if (dx.step_dbg) console.log('UPDATE list');
 
 	// refresh every 5 minutes to catch schedule changes
@@ -13157,8 +13158,10 @@ var zoom_server = 0;
 
 // Process owrx server-to-client MSGs from SND or W/F web sockets.
 // Not called if MSG handled first by kiwi.js:kiwi_msg()
-function owrx_msg_cb(param, ws)     // #msg-proc
+function owrx_msg_cb(param, ws)     // #msg-proc #MSG
 {
+   //console.log('$$ owrx_msg_cb '+ (ws? ws.stream : '[ws?]') +' MSG '+ param[0] +'='+ param[1]);
+   
 	switch (param[0]) {
 		case "wf_setup":
 			   wf_init();
@@ -13283,9 +13286,6 @@ function owrx_msg_cb(param, ws)     // #msg-proc
 
 		case "max_thr":
 			owrx.overload_mute = Math.round(+param[1]);
-			break;
-
-		case "freq_offset":     // sent this way for benefit of kiwirecorder
 			break;
 
 		case "last_community_download":

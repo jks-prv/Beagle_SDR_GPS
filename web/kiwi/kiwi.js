@@ -2734,15 +2734,22 @@ function user_cb(obj)
       
       // detect change in frequency scale offset
       //if (i == rx_chan) console.log('$obj.fo='+ obj.fo +' freq.offset_kHz='+ kiwi.freq_offset_kHz);
-      if (i == rx_chan && isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz && !confirmation.displayed) {
-         var s =
-            w3_div('',
-               'Frequency scale offset changed. Page will be reloaded.'
-               //w3_inline('w3-halign-space-around/', w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload'))
-            );
-         confirmation_show_content(s, 425, 50, null, 'red');
-         //console.log("kiwi_open_or_reload_page({ url:'reload', delay:2000 })");
-         kiwi_open_or_reload_page({ url:'reload', delay:2000 });
+      if (isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz) {
+         if (kiwi.called_from_admin) {
+            console.log('$$$ ADMIN kiwi_set_freq_offset '+ obj.fo);
+            kiwi_set_freq_offset(obj.fo);
+         } else
+         if (i == rx_chan && !confirmation.displayed) {
+            ext_send('SET msg_log='+ encodeURIComponent('frequency scale offset changed '+ kiwi.freq_offset_kHz +' to '+ obj.fo +', page reloading'));
+            var s =
+               w3_div('',
+                  'Frequency scale offset changed. Page will be reloaded.'
+                  //w3_inline('w3-halign-space-around/', w3_button('w3-margin-T-16 w3-aqua', 'OK', 'freq_offset_page_reload'))
+               );
+            confirmation_show_content(s, 425, 50, null, 'red');
+            //console.log("kiwi_open_or_reload_page({ url:'reload', delay:2000 })");
+            kiwi_open_or_reload_page({ url:'reload', delay:2000 });
+         }
       }
 
       //if (i == rx_chan && isNumber(obj.nc) && obj.nc != rx_chan && isNumber(obj.ns) && obj.ns != kiwi.notify_seq) {
@@ -2873,8 +2880,6 @@ function kiwi_set_freq_offset(freq_offset_kHz)
 
 function kiwi_init_cfg(stream_name)
 {
-   kiwi_set_freq_offset(cfg.freq_offset);
-   
    // in user and admin html both
    var page_title = ext_get_cfg_param_string('cfg.index_html_params.PAGE_TITLE');
    if (page_title == '') page_title = 'KiwiSDR';
@@ -2889,18 +2894,22 @@ function kiwi_init_cfg(stream_name)
 function kiwi_snr_stats(all, hf)
 {
    //console.log('SNR ', all, ':', hf, ' dB ');
-   if (hf == -1) {
-      // only show single SNR when transverter frequency offset
-      //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB');
-      w3_innerHTML('id-rx-snr', ', SNR ', all, ' dB');
-
-      w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: All ', all, ' dB'); });
+   if (all == -1 && hf == -1) {
+      w3_innerHTML('id-msg-snr-now', 'ERROR: antenna is grounded');
    } else {
-      //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB, HF ', hf, ' dB');
-      w3_innerHTML('id-rx-snr', ', SNR ', all, '/', hf, ' dB');
-      w3_title('id-rx-snr', all +' dB, 0-30 MHz\n'+ hf +' dB, 1.8-30 MHz');
-
-      w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: ', all, ' dB (0-30 MHz), ', hf, ' dB (1.8-30 MHz)'); });
+      if (hf == -1) {
+         // only show single SNR when transverter frequency offset
+         //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB');
+         w3_innerHTML('id-rx-snr', ', SNR ', all, ' dB');
+   
+         w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: All ', all, ' dB'); });
+      } else {
+         //w3_innerHTML('id-rx-snr', ', SNR: All ', all, ' dB, HF ', hf, ' dB');
+         w3_innerHTML('id-rx-snr', ', SNR ', all, '/', hf, ' dB');
+         w3_title('id-rx-snr', all +' dB, 0-30 MHz\n'+ hf +' dB, 1.8-30 MHz');
+   
+         w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: ', all, ' dB (0-30 MHz), ', hf, ' dB (1.8-30 MHz)'); });
+      }
    }
 }
 
@@ -2917,11 +2926,13 @@ var kiwi_output_msg_p = { scroll_only_at_bottom: true, inline_returns: true, pro
 var client_public_ip;
 
 // includes msgs relevant for both user and admin modes
-function kiwi_msg(param, ws)
+function kiwi_msg(param, ws)     // #msg-proc #MSG
 {
 	var rtn = true;
+	//if (param[0] != 'stats_cb' && param[0] != 'user_cb')
+   //   console.log('$$ kiwi_msg    '+ (ws? ws.stream : '[ws?]') +' MSG '+ param[0] +'='+ param[1]);
 	
-	switch (param[0]) {     // #msg-proc
+	switch (param[0]) {
 		case "version_maj":
 			version_maj = parseInt(param[1]);
 			break;
@@ -3314,11 +3325,18 @@ function kiwi_msg(param, ws)
 			}
 			break;
 
+		case "freq_offset":     // also for benefit of kiwirecorder
+		   var foff_kHz = +param[1];
+		   console.log('$$$ MSG freq_offset='+ foff_kHz +' cfg.freq_offset='+ cfg.freq_offset);
+         kiwi_set_freq_offset(foff_kHz);
+			break;
+
 		default:
 		   if (param[0].startsWith('antsw_')) {
 		      if (ant_switch_msg(param))
 		         break;
 		   }
+         //console.log('$$ kiwi_msg    [PASS]');
 			rtn = false;
 			break;
 	}
