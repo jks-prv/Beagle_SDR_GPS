@@ -226,7 +226,6 @@ void c2s_waterfall_setup(void *param)
 	conn_t *conn = (conn_t *) param;
 	int rx_chan = conn->rx_channel;
 
-	send_msg(conn, SM_WF_DEBUG, "MSG freq_offset=%.3f", freq.offset_kHz);
 	send_msg(conn, SM_WF_DEBUG, "MSG center_freq=%d bandwidth=%d adc_clk_nom=%.0f", (int) ui_srate/2, (int) ui_srate, ADC_CLOCK_NOM);
 	send_msg(conn, SM_WF_DEBUG, "MSG kiwi_up=1 rx_chan=%d", rx_chan);       // rx_chan needed by extint_send_extlist() on js side
 	extint_send_extlist(conn);

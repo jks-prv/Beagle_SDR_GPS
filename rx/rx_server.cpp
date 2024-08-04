@@ -699,9 +699,9 @@ retry:
 		}
 
         const char *cp;
-        if (mc->query && (cp = strstr(mc->query, "foff=")) != NULL && sscanf(cp, "foff=%lf", &c->foff) == 1) {
-            if (c->foff < 0 || c->foff > 100e9) c->foff = 0;
-            c->foff_set = true;
+        if (mc->query && (cp = strstr(mc->query, "foff=")) != NULL && sscanf(cp, "foff=%lf", &c->foff_in_URL) == 1) {
+            if (c->foff_in_URL < 0 || c->foff_in_URL > 100e9) c->foff_in_URL = 0;
+            c->foff_set_in_URL = true;
         }
 	}
 	

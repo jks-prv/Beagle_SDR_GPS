@@ -450,7 +450,7 @@ function config_mode_cb(path, idx, first)
 function config_freq_offset_cb(path, val, first)
 {
    admin_float_cb(path, val, first, [0,3]);
-	//console.log('### config_freq_offset_cb '+ path +'='+ val +' cfg.freq_offset='+ cfg.freq_offset);
+	console.log('$$ config_freq_offset_cb '+ path +'='+ val +' cfg.freq_offset='+ cfg.freq_offset);
 	ext_set_freq_offset(cfg.freq_offset);
 }
 
@@ -1779,10 +1779,9 @@ function dx_save(id, now)
          cfg_save_json('dx_save', 'dxcfg.bands');
       }
 
-      // after any admin change to dx label or band bar:
-      // ask user connections to reload cfg *after* we've saved modified version
-      // and get new dx list and band bars
-      ext_send_after_cfg_save('SET GET_DX_LIST');
+      // After any admin change to dx labels or band bars etc the server side will do:
+      // cfg_cfg.update_seq++; dx.update_seq++
+      // which causes all connected channels to request a reload of the cfg & dx labels.
    }
 }
 

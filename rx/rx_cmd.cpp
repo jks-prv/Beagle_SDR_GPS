@@ -213,6 +213,7 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET nocach", CMD_NOCACHE },
     { "SET ctrace", CMD_CTRACE },
     { "SET dbug_v", CMD_DEBUG_VAL },
+    { "SET msg_lo", CMD_MSG_LOG },
     { "SET dbug_m", CMD_DEBUG_MSG },
     { "SET devl.p", CMD_DEVL },
     { "SET is_adm", CMD_IS_ADMIN },
@@ -221,7 +222,6 @@ static str_hashes_t rx_common_cmd_hashes[] = {
     { "SET clk_ad", CMD_CLK_ADJ },
     { "SET antsw_", CMD_ANT_SWITCH },
     { "SERVER DE ", CMD_SERVER_DE_CLIENT },
-    { "SET x-DEBU", CMD_X_DEBUG },
     { 0 }
 };
 
@@ -822,34 +822,28 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                     conn->isPassword = is_password;
                 
                     if (stream_snd_or_wf || stream_admin_or_mfg) {
-                        send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d model=%d platform=%d ext_clk=%d abyy=%s",
-                            version_maj, version_min, debian_ver, kiwi.model, kiwi.platform, kiwi.ext_clk, eibi_abyy);
+                        send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d model=%d platform=%d ext_clk=%d abyy=%s freq_offset=%.3f",
+                            version_maj, version_min, debian_ver, kiwi.model, kiwi.platform, kiwi.ext_clk, eibi_abyy, freq.offset_kHz);
                     }
 
                     // send cfg once to javascript
                     if (stream_snd || (stream_wf && conn->isMaster) || stream_mon || stream_admin_or_mfg) {
                     
-                        // if freq offset was specified in URL apply it if conditions allow
+                        // If freq offset was specified in URL apply it if conditions allow.
+                        // Doesn't change configuration offset, just current software offset.
                         double foff = freq.offset_kHz;
-                        if (conn->foff_set && conn->foff != foff) {
-                            cprintf(conn, "foff: new %.3lf current %.3lf\n", conn->foff, foff);
+                        cprintf(conn, "foff: foff_set_in_URL=%d foff_in_URL=%.2f freq.offset_kHz=%.2f\n", conn->foff_set_in_URL, conn->foff_in_URL, foff);
+                        if (conn->foff_set_in_URL && conn->foff_in_URL != foff) {
+                            cprintf(conn, "foff: URL %.3lf current %.3lf\n", conn->foff_in_URL, foff);
                             if (!conn->isLocal) {
                                 cprintf(conn, "foff: not local conn\n");
                                 send_msg(conn, false, "MSG foff_error=0");
-                            } else
-                            if (rx_count_server_conns(ADMIN_USERS) != 0) {
-                                cprintf(conn, "foff: admin conns exist\n");
-                                send_msg(conn, false, "MSG foff_error=1");
                             } else {
                                 rx_set_freq_offset_kHz(foff);
-                                cfg_set_float("freq_offset", foff);
-                                printf("_cfg_save_json freq_offset\n");
-		                        cfg_save_json(cfg_cfg.json);    // we just checked that no admin connections exist
-                                update_freqs();
                                 update_masked_freqs();
                                 cprintf(conn, "foff: UPDATED %.3f\n", foff);
                             }
-                            conn->foff_set = false;
+                            conn->foff_set_in_URL = false;
                         }
                         
                         rx_server_send_config(conn);
@@ -1713,14 +1707,6 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
             send_msg(conn, false, "MSG dx_size=%d", dx.dx_db[DB_STORED].actual_len);
             return true;
         }
-
-        if (strcmp(cmd, "SET GET_DX_LIST") == 0) {
-            // get all active user connections to refresh dx list (and updated cfg)
-            // when a non dx list change is made by an admin connection (e.g. dx type menu)
-            cfg_cfg.update_seq++;
-            dx.update_seq++;
-            return true;
-        }
 	    break;
 
 	// SECURITY: should be okay: checks for conn->auth_admin first
@@ -2138,20 +2124,20 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
         }
 	    break;
 
-	// SECURITY: only used during debugging
-    case CMD_DEBUG_MSG:     // does syslog
-        if (kiwi_str_begins_with(cmd, "SET dbug_msg=")) {
+	// SECURITY: only makes a log entry
+    case CMD_MSG_LOG:       // doesn't syslog
+        if (kiwi_str_begins_with(cmd, "SET msg_log=")) {
             kiwi_str_decode_inplace(cmd);
-            clprintf(conn, "### DEBUG MSG: %s <%.256s>\n", conn->remote_ip, &cmd[13]);
+            cprintf(conn, "%s %.256s\n", conn->remote_ip, &cmd[12]);
             return true;
         }
 	    break;
 
-	// SECURITY: only used during debugging
-    case CMD_X_DEBUG:       // doesn't syslog
-        if (kiwi_str_begins_with(cmd, "SET x-DEBUG=")) {
+	// SECURITY: only makes a log entry
+    case CMD_DEBUG_MSG:     // does syslog
+        if (kiwi_str_begins_with(cmd, "SET dbug_msg=")) {
             kiwi_str_decode_inplace(cmd);
-            cprintf(conn, "### x-DEBUG: %s <%.256s>\n", conn->remote_ip, &cmd[12]);
+            clprintf(conn, "%s %.256s\n", conn->remote_ip, &cmd[13]);
             return true;
         }
 	    break;
