@@ -319,6 +319,7 @@ typedef struct {
     bool arun_restart_offset;
 
     int num_autorun;
+    bool arun_suspend_restart_victims;
     char *rcall;
     char rgrid[LEN_GRID];
     latLon_t r_loc;
