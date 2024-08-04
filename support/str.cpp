@@ -951,7 +951,7 @@ char *kiwi_overlap_strcpy(char *dst, const char *src)
     return dst;
 }
 
-// library strcpy() with overlapping args will trigger clang asan
+// library memcpy() with overlapping args will trigger clang asan
 u1_t *kiwi_overlap_memcpy(u1_t *dst, const u1_t *src, int n)
 {
     u1_t *d = dst, c;
