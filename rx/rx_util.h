@@ -40,8 +40,6 @@ typedef struct {
 	arun_e arun_which[MAX_RX_CHANS];
 	int arun_band[MAX_RX_CHANS];
 	u4_t arun_evictions[MAX_RX_CHANS];
-	
-	bool arun_suspend_restart_victims;
 } rx_util_t;
 
 extern rx_util_t rx_util;

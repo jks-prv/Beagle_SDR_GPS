@@ -378,8 +378,11 @@ void c2s_admin(void *param)
                     continue;
                 }
             #else
-                assert(conn->auth == true);             // auth completed
-                assert(conn->auth_admin == true);       // auth as admin
+                if (!conn->auth || !conn->auth_admin) {
+                    lprintf("conn->auth=%d conn->auth_admin=%d\n", conn->auth, conn->auth_admin);
+                    dump();
+                    panic("admin auth");
+                }
             #endif
 
             i = strcmp(cmd, "SET init");
@@ -456,7 +459,11 @@ void c2s_admin(void *param)
 
             if (strcmp(cmd, "SET snr_meas") == 0) {
                 if (SNR_meas_tid) {
-                    TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));
+                    if (antsw.using_ground || antsw.using_tstorm) {
+                        send_msg(conn, SM_NO_DEBUG, "MSG snr_stats=-1,-1");
+                    } else {
+                        TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));
+                    }
                 }
                 continue;
             }
@@ -1367,7 +1374,23 @@ void c2s_admin(void *param)
                     if (kiwi_file_exists(DIR_CFG "/opt.no_console"))
                         no_console = true;
 
-                    bool console_local = admcfg_bool("console_local", NULL, CFG_REQUIRED);
+                    bool err;
+                    int old_console_local = admcfg_bool("console_local", &err, CFG_OPTIONAL);
+                    if (!err) {
+                        // don't do this because we want the default to be non-local console access for support reasons
+                        /*
+                        if (old_console_local == true && !kiwi_file_exists(DIR_CFG "/opt.console_local")) {
+                            lprintf("SECURITY: old admin security tab \"restrict console to local network\" option set\n");
+                            lprintf("SECURITY: creating file " DIR_CFG "/opt.console_local (new scheme)\n");
+                            system("touch " DIR_CFG "/opt.console_local");
+                        }
+                        */
+                        send_msg(conn, SM_NO_DEBUG, "ADM rem_console_local");
+                    }
+                    
+                    bool console_local = false;
+                    if (kiwi_file_exists(DIR_CFG "/opt.console_local"))
+                        console_local = true;
 
                     // conn->isLocal can be forced false for testing by using the URL "nolocal" parameter
                     if (no_console == false && ((console_local && conn->isLocal) || !console_local)) {
@@ -1378,7 +1401,7 @@ void c2s_admin(void *param)
                     if (no_console) {
                         send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: disabled because kiwi.config/opt.no_console file exists\n");
                     } else {
-                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connection\n");
+                        send_msg_encoded(conn, "ADM", "console_c2w", "CONSOLE: only available to local admin connections because kiwi.config/opt.console_local file exists\n");
                     }
                 }
                 continue;

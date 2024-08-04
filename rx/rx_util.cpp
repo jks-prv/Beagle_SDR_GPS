@@ -75,6 +75,7 @@ void rx_set_freq_offset_kHz(double foff_kHz)
     freq.offset_kHz = foff_kHz;
     freq.offmax_kHz = foff_kHz + ui_srate_kHz;
     freq.offset_Hz = (u4_t) (foff_kHz * 1e3);
+    printf("FOFF foff_kHz=%.2f\n", foff_kHz);
 }
 
 bool rx_freq_inRange(double freq_kHz)
@@ -114,7 +115,10 @@ void rx_loguser(conn_t *c, logtype_e type)
 	u4_t now = timer_sec();
 	
 	if (!log_local_ip && c->isLocal_ip) {
-	    if (type == LOG_ARRIVED) c->last_tune_time = now;
+	    if (type == LOG_ARRIVED) {
+	        c->last_tune_time = now;
+	        c->log_offset_kHz = freq.offset_kHz;
+	    }
 	    return;
 	}
 	
@@ -152,6 +156,7 @@ void rx_loguser(conn_t *c, logtype_e type)
 
 		asprintf(&s, "(ARRIVED)");
 		c->last_tune_time = now;
+        c->log_offset_kHz = freq.offset_kHz;
 		user_arrive(c);
 	} else
 	if (type == LOG_LEAVING) {
@@ -167,17 +172,20 @@ void rx_loguser(conn_t *c, logtype_e type)
 	else
 	    mode_s = rx_enum2mode(c->mode);
 	
+	// c->log_offset_kHz so LOG_LEAVING freq is same as was shown in LOG_ARRIVED message
+	double f_kHz = (double) c->freqHz / kHz + c->log_offset_kHz;
+	
 	if (type == LOG_ARRIVED || type == LOG_LEAVING) {
-		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq.offset_kHz,
-			mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
+		clprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n",
+			f_kHz, mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
 			c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
 			c->geo? " ":"", c->geo? c->geo:"", s);
 	}
 
     #ifdef OPTION_LOG_WF_ONLY_UPDATES
         if (c->type == STREAM_WATERFALL && type == LOG_UPDATE) {
-            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n", (float) c->freqHz / kHz + freq.offset_kHz,
-			    mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
+            cprintf(c, "%8.2f kHz %3s z%-2d %s%s\"%s\"%s%s%s%s %s\n",
+			    f_kHz, mode_s, c->zoom, c->ext? c->ext->name : "", c->ext? " ":"",
                 c->ident_user? c->ident_user : "(no identity)", c->isUserIP? "":" ", c->isUserIP? "":c->remote_ip,
                 c->geo? " ":"", c->geo? c->geo:"", s);
         }
@@ -391,10 +399,13 @@ int rx_autorun_find_victim()
 
 void rx_autorun_restart_victims(bool initial)
 {
-    if (rx_util.arun_suspend_restart_victims || update_in_progress || backup_in_progress || sd_copy_in_progress) {
-        //printf("rx_autorun_restart_victims SUSPENDED\n");
+    // if any autorun is in the process of a shutdown then skip this victim restart cycle
+    if (wspr_c.arun_suspend_restart_victims || ft8_conf.arun_suspend_restart_victims ||
+        update_in_progress || backup_in_progress || sd_copy_in_progress) {
+        //printf(YELLOW "rx_autorun_restart_victims SUSPENDED" NONL);
         return;
     }
+    //printf(GREEN "rx_autorun_restart_victims GO" NONL);
     
     // if autorun on configurations with limited wf chans (e.g. rx8_wf2) never use the wf chans at all
     int free_chans = rx_chan_free_count(RX_COUNT_NO_WF_AT_ALL);
@@ -646,7 +657,17 @@ bool save_config(u2_t key, conn_t *conn, char *cmd)
 
         // NB: cfg->json = NULL here is extremely important
         kstr_free(cfg->json); cfg->json = NULL; cfg->json_slen = 0;
+        
+        // get all active user connections to refresh dx list (and updated cfg)
+        // when a non dx list change is made by an admin connection (e.g. dx type menu)
+        if (key == CMD_SAVE_DXCFG) {
+            //printf("CMD_SAVE_DXCFG {cfg,dx}.update_seq++\n");
+            cfg_cfg.update_seq++;
+            dx.update_seq++;
+        }
+
         update_vars_from_config();      // update C copies of vars
+
         save_prf(conn, "save_config: %s " RED "COMMIT" NORM " conn=%p seq=%d\n", cfg->name, conn, cfg->seq);
         return true;
     }
@@ -1112,8 +1133,8 @@ void SNR_meas(void *param)
 {
     int i, j, n, len;
     static internal_conn_t iconn;
-	bool regular_wakeup;
-    TaskSleepSec(20);
+	bool regular_wakeup = false;    // run once after restart
+    TaskSleepSec(20);               // long enough for autoruns to start first
     
     //#define SNR_MEAS_SELECT WF_SELECT_1FPS
     //#define SNR_MEAS_SPEED WF_SPEED_1FPS
@@ -1195,6 +1216,7 @@ void SNR_meas(void *param)
             }
 
             meas->valid = true;
+            kiwi.snr_initial_meas_done = true;  // CAUTION: this must always get set else ant switch hangs
             internal_conn_shutdown(&iconn);
             
             #ifdef OPTION_HONEY_POT

@@ -270,6 +270,17 @@ int main(int argc, char *argv[])
         _exit(0);
     #endif
 
+    #if 0
+        for (int i = 0; i <= 255; i++) {
+            char *s;
+            asprintf(&s, " %c", i);
+            real_printf("%s", kiwi_str_clean(s, KCLEAN_DELETE));
+            free(s);
+        }
+        fflush(stdout);
+        _exit(0);
+    #endif
+    
     #if (defined(DEVSYS))
         printf("DEVSYS: nothing to do, exiting..\n");
         _exit(0);

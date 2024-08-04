@@ -69,6 +69,8 @@ typedef struct {
     
     float rf_attn_dB;
     
+    bool snr_initial_meas_done;
+    
     bool RsId;
     
     int CAT_fd, CAT_ch;

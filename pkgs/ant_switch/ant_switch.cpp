@@ -55,8 +55,10 @@
 #define ANT_SWITCH_DEBUG_MSG	false
 
 antsw_t antsw;
-static bool using_default, using_ground, using_tstorm;
+static bool using_default;
 static const int poll_msec = 100;
+
+#define ANTSW_N_MAX 10
 
 #define N_CMD_Q 8   // NB: must be pow2
 #define L_CMD_Q 8
@@ -66,6 +68,48 @@ static int q_wr, q_rd;
 #define ANTSW_SHMEM_STATUS shmem->status_u4[N_SHMEM_ST_ANT_SW][0]
 #define ANTSW_SHMEM_SEQ    shmem->status_u4[N_SHMEM_ST_SEQ][0]
 #define ANTSW_SHMEM_ANTS   shmem->status_str_small
+
+#define ANTSW_NO_OFFSET 0
+#define ANTSW_OFFSET    1
+#define ANTSW_HI_INJ    2
+
+bool ant_switch_cfg(bool called_at_init)
+{
+    bool upd_cfg = false;
+	const char *s;
+    s = cfg_string("ant_switch.backend", NULL, CFG_OPTIONAL);
+        bool enable = (s != NULL && s[0] != '\0')? true : false;
+        cfg_default_bool("ant_switch.enable", enable, &upd_cfg);
+    cfg_string_free(s);
+
+    bool want_inv = cfg_default_bool("spectral_inversion", false, &upd_cfg);
+    if (called_at_init || !kiwi.spectral_inversion_lockout)
+        kiwi.spectral_inversion = want_inv;
+    
+    // conversion from old "antNhigh_side" to "antNmode"
+    int n;
+    for (n = 1; n <= ANTSW_N_MAX; n++) {
+        bool err;
+        char *s;
+        asprintf(&s, "ant_switch.ant%dhigh_side", n);
+        int hi_side_inj = cfg_bool(s, &err, CFG_OPTIONAL);
+        //printf("$ %s hi_side_inj=%d err=%d\n", s, hi_side_inj, err);
+        int mode = ANTSW_NO_OFFSET;
+        if (!err) {
+            if (hi_side_inj) mode = ANTSW_HI_INJ;
+            cfg_rem_bool(s);
+        }
+        kiwi_asfree(s);
+
+        // NB: will only set if a value doesn't already exist
+        asprintf(&s, "ant_switch.ant%dmode", n);
+        cfg_default_int(s, mode, &upd_cfg);
+        //printf("$ %s mode=%d upd_cfg=%d\n", s, mode, upd_cfg);
+        kiwi_asfree(s);
+    }
+
+    return upd_cfg;
+}
 
 void ant_switch_task_start(const char *cmd)
 {
@@ -173,8 +217,8 @@ void ant_switch_find_default_ant(bool mark_as_default)
         antsw_printf("ant_switch isDefault ant%d=%d\n", i, isDefault);
 	    if (isDefault) {
 	        antsw_printf("ant_switch select_default_antenna <%s>\n", ant);
-            using_tstorm = false;
-            using_ground = false;
+            antsw.using_tstorm = false;
+            antsw.using_ground = false;
             if (mark_as_default) using_default = true;
 	        ant_switch_setantenna(ant);
 	        kiwi_asfree(ant);
@@ -189,26 +233,28 @@ void ant_switch_select_default_antenna()
 	if (!cfg_true("ant_switch.enable")) return;
 	bool tstorm = cfg_true("ant_switch.thunderstorm");
 	bool ground = cfg_true("ant_switch.ground_when_no_users");
-    antsw_printf("ant_switch select_default_antenna ground=%d|%d tstorm=%d|%d\n", using_ground, ground, using_tstorm, tstorm);
+    antsw_printf("ant_switch select_default_antenna ground=%d|%d tstorm=%d|%d snr_initial_meas_done=%d\n",
+        antsw.using_ground, ground, antsw.using_tstorm, tstorm, kiwi.snr_initial_meas_done);
 	
-	// tstorm and ground override any default ant selection
-	if (!tstorm && !ground)
+	// tstorm and ground override any default ant selection.
+	// BUT select default ant until initial SNR measurement done.
+	if ((!tstorm && !ground) || !kiwi.snr_initial_meas_done)
 	    ant_switch_find_default_ant(true);
 
     // if no antennas marked as default then tell switch to ground all (if switch supports)
-    bool tstorm_on = (tstorm && !using_tstorm);
-    bool ground_on = (ground && !using_ground);
+    bool tstorm_on = (tstorm && !antsw.using_tstorm);
+    bool ground_on = (ground && !antsw.using_ground);
     
 	if (!using_default && (ground_on || tstorm_on)) {
         antsw_printf("ant_switch select_default_antenna <g> ground_on=%d tstorm_on=%d\n", ground_on, tstorm_on);
         if (tstorm) {
-            using_tstorm = true;
-            using_ground = false;
+            antsw.using_tstorm = true;
+            antsw.using_ground = false;
             using_default = false;
         } else
         if (ground) {
-            using_tstorm = false;
-            using_ground = true;
+            antsw.using_tstorm = false;
+            antsw.using_ground = true;
             using_default = false;
         }
         ant_switch_setantenna((char *) "g");
@@ -226,8 +272,8 @@ void ant_switch_ReportAntenna(conn_t *conn)
             send_msg(conn, ANT_SWITCH_DEBUG_MSG, "MSG antsw_Thunderstorm=1");
 
         // also ground antenna if not grounded (do only once per transition)
-        if (!using_tstorm) {
-            using_tstorm = true;
+        if (!antsw.using_tstorm) {
+            antsw.using_tstorm = true;
             antsw_printf("ant_switch rx%d PRE TSTORM-ON prev_selected_antennas=%s\n", rx_chan, selected_antennas);
             kiwi_strncpy(antsw.last_ant, selected_antennas, N_ANT);
             ant_switch_setantenna((char *) "g");
@@ -235,8 +281,8 @@ void ant_switch_ReportAntenna(conn_t *conn)
             NextTask("ant_switch_ReportAntenna tstorm");
         }
     } else {
-        if (using_tstorm) {
-            using_tstorm = false;
+        if (antsw.using_tstorm) {
+            antsw.using_tstorm = false;
             ant_switch_setantenna(antsw.last_ant);
         }
         if (conn) {
@@ -279,12 +325,18 @@ void ant_switch_poll_10s()
     bool enable = cfg_true("ant_switch.enable");
     bool thunderstorm = cfg_true("ant_switch.thunderstorm");
 
-    antsw_printf("ant_switch_poll_10s using_default=%d enable=%d Tcfg=%d Tmode=%d current_nusers=%d %s\n",
-        using_default, enable, thunderstorm, using_tstorm, kiwi.current_nusers, no_users? "NO USERS" : "");
-    if (using_default || (thunderstorm && using_tstorm) || !enable) return;
+    antsw_printf("ant_switch_poll_10s using_default=%d enable=%d Tcfg=%d Tmode=%d snr_initial_meas_done=%d current_nusers=%d %s\n",
+        using_default, enable, thunderstorm, antsw.using_tstorm, kiwi.snr_initial_meas_done, kiwi.current_nusers, no_users? "NO USERS" : "");
+
+    static bool snr_initial_meas_done;
+    bool snr_done = (snr_initial_meas_done != kiwi.snr_initial_meas_done);
+    snr_initial_meas_done = kiwi.snr_initial_meas_done;
+    if (snr_done) using_default = false;    // allow re-evaluation of default when snr meas completes
+    
+    if (using_default || (thunderstorm && antsw.using_tstorm) || !enable) return;
 
     if (no_users && (cfg_true("ant_switch.default_when_no_users") || cfg_true("ant_switch.ground_when_no_users"))) {
-        antsw_printf("ant_switch_poll_10s CHECK IF DEFAULT ANTENNA NEEDED\n");
+        antsw_printf("ant_switch_poll_10s CHECK IF DEFAULT OR GROUNDED ANTENNA NEEDED\n");
         ant_switch_select_default_antenna();
     }
 }
@@ -332,7 +384,7 @@ void ant_switch_notify_users()
     
     // Admin selected thunderstorm mode, but no users connected,
     // so ant_switch_ReportAntenna() above not called to handle it.
-    if (cfg_true("ant_switch.thunderstorm") && !using_tstorm) {
+    if (cfg_true("ant_switch.thunderstorm") && !antsw.using_tstorm) {
         ant_switch_ReportAntenna(NULL);
         using_default = false;
     }
@@ -361,7 +413,7 @@ void ant_switch(void *param)    // task
 // called from rx_common_cmd():CMD_ANT_SWITCH
 bool ant_switch_msgs(char *msg, int rx_chan)
 {
-	int n = 0;
+	int i, n = 0;
 
     if (rx_chan == -1) return true;
 	antsw_rcprintf(rx_chan, "ant_switch_msgs rx=%d <%s>\n", rx_chan, msg);
@@ -398,12 +450,6 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     if (n == 1) {
         //antsw_rcprintf(rx_chan, "ant_switch: freq_offset %d\n", freq_offset_ant);
         if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
-        
-            // FIXME jksx XXX
-            // This violates the cfg-db-single-writer restriction if the admin page is open.
-            // But it's necessary so the reloaded user page gets the new offset.
-            cfg_set_float_save("freq_offset", (double) freq_offset_ant);
-            
             rx_set_freq_offset_kHz((double) freq_offset_ant);
             antsw_printf("ant_switch FOFF %.3f\n", freq.offset_kHz);
         }
@@ -423,6 +469,34 @@ bool ant_switch_msgs(char *msg, int rx_chan)
         return true;
     }
 
+    char *curl_cmd;
+    n = sscanf(msg, "SET antsw_curl_cmd=%255ms", &curl_cmd);
+    if (n == 1) {
+        if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
+            kiwi_str_decode_inplace(curl_cmd);
+            kiwi_str_clean(curl_cmd, KCLEAN_DELETE);
+            //rcprintf(rx_chan, CYAN "ant_switch: curl_cmd <%s>" NONL, curl_cmd);
+
+			#define NKWDS 8
+			char *ccmd, *r_ccmd;
+			str_split_t kwds[NKWDS];
+			ccmd = strdup(curl_cmd);
+			n = kiwi_split((char *) ccmd, &r_ccmd, " ", kwds, NKWDS);
+			for (i = 0; i < n; i++) {
+				//printf("ant_switch KW%d: <%s> '%s' %d\n", i, kwds[i].str, ASCII[kwds[i].delim], kwds[i].delim);
+                char *cmd;
+                asprintf(&cmd, "curl -skL '%s' >/dev/null", kwds[i].str);
+                rcprintf(rx_chan, CYAN "ant_switch: <%s>" NONL, cmd);
+                non_blocking_cmd_system_child("antsw.curl", cmd, 200);
+                if (i < n-1) TaskSleepMsec(500);
+                kiwi_asfree(cmd);
+			}
+			kiwi_asfree(ccmd); kiwi_ifree(r_ccmd, "antsw_curl_cmd");
+        }
+        kiwi_asfree(curl_cmd);
+        return true;
+    }
+
     if (strcmp(msg, "SET antsw_init") == 0) {
         snd_send_msg(rx_chan, ANT_SWITCH_DEBUG_MSG, "MSG antsw_backend_ver=%d.%d",
             antsw.ver_maj, antsw.ver_min);                 
@@ -431,7 +505,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
     }
         
     if (strcmp(msg, "SET antsw_check_set_default") == 0) {
-        if (using_ground)
+        if (antsw.using_ground)
             ant_switch_find_default_ant(false);
         return true;
     }

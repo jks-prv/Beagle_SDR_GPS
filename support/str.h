@@ -55,13 +55,13 @@ char *kiwi_str_decode_inplace(char *src);
 char *kiwi_str_decode_static(char *src, int which DEF_0);
 char *kiwi_str_ASCII_static(char *src, int which DEF_0);
 char *kiwi_URL_enc_to_C_hex_esc_enc(char *src);
-char *kiwi_str_clean(char *s);
 void kiwi_chrrep(char *str, const char from, const char to);
 bool kiwi_str_begins_with(char *s, const char *cs);
 char *kiwi_str_ends_with(char *s, const char *cs);
 char *kiwi_skip_over(char *s, const char *skip);
 char *kstr_sp_less_trailing_nl(char *s_kstr_cstr);
 char *kiwi_overlap_strcpy(char *dst, const char *src);
+u1_t *kiwi_overlap_memcpy(u1_t *dst, const u1_t *src, int n);
 int kiwi_strnlen(const char *s, int limit);
 char *kiwi_strncpy(char *dst, const char *src, size_t n);
 char *kiwi_strncat(char *dst, const char *src, size_t n);
@@ -85,6 +85,9 @@ typedef struct {
 } str_split_t;
 enum { KSPLIT_NO_SKIP_EMPTY_FIELDS = 0x1, KSPLIT_HANDLE_EMBEDDED_DELIMITERS = 0x2 };
 int kiwi_split(char *ocp, char **mbuf, const char *delims, str_split_t argv[], int nargs, int flags DEF_0);
+
+enum { KCLEAN_DELETE = 1, KCLEAN_REPL_SPACE = 2 };
+char *kiwi_str_clean(char *s, int type);
 
 extern char ASCII[256][8];
 

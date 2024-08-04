@@ -64,8 +64,8 @@ typedef struct conn_st {
 	// set in both STREAM_SOUND & STREAM_WATERFALL
 	int task;
 	bool stop_data, kick, arun_preempt, preempted;
-	bool foff_set;
-	double foff;        // offset set via URL
+	bool foff_set_in_URL;
+	double foff_in_URL;     // offset set via URL
 
 	// set in STREAM_SOUND or STREAM_WATERFALL (WF-only connections)
 	bool ident, arrived;
@@ -121,6 +121,7 @@ typedef struct conn_st {
 	int nloop;
 	char *geo;
 	bool try_geoloc;
+	double log_offset_kHz;
 	
 	// debug
 	int debug;

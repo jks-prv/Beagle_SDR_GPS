@@ -870,21 +870,42 @@ char *kiwi_URL_enc_to_C_hex_esc_enc(char *src)
     return dst;
 }
 
-// FIXME: do something better
-char *kiwi_str_clean(char *str)
+static u1_t clean_table[128] = {
+//  (ctrl)
+    3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+
+//  (ctrl)
+    3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+
+//    ! " # $ % & ' ( ) * + , - . /     not !"#$%'()*
+    0,1,1,1,1,1,0,1,1,1,1,0,0,0,0,0,
+
+//  0 1 2 3 4 5 6 7 8 9 : ; < = > ?     not ;<>
+    0,0,0,0,0,0,0,0,0,0,0,1,1,0,1,0,
+
+//  @ (alpha)                           not @
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+//  (alpha)               [ \ ] ^ _     not [\]^_
+    0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,
+
+//  ` (alpha)                           not `
+    1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+
+//  (alpha)               { | } ~ del   not {|}~ del
+    0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,
+};
+
+char *kiwi_str_clean(char *str, int type)
 {
-    char *s = str;
+    u1_t *s = (u1_t *) str;
 
     for (; *s != '\0'; s++) {
-        if (*s == '\'') *s = ' '; else
-        if (*s == '"') *s = ' '; else
-        if (*s == '\\') *s = ' '; else
-        if (*s == '<') *s = ' '; else
-        if (*s == '>') *s = ' '; else
-        if (*s == '&') *s = ' ';
-
-        if (isprint(*s)) continue;
-        *s = ' ';
+        if (*s >= 0x80 || (type == KCLEAN_DELETE && (clean_table[*s] & KCLEAN_DELETE))) {
+            kiwi_overlap_memcpy(s, s+1, strlen((char *) s+1) + SPACE_FOR_NULL);
+            continue;
+        }
+        if (type == KCLEAN_REPL_SPACE && clean_table[*s] & KCLEAN_REPL_SPACE) *s = ' ';
     }
 
     return str;
@@ -927,6 +948,17 @@ char *kiwi_overlap_strcpy(char *dst, const char *src)
         c = *src++;
         *d++ = c;
     } while (c != '\0');
+    return dst;
+}
+
+// library memcpy() with overlapping args will trigger clang asan
+u1_t *kiwi_overlap_memcpy(u1_t *dst, const u1_t *src, int n)
+{
+    u1_t *d = dst, c;
+    for (int i = 0; i < n; i++) {
+        c = *src++;
+        *d++ = c;
+    }
     return dst;
 }
 

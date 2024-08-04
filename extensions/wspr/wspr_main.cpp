@@ -663,12 +663,6 @@ void wspr_data(int rx_chan, int instance, int nsamps, TYPECPX *samps)
 		return;
 	}
 	
-    // detect when freq offset changed so autorun can be restarted
-    if (w->autorun && !wspr_c.arun_restart_offset && wspr_c.freq_offset_Hz != freq.offset_Hz) {
-        wspr_c.arun_restart_offset = true;
-        wspr_autorun_restart();
-    }
-
     int min, sec; utc_hour_min_sec(NULL, &min, &sec);
 	if (sec != w->last_sec) {
 		if (min&1 && sec == 40)
@@ -1058,8 +1052,8 @@ void wspr_autorun(int instance, bool initial)
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
 	if (!rx_freq_inRange(dial_freq_kHz)) {
-	    printf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
-	        band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+	    //printf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+	    //    band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
 	    return;
 	}
 
@@ -1126,7 +1120,6 @@ void wspr_autorun_start(bool initial)
         //printf("WSPR autorun_start: none configured\n");
         return;
     }
-    wspr_c.arun_restart_offset = false;
 
     for (int instance = 0; instance < rx_chans; instance++) {
         int band = wspr_arun_band[instance];
@@ -1147,9 +1140,13 @@ void wspr_autorun_start(bool initial)
         }
         if (rx_chan == rx_chans) {
             // arun_{which,band} set only after wspr_autorun():internal_conn_setup() succeeds
+            //printf("WSPR autorun: instance=%d band=%d %.2f START rx%d\n",
+            //    instance, band, wspr_cfs[band], rx_chan);
             wspr_autorun(instance, initial);
         }
     }
+
+    wspr_c.arun_restart_offset = false;
 }
 
 void wspr_autorun_restart()
@@ -1159,13 +1156,14 @@ void wspr_autorun_restart()
     wspr_t *wspr_p[MAX_ARUN_INST];
 
     printf("WSPR autorun: RESTART\n");
-    r->arun_suspend_restart_victims = true;
+    wspr_c.arun_suspend_restart_victims = true;
         // shutdown all
         for (int rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
             wspr_p[rx_chan] = NULL;
             if (r->arun_which[rx_chan] == ARUN_WSPR) {
                 wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
                 wspr_p[rx_chan] = w;
+                //printf("WSPR autorun STOP1 ch=%d w=%p\n", rx_chan, w);
                 w->abort_decode = true;     // for MULTI_CORE it's important to stop the decode process
                 internal_conn_shutdown(&iconn[w->instance]);
                 r->arun_which[rx_chan] = ARUN_NONE;
@@ -1183,16 +1181,36 @@ void wspr_autorun_restart()
 
         // reset only autorun instances identified above (there may be non-autorun WSPR extensions running)
         for (int rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
-            if (wspr_p[rx_chan] != NULL) wspr_reset(wspr_p[rx_chan]);
+            if (wspr_p[rx_chan] != NULL) {
+                printf(RED "WSPR autorun STOP2 ch=%d w=%p" NONL, rx_chan, wspr_p[rx_chan]);
+                wspr_reset(wspr_p[rx_chan]);
+            }
         }
-        memset(iconn, 0, sizeof(internal_conn_t));
+        memset(iconn, 0, sizeof(iconn));
 
         // bring wspr_arun_band[] and wspr_arun_preempt[] up-to-date
         wspr_update_vars_from_config(true);
         
+        // XXX Don't start autorun here. Let rx_autorun_restart_victims() do it
+        // because there might be other extension autorun restarting at the same time.
+        // And starting too soon while the others are in the middle of kicking their EXT tasks
+        // causes conflicts. rx_autorun_restart_victims() correctly waits for all extension
+        // *.arun_suspend_restart_victims to become false.
+        
         // restart all enabled
-        wspr_autorun_start(true);
-    r->arun_suspend_restart_victims = false;
+        //wspr_autorun_start(true);
+    wspr_c.arun_suspend_restart_victims = false;
+}
+
+void wspr_poll(int rx_chan)
+{
+    wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
+    
+    // detect when freq offset changed so autorun can be restarted
+    if (w->autorun && !wspr_c.arun_restart_offset && wspr_c.freq_offset_Hz != freq.offset_Hz) {
+        wspr_c.arun_restart_offset = true;
+        wspr_autorun_restart();
+    }
 }
 
 void wspr_main();
@@ -1203,7 +1221,8 @@ ext_t wspr_ext = {
 	wspr_close,
 	wspr_msgs,
 	EXT_NEW_VERSION,
-	EXT_FLAGS_HEAVY
+	EXT_FLAGS_HEAVY,
+	wspr_poll
 };
 
 void wspr_main()

@@ -131,12 +131,6 @@ static void ft8_task(void *param)
 		    decode_ft8_protocol(rx_chan, conn->freqHz + ft8_conf.freq_offset_Hz, e->proto);
 		}
 		
-		// detect when freq offset changed so autorun can be restarted
-		if (e->autorun && !ft8_conf.arun_restart_offset && ft8_conf.freq_offset_Hz != freq.offset_Hz) {
-		    ft8_conf.arun_restart_offset = true;
-		    ft8_autorun_restart();
-		}
-
 		while (e->rd_pos != rx->real_wr_pos) {
 		    if (rx->real_seqnum[e->rd_pos] != e->seq) {
                 if (!e->seq_init) {
@@ -435,7 +429,6 @@ void ft8_autorun_start(bool initial)
         //printf("FT8 autorun_start: none configured\n");
         return;
     }
-    ft8_conf.arun_restart_offset = false;
 
     for (int instance = 0; instance < rx_chans; instance++) {
         int band = ft8_arun_band[instance];
@@ -456,9 +449,13 @@ void ft8_autorun_start(bool initial)
         }
         if (rx_chan == rx_chans) {
             // arun_{which,band} set only after ft8_autorun():internal_conn_setup() succeeds
+            //printf("FT8 autorun: instance=%d band=%d %.2f START rx%d\n",
+            //    instance, band, ft8_autorun_dial[band], rx_chan);
             ft8_autorun(instance, initial);
         }
     }
+
+    ft8_conf.arun_restart_offset = false;
 }
 
 void ft8_autorun_restart()
@@ -468,7 +465,7 @@ void ft8_autorun_restart()
     ft8_t *ft8_p[MAX_RX_CHANS];
 
     printf("FT8 autorun: RESTART\n");
-    r->arun_suspend_restart_victims = true;
+    ft8_conf.arun_suspend_restart_victims = true;
         // shutdown all
         for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
             ft8_p[rx_chan] = NULL;
@@ -476,7 +473,7 @@ void ft8_autorun_restart()
                 ft8_t *e = &ft8[rx_chan];
                 ft8_p[rx_chan] = e;
                 internal_conn_shutdown(&iconn[e->instance]);
-                //printf("FT8 autorun: rx_chan=%d ARUN_FT8 => ARUN_NONE\n", rx_chan);
+                //printf("FT8 autorun STOP1 rx_chan=%d ARUN_FT8 => ARUN_NONE\n", rx_chan);
                 r->arun_which[rx_chan] = ARUN_NONE;
             }
         }
@@ -485,16 +482,36 @@ void ft8_autorun_restart()
     
         // reset only autorun instances identified above (there may be non-autorun FT8 extensions running)
         for (rx_chan = 0; rx_chan < rx_chans; rx_chan++) {
-            if (ft8_p[rx_chan] != NULL) ft8_reset(ft8_p[rx_chan]);
+            if (ft8_p[rx_chan] != NULL) {
+                //printf("FT8 autorun STOP2 ch=%d\n", rx_chan);
+                ft8_reset(ft8_p[rx_chan]);
+            }
         }
-        memset(iconn, 0, sizeof(internal_conn_t));
+        memset(iconn, 0, sizeof(iconn));
         
         // bring ft8_arun_band[] and ft8_arun_preempt[] up-to-date
         ft8_update_vars_from_config(true);
         
+        // XXX Don't start autorun here. Let rx_autorun_restart_victims() do it
+        // because there might be other extension autorun restarting at the same time.
+        // And starting too soon while the others are in the middle of kicking their EXT tasks
+        // causes conflicts. rx_autorun_restart_victims() correctly waits for all extension
+        // *.arun_suspend_restart_victims to become false.
+        
         // restart all enabled
-        ft8_autorun_start(true);
-    r->arun_suspend_restart_victims = false;
+        //ft8_autorun_start(true);
+    ft8_conf.arun_suspend_restart_victims = false;
+}
+
+void FT8_poll(int rx_chan)
+{
+    ft8_t *e = &ft8[rx_chan];
+    
+    // detect when freq offset changed so autorun can be restarted
+    if (e->autorun && !ft8_conf.arun_restart_offset && ft8_conf.freq_offset_Hz != freq.offset_Hz) {
+        ft8_conf.arun_restart_offset = true;
+        ft8_autorun_restart();
+    }
 }
 
 void FT8_main();
@@ -505,7 +522,8 @@ ext_t ft8_ext = {
 	ft8_close,
 	ft8_msgs,
 	EXT_NEW_VERSION,
-	EXT_FLAGS_HEAVY
+	EXT_FLAGS_HEAVY,
+	FT8_poll
 };
 
 void FT8_main()
