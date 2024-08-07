@@ -1984,6 +1984,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	    -systemctl --full --lines=250 stop kiwid.service || true
 	    -systemctl --full --lines=250 enable kiwid.service || true
 	    (cd $(DIR_CFG); jq '.onetime_password_check = false | .rev_auto = false | .rev_auto_user = "" | .rev_auto_host = "" | .update_check = true | .update_install = true' admin.json > /tmp/jq && mv /tmp/jq admin.json)
+	    (cd $(DIR_CFG); jq '.sdr_hu_dom_sel = 2' kiwi.json > /tmp/jq && mv /tmp/jq kiwi.json)
 	    (cd $(DIR_CFG); rm -f .do_once.dep .keyring4.dep frpc.ini seq_serno)
 	    -rm -f /tmp/.kiwi* /root/.ssh/auth* /root/.ssh/known*
 	    -rm -f build.log
@@ -2011,7 +2012,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	    @(cd $(DIR_CFG); $(JA) | grep onetime)
 	    @echo "want: update_check, update_install = true"
 	    @(cd $(DIR_CFG); $(JA) | grep update_)
-	    @echo 'want: rev_auto = false, rev_user, rev_host = ""'
+	    @echo 'want: rev_auto = false, rev_user/rev_host = ""'
 	    @(cd $(DIR_CFG); $(JA) | grep rev_auto)
 	    @echo 'want: admin_password = ""'
 	    @(cd $(DIR_CFG); $(JA) | grep admin_pa)
