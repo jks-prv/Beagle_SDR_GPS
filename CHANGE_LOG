@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.697  August 9, 2024
+v1.697,698  August 9, 2024
     Fixed problem with iPads where onscreen keyboard pops up with every button press.
     This was due to Apple making non backward-compatible changes to the browser "user agent" string.
     You should no longer need the workaround of adding "/?m" or "/?mobile" to the URL.
