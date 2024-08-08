@@ -114,9 +114,11 @@ document.onreadystatechange = function() {
          kiwi_touch = (navigator.msMaxTouchPoints > 0);
       } else
       if (window.hasOwnProperty('matchMedia')) {
-         var mQ = matchMedia('(pointer:coarse)');
-         if (mQ.media === '(pointer:coarse)') {
+         var mQ = matchMedia('(pointer: coarse)');
+         if (mQ.media === '(pointer: coarse)') {
             kiwi_touch = !!mQ.matches;
+         } else {
+            kiwi_touch = false;
          }
       } else {
          if (window.hasOwnProperty('orientation')) {
