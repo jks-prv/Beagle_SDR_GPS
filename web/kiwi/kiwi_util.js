@@ -67,6 +67,7 @@ var kiwi_util = {
 
 var kiwi_iOS, kiwi_iPhone, kiwi_MacOS, kiwi_linux, kiwi_Windows, kiwi_android;
 var kiwi_safari, kiwi_firefox, kiwi_chrome, kiwi_opera, kiwi_smartTV;
+var kiwi_touch;
 
 // wait until DOM has loaded before proceeding (browser has loaded HTML, but not necessarily images)
 document.onreadystatechange = function() {
@@ -102,6 +103,28 @@ document.onreadystatechange = function() {
 		   if (s.includes('LG')) kiwi_smartTV = 'LG';
 		}
 		
+		// It seems iPads no longer return "iPad" in the user agent (iPhones still return "iPhone").
+		// So use more generic (and recommended) way of determining touch/mobile devices.
+		// see: developer.mozilla.org/en-US/docs/Web/HTTP/Browser_detection_using_the_user_agent#mobile_device_detection
+      // NB: don't use "'maxTouchPoints' in navigator" because very old iPads don't support "in" keyword.
+      if (navigator.hasOwnProperty('maxTouchPoints')) {
+         kiwi_touch = (navigator.maxTouchPoints > 0);
+      } else
+      if (navigator.hasOwnProperty('msMaxTouchPoints')) {
+         kiwi_touch = (navigator.msMaxTouchPoints > 0);
+      } else
+      if (window.hasOwnProperty('matchMedia')) {
+         var mQ = matchMedia('(pointer:coarse)');
+         if (mQ.media === '(pointer:coarse)') {
+            kiwi_touch = !!mQ.matches;
+         }
+      } else {
+         if (window.hasOwnProperty('orientation')) {
+            kiwi_touch = true;   // deprecated, but good fallback
+         } else {
+            kiwi_touch = false;
+         }
+      }
 		
 		if (!website) console.log(
 		   'MacOS='+ kiwi_MacOS +
@@ -168,7 +191,9 @@ function kiwi_isAndroid() { return kiwi_android; }
 
 function kiwi_isSmartTV() { return kiwi_smartTV; }
 
-function kiwi_isMobile() { return (force_mobile || kiwi_is_iOS() || kiwi_isAndroid() || (kiwi_isSmartTV() == 'Samsung') || mobile_laptop_test); }
+function kiwi_isTouch() { return kiwi_touch; }
+
+function kiwi_isMobile() { return (force_mobile || kiwi_isTouch() || kiwi_is_iOS() || kiwi_isAndroid() || (kiwi_isSmartTV() == 'Samsung') || mobile_laptop_test); }
 
 // returns the version number or NaN (later of which will evaluate false in numeric comparisons)
 function kiwi_isSafari() { return (kiwi_safari? kiwi_safari[1] : NaN); }
