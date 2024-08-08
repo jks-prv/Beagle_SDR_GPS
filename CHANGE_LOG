@@ -2,6 +2,13 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.697  August 9, 2024
+    Fixed problem with iPads where onscreen keyboard pops up with every button press.
+    This was due to Apple making non backward-compatible changes to the browser "user agent" string.
+    You should no longer need the workaround of adding "/?m" or "/?mobile" to the URL.
+
+    Fixed frequency (and offset) shown in monitor mode panel.
+
 v1.696  August 5, 2024
     Antenna switch:
         Progress trying to get the frequency offset settings of the admin config (global)
@@ -26,7 +33,8 @@ v1.696  August 5, 2024
         
         The "cURL command arguments" field allows an arbitrary cURL command to be run when an
         antenna is selected. This could be a command causing a network-enabled downconverter to
-        change setup such as frequency/band etc. More info: kiwisdr.com/info#id-antsw (thanks N6GN)
+        change setup such as frequency/band etc. More info: kiwisdr.com/info#id-antsw
+        (thanks N6GN)
         
         SNR measurements are now skipped if the antenna is grounded because no users are connected
         (if that option has been enabled) or if in thunderstorm mode. However, after a restart the
