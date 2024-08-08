@@ -475,7 +475,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
         if (!ant_switch_check_deny(rx_chan)) {      // prevent circumvention from client side
             kiwi_str_decode_inplace(curl_cmd);
             kiwi_str_clean(curl_cmd, KCLEAN_DELETE);
-            //rcprintf(rx_chan, CYAN "ant_switch: curl_cmd <%s>" NONL, curl_cmd);
+            antsw_rcprintf(rx_chan, CYAN "ant_switch: curl_cmd <%s>" NONL, curl_cmd);
 
 			#define NKWDS 8
 			char *ccmd, *r_ccmd;
@@ -486,7 +486,7 @@ bool ant_switch_msgs(char *msg, int rx_chan)
 				//printf("ant_switch KW%d: <%s> '%s' %d\n", i, kwds[i].str, ASCII[kwds[i].delim], kwds[i].delim);
                 char *cmd;
                 asprintf(&cmd, "curl -skL '%s' >/dev/null", kwds[i].str);
-                rcprintf(rx_chan, CYAN "ant_switch: <%s>" NONL, cmd);
+                antsw_rcprintf(rx_chan, CYAN "ant_switch: <%s>" NONL, cmd);
                 non_blocking_cmd_system_child("antsw.curl", cmd, 200);
                 if (i < n-1) TaskSleepMsec(500);
                 kiwi_asfree(cmd);

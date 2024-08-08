@@ -2735,7 +2735,7 @@ function user_cb(obj)
       // detect change in frequency scale offset
       //if (i == rx_chan) console.log('$obj.fo='+ obj.fo +' freq.offset_kHz='+ kiwi.freq_offset_kHz);
       if (isNumber(obj.fo) && obj.fo != kiwi.freq_offset_kHz) {
-         if (kiwi.called_from_admin) {
+         if (kiwi.called_from_admin || kiwi.called_from_monitor) {
             console.log('$$$ ADMIN kiwi_set_freq_offset '+ obj.fo);
             kiwi_set_freq_offset(obj.fo);
          } else

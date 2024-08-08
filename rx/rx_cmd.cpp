@@ -821,7 +821,7 @@ bool rx_common_cmd(int stream_type, conn_t *conn, char *cmd, bool *keep_alive)
                     conn->isLocal = is_local;
                     conn->isPassword = is_password;
                 
-                    if (stream_snd_or_wf || stream_admin_or_mfg) {
+                    if (stream_snd_or_wf || stream_mon || stream_admin_or_mfg) {
                         send_msg(conn, SM_NO_DEBUG, "MSG version_maj=%d version_min=%d debian_ver=%d model=%d platform=%d ext_clk=%d abyy=%s freq_offset=%.3f",
                             version_maj, version_min, debian_ver, kiwi.model, kiwi.platform, kiwi.ext_clk, eibi_abyy, freq.offset_kHz);
                     }
