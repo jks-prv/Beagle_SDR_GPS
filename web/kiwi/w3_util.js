@@ -3352,6 +3352,20 @@ function w3_select_enum(path, func)
 	w3_iterate_children(path, func);
 }
 
+function w3_select_match(path, s)
+{
+   var found = false, idx = -1;
+   w3_select_enum(path,
+      function(e) {
+         if (!found && !e.disabled && e.innerHTML.toLowerCase().startsWith(s)) {
+            idx = e.value;
+            found = true;
+         }
+      }
+   );
+   return { found:found, idx:idx };
+}
+
 function w3_select_get_value(path, idx)
 {
    var found = null, last_disabled = null;
