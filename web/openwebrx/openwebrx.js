@@ -691,7 +691,7 @@ function toggle_panel(panel, set)
 
 	// redo scaling after show
 	// (NB: divPanel.panelShown instead of !divPanel.panelShown due to ^= 1 above
-	if (panel == 'id-control' && divPanel.panel_isScaled == true && divPanel.panelShown) {
+	if (panel == 'id-control' && divPanel.panel_isScaled == false && divPanel.panelShown) {
 	   mobile_scale_control_panel(null, true);
 	   //canvas_log('TogScale=>T'+ divPanel.style.left +':'+ divPanel.style.right);
 	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
@@ -1360,9 +1360,11 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		//console.log('$'+ s);
 
       var changed = null;
+		freq_Hz = freq_displayed_Hz;
       if (!owrx.freq_dsp_1Hz) {
-         // in 10 Hz mode store truncated freq so comparison below against last freq works correctly
-         var _freq_Hz = _10Hz(freq_Hz);
+         // in 10 Hz mode store rounded freq so comparison below against last freq works correctly
+         //var _freq_Hz = _10Hz(freq_Hz);
+         var _freq_Hz = _10Hz_round(freq_Hz);
          //console.log('prev_freq_kHz PUSH '+ freq_Hz +'=>'+ _freq_Hz);
          freq_Hz = _freq_Hz;
       }
@@ -2766,7 +2768,7 @@ function canvas_mousedown(evt)
    //event_dump(evt, "C-MD w3_menu_active="+ TF(w3_menu_active()), true);
 	mouse_button_state(evt);
    if (w3_menu_active())
-      w3_menu_close('0');     // close menu if another DTS while menu open
+      w3_menu_close('0');     // close menu if single click while menu open
    else
 	   canvas_start_drag(evt, evt.pageX, evt.pageY);
 	evt.preventDefault();	// don't show text selection mouse pointer
@@ -2780,6 +2782,10 @@ function canvas_touchStart(evt)
 	if (owrx.debug_drag) canvas_log("$C-TS"+ touches +'-x'+ x +'-y'+ y);
    owrx.double_touch_start = false;
    
+   if (w3_menu_active()) {
+      w3_menu_close('4');     // close menu if single tap while menu open
+   } else
+
    if (touches == 1) {
       // don't drag the WF on a spectrum display touch/drag -- just update the tooltip
       if (evt.target.id.startsWith('id-spectrum')) {
@@ -4091,7 +4097,7 @@ function mobile_scale_control_panel(mobile, doScale)
    var el = w3_el('id-control');
       el.panel_isScaled = doScale;
 
-   if (doScale) {
+   if (doScale && mobile.width <= el.uiWidth) {
       el.style.right = '0px';
 
       // scale control panel up or down to fit width of all narrow screens
