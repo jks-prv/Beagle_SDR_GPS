@@ -650,6 +650,11 @@ function _10Hz(f) {
    }
 }
 
+function _10Hz_round(f) {
+   var step = 10;
+   return Math.round(f/step) * step;
+}
+
 // like setTimeout() except also calls once immediately
 function kiwi_setTimeout(func, msec, param)
 {
