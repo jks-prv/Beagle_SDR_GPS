@@ -509,6 +509,7 @@ function control_user_kick_cb(id, idx)
 
 function control_snr_measure_cb(id, idx)
 {
+   w3_innerHTML('id-msg-snr-now', 'measuring..');
 	ext_send('SET snr_meas');
 }
 
