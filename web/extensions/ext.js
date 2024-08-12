@@ -681,16 +681,19 @@ function ext_get_name()
 
 /*
 www.ios-resolution.com
-screen.{width,height}	P=portrait L=landscape
+screen.{width,height}   (in logical pixels)
+                        P=portrait L=landscape
 			   w     h		screen.[wh] in portrait
 			   h     w		rotated to landscape
 iPhone 5S	320   568	P
 iPhone 6S   375   667   P
 iPhone X    375   812   P
 iPhone XR   414   896	P
+iPhone 15   430   932   P
 
 levono		600   1024	P 7"
 huawei		600   982	P 7"
+
 iPad 2		768   1024	P
 
 MBP 15"		1440  900	L
@@ -721,9 +724,12 @@ function ext_mobile_info(last)
    //   canvas_log(w +' '+ h +' '+ last +' '+ last.isPortrait + isPortrait);
 
 	rv.isPortrait = isPortrait? 1:0;
-	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
 	rv.small    = (isPortrait && w <  768)? 1:0;    // anything smaller than iPad
 	rv.narrow   = (isPortrait && w <= 600)? 1:0;    // narrow screens, i.e. phones and 7" tablets
+
+	rv.iPad     = (isPortrait && w <= 768)? 1:0;    // iPad or smaller
+	rv.tablet   = (isPortrait && w <= 600)? 1:0;    // narrow screens, i.e. phones and 7" tablets
+	rv.phone    = (isPortrait && w <= 430)? 1:0;    // largest iPhone portrait width
    return rv;
 }
 

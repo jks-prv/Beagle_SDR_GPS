@@ -668,8 +668,8 @@ function toggle_panel(panel, set)
 	//if (panel == 'id-control') canvas_log('f='+ from.toFixed(0) +' t='+ to.toFixed(0));
 	
 	// undo scaling before hide
-	if (panel == 'id-control' && divPanel.panel_isScaled == true && divPanel.panelShown) {
-	   mobile_scale_control_panel(null, false);
+	if (panel == 'id-control' && divPanel.panelShown) {
+	   mobile_scale_control_panel(null, true);
 	   //canvas_log('TogScale=>F'+ divPanel.style.left +':'+ divPanel.style.right);
 	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
 	}
@@ -691,8 +691,8 @@ function toggle_panel(panel, set)
 
 	// redo scaling after show
 	// (NB: divPanel.panelShown instead of !divPanel.panelShown due to ^= 1 above
-	if (panel == 'id-control' && divPanel.panel_isScaled == false && divPanel.panelShown) {
-	   mobile_scale_control_panel(null, true);
+	if (panel == 'id-control' && divPanel.panelShown) {
+	   mobile_scale_control_panel(null);
 	   //canvas_log('TogScale=>T'+ divPanel.style.left +':'+ divPanel.style.right);
 	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
 	}
@@ -4052,11 +4052,11 @@ function mobile_init()
 	}
 	
 	// for narrow screen devices, i.e. phones and 7" tablets
-	if (mobile.narrow) {
+	if (mobile.tablet) {
 	   w3_hide('id-readme');   // don't show readme panel closed icon
 	   
 	   // remove top bar and band/label areas on phones
-	   if (mobile.width < 600) {
+	   if (mobile.phone) {
 	      toggle_or_set_hide_bars(owrx.HIDE_ALLBARS);
 	   }
 	}
@@ -4086,18 +4086,19 @@ function mobile_init()
          toggle_panel('id-control', 1);   // always show control panel on orientation change
       }
 
-      var doScale = (mobile.narrow && !mobile_laptop_test);
-      mobile_scale_control_panel(mobile, doScale);
+      mobile_scale_control_panel(mobile);
 	}, 500);
 }
 
-function mobile_scale_control_panel(mobile, doScale)
+function mobile_scale_control_panel(mobile, noScale)
 {
    mobile = mobile || owrx.mobile;
    var el = w3_el('id-control');
-      el.panel_isScaled = doScale;
 
-   if (doScale && mobile.width <= el.uiWidth) {
+   if ((noScale == true) || el.uiWidth < mobile.width) {
+      el.style.transform = 'none';
+      //canvas_log2(mobile.width +':'+ mobile.height +' NORM '+ el.clientWidth +':'+ el.clientHeight);
+   } else {
       el.style.right = '0px';
 
       // scale control panel up or down to fit width of all narrow screens
@@ -4106,9 +4107,6 @@ function mobile_scale_control_panel(mobile, doScale)
       el.style.transformOrigin = 'bottom right';
       owrx.rescale_cnt2++;
       //canvas_log2(mobile.width +':'+ mobile.height +' SCALE '+ scale.toFixed(2) +' '+ el.clientWidth +':'+ el.clientHeight);
-   } else {
-      el.style.transform = 'none';
-      //canvas_log2(mobile.width +':'+ mobile.height +' NORM '+ el.clientWidth +':'+ el.clientHeight);
    }
 }
 
