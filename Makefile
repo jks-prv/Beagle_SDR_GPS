@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 698
+VERSION_MIN = 699
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1783,7 +1783,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
     GET_TOOLS_EXCLUDE_RSYNC := true
     -include tools/Makefile
     EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
-        "verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js"
+        "verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js" "Makefile.1"
     RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) \
         $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(addprefix --exclude , $(TOOLS_EXCLUDE_RSYNC)) \
         $(RSYNC_SRC) $(RSYNC_USER)@$(HOST):$(RSYNC_DST)
@@ -1984,7 +1984,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	    -systemctl --full --lines=250 stop kiwid.service || true
 	    -systemctl --full --lines=250 enable kiwid.service || true
 	    (cd $(DIR_CFG); jq '.onetime_password_check = false | .rev_auto = false | .rev_auto_user = "" | .rev_auto_host = "" | .update_check = true | .update_install = true' admin.json > /tmp/jq && mv /tmp/jq admin.json)
-	    (cd $(DIR_CFG); jq '.sdr_hu_dom_sel = 2' kiwi.json > /tmp/jq && mv /tmp/jq kiwi.json)
+	    (cd $(DIR_CFG); jq '.sdr_hu_dom_sel = 2 | .server_url = ""' kiwi.json > /tmp/jq && mv /tmp/jq kiwi.json)
 	    (cd $(DIR_CFG); rm -f .do_once.dep .keyring4.dep frpc.ini seq_serno)
 	    -rm -f /tmp/.kiwi* /root/.ssh/auth* /root/.ssh/known*
 	    -rm -f build.log
@@ -2006,13 +2006,15 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 	    -@grep root /etc/shadow
 	    @echo "want:  rcdjoac1gVi9g"
 	    -@grep debian /etc/shadow
-	    @echo "want: sdr_hu_dom_sel = 2"
+	    @echo "want: sdr_hu_dom_sel = 2 (pub ip)"
 	    @(cd $(DIR_CFG); $(JK) | grep dom_sel)
+	    @echo 'want: server_url = ""'
+	    @(cd $(DIR_CFG); $(JK) | grep server_url)
 	    @echo "want: onetime_password_check = false"
 	    @(cd $(DIR_CFG); $(JA) | grep onetime)
 	    @echo "want: update_check, update_install = true"
 	    @(cd $(DIR_CFG); $(JA) | grep update_)
-	    @echo 'want: rev_auto = false, rev_user/rev_host = ""'
+	    @echo 'want: rev_auto = false, rev_{user,host} = ""'
 	    @(cd $(DIR_CFG); $(JA) | grep rev_auto)
 	    @echo 'want: admin_password = ""'
 	    @(cd $(DIR_CFG); $(JA) | grep admin_pa)

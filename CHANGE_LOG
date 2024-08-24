@@ -2,6 +2,23 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.699  August 25, 2024
+    User interface:
+        When recalling from the frequency memory using the ctrl-1 ctrl-2 ... ctrl-9 shortcut keys the
+        recalled frequency is no longer pushed on top of the stack. The stack now remains unchanged.
+        So that subsequent uses of the same ctrl-N key recalls the same frequency.
+        
+        Mobile devices: When right-click menu is open a single tap in the waterfall will close the
+        menu without performing any action. Works the same as the existing double tap in the
+        waterfall.
+    
+    Admin interface:
+        Show warning when attempting to connect using device with a small screen.
+    
+    Bug fixes:
+        Fixed problem causing public registration not to work sometimes.
+        Always allow on-demand SNR measurement when the antenna switch is disabled. (thanks G4WIM)
+
 v1.697,698  August 9, 2024
     Fixed problem with iPads where onscreen keyboard pops up with every button press.
     This was due to Apple making non backward-compatible changes to the browser "user agent" string.
