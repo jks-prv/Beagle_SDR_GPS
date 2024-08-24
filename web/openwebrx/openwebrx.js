@@ -84,6 +84,7 @@ var owrx = {
    last_pageY: 0,
    mouse_freq: {},
    override_fmem: null,
+   no_fmem_update: false,
    vfo_ab: 0,
    vfo_first: true,
    optbar_last_scrollpos: [],
@@ -6366,7 +6367,7 @@ function freqset_update_ui(from)
 	vfo_update();
 	
 	// don't add to freq memory while tuning across scale except for final position
-	if (kiwi.fmem_auto_save && from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
+	if (kiwi.fmem_auto_save && !owrx.no_fmem_update && from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
       //console.log('>>> freq_memory_add freq='+ freq_displayed_kHz_str_with_freq_offset);
       freq_memory_add(freq_displayed_kHz_str_with_freq_offset);
 	}
@@ -7162,7 +7163,11 @@ function freq_memory_menu_item_cb(idx, x, cb_param, ev)
 function freq_memory_recall(idx)
 {
    var f_m = freq_memory_at(Math.min(9, idx));
-   if (f_m) ext_tune(f_m.freq - kiwi.freq_offset_kHz, f_m.mode, ext_zoom.CUR);
+   if (f_m) {
+      owrx.no_fmem_update = true;   // don't re-push fmem when just simply recalling from it
+      ext_tune(f_m.freq - kiwi.freq_offset_kHz, f_m.mode, ext_zoom.CUR);
+      owrx.no_fmem_update = false;
+   }
 }
 
 function freq_memory_help()
