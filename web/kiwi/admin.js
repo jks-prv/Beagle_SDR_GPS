@@ -594,8 +594,20 @@ var duc_update_v = { 0:5, 1:10, 2:15, 3:30, 4:60 };
 function connect_html()
 {
    // remove old references to kiwisdr.example.com so empty field message shows
-   if (ext_get_cfg_param('server_url') == 'kiwisdr.example.com')
+   var s = ext_get_cfg_param('server_url');
+   if (s == 'kiwisdr.example.com') {
       ext_set_cfg_param('cfg.server_url', '', EXT_SAVE);
+      s = '';
+   }
+   
+   // fix unexpected fixed IP when proxy mode selected
+   if (cfg.sdr_hu_dom_sel == kiwi.REV && (s == '' || s == '103.156.230.194')) {
+      var server_url = adm.rev_auto? adm.rev_auto_host : adm.rev_host;
+      if (server_url != '') server_url += '.'+ adm.proxy_server;
+      console.log('connect_html REV RESET server_url='+ server_url);
+      ext_set_cfg_param('cfg.server_url', server_url, EXT_SAVE);
+   }
+   
    if (ext_get_cfg_param('sdr_hu_dom_name') == 'kiwisdr.example.com')
       ext_set_cfg_param('cfg.sdr_hu_dom_name', '', EXT_SAVE);
 
