@@ -84,6 +84,7 @@ var owrx = {
    last_pageY: 0,
    mouse_freq: {},
    override_fmem: null,
+   no_fmem_update: false,
    vfo_ab: 0,
    vfo_first: true,
    optbar_last_scrollpos: [],
@@ -668,8 +669,8 @@ function toggle_panel(panel, set)
 	//if (panel == 'id-control') canvas_log('f='+ from.toFixed(0) +' t='+ to.toFixed(0));
 	
 	// undo scaling before hide
-	if (panel == 'id-control' && divPanel.panel_isScaled == true && divPanel.panelShown) {
-	   mobile_scale_control_panel(null, false);
+	if (panel == 'id-control' && divPanel.panelShown) {
+	   mobile_scale_control_panel(null, true);
 	   //canvas_log('TogScale=>F'+ divPanel.style.left +':'+ divPanel.style.right);
 	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
 	}
@@ -691,8 +692,8 @@ function toggle_panel(panel, set)
 
 	// redo scaling after show
 	// (NB: divPanel.panelShown instead of !divPanel.panelShown due to ^= 1 above
-	if (panel == 'id-control' && divPanel.panel_isScaled == true && divPanel.panelShown) {
-	   mobile_scale_control_panel(null, true);
+	if (panel == 'id-control' && divPanel.panelShown) {
+	   mobile_scale_control_panel(null);
 	   //canvas_log('TogScale=>T'+ divPanel.style.left +':'+ divPanel.style.right);
 	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
 	}
@@ -1360,9 +1361,11 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		//console.log('$'+ s);
 
       var changed = null;
+		freq_Hz = freq_displayed_Hz;
       if (!owrx.freq_dsp_1Hz) {
-         // in 10 Hz mode store truncated freq so comparison below against last freq works correctly
-         var _freq_Hz = _10Hz(freq_Hz);
+         // in 10 Hz mode store rounded freq so comparison below against last freq works correctly
+         //var _freq_Hz = _10Hz(freq_Hz);
+         var _freq_Hz = _10Hz_round(freq_Hz);
          //console.log('prev_freq_kHz PUSH '+ freq_Hz +'=>'+ _freq_Hz);
          freq_Hz = _freq_Hz;
       }
@@ -2766,7 +2769,7 @@ function canvas_mousedown(evt)
    //event_dump(evt, "C-MD w3_menu_active="+ TF(w3_menu_active()), true);
 	mouse_button_state(evt);
    if (w3_menu_active())
-      w3_menu_close('0');     // close menu if another DTS while menu open
+      w3_menu_close('0');     // close menu if single click while menu open
    else
 	   canvas_start_drag(evt, evt.pageX, evt.pageY);
 	evt.preventDefault();	// don't show text selection mouse pointer
@@ -2780,6 +2783,10 @@ function canvas_touchStart(evt)
 	if (owrx.debug_drag) canvas_log("$C-TS"+ touches +'-x'+ x +'-y'+ y);
    owrx.double_touch_start = false;
    
+   if (w3_menu_active()) {
+      w3_menu_close('4');     // close menu if single tap while menu open
+   } else
+
    if (touches == 1) {
       // don't drag the WF on a spectrum display touch/drag -- just update the tooltip
       if (evt.target.id.startsWith('id-spectrum')) {
@@ -4046,11 +4053,11 @@ function mobile_init()
 	}
 	
 	// for narrow screen devices, i.e. phones and 7" tablets
-	if (mobile.narrow) {
+	if (mobile.tablet) {
 	   w3_hide('id-readme');   // don't show readme panel closed icon
 	   
 	   // remove top bar and band/label areas on phones
-	   if (mobile.width < 600) {
+	   if (mobile.phone) {
 	      toggle_or_set_hide_bars(owrx.HIDE_ALLBARS);
 	   }
 	}
@@ -4080,18 +4087,19 @@ function mobile_init()
          toggle_panel('id-control', 1);   // always show control panel on orientation change
       }
 
-      var doScale = (mobile.narrow && !mobile_laptop_test);
-      mobile_scale_control_panel(mobile, doScale);
+      mobile_scale_control_panel(mobile);
 	}, 500);
 }
 
-function mobile_scale_control_panel(mobile, doScale)
+function mobile_scale_control_panel(mobile, noScale)
 {
    mobile = mobile || owrx.mobile;
    var el = w3_el('id-control');
-      el.panel_isScaled = doScale;
 
-   if (doScale) {
+   if ((noScale == true) || el.uiWidth < mobile.width) {
+      el.style.transform = 'none';
+      //canvas_log2(mobile.width +':'+ mobile.height +' NORM '+ el.clientWidth +':'+ el.clientHeight);
+   } else {
       el.style.right = '0px';
 
       // scale control panel up or down to fit width of all narrow screens
@@ -4100,9 +4108,6 @@ function mobile_scale_control_panel(mobile, doScale)
       el.style.transformOrigin = 'bottom right';
       owrx.rescale_cnt2++;
       //canvas_log2(mobile.width +':'+ mobile.height +' SCALE '+ scale.toFixed(2) +' '+ el.clientWidth +':'+ el.clientHeight);
-   } else {
-      el.style.transform = 'none';
-      //canvas_log2(mobile.width +':'+ mobile.height +' NORM '+ el.clientWidth +':'+ el.clientHeight);
    }
 }
 
@@ -6362,7 +6367,7 @@ function freqset_update_ui(from)
 	vfo_update();
 	
 	// don't add to freq memory while tuning across scale except for final position
-	if (kiwi.fmem_auto_save && from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
+	if (kiwi.fmem_auto_save && !owrx.no_fmem_update && from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
       //console.log('>>> freq_memory_add freq='+ freq_displayed_kHz_str_with_freq_offset);
       freq_memory_add(freq_displayed_kHz_str_with_freq_offset);
 	}
@@ -7158,7 +7163,11 @@ function freq_memory_menu_item_cb(idx, x, cb_param, ev)
 function freq_memory_recall(idx)
 {
    var f_m = freq_memory_at(Math.min(9, idx));
-   if (f_m) ext_tune(f_m.freq - kiwi.freq_offset_kHz, f_m.mode, ext_zoom.CUR);
+   if (f_m) {
+      owrx.no_fmem_update = true;   // don't re-push fmem when just simply recalling from it
+      ext_tune(f_m.freq - kiwi.freq_offset_kHz, f_m.mode, ext_zoom.CUR);
+      owrx.no_fmem_update = false;
+   }
 }
 
 function freq_memory_help()

@@ -816,7 +816,7 @@ static void git_commits(void *param)
 
 // routine that processes the output of the registration wget command
 
-#define RETRYTIME_KIWISDR_COM		60
+#define RETRYTIME_KIWISDR_COM		45
 //#define RETRYTIME_KIWISDR_COM		1
 #define RETRYTIME_KIWISDR_COM_FAIL  3
 

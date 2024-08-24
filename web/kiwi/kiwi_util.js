@@ -650,6 +650,11 @@ function _10Hz(f) {
    }
 }
 
+function _10Hz_round(f) {
+   var step = 10;
+   return Math.round(f/step) * step;
+}
+
 // like setTimeout() except also calls once immediately
 function kiwi_setTimeout(func, msec, param)
 {
@@ -817,7 +822,8 @@ function canvas_log_int(s)
          } else {                      // phones
             el.style.top = '36px';     // top
             //el.style.top = '300px';    // bottom
-            el.style.right = '0';
+            //el.style.right = '0';        // right
+            el.style.left = '0';         // left
             //el.style.width = '350px';
             el.style.width = '150px';
             el.style.height = '150px';

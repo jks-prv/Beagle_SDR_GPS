@@ -1157,7 +1157,7 @@ function drm_mobile_controls_setup(mobile)
       var el = w3_el('id-ext-controls');
       console.log('$ id-ext-controls wh='+ mobile.width +','+ mobile.height +' uiw='+ el.uiWidth);
    
-      if (mobile.narrow) {
+      if (mobile.phone) {
          // scale control panel up or down to fit width of all narrow screens
          var scale = mobile.width / el.uiWidth * 0.95;
          //alert('scnW='+ mobile.width +' cpW='+ el.uiWidth +' sc='+ scale.toFixed(2));

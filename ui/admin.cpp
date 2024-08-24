@@ -459,7 +459,7 @@ void c2s_admin(void *param)
 
             if (strcmp(cmd, "SET snr_meas") == 0) {
                 if (SNR_meas_tid) {
-                    if (antsw.using_ground || antsw.using_tstorm) {
+                    if (cfg_true("ant_switch.enable") && (antsw.using_ground || antsw.using_tstorm)) {
                         send_msg(conn, SM_NO_DEBUG, "MSG snr_stats=-1,-1");
                     } else {
                         TaskWakeupFP(SNR_meas_tid, TWF_CANCEL_DEADLINE, TO_VOID_PARAM(0));

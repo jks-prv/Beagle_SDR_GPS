@@ -24,6 +24,7 @@ var kiwi = {
    test_cfg_save_seq: false,
    log_cfg_save_seq: false,
    
+   skip_small_screen_check: false,
    noLocalStorage: false,
    
    // NB: must match rx_cmd.h
@@ -181,13 +182,15 @@ var gmap;
 // see document.onreadystatechange for how this is called
 function kiwi_bodyonload(error)
 {
+   var s;
+   
 	if (error != '') {
 		kiwi_serious_error(error);
 	}
 	else
-
+	
 	if (kiwi_isSmartTV() == 'LG' && kiwi_isChrome() < 87) {
-	   var s = 'Browser: '+ navigator.userAgent +
+	   s = 'Browser: '+ navigator.userAgent +
 	      '<br>Sorry, KiwiSDR requires SmartTV Chrome version >= 87';
 		kiwi_serious_error(s);
 	} else
@@ -212,6 +215,14 @@ function kiwi_bodyonload(error)
 		
       w3int_init();
 
+      if (!kiwi.skip_small_screen_check && conn_type == 'admin' && ext_mobile_info().iPad) {
+         s = 'Admin interface not intended for small screens. <br>' +
+             'Please use a desktop browser instead. <br><br>' +
+             w3_button('w3-css-yellow', 'Continue anyway', 'kiwi_small_screen_continue_cb');
+         kiwi_serious_error(s);
+         return;
+      }
+
 		if (conn_type == 'kiwi') {
 		
 			// A slight hack. For a user connection extint.ws is set here to ws_snd so that
@@ -229,6 +240,13 @@ function kiwi_bodyonload(error)
 			extint.ws = kiwi_ws_open(conn_type, kiwi_open_ws_cb, { conn_type:conn_type });
 		}
 	}
+}
+
+function kiwi_small_screen_continue_cb()
+{
+   kiwi.skip_small_screen_check = true;
+   seriousError = false;
+   kiwi_bodyonload('');
 }
 
 function kiwi_open_ws_cb(p)

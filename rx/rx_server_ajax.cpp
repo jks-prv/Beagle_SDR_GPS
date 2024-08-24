@@ -445,7 +445,7 @@ fail:
         //printf("/snr qs=<%s>\n", mc->query);
         if (mc->query && strncmp(mc->query, "meas", 4) == 0) {
             if (isLocalIP) {
-                if (antsw.using_ground || antsw.using_tstorm) {
+                if (cfg_true("ant_switch.enable") && (antsw.using_ground || antsw.using_tstorm)) {
                     asprintf(&sb, "/snr: ERROR antenna is grounded\n");
                 } else {
                     if (SNR_meas_tid) {
