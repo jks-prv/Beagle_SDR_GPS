@@ -822,7 +822,8 @@ function canvas_log_int(s)
          } else {                      // phones
             el.style.top = '36px';     // top
             //el.style.top = '300px';    // bottom
-            el.style.right = '0';
+            //el.style.right = '0';        // right
+            el.style.left = '0';         // left
             //el.style.width = '350px';
             el.style.width = '150px';
             el.style.height = '150px';

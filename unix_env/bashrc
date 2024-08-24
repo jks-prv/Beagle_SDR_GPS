@@ -64,7 +64,7 @@ export LS_OPTIONS='--color=auto'
 # prevent gclone curl from timing out on slow Internet connections
 # see: git-scm.com/docs/git-config
 export GIT_HTTP_LOW_SPEED_LIMIT=1000
-export GIT_HTTP_LOW_SPEED_TIME=1000
+export GIT_HTTP_LOW_SPEED_TIME=1000000
 
 _our_ip="$(/sbin/ip addr list eth0 |grep 'inet ' |cut -d' ' -f6|cut -d/ -f1)"
 
@@ -100,6 +100,7 @@ alias e100="ethtool -s eth0 speed 100 duplex full"
 alias e1000="ethtool -s eth0 speed 1000 duplex full"
 alias ipa="ifconfig eth0 | grep 'eth0\|inet'"
 alias netc="networkctl status eth0"
+alias dhcp="grep dhcp -i /etc/systemd/network/eth*"
 alias mac='cat /sys/class/net/eth0/address'
 alias df="/bin/df -h"
 alias df.="/bin/df -h ."
@@ -519,19 +520,25 @@ alias pmux="${d_bb}/show-pins.pl"
 #   e.g. successfully used one to connect one BB USB port to 6-pin serial console port of another
 alias bbser="screen -h 10240 /dev/ttyUSB0 115200"
 
-# BB MMC
-# CAUTION: on the BBAI everything is on mmcblk[01]p1 (i.e. no sep /boot & / anymore)
+# MMC
+alias sdh="echo \"/media/sd_p1: msd0p1 msd1p1 cdsdp1(cdsd) usdp1(usd)\"; echo \"/media/sd_p2: msd0p2 msd1p2 cdsdp2 usdp2\""
+alias mmch=sdh
+
 alias mmc="lsblk"
 # shows UUID
 alias mmcfs="lsblk --fs"
-alias mosd0="mkdir -p /media/sd_boot; mount /dev/mmcblk0p1 /media/sd_boot"
-alias mosd1="mkdir -p /media/sd_boot; mount /dev/mmcblk1p1 /media/sd_boot"
-alias umsd="umount /media/sd_boot"
-alias cdsd="cd /media/sd_boot"
-alias mosdr0="mkdir -p /media/sd_root; mount /dev/mmcblk0p2 /media/sd_root"
-alias mosdr1="mkdir -p /media/sd_root; mount /dev/mmcblk1p2 /media/sd_root"
-alias umsdr="umount /media/sd_root"
-alias cdsdr="cd /media/sd_root"
+
+alias msd0p1="mkdir -p /media/sd_p1; mount /dev/mmcblk0p1 /media/sd_p1"
+alias msd1p1="mkdir -p /media/sd_p1; mount /dev/mmcblk1p1 /media/sd_p1"
+alias cdsdp1="cd /media/sd_p1"
+alias cdsd=cdsdp1
+alias usdp1="umount /media/sd_p1"
+alias usd=usdp1
+
+alias msd0p2="mkdir -p /media/sd_p2; mount /dev/mmcblk0p2 /media/sd_p2"
+alias msd1p2="mkdir -p /media/sd_p2; mount /dev/mmcblk1p2 /media/sd_p2"
+alias cdsdp2="cd /media/sd_p2"
+alias usdp2="umount /media/sd_p2"
 
 # KiwiSDR
 alias cdk="cd ~/kiwi.config"
