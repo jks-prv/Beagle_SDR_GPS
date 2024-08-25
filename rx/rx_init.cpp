@@ -477,7 +477,7 @@ void update_vars_from_config(bool called_at_init)
 	if (strcmp(server_url, "kiwisdr.example.com") == 0) {
 	    cfg_set_string("server_url", "");
 	    update_cfg = cfg_gdb_break(true);
-    }
+	}
     
     // not sure I want to do this yet..
     #if 0
@@ -577,6 +577,7 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_int("duc_update", 3, &update_admcfg);
     admcfg_default_int("restart_update", 0, &update_admcfg);
     admcfg_default_int("update_restart", 0, &update_admcfg);
+    admcfg_default_bool("update_major_only", false, &update_admcfg);
     admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);
     admcfg_default_string("ip_address.dns2", "8.8.8.8", &update_admcfg);
     admcfg_default_string("url_redirect", "", &update_admcfg);
