@@ -450,7 +450,7 @@ function FT8_config_html()
       var f2 = f1 +' w3-margin-T-8';
 	   for (var j=0; j < 8 && i < rx_chans; j++, i++) {
 	      var arun = w3_array_el_seq(ft8.menu_i_to_cfg_i, +cfg.ft8['autorun'+ i]);
-	      console.log('ft8.autorun'+ i +'='+ cfg.ft8['autorun'+ i] +' arun='+ arun);
+	      //console.log('ft8.autorun'+ i +'='+ cfg.ft8['autorun'+ i] +' arun='+ arun);
 	      s2 +=
 	         w3_div('',
 	            w3_select_hier(f1, '', 'freq', 'ft8.autorun'+ i, arun, ft8.autorun_u, 'ft8_autorun_select_cb'),
@@ -495,7 +495,7 @@ function ft8_autorun_public_check()
 
 function ft8_autorun_restart_cb()
 {
-   console.log('ft8_autorun_restart_cb');
+   //console.log('ft8_autorun_restart_cb');
    ft8_autorun_public_check();
    w3_hide('id-ft8-restart');
    ext_send("ADM ft8_autorun_restart");  // NB: must be sent as ADM command
@@ -503,7 +503,7 @@ function ft8_autorun_restart_cb()
 
 function ft8_autorun_select_cb(path, idx, first)
 {
-   console.log('ft8_autorun_select_cb path='+ path +' idx='+ idx +' cfg_i='+ ft8.menu_i_to_cfg_i[+idx]);
+   //console.log('ft8_autorun_select_cb path='+ path +' idx='+ idx +' cfg_i='+ ft8.menu_i_to_cfg_i[+idx]);
    admin_select_cb(path, ft8.menu_i_to_cfg_i[+idx], first);
    w3_select_value(path, +idx);
    if (first) return;

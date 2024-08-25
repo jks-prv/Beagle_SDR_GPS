@@ -437,7 +437,7 @@ function Loran_C_environment_changed(changed)
    
    var w;
    var margin = 16;
-   var nom_w = (1440 - time_display_width()) - margin*2;
+   var nom_w = (window.innerWidth - time_display_width()) - margin*2;
 	var el = w3_el('id-loran_c-data');
 	var left = (window.innerWidth - nom_w - time_display_width()) / 2;
 	w3_show_hide('loran_c-time-display', left > 0);
