@@ -1018,11 +1018,13 @@ static int kiwi_vsnprintf_int(char *buf, size_t buflen, const char *fmt, va_list
 }
 
 int _kiwi_snprintf_int(const char *buf, size_t buflen, const char *fmt, ...) {
-    va_list ap;
     int n;
+
+    va_list ap;
     va_start(ap, fmt);
     n = kiwi_vsnprintf_int((char *) buf, buflen, fmt, ap);
     va_end(ap);
+
     return n;
 }
 
@@ -1050,11 +1052,17 @@ bool kiwi_sha256_strcmp(char *str, const char *key)
 
 kstr_t *kstr_asprintf(kstr_t *ks, const char *fmt, ...)
 {
+	char *sb = NULL;
+
 	va_list ap;
 	va_start(ap, fmt);
-	char *sb;
-	vasprintf(&sb, fmt, ap);
-	ks = kstr_cat(ks, kstr_wrap(sb));
+	int n = vasprintf(&sb, fmt, ap);
+    va_end(ap);
+
+    if (n == -1)
+        printf("kstr_asprintf: out of memory?\n");
+    else
+	    ks = kstr_cat(ks, kstr_wrap(sb));
     return ks;
 }
 

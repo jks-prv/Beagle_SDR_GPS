@@ -169,12 +169,13 @@ void send_msg_buf(conn_t *c, char *s, int slen)
 
 void send_msg(conn_t *c, bool debug, const char *msg, ...)
 {
-	va_list ap;
 	char *s;
 
+	va_list ap;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
+
 	if (debug) cprintf(c, "send_msg: %p <%s>\n", c->mc, s);
 	send_msg_buf(c, s, strlen(s));
 	kiwi_asfree(s, "send_msg");
@@ -188,9 +189,9 @@ void send_msg(conn_t *c, bool debug, const char *msg, ...)
 int snd_send_msg(int rx_chan, bool debug, const char *msg, ...)
 {
     int rv = -1;
-	va_list ap;
 	char *s;
 
+	va_list ap;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
@@ -260,12 +261,13 @@ void send_msg_data2(conn_t *c, bool debug, u1_t cmd, u1_t data2, u1_t *bytes, in
 // caution: never use an mprint() here as this will result in a loop
 void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 {
-	va_list ap;
 	char *s;
 
+	va_list ap;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
+
 	size_t slen = strlen(s);
 	if (debug) printf("send_msg_mc: %d <%s>\n", slen, s);
     mg_ws_send(mc, s, slen, WEBSOCKET_OP_BINARY);
@@ -274,11 +276,11 @@ void send_msg_mc(struct mg_connection *mc, bool debug, const char *msg, ...)
 
 void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char *fmt, ...)
 {
-	va_list ap;
 	char *s;
 
 	if (cmd == NULL || fmt == NULL) return;
 	
+	va_list ap;
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
@@ -293,11 +295,11 @@ void send_msg_encoded(conn_t *conn, const char *dst, const char *cmd, const char
 // caution: never use an mprint() here as this will result in a loop
 void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *cmd, const char *fmt, ...)
 {
-	va_list ap;
 	char *s;
 
 	if (cmd == NULL || fmt == NULL) return;
 	
+	va_list ap;
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
@@ -315,9 +317,9 @@ void send_msg_mc_encoded(struct mg_connection *mc, const char *dst, const char *
 int snd_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *msg, ...)
 {
     int rv = -1;
-	va_list ap;
 	char *s;
 
+	va_list ap;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
@@ -357,11 +359,11 @@ void snd_send_msg_data(int rx_chan, bool debug, u1_t cmd, u1_t *bytes, int nbyte
 
 void input_msg_internal(conn_t *conn, const char *fmt, ...)
 {
-	va_list ap;
 	char *s;
 
 	if (conn == NULL || fmt == NULL || !conn->valid) return;
 	
+	va_list ap;
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);
@@ -413,8 +415,6 @@ static print_max_min_int_t *print_max_min_init(void **state)
 
 void print_max_min_stream_i(void **state, int flags, const char *name, int index, int nargs, ...)
 {
-	va_list ap;
-	va_start(ap, nargs);
 	print_max_min_int_t *p = print_max_min_init(state);
 	bool update = false;
 
@@ -425,6 +425,8 @@ void print_max_min_stream_i(void **state, int flags, const char *name, int index
 		p->min_idx = p->max_idx = -1;
 	}
 
+	va_list ap;
+	va_start(ap, nargs);
 	for (int i=0; i < nargs; i++) {
 		int arg_i = va_arg(ap, int);
 		if (arg_i > p->max_i) {
@@ -438,18 +440,15 @@ void print_max_min_stream_i(void **state, int flags, const char *name, int index
 			update = true;
 		}
 	}
+	va_end(ap);
 	
 	if ((flags & P_MAX_MIN_DUMP) || ((flags & P_MAX_MIN_RANGE) && update)) {
 		printf("min/max %s: %d(%d)..%d(%d)\n", name, p->min_i, p->min_idx, p->max_i, p->max_idx);
 	}
-
-	va_end(ap);
 }
 
 void print_max_min_stream_f(void **state, int flags, const char *name, int index, int nargs, ...)
 {
-	va_list ap;
-	va_start(ap, nargs);
 	print_max_min_int_t *p = print_max_min_init(state);
 	bool dump = (flags & P_MAX_MIN_DUMP);
 	bool update = false;
@@ -461,6 +460,8 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 		p->min_idx = p->max_idx = -1;
 	}
 
+	va_list ap;
+	va_start(ap, nargs);
 	if (!dump) for (int i=0; i < nargs; i++) {
 		double arg_f = va_arg(ap, double);
 		if (arg_f > p->max_f) {
@@ -474,13 +475,12 @@ void print_max_min_stream_f(void **state, int flags, const char *name, int index
 			update = true;
 		}
 	}
+	va_end(ap);
 	
 	if (dump || ((flags & P_MAX_MIN_RANGE) && update)) {
 		//printf("min/max %s: %e(%d)..%e(%d)\n", name, p->min_f, p->min_idx, p->max_f, p->max_idx);
 		printf("min/max %s: %f(%d)..%f(%d)\n", name, p->min_f, p->min_idx, p->max_f, p->max_idx);
 	}
-
-	va_end(ap);
 }
 
 void print_max_min_u1(const char *name, u1_t *data, int len)

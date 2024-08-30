@@ -201,14 +201,15 @@ void ext_register(ext_t *ext)
 
 int ext_send_msg(int rx_chan, bool debug, const char *msg, ...)
 {
-	va_list ap;
 	char *s;
-
 	conn_t *conn = ext_users[rx_chan].conn_ext;
 	if (!conn) return -1;
+
+	va_list ap;
 	va_start(ap, msg);
 	vasprintf(&s, msg, ap);
 	va_end(ap);
+
 	if (debug) printf("ext_send_msg: RX%d(%p) <%s>\n", rx_chan, conn, s);
 	send_msg_buf(conn, s, strlen(s));
 	kiwi_asfree(s);
@@ -235,13 +236,12 @@ int ext_send_msg_data2(int rx_chan, bool debug, u1_t cmd, u1_t data2, u1_t *byte
 
 int ext_send_msg_encoded(int rx_chan, bool debug, const char *dst, const char *cmd, const char *fmt, ...)
 {
-	va_list ap;
 	char *s;
-
 	if (cmd == NULL || fmt == NULL) return 0;
 	conn_t *conn = ext_users[rx_chan].conn_ext;
 	if (!conn) return -1;
 	
+	va_list ap;
 	va_start(ap, fmt);
 	vasprintf(&s, fmt, ap);
 	va_end(ap);

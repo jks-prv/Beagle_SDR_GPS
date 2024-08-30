@@ -353,8 +353,8 @@ void ev(int cmd, int event, int param, const char *s, const char *s2)
 char *evprintf(const char *fmt, ...)
 {
 	char *ret;
-	va_list ap;
-	
+
+	va_list ap;	
 	va_start(ap, fmt);
 	vasprintf(&ret, fmt, ap);
 	va_end(ap);
