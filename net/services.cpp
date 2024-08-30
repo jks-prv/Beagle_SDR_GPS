@@ -113,12 +113,12 @@ static void get_TZ(void *param)
 		#define TIMEZONE_DB_COM
 		#ifdef TIMEZONE_DB_COM
             #define TZ_SERVER "timezonedb.com"
-            asprintf(&cmd_p, "curl -sk --ipv4 \"https://api.timezonedb.com/v2.1/get-time-zone?key=HIHUSGTXYI55&format=json&by=position&lat=%f&lng=%f\" 2>&1",
+            asprintf(&cmd_p, "curl -Lsk --ipv4 \"https://api.timezonedb.com/v2.1/get-time-zone?key=HIHUSGTXYI55&format=json&by=position&lat=%f&lng=%f\" 2>&1",
                 lat, lon);
         #else
             #define TZ_SERVER "googleapis.com"
             time_t utc_sec = utc_time();
-            asprintf(&cmd_p, "curl -s --ipv4 \"https://maps.googleapis.com/maps/api/timezone/json?key=&location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
+            asprintf(&cmd_p, "curl -Ls --ipv4 \"https://maps.googleapis.com/maps/api/timezone/json?key=&location=%f,%f&timestamp=%lu&sensor=false\" 2>&1",
                 lat, lon, utc_sec);
         #endif
 
@@ -226,7 +226,7 @@ void my_kiwi_register(bool reg, int root_pwd_unset, int debian_pwd_default)
     // proxy always uses port 8073
     int server_port = (dom_sel == DOM_SEL_REV)? 8073 : net.port_ext;
 
-    asprintf(&cmd_p, "curl --silent --show-error --ipv4 --connect-timeout 5 "
+    asprintf(&cmd_p, "curl -Ls --show-error --ipv4 --connect-timeout 5 "
         "\"%s/php/my_kiwi.php?auth=308bb2580afb041e0514cd0d4f21919c&"
         "url=http://%s:%d&mac=%s&add_nat=%d&"
         "pub=%s&pvt=%s&"
@@ -457,7 +457,7 @@ static bool ipinfo_json(int https, const char *url, const char *path, const char
 	    }
 	#endif
 	
-    asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 5 \"http%s://%s/%s\" 2>&1", https? "s":"", url, path);
+    asprintf(&cmd_p, "curl -Ls --ipv4 --connect-timeout 5 \"http%s://%s/%s\" 2>&1", https? "s":"", url, path);
     //printf("IPINFO: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &stat);

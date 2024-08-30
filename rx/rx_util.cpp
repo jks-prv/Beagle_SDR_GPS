@@ -787,7 +787,7 @@ static void dump_info_handler(int arg)
         sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d }", gps.fixes, gps.fixes_min);
     #endif
 
-    sb = kstr_asprintf(sb, " }' > /root/kiwi.config/info.json");
+    sb = kstr_cat(sb, " }' > /root/kiwi.config/info.json");
     non_blocking_cmd_system_child("kiwi.info", kstr_sp(sb), NO_WAIT);
     kstr_free(sb);
 	sig_arm(SIGHUP, dump_info_handler);
@@ -833,7 +833,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 {
 	char *cmd_p;
 	
-    asprintf(&cmd_p, "curl -s --ipv4 \"%s\" 2>&1", geo_host_ip_s);
+    asprintf(&cmd_p, "curl -Ls --ipv4 \"%s\" 2>&1", geo_host_ip_s);
     //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches

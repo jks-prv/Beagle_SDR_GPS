@@ -1454,7 +1454,7 @@ static bool _cfg_load_json(cfg_t *cfg)
     FILE *fp;
     scallz("_cfg_load_json fopen", (fp = fopen(cfg->filename, "r")));
     n = fread(cfg->json, 1, cfg->json_buf_size, fp);
-    assert(n >= 0 && n < cfg->json_buf_size);   // n == 0 if e.g. a wget -O fails and file is zero length
+    assert(n >= 0 && n < cfg->json_buf_size);   // n == 0 if e.g. a curl/wget fails and file is zero length
     fclose(fp);
 
 	// turn into a string

@@ -267,7 +267,7 @@ bool ip_blacklist_get(bool download_diff_restart)
     char *kiwisdr_com = DNS_lookup_result("ip_blacklist_get", "kiwisdr.com", &net.ips_kiwisdr_com);
     #define BLACKLIST_FILE "ip_blacklist/ip_blacklist3.cjson"
 
-    asprintf(&cmd_p, "curl -s -f --ipv4 --connect-timeout 5 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
+    asprintf(&cmd_p, "curl -Lsf --ipv4 --connect-timeout 5 \"%s/%s\" 2>&1", kiwisdr_com, BLACKLIST_FILE);
     //printf("ip_blacklist_get: <%s>\n", cmd_p);
     
     reply = non_blocking_cmd(cmd_p, &status);
