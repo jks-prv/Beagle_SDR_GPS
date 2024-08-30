@@ -1057,6 +1057,30 @@ int dB_wire_to_dBm(int db_value)
 	return (dBm + waterfall_cal);
 }
 
+// fast, but approximate, dB = 10 * log10(x)
+//
+// log10f is exactly log2(x)/log2(10.0f)
+// This is a fast approximation to log2():
+// log2f_approx = C[0]*F*F*F + C[1]*F*F + C[2]*F + C[3] + E
+// see: openaudio.blogspot.com/2017/02/faster-log10-and-pow.html
+float dB_fast(float x)
+{
+    float log2f_approx, F;
+    if (x == 0) return -300;    // clamped to -300 dB
+    int E;
+    F = frexpf(fabsf(x), &E);
+    log2f_approx = 1.23149591368684f;
+    log2f_approx *= F;
+    log2f_approx += -4.11852516267426f;
+    log2f_approx *= F;
+    log2f_approx += 6.02197014179219f;
+    log2f_approx *= F;
+    log2f_approx += -3.13396450166353f;
+    log2f_approx += E;
+    #define LOG2OF10_TIMES10 3.010299956639812f
+    return (log2f_approx * LOG2OF10_TIMES10);
+}
+
 
 // schedule SNR measurements
 

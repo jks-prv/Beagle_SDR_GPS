@@ -43,6 +43,7 @@
 #include "coroutines.h"
 #include "misc.h"
 #include "mem.h"
+#include "rx_util.h"
 #include "uhsdr_cw_decoder.h"
 
 #include <limits.h>
@@ -377,7 +378,7 @@ void CwDecode_Init(int rx_chan, int wpm, int training_interval)
         printf("CW WPM FIXED INIT %.0f|%.1f spdcalc %.3f MSPW %.3f pulse %.1f dot %.1f dash %.1f space %.1f sym %.1f wsc %d threshold %s %d (%.1f dB)\n",
             cw->speed_wpm_avg, speed_wpm_raw, spdcalc, speed_ms_per_word,
             cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg, cw->wsc,
-            cw->isAutoThreshold? "AUTO" : "FIXED", cw->threshold_linear, 10.0 * log10f((float) cw->threshold_linear + 1e-30));
+            cw->isAutoThreshold? "AUTO" : "FIXED", cw->threshold_linear, dB_fast((float) cw->threshold_linear));
 
 	    cw->b.track = FALSE;
 		cw->b.initialized = TRUE;   // Indicate we're done and return
@@ -519,9 +520,9 @@ static void CW_Decode_exe(cw_decoder_t *cw)
 	static int slowdown;
 	if (slowdown++ == 2) {
 	    float sig = cw->isAutoThreshold? fabsf(siglevel): siglevel;
-	    float dB = 10.0 * log10f(sig + 1e-30);
+	    float dB = dB_fast(sig);
 	    dB = CLAMP(dB, 0, 100.0);
-	    float threshold_log = 10.0 * log10f(cw->threshold_linear);
+	    float threshold_log = dB_fast(cw->threshold_linear);
         ext_send_msg(cw->rx_chan, false, "EXT cw_plot=%.2f,%d,%.2f", dB, siglevel >= 0, threshold_log);
         //real_printf("%.0f|%.0f ", sig, dB); fflush(stdout);
         slowdown = 0;
@@ -590,7 +591,7 @@ static void CW_Decode_exe(cw_decoder_t *cw)
                     cw->b.track? "TRACK" : "FIXED",
                     cw->speed_wpm_avg, speed_wpm_raw, spdcalc, speed_ms_per_word,
                     cw->times.pulse_avg, cw->times.dot_avg, cw->times.dash_avg, cw->times.cwspace_avg, cw->times.symspace_avg,
-                    cw->isAutoThreshold? "AUTO" : "FIXED", cw->threshold_linear, 10.0 * log10f((float) cw->threshold_linear + 1e-30),
+                    cw->isAutoThreshold? "AUTO" : "FIXED", cw->threshold_linear, dB_fast((float) cw->threshold_linear),
                     cw->old_siglevel, cw->CW_noise, CW_clipped, cw->CW_env, cw->CW_mag
                 );
             }
@@ -1036,7 +1037,7 @@ void CwDecode_threshold(int rx_chan, int type, int param)
         printf("CW (type=0) isAutoThreshold=%d\n", param);
     } else {
         cw->threshold_linear = param;
-        printf("CW (type=1) threshold_linear=%d (%.1f dB)\n", param, 10.0 * log10f((float) param + 1e-30F));
+        printf("CW (type=1) threshold_linear=%d (%.1f dB)\n", param, dB_fast((float) param));
     }
 }
 

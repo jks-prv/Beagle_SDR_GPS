@@ -7,6 +7,7 @@
 #include "misc.h"
 #include "cuteSDR.h"
 #include "rx_sound.h"
+#include "rx_util.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -156,7 +157,7 @@ bool fft_data(int rx_chan, int instance, int flags, int ratio, int nsamps, TYPEC
 	
 	for (i=0; i < INTEG_WIDTH; i++) {
 		pwr = e->pwr[bin][i];
-		dB = 10.0 * log10f(pwr * scale + (float) 1e-30);
+		dB = dB_fast(pwr * scale);
 		//m_dB[i] = dB;
 		if (dB > 0) dB = 0;
 		if (dB < -200.0) dB = -200.0;

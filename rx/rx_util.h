@@ -122,3 +122,4 @@ void debug_init();
 void dump_init();
 void rx_send_config(int rx_chan);
 void on_GPS_solution();
+float dB_fast(float x);
