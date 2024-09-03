@@ -1403,6 +1403,7 @@ install: make_prereq
 	    make make_install_binary
     else
 	    make make_install
+	    make make_install_files
     endif
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
