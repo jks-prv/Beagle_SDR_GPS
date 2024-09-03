@@ -529,7 +529,7 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
-PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(PLAT).bin
+PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEB)_$(PLAT).bin
 HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
 .PHONY: make_binary
@@ -1433,7 +1433,7 @@ else
 endif
 endif
 
-PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(PLAT).bin
+PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(DEB)_$(PLAT).bin
 HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 
 .PHONY: make_install_binary
@@ -1456,6 +1456,7 @@ make_install_binary:
 	            @echo "================"
 	            @# don't use MAKE_ARGS here!
 	            @make make_install
+	            @make make_install_files
 	            @echo "================"
             endif
         else
