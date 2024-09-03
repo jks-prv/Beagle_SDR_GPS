@@ -4,7 +4,7 @@ VERSION_MIN = 699
 # Caution: software update mechanism depends on format of first two lines in this file
 
 # use new binary distro mechanism
-BINARY_DISTRO := true
+#BINARY_DISTRO := true
 
 #
 # Makefile for KiwiSDR project
