@@ -11,14 +11,15 @@
 // "lsb" as the second element of the frequency array selects LSB mode for all entries.
 //
 // Updates:
-//  4 mar 22 Bob W  FEMA, US Govt updates.
-// 24 feb 22 Bob W  Added many.
-// 28 jan 22 Bob W  Added US DEA.
-// 18 sep 21 Ben    Added LSB nets, and various other nets (DIPL, MIL, RedCross, USCG). 
-//                  Note: frequencies aggregated from various sources and could possibly be incorrect,incomplete or obsolete.
-// 15 sep 21 Ben    Duplicates removed, additional scan files added, some re-arrangements, countries iso 3166 alpha-2 coded.
-//                  After feedback from users consider deletions or additions.
-// 13 sep 21 jks    Base version.
+//  9 sep 24 Mark M0HGK Added UN MINURSO.
+//  4 mar 22 Bob W      FEMA, US Govt updates.
+// 24 feb 22 Bob W      Added many.
+// 28 jan 22 Bob W      Added US DEA.
+// 18 sep 21 Ben        Added LSB nets, and various other nets (DIPL, MIL, RedCross, USCG). 
+//                      Note: frequencies aggregated from various sources and could possibly be incorrect,incomplete or obsolete.
+// 15 sep 21 Ben        Duplicates removed, additional scan files added, some re-arrangements, countries iso 3166 alpha-2 coded.
+//                      After feedback from users consider deletions or additions.
+// 13 sep 21 jks        Base version.
 //
 
     "Amateur": {
@@ -80,6 +81,7 @@
         "US Army_Nat Guard": [0, 3032, 4924.5, 5847, 6882.6, 7625, 7720, 8047, 8098.5, 9293.5, 9895, 10015, 10765, 10816.5, 11694.5, 11697.5, 12087, 13568, 14653, 16338.5, 17458.5, 17501.5, 19233.5, 20906, 26697],
 
 // Ben email 9/12/21 and updates
+// UN MINURSO: Mark M0HGK, email 9/6/24
         "US HFGCS": [0, 3137, 4721, 5708, 6721, 9025, 11226, 13215, 15043, 18003, 23337],
         "USCG":     [0, 3053, 4298, 4730, 5732, 5909.5, 6709, 7527,8912, 9834, 10242, 11196, 11494, 12222, 13221, 13312, 13907, 14582, 15082,15867, 18594, 20890],
         "BRAZ NV":  [0, 6510, 6828, 6992, 7530, 8624, 8654, 9253, 11010, 12431, 12725, 14780, 15932, 16607],
@@ -91,7 +93,8 @@
         "NL MIL":   [0, 4488.5, 4981, 5308.5, 5389, 5485, 5798.5, 7579, 10175],
         "TWN AF":   [0, "lsb", 4632, 6755, 7478, 7586, 8013, 8440, 8561, 8703, 8875, 9187, 9248, 9251, 9366, 14732.5],
         "TWN NV":   [0, "lsb", 5433, 6659, 6747, 7137,7216, 7508, 7841, 8173, 8251, 9169, 9292, 10180, 11218, 12026, 12288],
-        "UK RAF":   [0, 4722, 6733, 9019, 4706, 6691, 6706, 9019, 9021, 9022, 11217]
+        "UK RAF":   [0, 4722, 6733, 9019, 4706, 6691, 6706, 9019, 9021, 9022, 11217],
+        "UN_MINURSO": [0, 3338, 5835, 5852, 6678, 7616]
     },
 
 
