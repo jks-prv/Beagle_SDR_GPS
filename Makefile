@@ -529,7 +529,7 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
-PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEB)_$(PLAT).bin
+PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
 .PHONY: make_binary
@@ -825,6 +825,7 @@ make_vars: check_detect
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo DEBIAN_VERSION = $(DEBIAN_VERSION)
+	@echo DEBMM = $(DEBMM)
 	@echo DEBIAN_10_AND_LATER = $(DEBIAN_10_AND_LATER)
 	@echo DEBIAN_11_AND_LATER = $(DEBIAN_11_AND_LATER)
 	@echo DEBIAN_12_AND_LATER = $(DEBIAN_12_AND_LATER)
@@ -1434,7 +1435,7 @@ else
 endif
 endif
 
-PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(DEB)_$(PLAT).bin
+PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 
 .PHONY: make_install_binary
@@ -1938,7 +1939,7 @@ clone:
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
 BIN_PLATFORMS := BBAI_64 BBAI BBG_BBB
-BIN_EXISTS := $(foreach plat,$(BIN_PLATFORMS),$(shell test -f bin/kiwi_$(VER)_$(plat).bin && echo true || echo false))
+BIN_EXISTS := $(foreach plat,$(BIN_PLATFORMS),$(shell test -f bin/kiwi_$(VER)_$(DEBMM)_$(plat).bin && echo true || echo false))
 
     # used by scgit alias
     copy_to_git:

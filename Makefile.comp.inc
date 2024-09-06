@@ -60,6 +60,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
         BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
         DEBIAN_VERSION := $(shell cat $(KIWI_XC_REMOTE_FS)/etc/debian_version | sed "s/\([0-9]*\)\..*/\1/")
+        DEBIAN_VERSION_MIN := $(shell cat /etc/debian_version | sed "s/.*\.\([0-9]*\)/\1/")
         DEBIAN_10_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 10 ] && echo true)
         DEBIAN_11_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 11 ] && echo true)
         DEBIAN_12_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 12 ] && echo true)
@@ -123,6 +124,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     BBG_BBB := $(and $(if $(BBAI_64),,true), $(if $(BBAI),,true), $(if $(RPI),,true))
 
     DEBIAN_VERSION := $(shell cat /etc/debian_version | sed "s/\([0-9]*\)\..*/\1/")
+    DEBIAN_VERSION_MIN := $(shell cat /etc/debian_version | sed "s/.*\.\([0-9]*\)/\1/")
     DEBIAN_10_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 10 ] && echo true)
     DEBIAN_11_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 11 ] && echo true)
     DEBIAN_12_AND_LATER := $(shell [ $(DEBIAN_VERSION) -ge 12 ] && echo true)
@@ -242,6 +244,8 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     else
         BAD_DEB_DETECT := true
     endif
+    
+    DEBMM := D$(DEBIAN_VERSION).$(DEBIAN_VERSION_MIN)
 endif
 
 
