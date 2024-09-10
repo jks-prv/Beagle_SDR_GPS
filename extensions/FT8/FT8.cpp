@@ -77,6 +77,7 @@ static ft8_conf2_t ft8_conf2;
 
 static int ft8_arun_band[MAX_ARUN_INST];
 static int ft8_arun_preempt[MAX_ARUN_INST];
+static bool ft8_arun_seen[MAX_ARUN_INST];
 static internal_conn_t iconn[MAX_ARUN_INST];
 
 static void ft8_file_data(int rx_chan, int chan, int nsamps, TYPEMONO16 *samps, int freqHz)
@@ -376,8 +377,11 @@ static void ft8_autorun(int instance, bool initial)
     bool ft4 = (isFT4[band] != 0);
 
 	if (!rx_freq_inRange(dial_freq_kHz)) {
-	    printf("FT%d autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
-	        ft4? 4:8, band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+	    if (!ft8_arun_seen[instance]) {
+            printf("FT%d autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+                ft4? 4:8, band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+	        ft8_arun_seen[instance] = true;
+	    }
 	    return;
 	}
 
@@ -488,6 +492,7 @@ void ft8_autorun_restart()
             }
         }
         memset(iconn, 0, sizeof(iconn));
+        memset(ft8_arun_seen, 0, sizeof(ft8_arun_seen));
         
         // bring ft8_arun_band[] and ft8_arun_preempt[] up-to-date
         ft8_update_vars_from_config(true);

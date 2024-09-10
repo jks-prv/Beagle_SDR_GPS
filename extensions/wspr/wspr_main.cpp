@@ -61,6 +61,7 @@ wspr_conf_t wspr_c;
 
 static int wspr_arun_band[MAX_ARUN_INST];
 static int wspr_arun_preempt[MAX_ARUN_INST];
+static bool wspr_arun_seen[MAX_ARUN_INST];
 static internal_conn_t iconn[MAX_ARUN_INST];
 
 // assigned constants
@@ -1052,8 +1053,11 @@ void wspr_autorun(int instance, bool initial)
 	double cfo = roundf((center_freq_kHz - floorf(center_freq_kHz)) * 1e3);
 	
 	if (!rx_freq_inRange(dial_freq_kHz)) {
-	    //printf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
-	    //    band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+	    if (!wspr_arun_seen[instance]) {
+            printf("WSPR autorun: ERROR band=%d dial_freq_kHz %.2f is outside rx range %.2f - %.2f\n",
+                band, dial_freq_kHz, freq.offset_kHz, freq.offmax_kHz);
+	        wspr_arun_seen[instance] = true;
+	    }
 	    return;
 	}
 
@@ -1187,6 +1191,7 @@ void wspr_autorun_restart()
             }
         }
         memset(iconn, 0, sizeof(iconn));
+        memset(wspr_arun_seen, 0, sizeof(wspr_arun_seen));
 
         // bring wspr_arun_band[] and wspr_arun_preempt[] up-to-date
         wspr_update_vars_from_config(true);
