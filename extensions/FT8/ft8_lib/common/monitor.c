@@ -141,6 +141,7 @@ void monitor_free(monitor_t* me)
     #else
         fftwf_free(me->timedata);
         fftwf_free(me->freqdata);
+        fftwf_destroy_plan(me->fft_plan);
     #endif
     
     memset(me, 0, sizeof(*me));
