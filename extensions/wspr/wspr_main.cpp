@@ -33,6 +33,7 @@
 #include "rx_util.h"
 #include "web.h"
 #include "non_block.h"
+#include "shmem.h"
 #include "coroutines.h"
 #include "wspr.h"
 
@@ -432,16 +433,21 @@ void wspr_send_decode(wspr_t *w, int seq)
     kiwi_asfree(W_s);
 }
 
-// Pass result json back to main process via shmem w->spot_log
+// Pass result json back to main process via shmem->status_u4
 // since _upload_task runs in context of child_task()'s child process.
-// This presumes the response from wsprnet.org is < N_SPOT_LOG.
 static int _upload_task(void *param)
 {
 	nbcmd_args_t *args = (nbcmd_args_t *) param;
 	int rx_chan = args->func_param;
     wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
 	char *sp = kstr_sp(args->kstr);
-    kiwi_strncpy(w->spot_log, sp, N_SPOT_LOG);
+    sp = strstr(sp, "<body>\n"); sp += 7 + SPACE_FOR_NULL;
+    char *eol = strchr(sp, '\n') + 1; *eol = '\0';
+    int added = 0, total = 0;
+    int n = sscanf(sp, "%d out of %d", &added, &total);
+    real_printf("n=%d added=%d total=%d\n", n, added, total);
+    shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][0] = added;
+    shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][1] = total;
     return 0;
 }
 
@@ -546,14 +552,11 @@ void WSPR_Deco(void *param)
                     wspr_printf("WSPR UPLOAD RX%d %d/%d %s\n", w->rx_chan, i+1, w->uniques, cmd);
                 #else
                     if (wspr_c.spot_log) {
-                        int status = non_blocking_cmd_func_forall("kiwi.wsprnet.org", cmd, _upload_task, w->rx_chan, POLL_MSEC(250));
+                        non_blocking_cmd_func_forall("kiwi.wsprnet.org", cmd, _upload_task, w->rx_chan, POLL_MSEC(250));
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
-                        int n, added, total;
-                        n = sscanf(w->spot_log, "%*s%*s%d out of %d", &added, &total);
-                        if (n == 2)
-                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
-                        else
-                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%s\"\n", w->iwbp? "IWBP" : "WSPR", w->spot_log);
+                        int added = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][0];
+                        int total = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][1];
+                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
                     } else {
                         non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }
@@ -573,14 +576,11 @@ void WSPR_Deco(void *param)
                         dp->hour, dp->min, dp->snr, dp->dt_print, (int) dp->drift1, dp->freq_print, dp->call, dp->grid, dp->pwr,
                         wspr_c.spot_log? "" : " >/dev/null 2>&1");
                     if (wspr_c.spot_log) {
-                        int status = non_blocking_cmd_func_forall("kiwi.wsprnet.org", cmd, _upload_task, w->rx_chan, POLL_MSEC(250));
+                        non_blocking_cmd_func_forall("kiwi.wsprnet.org", cmd, _upload_task, w->rx_chan, POLL_MSEC(250));
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
-                        int n, added, total;
-                        n = sscanf(w->spot_log, "%*s%*s%d out of %d", &added, &total);
-                        if (n == 2)
-                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
-                        else
-                            rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%s\"\n", w->iwbp? "IWBP" : "WSPR", w->spot_log);
+                        int added = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][0];
+                        int total = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][1];
+                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
                     } else {
                         non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }

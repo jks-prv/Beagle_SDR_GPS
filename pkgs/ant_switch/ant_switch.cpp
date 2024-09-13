@@ -65,8 +65,8 @@ static const int poll_msec = 100;
 static char cmd_q[N_CMD_Q][L_CMD_Q];
 static int q_wr, q_rd;
 
-#define ANTSW_SHMEM_STATUS shmem->status_u4[N_SHMEM_ST_ANT_SW][0]
-#define ANTSW_SHMEM_SEQ    shmem->status_u4[N_SHMEM_ST_SEQ][0]
+#define ANTSW_SHMEM_STATUS shmem->status_u4[N_SHMEM_ST_ANT_SW][RX_CHAN0][0]
+#define ANTSW_SHMEM_SEQ    shmem->status_u4[N_SHMEM_ST_ANT_SW][RX_CHAN0][1]
 #define ANTSW_SHMEM_ANTS   shmem->status_str_small
 
 #define ANTSW_NO_OFFSET 0

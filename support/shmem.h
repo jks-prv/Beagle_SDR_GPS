@@ -120,8 +120,8 @@ typedef struct {
     u4_t rv_u4_t[MAX_RX_CHANS];
     
     #define N_SHMEM_ST_ANT_SW 0
-    #define N_SHMEM_ST_SEQ 1
-    #define N_SHMEM_STATUS 4
+    #define N_SHMEM_ST_WSPR 1
+    #define N_SHMEM_STATUS 2
     
     #define SHMEM_STATUS_IDLE 0
     #define SHMEM_STATUS_START 1
@@ -129,7 +129,7 @@ typedef struct {
     #define SHMEM_STATUS_DONE 3
     #define SHMEM_STATUS_ERROR 4
     
-    u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS];
+    u4_t status_u4[N_SHMEM_STATUS][MAX_RX_CHANS][2];
     double status_f[N_SHMEM_STATUS][MAX_RX_CHANS];
     
     // users: ant_switch
