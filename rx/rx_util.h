@@ -45,7 +45,7 @@ typedef struct {
 extern rx_util_t rx_util;
 
 typedef struct {
-    u4_t   f_Hz,  baseband_Hz,  offset_Hz;
+    u64_t  f_Hz,  baseband_Hz,  offset_Hz;
     double f_kHz, baseband_kHz, offset_kHz, offmax_kHz;
     bool isOffset;
 } freq_t;

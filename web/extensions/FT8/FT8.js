@@ -1,4 +1,4 @@
-// Copyright (c) 2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2024 John Seamons, ZL4VO/KF6VO
 
 var ft8 = {
    ext_name: 'FT8',     // NB: must match FT8.cpp:ft8_ext.name
@@ -23,14 +23,15 @@ var ft8 = {
    },
 
    freq_xvtr_s: {
-      'FT8': [ '40680', '50313', '50323', '70154', '70190', '144174', '222065','432174', '1296174' ],
+      'FT8': [ '40680', '50313', '50323', '70154', '70190', '144174', '222065','432174', '1296174', '10489540' ],
       'FT4': [ '50318', '144150' ]
    },
 
    autorun_u: {
           0: [ 'regular use' ],  // NB: using a numeric key (zero) suppresses the disabled menu entry
       'FT8': [ '1840', '3573', '5357', '7074', '10136', '14074', '18100', '21074', '24915', '28074',
-               '40680', '50313', '50323', '70154', '70190', '144174', '222065','432174', '1296174'
+               '40680', '50313', '50323', '70154', '70190', '144174', '222065','432174',
+               '1296174', '10489540'
              ],
       'FT4': [ '3575.5', '7047.5', '10140', '14080', '18104', '21140', '24919', '28180',
                '50318', '144150'
@@ -42,6 +43,9 @@ var ft8 = {
    menu_i_to_cfg_i: [
       0,    //  0 regular use
       
+   // +-- cfg value (no renumbering or reuse!)
+   // |         +-- menu seq value (use this in FT8.cpp:ft8_autorun_dial)
+   // |         |
       -1,   //  1 FT8 label
       1,    //  2 160m
       2,    //  2 80m
@@ -60,22 +64,23 @@ var ft8 = {
       22,   // 14 4m
       23,   // 15 4m
       24,   // 16 2m
-      25,   // 17 220
-      26,   // 18 440
-      27,   // 19 1296
+      25,   // 17 220 1.25m
+      26,   // 18 440  70cm
+      27,   // 19 1296 23cm
+      30,   // 20 10G   3cm QO-100
       
-      -1,   // 20 FT4 label
-      11,   // 21 80m
-      12,   // 22 40m
-      13,   // 23 30m
-      14,   // 24 20m
-      15,   // 25 17m
-      16,   // 26 15m
-      17,   // 27 12m
-      18,   // 28 10m
+      -1,   // 21 FT4 label
+      11,   // 22 80m
+      12,   // 23 40m
+      13,   // 24 30m
+      14,   // 25 20m
+      15,   // 26 17m
+      16,   // 27 15m
+      17,   // 28 12m
+      18,   // 29 10m
       
-      28,   // 29 6m
-      29,   // 30 2m
+      28,   // 30 6m
+      29,   // 31 2m
    ],
 
    PREEMPT_NO: 0,
@@ -230,7 +235,7 @@ function ft8_controls_setup()
 					w3_div('', 'From <b><a href="https://github.com/kgoba/ft8_lib/tree/update_to_0_2" target="_blank">ft8_lib</a></b> Karlis Goba &copy; 2018'), 45
 				),
 				w3_div('id-ft8-err w3-margin-T-10 w3-padding-small w3-css-yellow w3-width-fit w3-hide'),
-				w3_inline('id-ft8-container w3-margin-T-6/w3-margin-between-16',
+				w3_inline('id-ft8-container w3-margin-T-6/w3-margin-between-8',
 
                w3_div('',
                   w3_inline('/w3-margin-between-16',

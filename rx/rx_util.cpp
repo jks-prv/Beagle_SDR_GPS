@@ -74,8 +74,8 @@ void rx_set_freq_offset_kHz(double foff_kHz)
     freq.isOffset = (foff_kHz != 0);
     freq.offset_kHz = foff_kHz;
     freq.offmax_kHz = foff_kHz + ui_srate_kHz;
-    freq.offset_Hz = (u4_t) (foff_kHz * 1e3);
-    printf("FOFF foff_kHz=%.2f\n", foff_kHz);
+    freq.offset_Hz = (u64_t) (foff_kHz * 1e3);
+    printf("FOFF foff_kHz=%.2f offset_Hz=%lld\n", foff_kHz, freq.offset_Hz);
 }
 
 bool rx_freq_inRange(double freq_kHz)

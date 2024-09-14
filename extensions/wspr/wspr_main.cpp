@@ -25,6 +25,8 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+// Copyright (c) 2024 John Seamons, ZL4VO/KF6VO
+
 #include "types.h"
 #include "config.h"
 #include "mem.h"
@@ -75,13 +77,16 @@ static float window[NFFT];
 #define AUTORUN_BFO 750
 #define AUTORUN_FILTER_BW 300
 
-// order matches wspr.autorun_u in wspr.js
+// order matches "cfg value order" wspr.js::wspr.menu_i_to_cfg_i in wspr.js (NOT "menu order" wspr.autorun_u)
 // only add new entries to the end so as not to disturb existing values stored in config
 // WSPR_BAND_IWBP entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
 #define WSPR_BAND_IWBP 9999
 static double wspr_cfs[] = {
-    137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1,
-    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 6781.5, 13555.4, WSPR_BAND_IWBP, 40681.5
+    137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1,     // 1-10
+    18106.1, 21096.1, 24926.1, 28126.1,                 // 11-14
+    50294.5, 70092.5, 144490.5, 432301.5, 1296501.5,    // 15-19
+    6781.5, 13555.4, WSPR_BAND_IWBP,                    // 20-22
+    40681.5, 10489569.5                                 // 23-24
 };
 
 // freqs on github.com/HB9VQQ/WSPRBeacon are cf - 1.5 kHz BFO (dial frequencies)
@@ -441,11 +446,10 @@ static int _upload_task(void *param)
 	int rx_chan = args->func_param;
     wspr_t *w = &WSPR_SHMEM->wspr[rx_chan];
 	char *sp = kstr_sp(args->kstr);
-    sp = strstr(sp, "<body>\n"); sp += 7 + SPACE_FOR_NULL;
-    char *eol = strchr(sp, '\n') + 1; *eol = '\0';
+    sp = strstr(sp, "<body>"); sp += 6 + SPACE_FOR_NL + SPACE_FOR_NULL;
+    char *eol = strchr(sp, '\n'); *eol = '\0';
     int added = 0, total = 0;
-    int n = sscanf(sp, "%d out of %d", &added, &total);
-    real_printf("n=%d added=%d total=%d\n", n, added, total);
+    sscanf(sp, " %d out of %d", &added, &total);
     shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][0] = added;
     shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][1] = total;
     return 0;
@@ -556,7 +560,7 @@ void WSPR_Deco(void *param)
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
                         int added = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][0];
                         int total = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][1];
-                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\" [%s]\n", w->iwbp? "IWBP" : "WSPR", added, total, dp->call);
                     } else {
                         non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }
@@ -580,7 +584,7 @@ void WSPR_Deco(void *param)
                         rcprintf(w->rx_chan, "%s UPLOAD: %s\n", w->iwbp? "IWBP" : "WSPR", cmd);
                         int added = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][0];
                         int total = shmem->status_u4[N_SHMEM_ST_WSPR][rx_chan][1];
-                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\"\n", w->iwbp? "IWBP" : "WSPR", added, total);
+                        rcprintf(w->rx_chan, "%s UPLOAD: wsprnet.org said: \"%d out of %d spot(s) added\" [%s]\n", w->iwbp? "IWBP" : "WSPR", added, total, dp->call);
                     } else {
                         non_blocking_cmd_system_child("kiwi.wsprnet.org", cmd, NO_WAIT);
                     }

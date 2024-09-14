@@ -313,7 +313,7 @@ typedef struct {
 
 // configuration
 typedef struct {
-    u4_t freq_offset_Hz;
+    u64_t freq_offset_Hz;
     bool arun_restart_offset;
 
     int num_autorun;

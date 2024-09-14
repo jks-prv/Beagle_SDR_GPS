@@ -40,7 +40,7 @@ typedef struct {
 static digi_t digi[MAX_RX_CHANS];
 
 typedef struct {
-    u4_t freq_offset_Hz;
+    u64_t freq_offset_Hz;
     
     int test;
     s2_t *s2p_start, *s2p_end;

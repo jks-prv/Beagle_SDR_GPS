@@ -1,6 +1,6 @@
 // KiwiSDR data demodulator UI
 //
-// Copyright (c) 2014 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2024 John Seamons, ZL4VO/KF6VO
 
 // TODO
 // sanity check upload data
@@ -32,11 +32,13 @@ var wspr = {
    SYNC: true,
    NO_SYNC: false,
    
-   // order matches menu instantiation order and autorun wspr_main.cpp:wspr_cfs[]
-   // see: wsprnet.org/drupal/node/7352
+   // Order matches menu instantiation order and autorun wspr_main.cpp:wspr_cfs[]
+   // See: wsprnet.org/drupal/node/7352
+   // These are all passband center freqs with an offset of 1.5 kHz
+   // Later, we compute our actual dial freq using the current BFO value (default 750 Hz).
    // dial freq = cf - bfo, cf aka "tx freq"
-   // new entries can only be added at end due to limitations with autorun's wspr.autorun_u stored config value
-   // 9999 entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check
+   // New entries can only be added at end due to limitations with autorun's wspr.autorun_u stored config value
+   // 9999 entry for IWBP makes url param &ext=wspr,iwbp work due to freq range check.
    center_freqs: [
       137.5, 475.7, 1838.1, 3570.1, 3594.1, 5288.7, 5366.2, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1, 6781.5, 13555.4, 9999
    ],
@@ -53,13 +55,13 @@ var wspr = {
    // so we add 1.5 to those to get our cf values (same as regular WSPR wspr.center_freqs above)
    cf_IWBP: [ 1838.1, 3570.1, 5288.7, 7040.1, 10140.2, 14097.1, 18106.1, 21096.1, 24926.1, 28126.1 ],
    
-   xvtr_center_freqs: [ 40680, 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5 ],
-   xvtr_freqs_m: [ '8m', '6m', '4m', '2m', '440', '1296' ],
+   xvtr_center_freqs: [ 40680, 50294.5, 70092.5, 144490.5, 432301.5, 1296501.5, 10489569.5 ],
+   xvtr_freqs_m: [ '8m', '6m', '4m', '2m', '440', '1296', 'QO-100' ],
 
    autorun_u: [
       'regular use', 'LF', 'MF', '160m', '80m_JA', '80m', '60m', '60m_EU',
       '40m', '30m', '20m', '17m', '15m', '12m', '10m',
-      '8m', '6m', '4m', '2m', '440', '1296', 'ISM_6', 'ISM_13', 'IWBP'
+      '8m', '6m', '4m', '2m', '440', '1296', 'QO-100', 'ISM_6', 'ISM_13', 'IWBP'
    ],
    
    // translates menu order to cfg value which then has to match order of wspr_main.cpp:wspr_cfs[]
@@ -67,6 +69,9 @@ var wspr = {
    menu_i_to_cfg_i: [
       0,    //  0 regular use
       
+   // +-- cfg value (no renumbering or reuse!)
+   // |         +-- menu seq value  (use this in wspr_main.cpp:wspr_cfs)
+   // |         |
       1,    //  1 LF
       2,    //  2 MF
       3,    //  3 160m
@@ -86,12 +91,13 @@ var wspr = {
       15,   // 16 6m
       16,   // 17 4m
       17,   // 18 2m
-      18,   // 19 440
-      19,   // 20 1296
+      18,   // 19 440  70cm
+      19,   // 20 1296 23cm
+      24,   // 21 10G   3cm QO-100
       
-      20,   // 21 ISM_6
-      21,   // 22 ISM_13
-      22,   // 23 IWBP
+      20,   // 22 ISM_6
+      21,   // 23 ISM_13
+      22,   // 24 IWBP
    ],
 
    PREEMPT_NO: 0,
@@ -403,7 +409,7 @@ function wspr_controls_setup()
             wspr.center_freqs.push(f_kHz);
             var s = wspr.xvtr_freqs_m[i];
             wspr.freqs_m.push(s);
-            wspr.freqs_s[s] = j++;
+            wspr.freqs_s[s.toLowerCase()] = j++;
          }
       }
       if (wspr_init_band > 0) wspr_init_band = 0;
@@ -492,7 +498,7 @@ function wspr_controls_setup()
       p.forEach(function(a, i) {
          var sel = wspr.freqs_s[a];
          if (i == 0 && isDefined(sel)) {
-            //console.log('<'+ a +'> '+ i +' sel='+ sel);
+            console.log('<'+ a +'> '+ i +' sel='+ sel);
             var freq = wspr.center_freqs[sel];
             if (freq >= r.lo_kHz && freq <= r.hi_kHz)
                wspr_band_select_cb('wspr_init_band', sel, false);

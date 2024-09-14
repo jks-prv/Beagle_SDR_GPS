@@ -1,4 +1,4 @@
-// Copyright (c) 2023 John Seamons, ZL4VO/KF6VO
+// Copyright (c) 2024 John Seamons, ZL4VO/KF6VO
 
 #include "ext.h"	// all calls to the extension interface begin with "ext_", e.g. ext_register()
 
@@ -20,16 +20,19 @@
 #include <strings.h>
 #include <sys/mman.h>
 
-// order matches ft8.autorun_u in FT8.js
+// order matches "cfg value order" FT8.js::ft8.menu_i_to_cfg_i (NOT "menu order" ft8.autorun_u)
 // only add new entries to the end so as not to disturb existing values stored in config
-#define N_FREQ 29
+#define N_FREQ 30
 static double ft8_autorun_dial[N_FREQ] = {      // usb carrier/dial freq
-    /* FT8 */ 1840, 3573, 5357, 7074,   10136, 14074, 18100, 21074, 24915, 28074,
-    /* FT4 */       3575.5,     7047.5, 10140, 14080, 18104, 21140, 24919, 28180,
-    /* FT8 */ 40680, 50313, 50323, 70154, 70190, 144174, 222065, 432174, 1296174,
-    /* FT4 */ 50318, 144150
+    /* FT8 */ 1840, 3573, 5357, 7074,   10136, 14074, 18100, 21074, 24915, 28074,   // 1-10
+    /* FT4 */       3575.5,     7047.5, 10140, 14080, 18104, 21140, 24919, 28180,   // 11-18
+    /* FT8 */ 40680, 50313, 50323, 70154, 70190, 144174, 222065, 432174, 1296174,   // 19-27
+    /* FT4 */ 50318, 144150,    // 28-29
+    /* FT8 */ 10489540          // 30
 };
-static u1_t isFT4[N_FREQ] = { 0,0,0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0,0, 1,1 };
+
+// must map to above entries
+static u1_t isFT4[N_FREQ] = { 0,0,0,0,0,0,0,0,0,0, 1,1,1,1,1,1,1,1, 0,0,0,0,0,0,0,0,0, 1,1, 0 };
 
 //#define DEBUG_MSG	true
 #define DEBUG_MSG	false
@@ -129,7 +132,7 @@ static void ft8_task(void *param)
 		if (e->last_freq_kHz != new_freq_kHz) {
 		    //rcprintf(rx_chan, "FT8: freq changed %d => %d\n", e->last_freq_kHz, new_freq_kHz);
 		    e->last_freq_kHz = new_freq_kHz;
-		    decode_ft8_protocol(rx_chan, conn->freqHz + ft8_conf.freq_offset_Hz, e->proto);
+		    decode_ft8_protocol(rx_chan, ft8_conf.freq_offset_Hz + conn->freqHz, e->proto);
 		}
 		
 		while (e->rd_pos != rx->real_wr_pos) {
@@ -222,7 +225,7 @@ bool ft8_msgs(char *msg, int rx_chan)
         conn_t *conn = rx_channels[rx_chan].conn;
 		e->last_freq_kHz = conn->freqHz/1e3;
 		//rcprintf(rx_chan, "FT8 protocol %s freq %.2f\n", proto? "FT4" : "FT8", conn->freqHz/1e3);
-		decode_ft8_protocol(rx_chan, conn->freqHz + ft8_conf.freq_offset_Hz, proto? 1:0);
+		decode_ft8_protocol(rx_chan, ft8_conf.freq_offset_Hz + conn->freqHz, proto? 1:0);
 		return true;
 	}
 

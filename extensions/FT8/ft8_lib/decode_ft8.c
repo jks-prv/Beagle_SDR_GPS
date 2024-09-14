@@ -605,12 +605,12 @@ void decode_ft8_free(int rx_chan)
     monitor_free(&ft8->mon);
 }
 
-void decode_ft8_protocol(int rx_chan, int _freqHz, int proto)
+void decode_ft8_protocol(int rx_chan, u64_t _freqHz, int proto)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     decode_ft8_free(rx_chan);
     decode_ft8_init(rx_chan, proto);
     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
         "-------------------------------------------------------  new freq %.2f mode %s\n",
-        _freqHz/1e3, ft8->protocol_s);
+        (double) _freqHz / 1e3, ft8->protocol_s);
 }
