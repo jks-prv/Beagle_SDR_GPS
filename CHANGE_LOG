@@ -2,8 +2,12 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.700  September 16, 2024
+v1.700  September 17, 2024
     User interface:
+        Adjusting the passband edges should now work in most cases on mobile devices.
+        If it doesn't remember that there are other ways to adjust the passband including sliders
+        on the audio tab.
+    
         When adjusting the passband edges if the cursor wanders above or below the frequency scale
         adjustment will continue to work. However the tooltip displaying the passband numeric
         values continues to only appear when the cursor is positioned over the passband edge.
@@ -26,7 +30,7 @@ v1.700  September 16, 2024
     
         ALE extension:
             Added "UN MINURSO" to milcom frequency list. (thanks M0HGK)
-            Added "MOROCCAN AF/CIVIL/POL/NAVY" services to milcom frequency list. (thanks Mark W)
+            Added "MOROCCAN AF/Civil/Police/Navy" services to milcom frequency list. (thanks Mark W)
 
     Admin interface:
         The top bar (tab selection) and any status/error messages are now fixed at the top of the

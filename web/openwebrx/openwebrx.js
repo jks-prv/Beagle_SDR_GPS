@@ -763,8 +763,12 @@ function mdev_log_resize()
 	mdev_log('w='+ window.innerWidth +' sX='+ TF(w3_isScrollingX('id-topbar')) +' tbH='+ owrx.top_bar_cur_height +' mOpt='+ TF(mobileOpt()) +' mOptN='+ TF(mobileOptNew()));
 }
 
-function openwebrx_resize(from)
+function openwebrx_resize(from, delay)
 {
+   if (isNumber(delay)) {
+      setTimeout(function() { openwebrx_resize(from); }, delay);
+   }
+   
    from = (isString(from) && from.startsWith('orient'))? from : 'event';
 	resize_wf_canvases();
 	resize_waterfall_container(true);
@@ -1089,9 +1093,10 @@ function demod_envelope_draw(range, from, to, line)
 function demod_envelope_where_clicked(x, y, drag_ranges, key_modifiers)
 {
 	// Check exactly what the user has clicked based on ranges returned by demod_envelope_draw().
-	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x && y < scale_canvas_h/2; };
+	var pbh = Math.round(scale_canvas_h/2);
+	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x && y <= pbh; };
 	dr = demodulator.draggable_ranges;
-	//console.log('demod_envelope_where_clicked x='+ x +' y='+ y +' in_pb='+ ((y < scale_canvas_h/2)? 1:0) +' allow_pb_adj='+ drag_ranges.allow_pb_adj);
+	//console.log('demod_envelope_where_clicked x='+ x +' y='+ y +' in_pb='+ TF(y <= pbh) +' allow_pb_adj='+ drag_ranges.allow_pb_adj);
 	//console.log(drag_ranges);
 	//console.log(key_modifiers);
 
@@ -1114,12 +1119,12 @@ function demod_envelope_where_clicked(x, y, drag_ranges, key_modifiers)
 		   if (in_range(x, drag_ranges.beginning)) return dr.beginning;
 		   if (in_range(x, drag_ranges.ending)) return dr.ending;
 		}
-		//else { console.log('drag pb hi/lo ignored'); canvas_log('ign pb_adj'); }
 
 		// Last priority: having clicked anything else on the envelope, without holding the shift key
 		if (in_range(x, drag_ranges.whole_envelope)) return dr.anything_else; 
 	}
 
+   //canvas_log(x +'|'+ y +' '+ JSON.stringify(drag_ranges.ending) +' '+ pbh);
 	return dr.none;   // User doesn't drag the envelope for this demodulator
 }
 
@@ -1485,9 +1490,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 
 	this.envelope.drag_move = function(x)
 	{
-	   var rv = { event_handled: false, fset: owrx.FSET_PB_CHANGE };
+	   var rv = { event_handled: false, fset: owrx.FSET_PB_CHANGE, d: 0 };
 		var dr = demodulator.draggable_ranges;
 		if (this.dragged_range == dr.none) {
+		   rv.d = 1;
 		   rv.fset = owrx.FSET_NOP;
 			return rv; // we return if user is not dragging (us) at all
 		}
@@ -1527,16 +1533,19 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			//we don't let low_cut go beyond its limits
 			if (new_lo < this.parent.filter.low_cut_limit) {
 				//console.log('lo limit');
+		      rv.d = 2;
 				return rv;
 			}
 			//nor the filter passband be too small
 			if (new_hi - new_lo < this.parent.filter.min_passband) {
 				//console.log('lo min');
+		      rv.d = 3;
 				return rv;
 			}
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if (new_lo >= new_hi) {
 				//console.log('lo wrap');
+		      rv.d = 4;
 				return rv;
 			}
 		}
@@ -1545,16 +1554,19 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			//we don't let high_cut go beyond its limits
 			if (new_hi > this.parent.filter.high_cut_limit) {
 				//console.log('hi limit');
+		      rv.d = 5;
 				return rv;
 			}
 			//nor the filter passband be too small
 			if (new_hi - new_lo < this.parent.filter.min_passband) {
 				//console.log('hi min');
+		      rv.d = 6;
 				return rv;
 			}
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if (new_hi <= new_lo) {
 				//console.log('hi wrap');
+		      rv.d = 7;
 				return rv;
 			}
 		}
@@ -1575,6 +1587,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			new_value = this.drag_origin.offset_frequency + freq_change;
 			if (new_value > bandwidth/2 || new_value < -bandwidth/2) {
 				//console.log('bfo range');
+		      rv.d = 8;
 				return rv; //we don't allow tuning above Nyquist frequency :-)
 			}
 			this.parent.offset_frequency = new_value;
@@ -1970,6 +1983,8 @@ function scale_canvas_drag(evt, x, y)
 		//console.log("MOV2 evh? "+event_handled);
 
       // #mobile-ui Fscale: scroll tuning in Fscale margins instead of stopping at scale end
+      //var eh = TF(event_handled);
+      //var pbc = TF(rv.fset == owrx.FSET_PB_CHANGE);
 		if (!event_handled || rv.fset != owrx.FSET_PB_CHANGE) {
 		   //jksx FIXME "backwards" fScale scroll for small movements
          var deltaX = scale_canvas_params.last_x - x;
@@ -1977,15 +1992,19 @@ function scale_canvas_drag(evt, x, y)
          //console_log_dbgUs('SC area='+ area +' x='+ x +'|'+ scale_canvas_params.last_x +'|'+ deltaX);
 
 		   if (area != owrx.NOT_MARGIN && mobileOpt()) {
+		      //canvas_log(eh + pbc + area +'A'); // FF1A
 		      // PB is in L/R margin -- also scroll waterfall
             var dbins = norm_to_bins(deltaX / waterfall_width);
             //console_log_dbgUs('dX='+ deltaX +' dbins='+ dbins);
             waterfall_pan_canvases(-dbins);
 		   } else {
+		      //canvas_log(eh + pbc + area +'p'); // FF0Tp
+		      //canvas_log(eh + pbc + rv.fset + rv.d +'p'); // FF01p
             //console_log_dbgUs('SC x='+ x +'|'+ scale_canvas_params.last_x);
             scale_canvas_params.last_x = x;     // accept x movement
 		   }
 		}
+		//else canvas_log(eh + pbc +'D');
 	}
 }
 
@@ -5598,6 +5617,7 @@ function waterfall_height()
 	var non_waterfall_height = w3_el("id-non-waterfall-container").clientHeight;
 	var scale_height = w3_el("id-scale-container").clientHeight;
 	owrx.scale_offsetY = top_height + non_waterfall_height - scale_height;
+	//console.log(owrx.scale_offsetY +'='+ top_height +'+'+ non_waterfall_height +'-'+ scale_height);
 
 	var wf_height = window.innerHeight - top_height - non_waterfall_height;
 	//console.log('## waterfall_height: wf_height='+ wf_height +' winh='+ window.innerHeight +' th='+ top_height +' nh='+ non_waterfall_height);
@@ -13038,6 +13058,7 @@ function toggle_or_set_spec(set, val, dir, ev)
    }
    freqset_select();
    snd_send('SET spc_='+ spec.source);
+   openwebrx_resize('spec', 500);   // delay a bit until visibility stabilizes
 }
 
 function mode_over(evt, el)
