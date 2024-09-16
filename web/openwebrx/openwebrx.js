@@ -21,16 +21,63 @@ This file is part of OpenWebRX.
 
 // Copyright (c) 2015-2024 John Seamons, ZL4VO/KF6VO
 
+/*
+   searchable contents:
+   
+   #admin pwd panel
+   #AGC
+   #audio
+   #audio FFT
+   #band bars
+   #band scale
+   #canvas
+   #confirmation panel
+   #confirmation panel: cal ADC clock
+   #confirmation panel: set freq offset
+   #control panel
+   #conversions
+   #database lookup
+   #demodulator
+   #dx labels
+   #extensions
+   #frequency entry
+   #frequency memory
+   #misc
+   #mobile
+   #option bar
+   #panel setup
+   #panel support
+   #panels
+   #rf controls
+   #right click menu
+   #s-meter
+   #scale
+   #shortcuts
+   #spectrum
+   #topbar
+   #ui
+   #user ident
+   #users
+   #waterfall
+   #waterfall export
+   #waterfall / spectrum controls
+   #websocket
+   #wheel
+   #zoom
+*/
+
 var owrx = {
    debug_drag: false,
    activeElementID: null,
    trace_freq_update: 0,
    
-   START: 0,
-   DRAG: 1,
-   END: 2,
+   EV_START: 0,
+   EV_DRAG: 1,
+   EV_END: 2,
+   EV_OUTSIDE: 3,
+   EV_MOUSEUP: 4,
    
-   height_top_bar_parts: 67,
+   top_bar_nom_height: 67,
    hide_bars: 0,
    HIDE_TOPBAR: 1,
    HIDE_BANDBAR: 2,
@@ -134,20 +181,30 @@ var owrx = {
    ovld_mute: 0,
    ovld_mute_s: [ 'off', 'on' ],
    
-   FSET_NOP: 0,
-   FSET_ADD: 1,
-   FSET_SET_FREQ: 2,
-   FSET_EXT_SET_PB: 3,
-   FSET_PB_CHANGE: 4,
-   FSET_SCALE_DRAG: 5,
-   FSET_SCALE_DRAG_END: 6,
-   FSET_SCALE_MOUSE_CLICK: 7,
-   FSET_SCALE_TOUCH_DRAG: 8,
-   FSET_SCALE_TOUCH_DRAG_END: 9,
-   fset_s: [ 'nop', 'add', 'fset', 'extSetPB', 'pbChg', 'drag', 'dragEnd', 'mouseClick', 'touchDrag', 'touchClick' ],
+   FSET_NOP:            0,
+   FSET_ADD:            1,
+   FSET_SET_FREQ:       2,
+   FSET_EXT_SET_PB:     3,
+   FSET_PB_CHANGE:      4,
+   FSET_DRAG_START:     5,
+   FSET_DRAG:           6,
+   FSET_DRAG_END:       7,
+   FSET_MOUSE_CLICK:    8,
+   FSET_TOUCH_START:    9,
+   FSET_TOUCH_DRAG:     10,
+   FSET_DTOUCH_DRAG:    11,
+   FSET_TOUCH_DRAG_END: 12,
+   FSET_SCALE_DRAG:     13,
+   FSET_SCALE_END:      14,
+   fset_s:     [ 'nop', 'add', 'fset', 'extSetPB', 'pbChg', 'dragStart', 'drag', 'dragEnd', 'mouseClick', 'touchStart', 'touchDrag', 'DtouchDrag', 'touchClick', 'scaleDrag', 'scaleEnd' ],
+   fmem_upd:   [    0,     1,      1,          1,       0,           0,      0,         1,            1,            0,           0,            0,            1,           0,          1  ],
+   LEFT_MARGIN: -1,
+   NOT_MARGIN: 0,
+   RIGHT_MARGIN: 1,
    
    WF_POS_AT_FREQ: 0,
-   WF_POS_RECENTER_IF_OUTSIDE: 1,
+   WF_POS_CENTER: 1,
+   WF_POS_RECENTER_IF_OUTSIDE: 2,
    waterfall_tuned: 0,
    
    scale_canvas: {
@@ -180,7 +237,7 @@ var owrx = {
 //		offset_frequency (-bandwidth/2 .. bandwidth/2) = center_freq - freq
 //		freq = center_freq + offset_frequency
 
-// constants, passed from server
+// passed from server (bw/cf vary due to 30/32 MHz max freq range)
 var bandwidth;
 var center_freq;
 var wf_fft_size;
@@ -479,10 +536,10 @@ function kiwi_main_ready()
    okay_wf_init = true;
 	confirmation_panel_init2();
 	smeter_init();
-	time_display_setup('id-topbar-right-container');
+	time_display_setup('id-topbar-R-container');
 	
 	window.setInterval(send_keepalive, 5000);
-	window.addEventListener("resize", openwebrx_resize);
+	window.addEventListener('resize', openwebrx_resize);
         
    if (param_nocache) {
       //msg_send("SET nocache="+ (nocache? 1:0));
@@ -547,7 +604,7 @@ function kiwi_main_ready()
 
 
 ////////////////////////////////
-// panel support
+// #panel support
 ////////////////////////////////
 
 var ptype = { HIDE:0, POPUP:1, TOGGLE:2 };
@@ -675,7 +732,7 @@ function toggle_panel(panel, set)
 	   //canvas_log(divPanel.style.marginLeft +':'+ divPanel.style.marginRight);
 	}
 
-	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, kiwi_isMobile()? 1:1000, 60, 0);
+	animate(divPanel, rightSide? 'right':'left', "px", from, to, 0.93, kiwi_isMobile()? 1:1000, 60, null);
 	
 	w3_hide(panel +'-'+ (divPanel.panelShown? 'hide':'show'));
 	w3_show_block(panel +'-'+ (divPanel.panelShown? 'show':'hide'));
@@ -701,15 +758,21 @@ function toggle_panel(panel, set)
 	freqset_select();
 }
 
-function openwebrx_resize(a)
+function mdev_log_resize()
 {
-   a = (isString(a) && a.startsWith('orient'))? a : 'event';
+	mdev_log('w='+ window.innerWidth +' sX='+ TF(w3_isScrollingX('id-topbar')) +' tbH='+ owrx.top_bar_cur_height +' mOpt='+ TF(mobileOpt()) +' mOptN='+ TF(mobileOptNew()));
+}
+
+function openwebrx_resize(from)
+{
+   from = (isString(from) && from.startsWith('orient'))? from : 'event';
 	resize_wf_canvases();
 	resize_waterfall_container(true);
    extint_environment_changed( { resize:1, passband_screen_location:1 } );
-	resize_scale(a);
-	check_top_bar_congestion();
+	resize_scale(from);
+	position_top_bar();
 	owrx.resize_seq++;
+	mdev_log_resize();
    //console.log('resize_seq='+ owrx.resize_seq);
 }
 
@@ -733,73 +796,51 @@ try {
 } catch(ex) {}
 */
 
-var offsetDiff_init = false;
-var p_left, p_owner, p_mid, p_right;
 
-function offsetDiff(name, color, lrw, p_lrw)
+////////////////////////////////
+// #topbar
+////////////////////////////////
+
+function position_top_bar()
 {
-	var el = w3_el('id-tbar-'+ name.toLowerCase() +'-bbox');
-	el.style.left = px(lrw.x1);
-	el.style.width = px(lrw.w);
-	el.style.height = px(lrw.h);
-	el.style.backgroundColor = color;
-
-	console.log(name +' L/R/W='+ lrw.x1 +'/'+ lrw.x2 +'/'+ lrw.w +' ('+
-	   (p_lrw.x1-lrw.x1) +'/'+ (p_lrw.x2-lrw.x2) +'/'+ (p_lrw.w-lrw.w) +')');
-}
-
-function check_top_bar_congestion()
-{
-	var left = w3_boundingBox_children('id-left-info-container');
-	var owner = w3_boundingBox_children('id-mid-owner-container');
-	var mid = w3_boundingBox_children('id-mid-info-container');
-	var right = w3_boundingBox_children('id-topbar-right-container');
+   var w = window.innerWidth;
+   var w_min = kiwi.WIN_WIDTH_MIN;
+   var narrow = (w < w_min);
+   
+	var info = w3_boundingBox_children('id-topbar-L-container');
+	//console.log(info);
+	var owner = w3_boundingBox_children('id-topbar-ML-container');
+	//var ident = w3_boundingBox_children('id-topbar-MR-container');
+	var time = w3_boundingBox_children('id-topbar-R-container');
+	//console.log(time);
 	
-	// position owner info in the middle of the gap between left and mid bbox
-	var owner_left = left.x2 + (mid.x1 - left.x2)/2 - owner.w/2;
-	//console.log('owner_left='+ owner_left);
-	w3_el('id-owner-info').style.left = px(owner_left);
-	owner = w3_boundingBox_children('id-mid-owner-container');     // recompute after change
 	
-	// Selectively hide all but the left bbox.
-	// Can't use w3_show_hide() because otherwise bbox values would be zero when hidden
-	// and bbox would never reappear.
-	w3_visible('id-mid-owner-container', owner.x1 >= left.x2);
-	w3_visible('id-mid-info-container', mid.x1 >= left.x2);
-	w3_visible('id-topbar-right-container', right.x1 >= left.x2);
+	// NB: When a div contains only absolutely positioned elements it has zero width.
+	// So flex space-between doesn't work.
+	// But we can compute correct width using w3_boundingBox_children() and set min-width directly.
+	w3_el('id-topbar-L-container').style.minWidth = px(info.x2);
+	if (owner.w)   // will be non-zero if absolutely positioned elements exist
+	   w3_el('id-topbar-ML-container').style.minWidth = px(owner.w);
+	w3_el('id-topbar-R-container').style.minWidth = px(time.w);
 	
-	// place photo open arrow right after left bbox
-	w3_el('id-rx-details-arrow').style.left = px(left.x2 + 16);
+	// place photo open arrow right after info bbox
+	w3_el('id-topbar-arrow').style.left = px(info.x2 + 16);
 
-   /*
-      if (!offsetDiff_init) {
-         offsetDiff_init = true;
-         p_left = left;
-         p_owner = owner;
-         p_mid = mid;
-         p_right = right;
-         w3_el('id-top-bar').innerHTML +=
-            '<div class="id-tbar-left-bbox cl-tbar-bbox"></div>' +
-            '<div class="id-tbar-owner-bbox cl-tbar-bbox"></div>' +
-            '<div class="id-tbar-mid-bbox cl-tbar-bbox"></div>' +
-            '<div class="id-tbar-right-bbox cl-tbar-bbox"></div>';
-      }
-      
-      console.log('----');
-      offsetDiff('LEFT', 'yellow', left, p_left);
-      p_left = left;
-      offsetDiff('OWNER', 'cyan', owner, p_owner);
-      p_owner = owner;
-      offsetDiff('MID', 'green', mid, p_mid);
-      p_mid = mid;
-      offsetDiff('RIGHT', 'red', right, p_right);
-      p_right = right;
-   */
+   scrollW = w3_isScrollingX('id-topbar')? kiwi_scrollbar_width() : 0;
+   owrx.top_bar_cur_height = owrx.top_bar_nom_height + scrollW;
+	w3_el("id-topbar").style.height = px(owrx.top_bar_cur_height);
+	w3_el("id-main-container").style.top = px(scrollW);
+   rx_photo_set_height();
 }
 
 function init_top_bar()
 {
-   w3_el('id-top-bar').addEventListener('click', freqset_select, false);
+   owrx.top_bar_cur_height = owrx.top_bar_nom_height;
+	w3_el("id-topbar").style.height = px(owrx.top_bar_cur_height);
+	w3_el("id-main-container").style.top = px(0);
+	rx_photo_set_height(true);
+
+   w3_el('id-topbar').addEventListener('click', freqset_select, false);
    var rx_loc = w3_json_to_string('RX_LOC', cfg.index_html_params.RX_LOC);
    w3_innerHTML('id-rx-desc',
       rx_loc +' | Grid '+
@@ -818,6 +859,7 @@ function update_web_grid(init)
    w3_innerHTML('id-web-grid',
       w3_link('', 'https://www.levinecentral.com/ham/grid_square.php?Grid='+ grid, grid, '', 'dont_toggle_rx_photo')
    );
+   position_top_bar();
 }
 
 function update_web_map(init)
@@ -827,9 +869,16 @@ function update_web_map(init)
    //console_nv('update_web_map', {init}, {rx_gps}, 'cfg.GPS_update_web_lores', 'cfg.GPS_update_web_hires');
    if (init != true && !cfg.GPS_update_web_lores && !cfg.GPS_update_web_hires) return;
    w3_link_set('id-rx-gps', 'https://www.google.com/maps/place/'+ rx_gps);
+   position_top_bar();
 }
 
-var rx_photo_spacer_height = owrx.height_top_bar_parts;
+function rx_photo_set_height(setMaxHeight)
+{
+	owrx.rx_photo_total_height = +(cfg.index_html_params.RX_PHOTO_HEIGHT) + owrx.top_bar_cur_height;
+	w3_el("id-top-photo-spacer").style.height = px(owrx.top_bar_cur_height);
+	if (setMaxHeight)
+	   w3_el("id-top-photo-clip").style.maxHeight = px(owrx.rx_photo_total_height);
+}
 
 function init_rx_photo()
 {
@@ -847,9 +896,8 @@ function init_rx_photo()
    
    if (centered) w3_add(el, "w3-center");
    img.style.paddingLeft = left? '50px' : 0;
+   rx_photo_set_height();
    
-	owrx.RX_PHOTO_HEIGHT = +(cfg.index_html_params.RX_PHOTO_HEIGHT) + rx_photo_spacer_height;
-	w3_el("id-top-photo-clip").style.maxHeight = px(owrx.RX_PHOTO_HEIGHT);
 	if (dbgUs || kiwi_isMobile()) {
 		close_rx_photo();
 	} else {
@@ -861,20 +909,22 @@ var rx_photo_state=1;
 
 function open_rx_photo()
 {
+   //console.log('$open_rx_photo '+ w3_el('id-top-photo-clip').style.maxHeight +' => '+ owrx.rx_photo_total_height);
 	rx_photo_state=1;
 	w3_opacity("id-rx-photo-desc", 1);
 	w3_opacity("id-rx-photo-title", 1);
-	animate_to("id-top-photo-clip", "maxHeight", "px", owrx.RX_PHOTO_HEIGHT, 0.93, kiwi_isMobile()? 1:1000, 60, function(){resize_waterfall_container(true);});
-	w3_hide('id-rx-details-arrow-down');
-	w3_show_block('id-rx-details-arrow-up');
+	animate_to("id-top-photo-clip", "maxHeight", "px", owrx.rx_photo_total_height, 0.93, kiwi_isMobile()? 1:1000, 60, function(){resize_waterfall_container(true);});
+	w3_hide('id-topbar-arrow-down');
+	w3_show_block('id-topbar-arrow-up');
 }
 
 function close_rx_photo()
 {
+   //console.log('$close_rx_photo '+ w3_el('id-top-photo-clip').style.maxHeight +' => '+ owrx.top_bar_cur_height);
 	rx_photo_state=0;
-	animate_to("id-top-photo-clip", "maxHeight", "px", rx_photo_spacer_height, 0.93, kiwi_isMobile()? 1:1000, 60, function(){resize_waterfall_container(true);});
-	w3_show_block('id-rx-details-arrow-down');
-	w3_hide('id-rx-details-arrow-up');
+	animate_to("id-top-photo-clip", "maxHeight", "px", owrx.top_bar_cur_height, 0.93, kiwi_isMobile()? 1:1000, 60, function(){resize_waterfall_container(true);});
+	w3_show_block('id-topbar-arrow-down');
+	w3_hide('id-topbar-arrow-up');
 }
 
 dont_toggle_rx_photo_flag=0;
@@ -894,77 +944,48 @@ function toggle_rx_photo()
 	freqset_select();
 }
 
-
-function animate(object, style_name, unit, from, to, accel, time_ms, fps, to_exec)
+function animate(object, style_name, unit, from, to, accel, time_ms, fps, func)
 {
 	//console.log(object.className);
-	if (isUndefined(to_exec)) to_exec=0;
-	object.style[style_name]=from.toString()+unit;
-	object.anim_i=0;
-	n_of_iters=time_ms/(1000/fps);
+	object.style[style_name] = from.toString()+unit;
+	object.anim_i = 0;
+	n_of_iters = time_ms/(1000/fps);
 	if (n_of_iters < 1) n_of_iters = 1;
-	change=(to-from)/(n_of_iters);
+	change = (to-from)/(n_of_iters);
 	if (isDefined(object.anim_timer)) { window.clearInterval(object.anim_timer);  }
 
 	object.anim_timer = window.setInterval(
-		function(){
-			if (object.anim_i++<n_of_iters)
-			{
+		function() {
+			if (object.anim_i++<n_of_iters) {
 				if (accel==1) object.style[style_name] = (parseFloat(object.style[style_name]) + change).toString() + unit;
-				else 
-				{ 
-					remain=parseFloat(object.style[style_name])-to;
-					if (Math.abs(remain)>9||unit!="px") new_val=(to+accel*remain);
-					else {if (Math.abs(remain)<2) new_val=to;
-					else new_val=to+remain-(remain/Math.abs(remain));}
-					object.style[style_name]=new_val.toString()+unit;
+				else { 
+					remain = parseFloat(object.style[style_name])-to;
+					if (Math.abs(remain)>9||unit!="px") new_val = (to+accel*remain);
+					else {if (Math.abs(remain)<2) new_val = to;
+					else new_val = to+remain-(remain/Math.abs(remain));}
+					object.style[style_name] = new_val.toString()+unit;
 				}
+			} else {
+			   object.style[style_name] = to.toString()+unit;
+			   window.clearInterval(object.anim_timer);
+			   delete object.anim_timer;
 			}
-			else 
-				{object.style[style_name]=to.toString()+unit; window.clearInterval(object.anim_timer); delete object.anim_timer;}
-			if (to_exec!=0) to_exec();
+			w3_call(func);
 		},1000/fps);
 }
 
-function animate_to(id, style_name, unit, to, accel, time_ms, fps, to_exec)
+function animate_to(id, style_name, unit, to, accel, time_ms, fps, func)
 {
    var el = w3_el(id);
    if (!el) return;
-	from = parseFloat(style_value(el, style_name));
+	from = parseFloat(css_style(el, style_name));
 	//console.log("animate_to: FROM "+ style_name +'='+ from);
-	animate(el, style_name, unit, from, to, accel, time_ms, fps, to_exec);
+	animate(el, style_name, unit, from, to, accel, time_ms, fps, func);
 }
-
-function style_value(of_what, which)
-{
-	if (of_what.currentStyle)
-		return of_what.currentStyle[which];
-	else
-	if (window.getComputedStyle)
-		return document.defaultView.getComputedStyle(of_what,null)[which];
-	else
-		return of_what.style[which];
-}
-
-/*function fade(something,from,to,time_ms,fps)
-{
-	something.style.opacity=from;
-	something.fade_i=0;
-	n_of_iters=time_ms/(1000/fps);
-	change=(to-from)/(n_of_iters-1);
-	
-	something.fade_timer=window.setInterval(
-		function(){
-			if (something.fade_i++<n_of_iters)
-				something.style.opacity=parseFloat(something.style.opacity)+change;
-			else 
-				{something.style.opacity=to; window.clearInterval(something.fade_timer); }
-		},1000/fps);
-}*/
 
 
 ////////////////////////////////
-// demodulator
+// #demodulator
 ////////////////////////////////
 
 demodulators = [];
@@ -1464,11 +1485,12 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 
 	this.envelope.drag_move = function(x)
 	{
+	   var rv = { event_handled: false, fset: owrx.FSET_NOP };
 		var dr = demodulator.draggable_ranges;
 		if (this.dragged_range == dr.none) {
-			//console.log('move none');
-			return false; // we return if user is not dragging (us) at all
+			return rv; // we return if user is not dragging (us) at all
 		}
+		rv.event_handled = true;
 
 		var freq_change = _10Hz(Math.round(this.visible_range.hpp * (x-this.drag_origin.x)));
 		//console.log('DRAG fch='+ freq_change +' dr='+ this.dragged_range);
@@ -1504,17 +1526,17 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			//we don't let low_cut go beyond its limits
 			if (new_lo < this.parent.filter.low_cut_limit) {
 				//console.log('lo limit');
-				return true;
+				return rv;
 			}
 			//nor the filter passband be too small
 			if (new_hi - new_lo < this.parent.filter.min_passband) {
 				//console.log('lo min');
-				return true;
+				return rv;
 			}
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if (new_lo >= new_hi) {
 				//console.log('lo wrap');
-				return true;
+				return rv;
 			}
 		}
 		
@@ -1522,17 +1544,17 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			//we don't let high_cut go beyond its limits
 			if (new_hi > this.parent.filter.high_cut_limit) {
 				//console.log('hi limit');
-				return true;
+				return rv;
 			}
 			//nor the filter passband be too small
 			if (new_hi - new_lo < this.parent.filter.min_passband) {
 				//console.log('hi min');
-				return true;
+				return rv;
 			}
 			//sanity check to prevent GNU Radio "firdes check failed: fa <= fb"
 			if (new_hi <= new_lo) {
 				//console.log('hi wrap');
-				return true;
+				return rv;
 			}
 		}
 		
@@ -1552,7 +1574,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			new_value = this.drag_origin.offset_frequency + freq_change;
 			if (new_value > bandwidth/2 || new_value < -bandwidth/2) {
 				//console.log('bfo range');
-				return true; //we don't allow tuning above Nyquist frequency :-)
+				return rv; //we don't allow tuning above Nyquist frequency :-)
 			}
 			this.parent.offset_frequency = new_value;
 			//console.log('DRAG-MOVE off=', new_value.toFixed(0));
@@ -1563,15 +1585,19 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 		freqset_car_Hz(this.parent.offset_frequency + center_freq);
 		this.parent.set();
 		//console_nv('drag_move', {do_lo}, {do_hi});
-		freqset_update_ui((do_lo || do_hi)? owrx.FSET_PB_CHANGE : owrx.FSET_NOP);
+		var fset = (do_lo || do_hi)? owrx.FSET_PB_CHANGE : owrx.FSET_SCALE_DRAG;
+		freqset_update_ui(fset);
 		//kiwi_trace();
-		return true;
+		rv.fset = fset;
+		return rv;
 	};
 	
 	this.envelope.drag_end = function(x)
 	{ //in this demodulator we've already changed values in the drag_move() function so we shouldn't do too much here.
 		to_return = (this.dragged_range != demodulator.draggable_ranges.none); //this part is required for clicking anywhere on the scale to set offset
 		this.dragged_range = demodulator.draggable_ranges.none;
+		//console.log('this.envelope.drag_end x='+ x);
+		//if (x) kiwi_trace();
 		return to_return;
 	};
 	
@@ -1600,25 +1626,26 @@ function shift_event(evt, from)
    
    // shift key has no effect on tooltip while dragging in progress
    if (demodulators[0] && demodulators[0].envelope.dragged_range == demodulator.draggable_ranges.none)
-      mkenvelopes(get_visible_freq_range());
+      mkenvelopes();
 }
 
 demodulator_default_analog.prototype = new demodulator();
 
-function mkenvelopes(visible_range) //called from mkscale
+function mkenvelopes(visible_range)    // called from mkscale etc
 {
+   if (isUndefined(visible_range)) visible_range = get_visible_freq_range();
 	scale_ctx.clearRect(0,0,scale_ctx.canvas.width,22); //clear the upper part of the canvas (where filter envelopes reside)
 
+   // show active label database on left side on scale
 	scale_ctx.font = '13px sans-serif';
 	scale_ctx.textBaseline = 'top';
 	scale_ctx.fillStyle = 'white';
    scale_ctx.textAlign = "left";
-   scale_ctx.fillText('database: '+ dx.db_s[dx.db].split(' ')[0], 20, 7);
-
-	for (var i=0;i<demodulators.length;i++)
-	{
-		demodulators[i].envelope.draw(visible_range);
-	}
+   var s = dx.db_s[dx.db].split(' ')[0];
+   if (kiwi.mdev) s += '  '+ kiwi.mdev_s;
+   scale_ctx.fillText('database: '+ s, 20, 7);
+   if (demodulators.length)
+	   demodulators[0].envelope.draw(visible_range);
 }
 
 function demodulator_remove(which)
@@ -1630,7 +1657,7 @@ function demodulator_remove(which)
 function demodulator_add(what)
 {
 	demodulators.push(what);
-	if (waterfall_setup_done) mkenvelopes(get_visible_freq_range());
+	if (waterfall_setup_done) mkenvelopes();
 }
 
 function demodulator_analog_replace(subtype, freq)
@@ -1704,11 +1731,17 @@ function demodulator_analog_replace(subtype, freq)
 	try_modeset_update_ui(subtype);
 }
 
+function demodulator_set_frequency(which, freq_car_Hz)
+{
+	//console.log('demodulator_set_frequency: freq_car_Hz='+ freq_car_Hz);
+   demodulator_set_offset_frequency(which, freq_car_Hz - center_freq);
+}
+
 function demodulator_set_offset_frequency(which, offset)
 {
 	if (offset > bandwidth/2 || offset < -bandwidth/2) return;
 	offset = Math.round(offset);
-	//console.log("demodulator_set_offset_frequency: offset="+(offset + center_freq));
+	//console.log('demodulator_set_offset_frequency: offset='+ (offset + center_freq));
 	
 	// set carrier freq before demodulators[0].set() below
 	// requires demodulators[0].isCW to be valid
@@ -1735,7 +1768,7 @@ function owrx_init_cfg()
 
 
 ////////////////////////////////
-// scale
+// #scale
 ////////////////////////////////
 
 var scale_ctx, band_ctx, dx_ctx;
@@ -1810,7 +1843,7 @@ function scale_canvas_contextmenu(evt)
 	return cancelEvent(evt);
 }
 
-var scale_canvas_drag_params = {
+var scale_canvas_params = {
 	mouse_down: false,
 	drag: false,
 	start_x: 0,
@@ -1824,12 +1857,12 @@ function scale_canvas_mousedown(evt)
 {
 	//event_dump(evt, 'SC-MDN', 1);
 	mouse_button_state(evt);
-   scale_canvas_drag_params.drag = false;
-   scale_canvas_drag_params.start_x = evt.pageX;
-   scale_canvas_drag_params.start_y = evt.pageY;
-   scale_canvas_drag_params.key_modifiers.shiftKey = evt.shiftKey;
-   scale_canvas_drag_params.key_modifiers.altKey = evt.altKey;
-   scale_canvas_drag_params.key_modifiers.ctrlKey = evt.ctrlKey;
+   scale_canvas_params.drag = false;
+   scale_canvas_params.start_x = evt.pageX;
+   scale_canvas_params.start_y = evt.pageY;
+   scale_canvas_params.key_modifiers.shiftKey = evt.shiftKey;
+   scale_canvas_params.key_modifiers.altKey = evt.altKey;
+   scale_canvas_params.key_modifiers.ctrlKey = evt.ctrlKey;
 
    if (!w3_menu_active())
 	   scale_canvas_start_drag(evt, 1);
@@ -1838,12 +1871,12 @@ function scale_canvas_mousedown(evt)
 
 function scale_canvas_touchStart(evt)
 {
-   scale_canvas_drag_params.drag = false;
-   scale_canvas_drag_params.last_x = start_x = evt.targetTouches[0].pageX;
-   scale_canvas_drag_params.last_y = start_y = evt.targetTouches[0].pageY;
-   scale_canvas_drag_params.key_modifiers.shiftKey = false;
-   scale_canvas_drag_params.key_modifiers.altKey = false;
-   scale_canvas_drag_params.key_modifiers.ctrlKey = false;
+   scale_canvas_params.drag = false;
+   scale_canvas_params.last_x = start_x = evt.targetTouches[0].pageX;
+   scale_canvas_params.last_y = start_y = evt.targetTouches[0].pageY;
+   scale_canvas_params.key_modifiers.shiftKey = false;
+   scale_canvas_params.key_modifiers.altKey = false;
+   scale_canvas_params.key_modifiers.ctrlKey = false;
    scale_canvas_start_drag(evt, 0);
 	
 	touch_restore_tooltip_visibility(owrx.scale_canvas);
@@ -1859,25 +1892,53 @@ function scale_canvas_start_drag(evt, isMouse)
       if (w3_menu_active())
          w3_menu_close('1');     // close menu if another DTS while menu open
       else
-		   right_click_menu(scale_canvas_drag_params.start_x, scale_canvas_drag_params.start_y, 1);
-      scale_canvas_drag_params.mouse_down = owrx.scale_canvas.mouse_out = false;
+		   right_click_menu(scale_canvas_params.start_x, scale_canvas_params.start_y, 1);
+      scale_canvas_params.mouse_down = owrx.scale_canvas.mouse_out = false;
 		scale_canvas_ignore_mouse_event = true;
 		return;
 	}
 
-   scale_canvas_drag_params.mouse_down = true;
+   scale_canvas_params.mouse_down = true;
    //console.log('SCSD MD=T');
    owrx.scale_canvas.target = evt.target;
    if (isMouse) scale_canvas_mousemove(evt);
 }
 
-function scale_offset_carfreq_from_px(x, visible_range)
+function scale_carfreq_from_px(x, visible_range)
 {
 	if (isUndefined(visible_range)) visible_range = get_visible_freq_range();
 	var offset = passband_offset();
 	var f = visible_range.start + visible_range.bw * (x / wf_container.clientWidth);
 	//console.log("SOCFFPX f="+f+" off="+offset+" f-o="+(f-offset)+" rtn="+(f - center_freq - offset));
-	return f - center_freq - offset;
+	return f - offset;
+}
+
+function canvas_freq_upd(from, x)
+{
+   var area;
+   var fnew = Math.round(scale_carfreq_from_px(x));
+   var pb = freq_passband(fnew);
+   //console.log('>'+ pb.lo +'|'+ pb.pbc +'|'+ pb.hi);
+   var margin = Math.round(g_range.bw * 0.05);
+   var lo_lim = g_range.start + margin;
+   var hi_lim = g_range.end - margin;
+   //console.log(lo_lim +'|'+ pb.lo +'_'+ pb.hi +'|'+ hi_lim);
+   if (pb.lo <= lo_lim) {
+      area = owrx.LEFT_MARGIN;
+   } else
+   if (pb.hi >= hi_lim) {
+      area = owrx.RIGHT_MARGIN;
+   } else {
+      area = owrx.NOT_MARGIN;
+   }
+   
+   // If called from FSET_SCALE_DRAG update freq even if in margin since waterfall will also scroll.
+   //
+   // If called from FSET_SCALE_END and cursor (x value) positioned in margins don't let freq update
+   // so passband doesn't jump into margin
+   if (from != owrx.FSET_SCALE_END || (from == owrx.FSET_SCALE_END && area == 0))
+      demodulator_set_frequency(from, fnew);
+   return area;
 }
 
 function scale_canvas_drag(evt, x, y)
@@ -1886,30 +1947,44 @@ function scale_canvas_drag(evt, x, y)
    if (scale_canvas_ignore_mouse_event) return;
    
 	//event_dump(evt, 'SC-MDRAG', 1);
-	var event_handled = 0;
-	var relX = Math.abs(x - scale_canvas_drag_params.start_x);
+	var rv, event_handled = 0;
+	var relX = Math.abs(x - scale_canvas_params.start_x);
 
-	if (scale_canvas_drag_params.mouse_down && !scale_canvas_drag_params.drag /* && relX > canvas_drag_min_delta */ ) {
+	if (scale_canvas_params.mouse_down && !scale_canvas_params.drag /* && relX > canvas_drag_min_delta */ ) {
 		// we can use the main drag_min_delta thing of the main canvas
-		scale_canvas_drag_params.drag = true;
+		scale_canvas_params.drag = true;
 		// call env_drag_start() for all demodulators (and they will decide if they're dragged, based on X coordinate)
-		for (i=0; i < demodulators.length; i++)
-			event_handled |= demodulators[i].envelope.env_drag_start(x, y, scale_canvas_drag_params.key_modifiers);
+      event_handled |= demodulators[0].envelope.env_drag_start(x, y, scale_canvas_params.key_modifiers);
 		//console.log("MOV1 evh? "+event_handled);
 		evt.target.style.cursor = "move";
+	   //console.log('SCD drag START');
 		//console.log('sc cursor');
-	//} else
 	}     // scale is different from waterfall: mousedown alone immediately changes frequency
 
-	if (scale_canvas_drag_params.drag) {
-		// call the drag_move for all demodulators (and they will decide if they're dragged)
-		for (i=0; i < demodulators.length; i++)
-			event_handled |= demodulators[i].envelope.drag_move(x);
+	if (scale_canvas_params.drag) {
+		// call drag_move for demodulator (will decide if it's dragged)
+		rv = demodulators[0].envelope.drag_move(x);
+      event_handled |= rv.event_handled;
+	   //console.log('SCD drag fset='+ rv.fset +' event_handled='+ event_handled);
 		//console.log("MOV2 evh? "+event_handled);
-		if (!event_handled) {
-			demodulator_set_offset_frequency(owrx.FSET_SCALE_DRAG, scale_offset_carfreq_from_px(x));
+
+      // #mobile-ui Fscale: scroll tuning in Fscale margins instead of stopping at scale end
+		if (!event_handled || rv.fset != owrx.FSET_PB_CHANGE) {
+		   //jksx FIXME "backwards" fScale scroll for small movements
+         var deltaX = scale_canvas_params.last_x - x;
+		   var area = canvas_freq_upd(owrx.FSET_SCALE_DRAG, x);
+         //console_log_dbgUs('SC area='+ area +' x='+ x +'|'+ scale_canvas_params.last_x +'|'+ deltaX);
+
+		   if (area != owrx.NOT_MARGIN && mobileOpt()) {
+		      // PB is in L/R margin -- also scroll waterfall
+            var dbins = norm_to_bins(deltaX / waterfall_width);
+            //console_log_dbgUs('dX='+ deltaX +' dbins='+ dbins);
+            waterfall_pan_canvases(-dbins);
+		   } else {
+            //console_log_dbgUs('SC x='+ x +'|'+ scale_canvas_params.last_x);
+            scale_canvas_params.last_x = x;     // accept x movement
+		   }
 		}
-		scale_canvas_drag_params.last_x = x;
 	}
 }
 
@@ -1935,33 +2010,34 @@ function scale_canvas_touchMove(evt)
 function scale_canvas_end_drag(evt, x, canvas_mouse_up)
 {
    //if (canvas_mouse_up == true)
-   //   console.log('IME='+ scale_canvas_ignore_mouse_event +' SCMD='+ scale_canvas_drag_params.mouse_down +' ET='+ evt.type);
+   //   console.log('IME='+ scale_canvas_ignore_mouse_event +' SCMD='+ scale_canvas_params.mouse_down +' ET='+ evt.type);
    
    if (scale_canvas_ignore_mouse_event) {
-      scale_canvas_ignore_mouse_event = scale_canvas_drag_params.mouse_down = false;
+      scale_canvas_ignore_mouse_event = scale_canvas_params.mouse_down = false;
       return;
    }
 
 
    // mouse was down when it went out -- let dragging continue in adjacent canvas
    // which will call us again when canvas_mouse_up occurs
-   if (scale_canvas_drag_params.mouse_down == true && evt.type == "mouseout") {
+   if (scale_canvas_params.mouse_down == true && evt.type == "mouseout") {
+      //console.log('@mouse_out');
       owrx.scale_canvas.mouse_out = true;
       return;
    }
 
-	scale_canvas_drag_params.drag = false;
+	scale_canvas_params.drag = false;
 	var event_handled = false;
 	
-	if (scale_canvas_drag_params.mouse_down == true) {
-      for (var i=0; i < demodulators.length; i++) event_handled |= demodulators[i].envelope.drag_end(x);
+	if (scale_canvas_params.mouse_down == true) {
+      event_handled |= demodulators[0].envelope.drag_end(x);
       //console.log("MED evh? "+event_handled);
       if (!event_handled) {
-         demodulator_set_offset_frequency(owrx.FSET_SCALE_DRAG_END, scale_offset_carfreq_from_px(x));
+         canvas_freq_upd(owrx.FSET_SCALE_END, x);
       }
    }
 
-	scale_canvas_drag_params.mouse_down = false;
+	scale_canvas_params.mouse_down = false;
 	//console.log('SCED MD=F');
 	var target = owrx.scale_canvas.target;
 	if (target && target.style) {
@@ -2019,7 +2095,7 @@ function touch_restore_tooltip_visibility(state)
 
 function scale_canvas_touchEnd(evt)
 {
-	scale_canvas_end_drag(evt, scale_canvas_drag_params.last_x);
+	scale_canvas_end_drag(evt, scale_canvas_params.last_x);
 	touch_hide_tooltip(evt, owrx.scale_canvas);
 	evt.preventDefault();
 }
@@ -2030,7 +2106,8 @@ function scale_container_mouseover(evt)
 
    // if mouse wanders outside spectrum cancel the tooltip update process and spectrum dragging
    if (canvas_dragging || owrx.spec_pb_mkr_dragging) {
-      spectrum_tooltip_cancel();
+      //console.log('canvas_dragging='+ canvas_dragging +' spec_pb_mkr_dragging='+ owrx.spec_pb_mkr_dragging);
+      spectrum_tooltip_cancel(owrx.EV_DRAG);
       canvas_end_drag2();
    }
 }
@@ -2332,7 +2409,7 @@ var dx_car_border = 3;
 var dx_car_w = dx_car_border*2 + dx_car_size;
 var dx_car_h = dx_car_border*2 + dx_car_size;
 
-function resize_scale(a)
+function resize_scale(from)
 {
 	band_ctx.canvas.width  = window.innerWidth;
 	band_ctx.canvas.height = band_canvas_h;
@@ -2365,7 +2442,7 @@ function resize_scale(a)
 
 	scale_ctx.canvas.width  = window.innerWidth;
 	scale_ctx.canvas.height = scale_canvas_h;
-	mkscale();
+	mkscale();	
    dx_schedule_update();
 }
 
@@ -2388,11 +2465,20 @@ function mkscale()
 {
 	mk_freq_scale();
 	mk_bands_scale();
+
+   if (dbgUs && kiwi.mnew) {
+      scale_ctx.lineWidth = 1;
+      scale_ctx.strokeStyle = 'red';
+      scale_ctx.beginPath();
+      scale_ctx.moveTo(waterfall_width/2, 0);
+      scale_ctx.lineTo(waterfall_width/2, 46);
+      scale_ctx.stroke();
+   }
 }
 
 
 ////////////////////////////////
-// conversions
+// #conversions
 ////////////////////////////////
 
 // A "bin" is the wf_fft_size multiplied by the maximum zoom factor.
@@ -2474,18 +2560,18 @@ function clamp_xbin(xbin)
 
 function passband_visible()
 {
-	if (isUndefined(demodulators[0])) return x_bin;	// punt if no demod yet
+	if (isUndefined(demodulators[0])) return x_bin;    // punt if no demod yet
 	var f = freq_passband_center();
 	var pb_bin = freq_to_bin(f);
-	//console.log("PBV f="+f+" x_bin="+x_bin+" BACZ="+bins_at_cur_zoom()+" max_bin="+(x_bin+bins_at_cur_zoom())+" pb_bin="+pb_bin);
-	pb_bin = (pb_bin >= x_bin && pb_bin < (x_bin+bins_at_cur_zoom()))? pb_bin : -pb_bin-1;
-	//console.log("PBV ="+pb_bin+' '+((pb_bin<0)? 'outside':'inside'));
-	return pb_bin;
+	var x_max = x_bin + bins_at_cur_zoom();
+	var inside = (pb_bin >= x_bin && pb_bin < x_max);
+	//console.log('PBV f='+ f +' '+ x_bin +'|'+ pb_bin +'|'+ x_max +' inside='+ TF(inside));
+	return { bin:pb_bin, inside:inside };
 }
 
 
 ////////////////////////////////
-// canvas
+// #canvas
 ////////////////////////////////
 
 var window_width;
@@ -2664,6 +2750,11 @@ function canvas_mouseout(evt)
    mouse_freq_remove(evt);
 }
 
+function canvas_get_carfreq(relativeX, incl_PBO)
+{
+   return canvas_get_carfreq_offset(relativeX, incl_PBO) + center_freq;
+}
+
 function canvas_get_carfreq_offset(relativeX, incl_PBO)
 {
    var freq;
@@ -2689,7 +2780,7 @@ function canvas_get_carfreq_offset(relativeX, incl_PBO)
 
 function canvas_get_dspfreq(relativeX)
 {
-	return canvas_get_carfreq_offset(relativeX, false) + center_freq;
+	return canvas_get_carfreq(relativeX, false);
 }
 
 canvas_dragging = false;
@@ -2720,8 +2811,8 @@ function canvas_start_drag(evt, x, y)
 	}
 	
 	if (owrx.scale_canvas.mouse_out) {
-	   event_dump(evt, "CSD-scale");
-	   console.log('SHOULD NOT OCCUR');
+	   //event_dump(evt, "CSD-scale");
+	   //console.log('SHOULD NOT OCCUR');
 	   return;
 	}
 
@@ -2752,12 +2843,13 @@ function canvas_start_drag(evt, x, y)
 	}
 	
 	owrx.drag_count = 0;
+	owrx.mobile_firsttime = 1;
 	canvas_mouse_down_or_touch = true;
 	canvas_dragging = false;
 	owrx.canvas.drag_last_x = owrx.canvas.drag_start_x = x;
 	owrx.canvas.drag_last_y = owrx.canvas.drag_start_y = y;
    owrx.canvas.target = evt.target;
-	spectrum_tooltip_update(owrx.START, evt, x, y);
+	spectrum_tooltip_update(owrx.EV_START, evt, x, y);
    
 	// must always cancel even so system context menu doesn't appear
 	return cancelEvent(evt);
@@ -2794,7 +2886,7 @@ function canvas_touchStart(evt)
          owrx.canvas.drag_last_y = owrx.canvas.drag_start_y = y;
 	      if (owrx.debug_drag) canvas_log('*SPEC* -x'+ x +'-y'+ y);
          owrx.canvas.target = evt.target;
-         spectrum_tooltip_update(owrx.START, evt, x, y);
+         spectrum_tooltip_update(owrx.EV_START, evt, x, y);
       } else {
 		   canvas_start_drag(evt, x, y);
 		}
@@ -2841,11 +2933,12 @@ function canvas_touchStart(evt)
 function canvas_drag(evt, idx, x, y, clientX, clientY)
 {
 	if (!waterfall_setup_done) return;
-	if (spectrum_tooltip_update(owrx.DRAG, evt, clientX, clientY)) return;
+	if (spectrum_tooltip_update(owrx.EV_DRAG, evt, clientX, clientY)) return;
 	owrx.drag_count = !isNumber(owrx.drag_count)? 0 : (owrx.drag_count + 1);
 	
 	if (owrx.scale_canvas.mouse_out) {
 	   //event_dump(evt, "CD", 1);
+      //console.log('@mouse_out SCD');
 	   scale_canvas_drag(evt, x, y);    // continue scale dragging even though positioned on other canvases
 	   return;
 	}
@@ -2857,7 +2950,10 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
    // drag_count > 10 was required on Lenovo TB-7104F / Android 8.1.0 to differentiate double-touch from true drag.
    // I.e. an excessive number of touch events seem to be sent by browser for a single double-touch.
    // For desktop, sometimes clicking produces a single drag count. So prevent that from stopping the click.
-	if (canvas_mouse_down_or_touch && (!canvas_ignore_mouse_event || owrx.double_touch_start)) {
+   var isMobileOptNew = mobileOptNew();
+   //if (!canvas_mouse_down_or_touch) console.log('!canvas_mouse_down_or_touch');
+   
+	if (canvas_mouse_down_or_touch && (!canvas_ignore_mouse_event || owrx.double_touch_start || isMobileOptNew)) {
 	   var min_drag_cnt = kiwi_isMobile()? 10 : 1;
 	   var drag_cnt_b = (owrx.drag_count > min_drag_cnt);
 	   var drag_delta_b = (Math.abs(x - owrx.canvas.drag_start_x) > canvas_drag_min_delta);
@@ -2868,7 +2964,9 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
 			canvas_dragging = true;
 			wf_container.style.cursor = "move";
 		}
+
 		if (canvas_dragging) {
+		   var update_x = true;
 			var deltaX = owrx.canvas.drag_last_x - x;
 			var deltaY = owrx.canvas.drag_last_y - y;
 
@@ -2876,8 +2974,8 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
             if (owrx.double_touch_swipe) {
                // double-touch tune
                if (idx == 0 && evt.touches.length >= 2) {
-                  var relX = Math.round(Math.abs((evt.touches[0].pageX + evt.touches[1].pageX) / 2));
-                  demodulator_set_offset_frequency(owrx.FSET_SCALE_TOUCH_DRAG, canvas_get_carfreq_offset(relX, true));
+                  var midX = Math.round(Math.abs((evt.touches[0].pageX + evt.touches[1].pageX) / 2));
+                  demodulator_set_frequency(owrx.FSET_DTOUCH_DRAG, canvas_get_carfreq(midX, true));
                }
             } else {
                // pinch zoom
@@ -2893,11 +2991,39 @@ function canvas_drag(evt, idx, x, y, clientX, clientY)
                }
             }
          } else {
-            var dbins = norm_to_bins(deltaX / waterfall_width);
-            waterfall_pan_canvases(dbins);
+            if (isMobileOptNew) {  
+               if (1) {
+                  // #mobile-ui waterfall: scroll tuning in WF margins instead of stopping at WF end
+                  // For desktop see below.
+                  // Same behavior as double-touch tune above.
+                  // Different than mousewheel / trackpad scroll which jumps by 1/2 width.
+		            var area = canvas_freq_upd(owrx.FSET_TOUCH_DRAG, x);
+                  var deltaAllX = owrx.canvas.drag_all_x - x;
+                  //console.log('WF area='+ area +' x='+ x +'|'+ owrx.canvas.drag_all_x +'|'+ owrx.canvas.drag_last_x +' dx='+ deltaAllX +'|'+ deltaX);
+                  if (area != owrx.NOT_MARGIN) {
+                     if ((area == owrx.LEFT_MARGIN && deltaAllX < 0) || (area == owrx.RIGHT_MARGIN && deltaAllX > 0)) {
+                        //update_x = false;
+                     } else {
+                        // PB is in margin: also scroll waterfall
+                        var dx = deltaX;
+                        var dbins = norm_to_bins(deltaX / waterfall_width);
+                        waterfall_pan_canvases(-dbins);
+                        owrx.canvas.drag_all_x = x;
+                        update_x = false;
+                     }
+                  }
+               } else {
+                  demodulator_set_frequency(owrx.FSET_TOUCH_DRAG, canvas_get_carfreq(x, true));
+               }
+            } else {
+               // desktop: only drag the waterfall -- leave the tuning/passband alone
+               var dbins = norm_to_bins(deltaX / waterfall_width);
+               waterfall_pan_canvases(dbins);
+            }
          }
 
-			owrx.canvas.drag_last_x = x;
+			if (update_x) owrx.canvas.drag_last_x = x;
+         owrx.canvas.drag_all_x = x;
 			owrx.canvas.drag_last_y = y;
 		}
 	}
@@ -2998,12 +3124,14 @@ function canvas_end_drag2()
 	canvas_mouse_down_or_touch = false;
 	canvas_ignore_mouse_event = false;
 	if (owrx.debug_drag) { console.log("C-ED2 IME=set-false"); }
+	canvas_dragging = false;
 }
 
 function canvas_end_drag(evt, x)
 {
 	if (owrx.scale_canvas.mouse_out) {
 	   //event_dump(evt, "CED");
+      //console.log('@mouse_out CED');
 	   owrx.scale_canvas.mouse_out = false;
 	   scale_canvas_end_drag(evt, x, /* canvas_mouse_up */ true);
 	}
@@ -3014,7 +3142,7 @@ function canvas_end_drag(evt, x)
 	if (owrx.debug_drag) canvas_log('C-ED IME'+ (canvas_ignore_mouse_event? 1:0) +' CD'+ (canvas_dragging? 1:0));
 
    if (!canvas_dragging) {
-      var tooltip_complete = spectrum_tooltip_update(owrx.END);
+      var tooltip_complete = spectrum_tooltip_update(owrx.EV_END);
       if (owrx.debug_drag) canvas_log('MUP-ttip'+ (tooltip_complete? 1:0));
       //event_dump(evt, "MUP");
       
@@ -3050,7 +3178,7 @@ function canvas_end_drag(evt, x)
                //console.log('SFT-CLICK '+cur_mode+' fold='+fold+' step='+step_Hz+' trunc='+trunc+' fnew='+fnew +' '+ rv.s);
                freqmode_set_dsp_kHz(fnew/1000, null);
             } else {
-               demodulator_set_offset_frequency(owrx.FSET_SCALE_MOUSE_CLICK, canvas_get_carfreq_offset(x, true));
+               demodulator_set_frequency(owrx.FSET_MOUSE_CLICK, canvas_get_carfreq(x, true));
             }
          }
       }
@@ -3079,6 +3207,8 @@ function canvas_touchEnd(evt)
 	var x = owrx.canvas.drag_last_x, y = owrx.canvas.drag_last_y;
 	if (owrx.debug_drag)
 	   canvas_log('C-TE-x'+ x +'-DTS'+ (owrx.double_touch_start? 1:0) +'-DTSw'+ (owrx.double_touch_swipe? 1:0) +'-DRAG'+ (canvas_dragging? 1:0));
+   var was_dragging = canvas_dragging;
+
    try {
 	   canvas_end_drag(evt, x);
 	} catch(ex) {
@@ -3090,14 +3220,14 @@ function canvas_touchEnd(evt)
 */
 	
 	if (owrx.double_touch_start) {
-	   if (owrx.debug_drag) canvas_log('DTS-D='+ TF(canvas_dragging));
+	   if (owrx.debug_drag) canvas_log('DTS-D='+ TF(was_dragging));
 
       // last freq of a double-touch drag is saved in freq mem
-      demodulator_set_offset_frequency(owrx.FSET_SCALE_TOUCH_DRAG_END, freq_car_Hz - center_freq);
+      demodulator_set_frequency(owrx.FSET_TOUCH_DRAG_END, freq_car_Hz);
 
-	   if (!canvas_dragging) {
+	   if (!was_dragging) {
          // ensure menu on narrow screen devices is visible to prevent off-screen placement
-         if (kiwi_isMobile() && owrx.mobile && owrx.mobile.small)
+         if (mobileOpt())
             x = 10;
    
          if (owrx.debug_drag) canvas_log('*-RCM');
@@ -3121,12 +3251,13 @@ function canvas_touchEnd(evt)
 	} catch(ex) {
 	   canvas_catch_log(ex);
 	}
+	
 	evt.preventDefault();
 }
 
 
 ////////////////////////////////
-// wheel
+// #wheel
 ////////////////////////////////
 
 var canvas_mousewheel_rlimit_zoom = kiwi_rateLimit(canvas_mousewheel_cb, /* msec */ 170);
@@ -3378,7 +3509,7 @@ function wheel_help()
 
 
 ////////////////////////////////
-// right click menu
+// #right click menu
 ////////////////////////////////
 
 function right_click_menu_init()
@@ -3579,7 +3710,7 @@ function right_click_menu_cb(idx, x, cbp)
 
 
 ////////////////////////////////
-// database lookup
+// #database lookup
 ////////////////////////////////
 
 function freq_database_lookup(Hz, utility)
@@ -3641,7 +3772,7 @@ function freq_database_lookup(Hz, utility)
 
 
 ////////////////////////////////
-// export waterfall
+// #waterfall export
 ////////////////////////////////
 
 // this also works if displaying audio FFT instead of waterfall
@@ -3728,7 +3859,7 @@ function export_waterfall() {
 
 
 ////////////////////////////////
-// zoom
+// #zoom
 ////////////////////////////////
 
 function zoomCorrection()
@@ -3904,9 +4035,9 @@ function zoom_step(dir, arg2)
 				//console.log('zoom to cursor xrel='+ x_rel);
 			} else {
 				// zoom in or out centered on passband, if visible, else middle of current waterfall
-				var pb_bin = passband_visible();
-				if (pb_bin >= 0) {		// visible
-					x_norm = (pb_bin - x_bin) / bins_at_cur_zoom();
+				var pv = passband_visible();
+				if (pv.inside) {
+					x_norm = (pv.bin - x_bin) / bins_at_cur_zoom();
 				} else {
 					x_norm = zoom_center;
 				}
@@ -4033,11 +4164,24 @@ function zoom_over(evt)
 
 
 ////////////////////////////////
-// mobile
+// #mobile
 ////////////////////////////////
+
+/*
+   #mobile-ui mobileOptNew() current development:
+      Drag in Fscale or WF scrolls WF when PB in L/R margin (same as Dtouch WF drag).
+*/
+
+function mobileOpt() { return ((kiwi_isMobile() && owrx.mobile && owrx.mobile.small) || kiwi.mdev); }
+function mobileOptNew() { return (mobileOpt() && kiwi.mnew); }
+function phone() { return (kiwi_isMobile() && owrx.mobile && owrx.mobile.phone); }
+function tablet() { return (kiwi_isMobile() && owrx.mobile && owrx.mobile.tablet); }
+function iPad() { return (kiwi_isMobile() && owrx.mobile && owrx.mobile.iPad); }
 
 function mobile_init()
 {
+   if (!kiwi_isMobile()) return;
+   
 	// When a mobile device connects to a Kiwi while held in portrait orientation:
 	// Remove top bar and minimize control panel if width < oldest iPad width (768px)
 	// which should catch all iPhones but no iPads (iPhone X width = 414px).
@@ -4046,8 +4190,8 @@ function mobile_init()
 	var mobile = owrx.mobile = ext_mobile_info();
    //console.log('$ wh='+ mobile.width +','+ mobile.height);
 	
-	// anything smaller than iPad: remove top bar and switch control panel to "off".
-	if (mobile.small) {
+	// mobile optimization: remove top bar and switch control panel to "off".
+	if (mobileOpt()) {
 	   toggle_or_set_hide_bars(owrx.HIDE_TOPBAR);
 	   keyboard_shortcut_nav('off');
 	}
@@ -4094,6 +4238,7 @@ function mobile_init()
 function mobile_scale_control_panel(mobile, noScale)
 {
    mobile = mobile || owrx.mobile;
+   if (!mobile) return;
    var el = w3_el('id-control');
 
    if ((noScale == true) || el.uiWidth < mobile.width) {
@@ -4113,7 +4258,7 @@ function mobile_scale_control_panel(mobile, noScale)
 
 
 ////////////////////////////////
-// spectrum
+// #spectrum
 ////////////////////////////////
 
 var spec = {
@@ -4268,15 +4413,20 @@ function spectrum_dB_bands()
 // Not understood: The spectrum dB tooltip refuses to appear on all browsers using the Android tablets.
 // We checked the element visibility, z-index, etc. and nothing helped. Works fine with iOS.
 
-function spectrum_tooltip_cancel()
+function spectrum_tooltip_cancel(from)
 {
    var demod = demodulators[0];
    var allow_pb_adj = (!kiwi_isMobile() && owrx.allow_pb_adj);
    var is_active = (owrx.spec_pb_mkr_dragging != owrx.PB_NO_EDGE);
 
-   if (allow_pb_adj) demod.envelope.drag_end(0);
+   if (allow_pb_adj) {
+      //console.log('spectrum_tooltip_cancel from='+ from);
+      //kiwi_trace();
+      if (from != owrx.EV_OUTSIDE) demod.envelope.drag_end(0);
+   }
    owrx.spec_pb_mkr_dragging = owrx.PB_NO_EDGE;
    owrx.allow_pb_adj_at_start = false;
+   //console.log('is_active='+ is_active);
    return is_active;
 }
 
@@ -4290,22 +4440,22 @@ function spectrum_tooltip_update(type, evt, clientX, clientY)
    var is_active = (owrx.spec_pb_mkr_dragging != owrx.PB_NO_EDGE);
    var demod = demodulators[0];
 
-   if (type == owrx.END)
-      return spectrum_tooltip_cancel();
+   if (type == owrx.EV_END)
+      return spectrum_tooltip_cancel(owrx.EV_END);
 
 	var target = (evt && (evt.target == spec.dB || evt.currentTarget == spec.dB || evt.target == spec.dB_ttip || evt.currentTarget == spec.dB_ttip));
 	//console.log('CD '+ target +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
 	//if (kiwi_isMobile()) alert('CD '+ tf +' x='+ clientX +' tgt='+ evt.target.id +' ctg='+ evt.currentTarget.id);
+   //console.log('STTU '+ type);
 
    // if mouse wanders outside spectrum cancel the tooltip update process
-	if (!target)
-      return spectrum_tooltip_cancel();
+	if (!target) return spectrum_tooltip_cancel(owrx.EV_OUTSIDE);
    
    // if dragging, but there is no button down, then this could occur if the button was released
    // while mouse positioned over the freq scale preventing the canvas mouseup from occuring
-   if (type == owrx.DRAG && is_active && !mouse_L) {
+   if (type == owrx.EV_DRAG && is_active && !mouse_L) {
       //console.log('mouse up cancel');
-      return spectrum_tooltip_cancel();
+      return spectrum_tooltip_cancel(owrx.EV_MOUSEUP);
    }
 
    // This is a little tricky. The tooltip text span must be included as an event target so its position will update when the mouse
@@ -4336,11 +4486,11 @@ function spectrum_tooltip_update(type, evt, clientX, clientY)
       // might be outside {lo,hi}_edge if the mouse is moved quickly.
       if (allow_pb_adj && (lo_edge || hi_edge || owrx.spec_pb_mkr_dragging != owrx.PB_NO_EDGE)) {
          if (canvas_mouse_down_or_touch) {
-            if (type == owrx.START) {
+            if (type == owrx.EV_START) {
                owrx.spec_pb_mkr_dragging = lo_edge? owrx.PB_LO_EDGE : owrx.PB_HI_EDGE;
                demod.envelope.env_drag_start(cx, 0, { shiftKey:false, altKey: false, ctrlKey: false });
             } else
-            if (type == owrx.DRAG) {
+            if (type == owrx.EV_DRAG) {
                demod.envelope.drag_move(cx);
             }
             adj_pb = true;
@@ -4616,7 +4766,7 @@ function spectrum_update(data)
 
 
 ////////////////////////////////
-// waterfall
+// #waterfall
 ////////////////////////////////
 
 var waterfall_setup_done = 0;
@@ -4665,7 +4815,7 @@ function wf_init_ready()
 	users_init( { user:1 } );
 	ident_init();
 	stats_init();
-	check_top_bar_congestion();
+	openwebrx_resize();
 	if (spectrum_show) setTimeout(spec_show, 2000);    // after control instantiation finishes
    
 	audioFFT_setup();
@@ -4682,8 +4832,7 @@ function wf_init_ready()
 
 	wf_snap(kiwi_storeInit('wf_snap'));
 
-   if (kiwi_isMobile())
-      mobile_init();
+   mobile_init();
    
    dx_init();
    
@@ -4703,6 +4852,7 @@ function wf_init_ready()
 
    if (cfg.init.tab) keyboard_shortcut_nav(kiwi.tab_s[cfg.init.tab]);
 
+	openwebrx_resize();
 	waterfall_setup_done = 1;
 }
 
@@ -5302,8 +5452,8 @@ function waterfall_pan_canvases(bins)
    extint_environment_changed( { waterfall_pan:1, passband_screen_location:1 } );
 
 	// reset "select band" menu if freq is no longer inside band
-	//console.log('page_scroll PBV='+ passband_visible() +' freq_car_Hz='+ freq_car_Hz);
-	if (passband_visible() < 0)
+	//console.log('page_scroll PBV='+ (passband_visible().visible) +' freq_car_Hz='+ freq_car_Hz);
+	if (!passband_visible().visible)
 		check_band(true);
 }
 
@@ -5387,9 +5537,20 @@ function waterfall_zoom_canvases(dz, x)
 	need_clear_wf_sp_avg = true;
 }
 
-function waterfall_position(pos, freq_kHz)
+function waterfall_position(from, pos, freq_kHz)
 {
-   //console.log('waterfall_position='+ pos +' freq_kHz='+ freq_kHz);
+   /*
+      Trying to keep PB centered all the time has the undesirable side-effect
+      of invalidating more of the WF on small frequency changes than the
+      "scroll WF when PB in L/R margins" scheme we ended up implementing.
+      
+      if (from == owrx.FSET_DTOUCH_DRAG && mobileOptNew()) {
+         pos = owrx.WF_POS_CENTER;     // passband always centered
+         //kiwi_trace('waterfall_position');
+      }
+   */
+   
+   //console.log('waterfall_position='+ pos +' freq_kHz='+ freq_kHz +' freq_passband_center='+ (freq_passband_center()/1e3).toFixed(3));
    //kiwi_trace('waterfall_position');
    var wf_middle_bin = x_bin + bins_at_cur_zoom()/2;
 
@@ -5397,11 +5558,11 @@ function waterfall_position(pos, freq_kHz)
       freq_kHz = freq_kHz || 1e3;
       var dbin = freq_to_bin(freq_kHz*1e3) - wf_middle_bin;    // < 0 = pan left (toward lower freqs)
       waterfall_pan_canvases(dbin);
-   } else {    // WF_POS_RECENTER_IF_OUTSIDE
-      var pb_bin = -passband_visible() - 1;
-      var bins_to_recenter = pb_bin - wf_middle_bin;
-      //console.log('RECEN YES pb_bin='+ pb_bin +' wfm='+ wf_middle_bin +' bins_to_recenter='+ bins_to_recenter +' z='+ zoom_level +' x_bin='+ x_bin +' bacz='+ bins_at_cur_zoom());
-      if (pb_bin >= 0) {
+   } else {
+      var pv = passband_visible();
+      if (pos == owrx.WF_POS_CENTER || (pos == owrx.WF_POS_RECENTER_IF_OUTSIDE && !pv.inside)) {
+         var bins_to_recenter = pv.bin - wf_middle_bin;
+         //console.log('RECEN YES pv.bin='+ pv.bin +' wfm='+ wf_middle_bin +' bins_to_recenter='+ bins_to_recenter +' z='+ zoom_level +' x_bin='+ x_bin +' bacz='+ bins_at_cur_zoom());
          waterfall_pan_canvases(bins_to_recenter);    // < 0 = pan left (toward lower freqs)
       }
    }
@@ -5414,9 +5575,9 @@ function waterfall_tune(f_kHz)
 {
    //console.log('waterfall_tune f_kHz='+ f_kHz);
    if (f_kHz == 0) {
-      waterfall_position(owrx.WF_POS_AT_FREQ, +ext_get_freq_kHz());
+      waterfall_position(FSET_SET_FREQ, owrx.WF_POS_AT_FREQ, +ext_get_freq_kHz());
    } else {
-      waterfall_position(owrx.WF_POS_AT_FREQ, f_kHz);
+      waterfall_position(FSET_SET_FREQ, owrx.WF_POS_AT_FREQ, f_kHz);
       owrx.waterfall_tuned = 1;
    }
    w3_field_select('id-freq-input', {mobile:1, log:2});
@@ -5879,7 +6040,7 @@ function color_between(first, second, percent)
 	
 
 ////////////////////////////////
-// audio FFT
+// #audio FFT
 ////////////////////////////////
 
 var afft = {
@@ -6120,7 +6281,7 @@ function wf_audio_FFT(audio_data, samps)
 
 
 ////////////////////////////////
-// ui
+// #ui
 ////////////////////////////////
 
 /*
@@ -6205,6 +6366,18 @@ function freq_passband_center()
 	return freq;
 }
 
+function freq_passband(pbc_Hz)
+{
+	var lo = 0, hi = 0;
+	var demod = demodulators[0];
+	if (isDefined(demod)) {
+	   if (!isNumber(pbc_Hz)) pbc_Hz = center_freq + demod.offset_frequency;
+		lo = pbc_Hz + demod.low_cut;
+		hi = pbc_Hz + demod.high_cut;
+	}
+	return { pbc:pbc_Hz, lo:lo, hi:hi };
+}
+
 function passband_offset_dxlabel(mode, ext, pb_lo, pb_hi)
 {
    // if custom passband use it else the default passband of mode
@@ -6227,7 +6400,7 @@ function passband_offset_dxlabel(mode, ext, pb_lo, pb_hi)
 
 
 ////////////////////////////////
-// frequency entry
+// #frequency entry
 ////////////////////////////////
 
 function freqmode_set_dsp_kHz(fdsp_kHz, mode, opt)
@@ -6252,8 +6425,9 @@ function freqmode_set_dsp_kHz(fdsp_kHz, mode, opt)
 	} else {
 		freq_car_Hz = freq_dsp_to_car(fdsp_Hz);
 		if (!no_set_freq) {
-         //console.log('freqmode_set_dsp_kHz: demodulator_set_offset_frequency NEW freq_car_Hz=' +freq_car_Hz +' no_set_freq='+ no_set_freq);
-         demodulator_set_offset_frequency(owrx.FSET_SET_FREQ, freq_car_Hz - center_freq);
+         //console.log('freqmode_set_dsp_kHz: demodulator_set_frequency NEW freq_car_Hz=' +freq_car_Hz +' no_set_freq='+ no_set_freq);
+         //kiwi_trace('FSET_SET_FREQ');
+         demodulator_set_frequency(owrx.FSET_SET_FREQ, freq_car_Hz);
       }
 	}
 }
@@ -6342,7 +6516,7 @@ function freqset_update_ui(from)
    
    if (owrx.trace_freq_update) {
       console.log("FUPD-UI freq_car_Hz="+freq_car_Hz+' NEW freq_displayed_Hz='+freq_displayed_Hz +' from='+ from +'('+ owrx.fset_s[from] +')');
-      kiwi_trace();
+      //if (from == owrx.FSET_NOP) kiwi_trace('freqset_update_ui');
 	   owrx.trace_freq_update = 0;
 	}
 	
@@ -6353,9 +6527,10 @@ function freqset_update_ui(from)
 	// re-center if the new passband is outside the current waterfall
    if (from == owrx.FSET_SET_FREQ && zoom_center != 0.5) {
       // let the zoom code handle it since it seems to work
+      //console.log('FSET_SET_FREQ recen');
       zoom_step(ext_zoom.CUR);
    } else {
-	   waterfall_position(owrx.WF_POS_RECENTER_IF_OUTSIDE);
+	   waterfall_position(from, owrx.WF_POS_RECENTER_IF_OUTSIDE);
 	}
 	
 	kiwi_storeWrite('last_freq', freq_displayed_kHz_str_with_freq_offset);
@@ -6367,7 +6542,7 @@ function freqset_update_ui(from)
 	vfo_update();
 	
 	// don't add to freq memory while tuning across scale except for final position
-	if (kiwi.fmem_auto_save && !owrx.no_fmem_update && from != owrx.FSET_NOP && from != owrx.FSET_SCALE_DRAG && from != owrx.FSET_SCALE_TOUCH_DRAG && from != owrx.FSET_PB_CHANGE) {
+	if (kiwi.fmem_auto_save && !owrx.no_fmem_update && owrx.fmem_upd[from]) {
       //console.log('>>> freq_memory_add freq='+ freq_displayed_kHz_str_with_freq_offset);
       freq_memory_add(freq_displayed_kHz_str_with_freq_offset);
 	}
@@ -6471,7 +6646,7 @@ function try_freqset_update_ui(from)
 		   audioFFT_update();
 		   wf.audioFFT_prev_mode = cur_mode;
 		} else {
-		   mkenvelopes(get_visible_freq_range());
+		   mkenvelopes();
 		}
 	} else {
 		setTimeout(try_freqset_update_ui, 1000, from);
@@ -6885,7 +7060,7 @@ function freq_step_update_ui(force)
 
 
 ////////////////////////////////
-// frequency memory
+// #frequency memory
 ////////////////////////////////
 
 function freq_memory_init()
@@ -7177,8 +7352,8 @@ function freq_memory_help()
 
 
 ////////////////////////////////
-// band scale
-// band bars
+// #band scale
+// #band bars
 ////////////////////////////////
 
 // deprecated config.js has:
@@ -7819,34 +7994,7 @@ function check_band(reset)
 
 
 ////////////////////////////////
-
-function tune(fdsp, mode, zoom, zarg)
-{
-	ext_tune(fdsp, mode, ext_zoom.ABS, zoom, zarg);
-}
-
-var maxdb;
-var mindb_un;
-var mindb;
-var full_scale;
-
-function init_scale_dB()
-{
-	maxdb = init_max_dB;
-	mindb_un = init_min_dB;
-	mindb = mindb_un - zoomCorrection();
-	full_scale = maxdb - mindb;
-	full_scale = full_scale? full_scale : 1;	// can't be zero
-
-   wf.save_maxdb = maxdb;
-   wf.save_mindb_un = mindb_un;
-   wf.auto_ceil.val = +kiwi_storeInit('last_ceil_dB', cfg.init.ceil_dB);
-   wf.auto_floor.val = +kiwi_storeInit('last_floor_dB', cfg.init.floor_dB);
-}
-
-
-////////////////////////////////
-// confirmation panel
+// #confirmation panel
 ////////////////////////////////
 
 var confirmation = {
@@ -7936,7 +8084,7 @@ function confirmation_panel_close()
 
 
 ////////////////////////////////
-// set freq offset confirmation panel
+// #confirmation panel: set freq offset
 ////////////////////////////////
 
 
@@ -7953,7 +8101,7 @@ function set_freq_offset_dialog()
 }
 
 ////////////////////////////////
-// cal ADC clock confirmation panel
+// #confirmation panel: cal ADC clock
 ////////////////////////////////
 
 var cal_adc_new_adj;
@@ -8004,7 +8152,7 @@ function cal_adc_confirm()
 
 
 ////////////////////////////////
-// admin pwd panel
+// #admin pwd panel
 ////////////////////////////////
 
 function admin_pwd_query(isAdmin_true_cb)
@@ -8039,7 +8187,7 @@ function admin_pwd_cb2(el, val)
 
 
 ////////////////////////////////
-// dx labels
+// #dx labels
 ////////////////////////////////
 
 var dx = {
@@ -9746,7 +9894,7 @@ function dx_ext_open()
 }
 */
 
-// Any var we add to the div in dx_label() is undefined in the div that appears here,
+// Any var we add to the div in dx_label_render_cb() is undefined in the div that appears here,
 // so use the number embedded in id="" to create a reference.
 // Even the "data-" thing doesn't work.
 
@@ -9889,7 +10037,7 @@ function dx_help(show)
 
 
 ////////////////////////////////
-// s-meter
+// #s-meter
 ////////////////////////////////
 
 var smeter_width;
@@ -10023,7 +10171,7 @@ function update_smeter()
 
 
 ////////////////////////////////
-// user ident
+// #user ident
 ////////////////////////////////
 
 var ident_tout;
@@ -10065,6 +10213,7 @@ function ident_complete(from, which)
 	var ident = el[which].value;
 	var len = Math.max(cfg.ident_len, kiwi.ident_min);
    ident = kiwi_strip_tags(ident, '').substring(0, len);
+   ident = ident.trim();   // no blank idents
 	//console.log('ICMPL from='+ from +' which='+ which +' ident='+ ident);
 	//canvas_log('IDC-'+ from +'-'+ which);
 	//console.log('ICMPL ident_user=<'+ ident +'>');
@@ -10089,8 +10238,14 @@ function ident_complete(from, which)
 	send_ident = true;
 	//console.log('ident_complete: SET which='+ which +' ident_user='+ ident_user +' send_ident=true');
 	
-	if (which == 3 && ident != '')
-	   play_button_click_cb();
+	if (which == 3 && ident != '') {
+	   if (0 && kiwi_isMobile()) {
+	      // reload page to get "Try new mobile version" button
+	      kiwi_open_or_reload_page();
+	   } else {
+	      play_button_click_cb();
+	   }
+	}
 }
 
 function ident_keyup(el, evt, which)
@@ -10274,6 +10429,17 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    var dir = ctlAlt? -1 : 1;
    var no_step = false;
    
+   var el = w3_elementAtPointer(owrx.last_pageX, owrx.last_pageY);
+   //console.log(el);
+   var inFreqIn = false, inFreqMenu = false;
+   if (el) {
+      var id = w3_id(el);
+      //console.log(id);
+      if (id == 'id-freq-input') inFreqIn = true;
+      else
+      if (id == 'id-freq-menu') inFreqMenu = true;
+   }
+
    switch (key) {
    
    // mode
@@ -10288,13 +10454,22 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    
    // step
    // 0: -large, 1: -med, 2: -small || 3: +small, 4: +med, 5: +large
-   case 'j': case 'J': case 'ArrowLeft':
+   case 'ArrowLeft':    // if cursor in freq entry box let arrow key move cursor
+      if (inFreqIn) return true;    // don't cancel event
+      // fall through...
+
+   case 'j': case 'J':
       if (key_mod != shortcut.SHIFT_PLUS_CTL_ALT)
          freqstep_cb(null, owrx.wf_snap? key_mod : (2 - key_mod));
       else
          dx_label_step(-1);
       break;
-   case 'i': case 'I': case 'ArrowRight':
+
+   case 'ArrowRight':    // if cursor in freq entry box let arrow key move cursor
+      if (inFreqIn) return true;    // don't cancel event
+      // fall through...
+
+   case 'i': case 'I':
       if (key_mod != shortcut.SHIFT_PLUS_CTL_ALT)
          freqstep_cb(null, owrx.wf_snap? (5 - key_mod) : (3 + key_mod));
       else
@@ -10373,7 +10548,16 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
    case '~': admin_page_cb(); break;
    case '^': canvas_mouse_wheel_set(owrx.wheel_tunes ^ 1); break;
    case '&': wf_snap(owrx.wf_snap ^ 1); break;
-   case '?': case 'h': keyboard_shortcut_help(); break;
+
+   case '?': case 'h':
+      console.log('inFreqIn='+ TF(inFreqIn) +' inFreqMenu='+ TF(inFreqMenu));
+      if (inFreqIn) freq_input_help();
+      else
+      if (inFreqMenu) freq_memory_help();
+      else
+         keyboard_shortcut_help();
+      break;
+
    case 'H':
       if (extint.current_ext_name)
          w3_call(extint.current_ext_name +'_help', true);
@@ -10403,14 +10587,17 @@ function keyboard_shortcut(key, key_mod, ctlAlt, evt)
       break;
    
    default:
-      if (evt && evt.keyCode != shortcut.KEYCODE_SFT && evt.keyCode != shortcut.KEYCODE_CTL && evt.keyCode != shortcut.KEYCODE_ALT) {
-         console.log('no shortcut key: '+ key_stringify(evt) +'('+ evt.keyCode +')');
+      var kc = evt.keyCode;
+      if (evt && kc != shortcut.KEYCODE_SFT && kc != shortcut.KEYCODE_CTL && kc != shortcut.KEYCODE_ALT) {
+         console.log('no shortcut key: '+ key_stringify(evt) +'('+ kc +')');
       }
-      action = false; break;
+      action = false;
+      break;
    
    }
    
    ignore_next_keyup_event = true;     // don't trigger e.g. freqset_keyup()/freqset_complete()
+   return false;
 }
 
 function keyboard_shortcut_event(evt)
@@ -10465,19 +10652,6 @@ function keyboard_shortcut_event(evt)
          k == 'Enter' || k == 'Backspace' || k == 'Delete'
       );
    
-   if (k == 'h' || k == '?') {
-      var el = w3_elementAtPointer(owrx.last_pageX, owrx.last_pageY);
-      //console.log(el);
-      if (el && el.id == 'id-freq-input') {
-         freq_input_help();
-         return cancelEvent(evt);
-      }
-      if (w3_contains(el, 'id-freq-menu')) {
-         freq_memory_help();
-         return cancelEvent(evt);
-      }
-   }
-
    var field_or_slider = (evt.target.nodeName == 'INPUT');
    var slider_not_field = (evt.target.type == 'range');
    if (!field_or_slider || slider_not_field || (id == 'id-freq-input' && !field_input_key)) {
@@ -10505,7 +10679,8 @@ function keyboard_shortcut_event(evt)
       
       //console.log('keyboard_shortcut key=<'+ k +'> keyCode='+ evt.keyCode +' key_mod='+ key_mod +' ctlAlt='+ ctlAlt +' alt='+ alt);
       //if (k.startsWith('Arrow')) event_dump(evt, 'Arrow', true);
-      keyboard_shortcut(k, key_mod, ctlAlt, evt);
+      if (keyboard_shortcut(k, key_mod, ctlAlt, evt))
+         return;     // don't cancel event
       
       /*
       if (k != 'Shift' && k != 'Control' && evt.key != 'Alt') {
@@ -10525,7 +10700,7 @@ function keyboard_shortcut_event(evt)
 
 
 ////////////////////////////////
-// extensions
+// #extensions
 ////////////////////////////////
 
 function mk_ext_menu()
@@ -10568,7 +10743,7 @@ function extension_scroll(dir)
 
 
 ////////////////////////////////
-// panels
+// #panels
 ////////////////////////////////
 
 var panel_margin = 10;
@@ -10605,18 +10780,22 @@ function test_audio_suspended()
    //console.log('AudioContext.state='+ ac_play_button.state);
    var s1, onclick = null, input = false, ident = kiwi_storeInit('ident', '');
    //console.log('$test_audio_suspended require_id='+ cfg.require_id +' ident=<'+ ident +'>');
+   var m_old = (kiwi.mdev && !kiwi.mnew);
 
    if (cfg.require_id && isEmptyString(ident)) {
       snd_send('SET require_id=1');
-      s1 = w3_input('w3-dump w3-flex w3-flex-col w3-valign-center//w3-custom-events w3-margin-T-10 w3-font-18px w3-normal'+
+      s1 = w3_input('w3-flex w3-flex-col w3-valign-center//w3-custom-events w3-margin-T-10 w3-font-18px w3-normal'+
          '|padding:1px; width:300px|size=20'+
          ' onchange="ident_complete(\'el\', 3)" onkeyup="ident_keyup(this, event, 3)"',
          'Enter your name or callsign <br> to start KiwiSDR', 'ident-input3');
       onclick = '';
       input = true;
    } else
-   if (ac_play_button.state != "running") {
+   if (ac_play_button.state != "running" || m_old) {
       s1 = (kiwi_isMobile()? 'Tap to':'Click to') +' start KiwiSDR';
+      if (0 && (kiwi_isMobile() || m_old))
+         s1 += '<br><br>' + w3_button('w3-round-xlarge w3-aqua', 'Try new<br>mobile features', 'try_mobile_cb');
+         //s1 += '<br><br>' + w3_button('w3-round-xlarge w3-aqua', 'Don\'t use new<br>mobile features', 'try_mobile_cb');
       onclick = 'onclick="play_button_click_cb()"';
    }
 
@@ -10639,6 +10818,13 @@ function test_audio_suspended()
       //el.style.top = px(w3_center_in_window(el, 'PB'));
       //alert('state '+ ac_play_button.state);
    }
+}
+
+function try_mobile_cb()
+{
+   kiwi.mdev = kiwi.mnew = true;
+   mdev_log_resize();
+   play_button_click_cb();
 }
 
 // Browsers now only play web audio after they have been started by clicking a button.
@@ -10677,7 +10863,7 @@ function panels_setup()
 		   ' onchange="ident_complete(\'el\', 1)" onkeyup="ident_keyup(this, event, 1)"',
 		   'Your name or callsign:', 'ident-input1');
 
-	// Need to capture click event to override parent (id-top-bar) click event.
+	// Need to capture click event to override parent (id-topbar) click event.
 	// Otherwise when the ident input field is click freqset_select() is called and the focus is taken away.
 	el.addEventListener('click', function(evt) { return cancelEvent(evt); }, true);
 	
@@ -11282,7 +11468,7 @@ function panels_setup()
 
 
 ////////////////////////////////
-// option bar
+// #option bar
 ////////////////////////////////
 
 function optbar_focus(next_id, cb_arg)
@@ -11323,7 +11509,7 @@ function optbar_blur(cur_id)
 
 
 ////////////////////////////////
-// rf controls
+// #rf controls
 ////////////////////////////////
 
 function rf_attn_cb(path, val, done, first, ui_only)
@@ -11365,7 +11551,7 @@ function rf_attn_preset_cb(path, val)
 
 
 ////////////////////////////////
-// waterfall / spectrum controls
+// #waterfall / spectrum controls
 ////////////////////////////////
 
 var WF_SPEED_OFF = 0;
@@ -11412,6 +11598,25 @@ var wf = {
    audioFFT_prev_mode: '',
    audioFFT_clear_wf: false,
 };
+
+var maxdb;
+var mindb_un;
+var mindb;
+var full_scale;
+
+function init_scale_dB()
+{
+	maxdb = init_max_dB;
+	mindb_un = init_min_dB;
+	mindb = mindb_un - zoomCorrection();
+	full_scale = maxdb - mindb;
+	full_scale = full_scale? full_scale : 1;	// can't be zero
+
+   wf.save_maxdb = maxdb;
+   wf.save_mindb_un = mindb_un;
+   wf.auto_ceil.val = +kiwi_storeInit('last_ceil_dB', cfg.init.ceil_dB);
+   wf.auto_floor.val = +kiwi_storeInit('last_floor_dB', cfg.init.floor_dB);
+}
 
 var wf_contr_s = { 0:'normal', 1:'scheme 1', 2:'scheme 2', 3:'scheme 3', 4:'scheme 4' };
 
@@ -11940,7 +12145,7 @@ function toggle_or_set_spec_peak(set, val, trace, ev)
 
 
 ////////////////////////////////
-// audio
+// #audio
 ////////////////////////////////
 
 var muted_until_freq_set = true;
@@ -12493,14 +12698,17 @@ function toggle_or_set_compression(set, val)
          el.style.visibility = 'visible';
          freqset_select();
       });
-	kiwi_storeWrite('last_compression', btn_compression.toString());
+   
+	var opt = isNumber(set)? set : 0;
+   if (!(opt & toggle_e.NO_WRITE_COOKIE))
+	   kiwi_storeWrite('last_compression', btn_compression.toString());
 	//console.log('SET compression='+ btn_compression.toFixed(0));
 	snd_send('SET compression='+ btn_compression.toFixed(0));
 }
 
 
 ////////////////////////////////
-// AGC
+// #AGC
 ////////////////////////////////
 
 function set_agc()
@@ -12703,7 +12911,7 @@ function agc_help()
 
 
 ////////////////////////////////
-// users
+// #users
 ////////////////////////////////
 
 function users_setup()
@@ -12755,7 +12963,7 @@ function admin_page_cb() {
 
 
 ////////////////////////////////
-// control panel
+// #control panel
 ////////////////////////////////
 
 // icon callbacks
@@ -13054,7 +13262,9 @@ function place_panels()
 }
 
 
-// panel-specific setup
+////////////////////////////////
+// #panel setup
+////////////////////////////////
 
 var divControl;
 
@@ -13122,8 +13332,13 @@ function panel_set_width_height(id, width, height)
 }
 
 ////////////////////////////////
-// misc
+// #misc
 ////////////////////////////////
+
+function tune(fdsp, mode, zoom, zarg)
+{
+	ext_tune(fdsp, mode, ext_zoom.ABS, zoom, zarg);
+}
 
 // NB: use kiwi_log() instead of console.log() in here
 function add_problem(what, append, sticky, el_id)
@@ -13159,7 +13374,7 @@ function set_gen(freq, attn_ampl)
 
 
 ////////////////////////////////
-// websocket
+// #websocket
 ////////////////////////////////
 
 var bin_server = 0;

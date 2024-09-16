@@ -98,6 +98,7 @@ x2
 
 .id-time-display-logo-inner
 {
+    position: relative;
 	opacity: 0;
 	transition: opacity 1s linear;
 }
@@ -112,8 +113,8 @@ x2
 .id-time-display-logo-text
 {
 	position: absolute;
-	top: 2pt;
 	right: 15px;
+	top: 2pt;
 	font-size: 10pt;
 	color: #909090;
 	width: 200px;
@@ -122,14 +123,15 @@ x2
 
 .id-time-display-inner
 {
+    position: relative;
 	transition: opacity 1s linear;
 }
 
 .id-time-display-text-inner
 {
 	position: absolute;
-	top: 1pt;
 	right: 0px;
+	top: 1pt;
 	font-size: 10pt;
 	color: black;
 	width: 200px;
