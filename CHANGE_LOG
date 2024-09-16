@@ -2,6 +2,50 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.700  September 16, 2024
+    User interface:
+        When adjusting the passband edges if the cursor wanders above or below the frequency scale
+        adjustment will continue to work. However the tooltip displaying the passband numeric
+        values continues to only appear when the cursor is positioned over the passband edge.
+        Remember that you can only adjust the edges when zoomed in far enough that the passband
+        color is green instead of yellow.
+        
+        On narrow screen devices top bar now scrolls horizontally so all items can be accessed.
+        
+        Mobile devices: sliding the passband to the screen edges causes the frequency scale to pan.
+        
+        FT8/WSPR:
+            Added QO-100 satellite frequencies to extension and autorun menus.
+            Added FT8/WSPR V/UHF DX label entries to community database.
+        
+        When the frequency offset is setup for operation with a greater than 1 GHz downconverter
+        the frequency entry box overflows due to the extra digit(s) displayed. There wasn't really
+        a good solution for this. Except that now if the cursor starts out inside the box the
+        keyboard left/right arrow keys will scroll left/right across the digits. As opposed to
+        tuning the current frequency as the left/right arrow keys normally do.
+    
+        ALE extension:
+            Added "UN MINURSO" to milcom frequency list. (thanks M0HGK)
+            Added "MOROCCAN AF/CIVIL/POL/NAVY" services to milcom frequency list. (thanks Mark W)
+
+    Admin interface:
+        The top bar (tab selection) and any status/error messages are now fixed at the top of the
+        page and no longer participate in any scrolling. This eliminates, for example, the page
+        "jumping back" to the top when you change a setting that requires a restart.
+    
+        Config tab:
+            New menu "Frequency scale presets" has some pre-defined values that automatically puts
+            the correct entry in the "Frequency scale offset" field. For example, the menu entry
+            "144 => 28 (2m)" puts the value 116000 in the offset field which would map 144-148 MHz
+            to 28-32 MHz (assuming 32 MHz mode selected). We can add to this menu as necessary.
+        
+        Network tab:
+            Better user interface behavior during "DHCP/static" and "Auto add NAT" changes.
+        
+        Extensions tab:
+            WSPR option "Log spot debug info?" now produces a correct debug message in the log.
+            For example, WSPR UPLOAD: wsprnet.org said: "1 out of 1 spot(s) added"
+
 v1.699  August 25, 2024
     User interface:
         When recalling from the frequency memory using the ctrl-1 ctrl-2 ... ctrl-9 shortcut keys the
