@@ -1485,9 +1485,10 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 
 	this.envelope.drag_move = function(x)
 	{
-	   var rv = { event_handled: false, fset: owrx.FSET_NOP };
+	   var rv = { event_handled: false, fset: owrx.FSET_PB_CHANGE };
 		var dr = demodulator.draggable_ranges;
 		if (this.dragged_range == dr.none) {
+		   rv.fset = owrx.FSET_NOP;
 			return rv; // we return if user is not dragging (us) at all
 		}
 		rv.event_handled = true;
@@ -1580,7 +1581,7 @@ function demodulator_default_analog(offset_frequency, subtype, locut, hicut)
 			//console.log('DRAG-MOVE off=', new_value.toFixed(0));
 		}
 		
-		//now do the actual modifications:
+		// now do the actual modifications:
 		mkenvelopes(this.visible_range);
 		freqset_car_Hz(this.parent.offset_frequency + center_freq);
 		this.parent.set();
