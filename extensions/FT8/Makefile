@@ -12,7 +12,7 @@ EXT_EXCLUDE_RSYNC += $(THIS_FT8)/ft8_lib/.build
 ifeq ($(FT8_SKIP),true)
     EXT_SKIP += FT8
 else
-    EXT_SUBDIRS += extensions/FT8/ft8_lib extensions/FT8/ft8_lib/common extensions/FT8/ft8_lib/fft extensions/FT8/ft8_lib/ft8
+    EXT_SUBDIRS += extensions/FT8/ft8_lib extensions/FT8/ft8_lib/common extensions/FT8/ft8_lib/ft8
 
     EXT_DEFINES += -DFT8 -DFT8_KIWI
 

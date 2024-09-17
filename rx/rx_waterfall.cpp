@@ -1483,7 +1483,7 @@ void compute_frame(int rx_chan)
             
                 #if LTRIG
                     if (dbg_bin == LTRIG)
-                        real_printf("%d:%.0f(%.1e) ", bin, 10.0 * log10f(p * wf->fft_scale[0] + 1e-30F) + wf->fft_offset, p);
+                        real_printf("%d:%.0f(%.1e) ", bin, dB_fast(p * wf->fft_scale[0]) + wf->fft_offset, p);
                 #endif
 
                 if (bin == _bin) {
@@ -1540,7 +1540,7 @@ void compute_frame(int rx_chan)
                 p = pwr_out[i];
 			}
 
-			dB = 10.0 * log10f(p * scale + 1e-30F) + wf->fft_offset;
+			dB = dB_fast(p * scale) + wf->fft_offset;
 
             #if LTRIG
                 if (dbg_bin == LTRIG)
@@ -1559,7 +1559,7 @@ void compute_frame(int rx_chan)
                 //jks
                 if (i == 506) printf("Z%d ", wf->zoom);
                 if (i >= 507 && i <= 515) {
-                    float peak_dB = 10.0 * log10f(pwr_out[i] * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+                    float peak_dB = dB_fast(pwr_out[i] * wf->fft_scale[i]) + wf->fft_offset;
                     printf("%d:%.1f|%.1f ", i, dB, peak_dB);
                 }
                 if (i == 516) printf("\n");
@@ -1620,7 +1620,7 @@ void compute_frame(int rx_chan)
 		for (i=0; i<wf->plot_width_clamped; i++) {
 			p = wf->wf2fft_map[i];
 			
-			dB = 10.0 * log10f(p * wf->fft_scale[i] + 1e-30F) + wf->fft_offset;
+			dB = dB_fast(p * wf->fft_scale[i]) + wf->fft_offset;
 			if (dB > 0) dB = 0;
 			if (dB < -200.0) dB = -200.0;
 			dB--;

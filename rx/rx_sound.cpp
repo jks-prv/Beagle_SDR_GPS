@@ -200,7 +200,7 @@ bool specAF_FFT(int rx_chan, int instance, int flags, int ratio, int ns_out, TYP
     #endif
 	
 	for (i=0; i < FFT_WIDTH; i++) {
-		float dB = 10.0 * log10f(pwr[i] * scale + (float) 1e-30);
+		float dB = dB_fast(pwr[i] * scale);
 		if (dB > 0) dB = 0;
 		if (dB < -200.0) dB = -200.0;
 		dB--;
@@ -719,7 +719,7 @@ void c2s_sound(void *param)
                         #define SND_MAX_PWR (SND_MAX_VAL * SND_MAX_VAL)
                         float re = (float) s_samps_c->re, im = (float) s_samps_c->im;
                         float pwr = re*re + im*im;
-                        float pwr_dB = 10.0 * log10f((pwr / SND_MAX_PWR) + 1e-30);
+                        float pwr_dB = dB_fast(pwr / SND_MAX_PWR);
                         sMeterAvg_dB = (1.0 - sMeterAlpha)*sMeterAvg_dB + sMeterAlpha*pwr_dB;
                         s_samps_c++;
                     

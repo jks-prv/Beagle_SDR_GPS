@@ -168,7 +168,6 @@ void c2s_mfg_setup(void *param);
 void c2s_mfg(void *param);
 
 extern bool update_pending, update_in_progress, backup_in_progress;
-extern int pending_maj, pending_min;
 
 extern bool sd_copy_in_progress;
 

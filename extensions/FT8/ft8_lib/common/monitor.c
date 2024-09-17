@@ -77,25 +77,28 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
     LOG(LOG_INFO, "Block size = %d\n", me->block_size);
     LOG(LOG_INFO, "Subblock size = %d\n", me->subblock_size);
 
-    size_t fft_work_size = 0;
-    kiss_fftr_alloc(me->nfft, 0, 0, &fft_work_size);
-    me->fft_work = malloc(fft_work_size);
-    me->fft_cfg = kiss_fftr_alloc(me->nfft, 0, me->fft_work, &fft_work_size);
-
-    LOG(LOG_INFO, "N_FFT = %d\n", me->nfft);
-    LOG(LOG_DEBUG, "FFT work area = %zu\n", fft_work_size);
-
-#ifdef WATERFALL_USE_PHASE
-    me->nifft = 64; // Gives 200 Hz sample rate for FT8 (160ms symbol period)
-
-    size_t ifft_work_size = 0;
-    kiss_fft_alloc(me->nifft, 1, 0, &ifft_work_size);
-    me->ifft_work = malloc(ifft_work_size);
-    me->ifft_cfg = kiss_fft_alloc(me->nifft, 1, me->ifft_work, &ifft_work_size);
-
-    LOG(LOG_INFO, "N_iFFT = %d\n", me->nifft);
-    LOG(LOG_DEBUG, "iFFT work area = %zu\n", ifft_work_size);
-#endif
+    #ifdef KISS_FFT
+        size_t fft_work_size = 0;
+        kiss_fftr_alloc(me->nfft, 0, 0, &fft_work_size);
+        me->fft_work = malloc(fft_work_size);
+        me->fft_cfg = kiss_fftr_alloc(me->nfft, 0, me->fft_work, &fft_work_size);
+    
+        LOG(LOG_INFO, "N_FFT = %d\n", me->nfft);
+        LOG(LOG_DEBUG, "FFT work area = %zu\n", fft_work_size);
+    
+        #ifdef WATERFALL_USE_PHASE
+            me->nifft = 64; // Gives 200 Hz sample rate for FT8 (160ms symbol period)
+        
+            size_t ifft_work_size = 0;
+            kiss_fft_alloc(me->nifft, 1, 0, &ifft_work_size);
+            me->ifft_work = malloc(ifft_work_size);
+            me->ifft_cfg = kiss_fft_alloc(me->nifft, 1, me->ifft_work, &ifft_work_size);
+        
+            LOG(LOG_INFO, "N_iFFT = %d\n", me->nifft);
+            LOG(LOG_DEBUG, "iFFT work area = %zu\n", ifft_work_size);
+        #endif
+    #else
+    #endif
 
     // Allocate enough blocks to fit the entire FT8/FT4 slot in memory
     const int max_blocks = (int)(slot_time / symbol_period);
@@ -111,21 +114,34 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
 
     me->max_mag = -120.0f;
     
-    me->timedata = (kiss_fft_scalar *) malloc(sizeof(kiss_fft_scalar) * me->nfft);
-    me->freqdata = (kiss_fft_cpx *) malloc(sizeof(kiss_fft_cpx) * (me->nfft / 2 + 1));
+    #ifdef KISS_FFT
+        me->timedata = (kiss_fft_scalar *) malloc(sizeof(kiss_fft_scalar) * me->nfft);
+        me->freqdata = (kiss_fft_cpx *) malloc(sizeof(kiss_fft_cpx) * (me->nfft / 2 + 1));
+    #else
+        me->timedata = (float *) fftwf_malloc(sizeof(float) * me->nfft);
+        me->freqdata = (fftwf_complex *) fftwf_malloc(sizeof(fftwf_complex) * (me->nfft / 2 + 1));
+        me->fft_plan = fftwf_plan_dft_r2c_1d(me->nfft, me->timedata, me->freqdata, FFTW_ESTIMATE);
+    #endif
 }
 
 void monitor_free(monitor_t* me)
 {
     waterfall_free(&me->wf);
-    free(me->fft_work);
     free(me->last_frame);
     free(me->window);
-    free(me->timedata);
-    free(me->freqdata);
 
-    #ifdef WATERFALL_USE_PHASE
-        ...
+    #ifdef KISS_FFT
+        free(me->fft_work);
+        free(me->timedata);
+        free(me->freqdata);
+
+        #ifdef WATERFALL_USE_PHASE
+            ...
+        #endif
+    #else
+        fftwf_free(me->timedata);
+        fftwf_free(me->freqdata);
+        fftwf_destroy_plan(me->fft_plan);
     #endif
     
     memset(me, 0, sizeof(*me));
@@ -169,7 +185,12 @@ void monitor_process(monitor_t* me, const float* frame)
         {
             me->timedata[pos] = me->window[pos] * me->last_frame[pos];
         }
-        kiss_fftr(me->fft_cfg, me->timedata, me->freqdata);
+        
+        #ifdef KISS_FFT
+            kiss_fftr(me->fft_cfg, me->timedata, me->freqdata);
+        #else
+            fftwf_execute(me->fft_plan);
+        #endif
 
         // Loop over possible frequency OSR offsets
         for (int freq_sub = 0; freq_sub < me->wf.freq_osr; ++freq_sub)
@@ -177,7 +198,13 @@ void monitor_process(monitor_t* me, const float* frame)
             for (int bin = me->min_bin; bin < me->max_bin; ++bin)
             {
                 int src_bin = (bin * me->wf.freq_osr) + freq_sub;
-                float mag2 = (me->freqdata[src_bin].i * me->freqdata[src_bin].i) + (me->freqdata[src_bin].r * me->freqdata[src_bin].r);
+                
+                #ifdef KISS_FFT
+                    float mag2 = (me->freqdata[src_bin].i * me->freqdata[src_bin].i) + (me->freqdata[src_bin].r * me->freqdata[src_bin].r);
+                #else
+                    float mag2 = (me->freqdata[src_bin][0] * me->freqdata[src_bin][0]) + (me->freqdata[src_bin][1] * me->freqdata[src_bin][1]);
+                #endif
+                
                 float db = 10.0f * log10f(1E-12f + mag2);
 
 #ifdef WATERFALL_USE_PHASE

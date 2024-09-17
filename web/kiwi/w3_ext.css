@@ -583,6 +583,11 @@ input[type=range]::-moz-range-thumb {
     margin-right: 24px
 }
 
+.w3-margin-T-0
+{
+    margin-top: 0
+}
+
 .w3-margin-T-2
 {
     margin-top: 2px
@@ -743,7 +748,7 @@ input[type=range]::-moz-range-thumb {
         w3-padding-L-{8,16}
         w3-padding-LR-{2,3,4,6,8,10}
         w3-padding-R-0
-        w3-padding-TB-{0,7,8,10,15,24}
+        w3-padding-TB-{0,7,8,10,15,16,24}
         w3-padding-B-8
 */
 
@@ -844,6 +849,11 @@ input[type=range]::-moz-range-thumb {
     padding: 15px 0
 }
 
+.w3-padding-TB-16
+{
+    padding: 16px 0
+}
+
 .w3-padding-TB-24
 {
     padding: 24px 0
@@ -863,6 +873,9 @@ input[type=range]::-moz-range-thumb {
         w3-round-5px                5px
         w3-round-6px                6px
         w3-round-large              8px
+        w3-round-xlarge             16px
+        w3-round-xxlarge            32px
+        w3-round-jumbo              64px
 */
 
 .w3-round-3px {
@@ -1120,6 +1133,11 @@ input[type=range]::-moz-range-thumb {
 	width: fit-content;
 }
 
+.w3-width-max
+{
+	width: max-content;
+}
+
 .w3-width-32
 {
 	width: 32px;
@@ -1200,6 +1218,12 @@ input[type=range]::-moz-range-thumb {
 {
 	overflow-x: hidden;
 	overflow-y: auto;
+}
+
+.w3-scroll-always-x
+{
+	overflow-x: scroll;
+	overflow-y: hidden;
 }
 
 /*

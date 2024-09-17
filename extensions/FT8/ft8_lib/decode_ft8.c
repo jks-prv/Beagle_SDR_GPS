@@ -34,6 +34,15 @@
     #define CALLSIGN_AGE_MAX 3
 #endif
 
+const int kMin_score = 10; // Minimum sync score threshold for candidates
+const int kMax_candidates = 140;
+const int kLDPC_iterations = 25;
+
+const int kMax_decoded_messages = 50;
+
+const int kFreq_osr = 2; // Frequency oversampling rate (bin subdivision)
+const int kTime_osr = 2; // Time oversampling rate (symbol subdivision)
+
 typedef struct {
     // NB: callsign is NOT null terminated (to save a byte). Must use strncpy() / strncmp()
     char callsign[11]; ///> Up to 11 symbols of callsign + trailing zeros (always filled)
@@ -65,18 +74,13 @@ typedef struct {
 
     callsign_hashtable_t *callsign_hashtable;
     int callsign_hashtable_size;
+    
+    ftx_candidate_t candidate_list[kMax_candidates];
+    ftx_message_t decoded[kMax_decoded_messages];
+    ftx_message_t* decoded_hashtable[kMax_decoded_messages];
 } decode_ft8_t;
 
 static decode_ft8_t decode_ft8[MAX_RX_CHANS];
-
-const int kMin_score = 10; // Minimum sync score threshold for candidates
-const int kMax_candidates = 140;
-const int kLDPC_iterations = 25;
-
-const int kMax_decoded_messages = 50;
-
-const int kFreq_osr = 2; // Frequency oversampling rate (bin subdivision)
-const int kTime_osr = 2; // Time oversampling rate (symbol subdivision)
 
 static void hashtable_init(int rx_chan)
 {
@@ -202,18 +206,15 @@ static void decode(int rx_chan, const monitor_t* mon, int _freqHz)
 
     const ftx_waterfall_t* wf = &mon->wf;
     // Find top candidates by Costas sync score and localize them in time and frequency
-    ftx_candidate_t candidate_list[kMax_candidates];
-    int num_candidates = ftx_find_candidates(wf, kMax_candidates, candidate_list, kMin_score);
+    int num_candidates = ftx_find_candidates(wf, kMax_candidates, ft8->candidate_list, kMin_score);
 
     // Hash table for decoded messages (to check for duplicates)
     int num_decoded = 0, num_spots = 0;
-    ftx_message_t decoded[kMax_decoded_messages];
-    ftx_message_t* decoded_hashtable[kMax_decoded_messages];
 
     // Initialize hash table pointers
     for (int i = 0; i < kMax_decoded_messages; ++i)
     {
-        decoded_hashtable[i] = NULL;
+        ft8->decoded_hashtable[i] = NULL;
     }
 
     // Go over candidates and attempt to decode messages
@@ -223,7 +224,7 @@ static void decode(int rx_chan, const monitor_t* mon, int _freqHz)
     for (int idx = 0; idx < num_candidates; ++idx)
     {
         NextTask("candidate");
-        const ftx_candidate_t* cand = &candidate_list[idx];
+        const ftx_candidate_t* cand = &ft8->candidate_list[idx];
 
         float freq_hz = (mon->min_bin + cand->freq_offset + (float)cand->freq_sub / wf->freq_osr) / mon->symbol_period;
         float time_sec = (cand->time_offset + (float)cand->time_sub / wf->time_osr) * mon->symbol_period;
@@ -263,12 +264,12 @@ static void decode(int rx_chan, const monitor_t* mon, int _freqHz)
         
         do
         {
-            if (decoded_hashtable[idx_hash] == NULL)
+            if (ft8->decoded_hashtable[idx_hash] == NULL)
             {
                 LOG(LOG_DEBUG, "Found an empty slot\n");
                 found_empty_slot = true;
             }
-            else if ((decoded_hashtable[idx_hash]->hash == message.hash) && (0 == memcmp(decoded_hashtable[idx_hash]->payload, message.payload, sizeof(message.payload))))
+            else if ((ft8->decoded_hashtable[idx_hash]->hash == message.hash) && (0 == memcmp(ft8->decoded_hashtable[idx_hash]->payload, message.payload, sizeof(message.payload))))
             {
                 LOG(LOG_DEBUG, "Found a duplicate!\n");
                 found_duplicate = true;
@@ -284,15 +285,15 @@ static void decode(int rx_chan, const monitor_t* mon, int _freqHz)
         if (found_empty_slot)
         {
             // Fill the empty hashtable slot
-            memcpy(&decoded[idx_hash], &message, sizeof(message));
-            decoded_hashtable[idx_hash] = &decoded[idx_hash];
+            memcpy(&ft8->decoded[idx_hash], &message, sizeof(message));
+            ft8->decoded_hashtable[idx_hash] = &ft8->decoded[idx_hash];
             ++num_decoded;
 
             char text[FTX_MAX_MESSAGE_LENGTH];
             int hash_idx = -1;
             bool need_free = false, uploaded = false;
             char *f[4];
-            int n, km = 0;
+            int n = 0, km = 0;
             ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text, &hash_idx);
             if (unpack_status != FTX_MESSAGE_RC_OK && unpack_status != FTX_MESSAGE_RC_PSKR_OK && unpack_status != FTX_MESSAGE_RC_ERROR_TYPE)
             {
@@ -312,7 +313,7 @@ static void decode(int rx_chan, const monitor_t* mon, int _freqHz)
                         // n=3: "call_to call_de grid4"  "{<...> DE QRZ CQ CQ_nnn CQ_ABCD} call_de grid4"
                         // n=4: "CQ DX call_de grid4"
                         // n=4: "call_to call_de R grid4"
-                        char *call, *grid;
+                        const char *call = NULL, *grid = NULL;
                         need_free = true;
                         for (n = 0; n < 4; n++) f[n] = NULL;
                         n = sscanf(text, "%ms %ms %ms %ms", &f[0], &f[1], &f[2], &f[3]);
@@ -604,12 +605,12 @@ void decode_ft8_free(int rx_chan)
     monitor_free(&ft8->mon);
 }
 
-void decode_ft8_protocol(int rx_chan, int _freqHz, int proto)
+void decode_ft8_protocol(int rx_chan, u64_t _freqHz, int proto)
 {
     decode_ft8_t *ft8 = &decode_ft8[rx_chan];
     decode_ft8_free(rx_chan);
     decode_ft8_init(rx_chan, proto);
     ext_send_msg_encoded(rx_chan, false, "EXT", "chars",
         "-------------------------------------------------------  new freq %.2f mode %s\n",
-        _freqHz/1e3, ft8->protocol_s);
+        (double) _freqHz / 1e3, ft8->protocol_s);
 }

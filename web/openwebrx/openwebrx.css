@@ -86,26 +86,41 @@ html, body
 	z-index:129;
 }
 
-.class-top-bar-parts
-{
-	position: absolute;
-	top: 0px;
-	left: 0px;
-	width:100%;
-	height:67px;
-}
-
-#id-top-bar-background
+#id-topbar-background
 {
 	background-color: #808080;
 	opacity: 0.15;
 	filter:alpha(opacity=15);
 }
 
-#id-top-bar
+#id-topbar-container
 {
 	margin: 0;
 	padding: 0;
+	background-color: #808080;
+}
+
+#id-topbar
+{
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    justify-content: space-between;
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	width: 100%;
+	background-color: #ececec;
+}
+
+.cl-topbar-item
+{
+    min-width: fit-content;     /* overridden when w3_boundingBox_children() used */
+	/* border: 1px solid magenta;	/* debug */
+}
+
+#id-topbar-L-container
+{
 }
 
 #id-rx-title
@@ -152,44 +167,35 @@ html, body
 	color: #909090;
 }
 
+#id-topbar-ML-container
+{
+    margin-left: 16px;
+}
+
 #id-owner-info
 {
-	position: absolute;
-	top: 0px;
 	font-size: 80%;
 	color: #909090;
 }
 
+#id-topbar-MR-container
+{
+    margin-left: 16px;
+    margin-top: 6px;
+}
+
 #id-ident
 {
-	position: absolute;
-	top: 6px;
-	right: 230px;
 	font-size: 85%;
 	color: #909090;
 }
 
-/*
-.id-info-1
+#id-topbar-R-container
 {
-	position: absolute;
-	top: 30px;
-	right: 230px;
-	font-size: 85%;
-	color: #909090;
+    margin-left: 16px;
 }
 
-.id-info-2
-{
-	position: absolute;
-	top: 46px;
-	right: 230px;
-	font-size: 85%;
-	color: #909090;
-}
-*/
-
-#id-rx-details-arrow
+#id-topbar-arrow
 {
 	cursor:pointer;
 	position: absolute;
@@ -197,7 +203,7 @@ html, body
 	height: 12px;
 }
 
-#id-rx-details-arrow a
+#id-topbar-arrow a
 {
 	position: absolute;
 	top: 0px;
@@ -206,7 +212,7 @@ html, body
 	height: 12px;
 }
 
-#id-rx-details-arrow img
+#id-topbar-arrow img
 {
 	position: absolute;
 	top: 0px;
@@ -215,7 +221,7 @@ html, body
 	height: 12px;
 }
 
-#id-rx-details-arrow-down
+#id-topbar-arrow-down
 {
 	display: none;
 }
@@ -223,16 +229,14 @@ html, body
 #id-top-photo-clip
 {
 	position: relative;
-	max-height: 417px;		/* 350+67 */
 	overflow: hidden;
 }
 
 #id-top-photo-spacer
 {
 	position: relative;
-	height: 67px;
-	width:100%;
-	background-color:white;
+	width: 100%;
+	background-color: white;
 }
 
 #id-top-photo

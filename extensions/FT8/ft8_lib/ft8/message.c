@@ -290,8 +290,8 @@ ftx_message_rc_t ftx_message_decode(const ftx_message_t* msg, ftx_callsign_hash_
 {
     ftx_message_rc_t rc;
 
-    // 13+13+6 (std/nonstd) / 14 (free text) / 19 (telemetry) / 13+13+13+3 (DX)
-    char buf[4][32];
+    // 13+13+6=32 (std/nonstd) / 14 (free text) / 19 (telemetry) / 13+13+13+3=42 (DX)
+    char buf[FTX_NFIELDS][FTX_FIELD_SZ];
     char* field1 = buf[0];
     char* field2 = buf[1];
     char* field3 = buf[2];

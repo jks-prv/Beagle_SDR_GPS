@@ -50,6 +50,10 @@ var admin_sdr = {
       'modulo 30 min (FST4W-1800)'
    ],
    
+   freq_off_preset: 0,
+   freq_off_preset_s: [ 'no offset', '118 => 8 (airband)', '144 => 28 (2m)', '10489.5 => 28 (QO-100 sat)' ],
+   freq_off_preset_v: [ 0, 110000, 116000, 10461500 ],
+   
    CAT_baud_s: [ 'disabled', 115200 ],
    
    cfg_fields: [ 'min', 'max', 'chan' ],
@@ -127,7 +131,6 @@ function config_html()
 	var max_freq = ext_get_cfg_param('max_freq', 0);
 
 	var s1 =
-		'<hr>' +
 		w3_text('w3-margin-B-8 w3-text-teal w3-bold', 'Initial values for:') +
 		w3_inline_percent('w3-margin-bottom w3-text-teal/w3-container',
 			w3_input_get('', 'Frequency (kHz)', 'init.freq', 'admin_float_cb|3'), 33,
@@ -216,7 +219,7 @@ function config_html()
 					'Adds offset to frequency scale. <br> Useful when using a downconverter, e.g. set to <br>' +
 					'116000 kHz when 144-148 maps to 28-32 MHz.'
 				),
-            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
+				w3_select('w3-margin-T-10//', 'Frequency scale presets', 'select', 'admin_sdr.freq_off_preset', W3_SELECT_SHOW_TITLE, admin_sdr.freq_off_preset_s, 'config_freq_off_preset_cb')
 			),
 			w3_divs('w3-restart/w3-center w3-tspace-8',
 				w3_select('w3-width-auto', 'Max receiver frequency', '', 'max_freq', max_freq, max_freq_i, 'admin_select_cb'),
@@ -230,7 +233,8 @@ function config_html()
             w3_checkbox_get_param('w3-margin-T-8//w3-restart w3-label-inline', 'Show AGC threshold on S-meter', 'agc_thresh_smeter', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show user names to user connections', 'show_user', 'admin_bool_cb', true),
             w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation info to users', 'show_geo', 'admin_bool_cb', true),
-            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true)
+            w3_checkbox_get_param('w3-margin-T-8//w3-label-inline', 'Show geolocation city', 'show_geo_city', 'admin_bool_cb', true),
+            w3_checkbox_get_param('id-config-spec-inv w3-margin-T-8//w3-label-inline', 'Downconverter high-side injection', 'spectral_inversion', 'config_spec_inv_cb', false)
          )
 		) +
 
@@ -450,8 +454,16 @@ function config_mode_cb(path, idx, first)
 function config_freq_offset_cb(path, val, first)
 {
    admin_float_cb(path, val, first, [0,3]);
-	console.log('$$ config_freq_offset_cb '+ path +'='+ val +' cfg.freq_offset='+ cfg.freq_offset);
+   w3_set_value('id-freq_offset', val);   // for benefit of direct callers
+	console.log('config_freq_offset_cb '+ path +'='+ val);
 	ext_set_freq_offset(cfg.freq_offset);
+}
+
+function config_freq_off_preset_cb(path, val, first)
+{
+   if (first) return;
+	//console.log('config_freq_off_preset_cb val='+ val);
+   config_freq_offset_cb('cfg.freq_offset', admin_sdr.freq_off_preset_v[+val], false);
 }
 
 function config_spec_inv_cb(path, val, first)
@@ -846,7 +858,6 @@ function config_ext_freq_cb(path, val, first)
 function webpage_html()
 {
 	var s1 =
-		'<hr>' +
 		w3_divs('w3-margin-bottom/w3-container',
 			w3_input('', 'Top bar title', 'index_html_params.RX_TITLE', '', 'webpage_title_cb')
 		) +
@@ -1461,7 +1472,7 @@ function dx_html()
 	   return w3_div('id-dx w3-hide', w3_div('w3-container w3-margin-top', 'Not available on mobile devices.'));
 	
    var s2 =
-      w3_inline('/w3-margin-top',
+      w3_inline('',
          w3_select_get_param('/w3-label-inline w3-text-teal/w3-text-red',
             'Default DX label database:', '', 'dx_default_db', dx.db_s, 'admin_select_cb'),
          w3_switch_label('w3-margin-L-64/w3-label-inline w3-label-left w3-text-teal/',
@@ -1536,13 +1547,6 @@ function dx_html()
    dx.import_label = 'Import: '+ w3_icon('id-dx-import-info w3-link-darker-color w3-help' +
       '||title="Import (upload) DX labels from a file\non this computer to Kiwi.\nFiles can be in JSON or CSV format."', 'fa-info-circle', 20);
    
-   // for search wrap
-   s =
-      w3_div('id-search-wrap-container class-overlay-container w3-hide',
-         w3_div('id-search-wrap', w3_icon('', 'fa-repeat', 192))
-      );
-   w3_create_appendElement('id-kiwi-container', 'div', s);
-   
    // freq offset conversion
    var s1 =
       w3_div('id-dx-convert w3-hide',
@@ -1556,7 +1560,8 @@ function dx_html()
       );
    
    // reminder: "Nvh" means N% of the viewport (browser window) height
-   var vh = '63vh';
+   var vh = '50vh';
+   //var vh = '63vh';
    //var vh = '32vh';
 
    // dx labels
@@ -1654,6 +1659,17 @@ function dx_html()
 	return w3_div('id-dx w3-hide', s1 + s2 + w3_div('id-dx-stored', s3 + s4 + s5 + s6));
 }
 
+function dx_html_init()
+{
+   // for search-wrap screen overlay flash icon
+   var s =
+      w3_div('id-search-wrap-container class-overlay-container w3-hide',
+         w3_div('id-search-wrap', w3_icon('', 'fa-repeat', 192))
+      );
+   w3_create_appendElement('id-kiwi-container', 'div', s);
+   
+}
+
 function dx_convert_label_foff_cb(path, idx)
 {
    var ignore = +idx;
@@ -1663,7 +1679,7 @@ function dx_convert_label_foff_cb(path, idx)
       adm.dx_labels_converted = true;
       cfg_save_json('dx_convert_label_foff_cb', 'adm.dx_labels_converted');
    } else {
-	   control_confirm_show('Really convert?',
+	   admin_confirm_show('Really convert?',
 	      function() {
             adm.dx_labels_converted = true;
             cfg_save_json('dx_convert_label_foff_cb', 'adm.dx_labels_converted');
@@ -2940,7 +2956,7 @@ function band_svc_field_cb(path, val, first, a_cb)
 function extensions_html()
 {
 	var s =
-	w3_div('id-extensions w3-hide w3-section',
+	w3_div('id-extensions w3-hide',
       w3_sidenav('id-sidenav-ext w3-margin-B-16'),
 		w3_div('id-extensions-config')
 	);

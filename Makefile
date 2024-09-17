@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 699
+VERSION_MIN = 700
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -529,7 +529,7 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
-PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(PLAT).bin
+PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
 .PHONY: make_binary
@@ -550,9 +550,6 @@ make_binary:
 	            @echo "================"
 	            @make $(MAKE_ARGS) make_all
 	            @echo "================"
-	            @echo "   => cp $(BUILD_DIR)/kiwi.bin $(PLAT_KIWI_BIN)"
-	            @echo "================"
-	            @cp $(BUILD_DIR)/kiwi.bin $(PLAT_KIWI_BIN)
             endif
         else
 	        @make $(MAKE_ARGS) make_all
@@ -567,6 +564,14 @@ force: make_prereq
 	@echo "================"
 	@echo "make force"
 	@make $(MAKE_ARGS) make_binary
+	@echo "   => cp $(BUILD_DIR)/kiwi.bin $(PLAT_KIWI_BIN)"
+	@echo "================"
+	@cp $(BUILD_DIR)/kiwi.bin $(PLAT_KIWI_BIN)
+	@make make_install_binary
+	@echo "   => cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)"
+	@echo "================"
+	@cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)
+	@echo "make force DONE"
 
 
 ################################
@@ -591,6 +596,7 @@ build_makefile_inc:
 	@echo CPU = $(CPU)
 	@echo PLAT = $(PLAT)
 	@echo PLATFORMS = $(PLATFORMS)
+	@echo BINARY_DISTRO = $(BINARY_DISTRO)
 	@echo DEBUG = $(DEBUG)
 	@echo GDB = $(GDB)
 	@echo XC = $(XC)
@@ -819,6 +825,7 @@ make_vars: check_detect
 	@echo UNAME = $(UNAME)
 	@echo DEBIAN_DEVSYS = $(DEBIAN_DEVSYS)
 	@echo DEBIAN_VERSION = $(DEBIAN_VERSION)
+	@echo DEBMM = $(DEBMM)
 	@echo DEBIAN_10_AND_LATER = $(DEBIAN_10_AND_LATER)
 	@echo DEBIAN_11_AND_LATER = $(DEBIAN_11_AND_LATER)
 	@echo DEBIAN_12_AND_LATER = $(DEBIAN_12_AND_LATER)
@@ -1397,6 +1404,7 @@ install: make_prereq
 	    make make_install_binary
     else
 	    make make_install
+	    make make_install_files
     endif
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)
@@ -1427,7 +1435,7 @@ else
 endif
 endif
 
-PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(PLAT).bin
+PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 
 .PHONY: make_install_binary
@@ -1444,16 +1452,14 @@ make_install_binary:
 	            @cp $(PLAT_KIWID_BIN) $(BUILD_DIR)/kiwid.bin
 	            touch $(BUILD_DIR)/kiwid.bin
 	            @echo "================"
-	            @make make_install
+	            @make make_install_files
             else
 	            @echo "   => doesn't exist: installing from sources"
 	            @echo "================"
 	            @# don't use MAKE_ARGS here!
 	            @make make_install
+	            @make make_install_files
 	            @echo "================"
-	            @echo "   => cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)"
-	            @echo "================"
-	            @cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)
             endif
         else
 	        @make make_install
@@ -1463,6 +1469,9 @@ make_install_binary:
 
 .PHONY: make_install
 make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
+
+.PHONY: make_install_files
+make_install_files: $(DO_ONCE) $(DTS_DEP_DST)
     ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	    @echo
 	    @echo "############################################"
@@ -1929,19 +1938,18 @@ clone:
 
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 
-BIN_PLATS := BBAI_64 BBAI BBG_BBB
-BIN_EXISTS := $(foreach plat,$(BIN_PLATS),$(shell test -f bin/kiwi_$(VER)_$(plat).bin && echo true || echo false))
+BIN_PLATFORMS := BBAI_64 BBAI BBG_BBB
+BIN_EXISTS := $(foreach plat,$(BIN_PLATFORMS),$(shell test -f bin/kiwi_$(VER)_$(DEBMM)_$(plat).bin && echo true || echo false))
 
     # used by scgit alias
     copy_to_git:
 	    @(echo 'current dir is:'; pwd)
 	    @(cd $(GITAPP)/$(REPO_NAME); echo 'repo branch set to:'; pwd; git --no-pager branch)
         ifeq ($(BINARY_DISTRO),true)
-	        @echo "checking for release bin files: $(BIN_PLATS)"
+	        @echo "checking for release bin files: $(BIN_PLATFORMS)"
             ifeq ($(findstring false,$(BIN_EXISTS)),false)
-	            @echo "ERROR release file missing:"
+	            @echo "WARNING some binary release files missing:"
 	            @ls -la bin
-	            @exit -1;
             endif
         endif
 	    @echo '################################'

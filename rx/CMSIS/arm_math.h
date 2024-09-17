@@ -375,6 +375,7 @@ extern "C"
  #undef K
  #undef M
  
+ #define ARM_MATH_LOOPUNROLL
  #define ARM_DSP_CONFIG_TABLES
  #define ARM_FFT_ALLOW_TABLES
  #define ARM_TABLE_TWIDDLECOEF_F32_256

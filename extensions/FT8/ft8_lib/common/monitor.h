@@ -7,7 +7,15 @@ extern "C"
 #endif
 
 #include <ft8/decode.h>
-#include <fft/kiss_fftr.h>
+
+//#define KISS_FFT
+#ifdef KISS_FFT
+ #include <fft/kiss_fftr.h>
+#else
+ #include <math.h>
+ #include <string.h>
+ #include <fftw3.h>
+#endif
 
 /// Configuration options for FT4/FT8 monitor
 typedef struct
@@ -36,17 +44,22 @@ typedef struct
     ftx_waterfall_t wf;  ///< Waterfall object
     float max_mag;       ///< Maximum detected magnitude (debug stats)
 
-    // KISS FFT housekeeping variables
-    void* fft_work;        ///< Work area required by Kiss FFT
-    kiss_fftr_cfg fft_cfg; ///< Kiss FFT housekeeping object
-#ifdef WATERFALL_USE_PHASE
-    int nifft;             ///< iFFT size
-    void* ifft_work;       ///< Work area required by inverse Kiss FFT
-    kiss_fft_cfg ifft_cfg; ///< Inverse Kiss FFT housekeeping object
-#endif
-
-    kiss_fft_scalar *timedata;
-    kiss_fft_cpx *freqdata;
+    #ifdef KISS_FFT
+        // KISS FFT housekeeping variables
+        void* fft_work;        ///< Work area required by Kiss FFT
+        kiss_fftr_cfg fft_cfg; ///< Kiss FFT housekeeping object
+        #ifdef WATERFALL_USE_PHASE
+            int nifft;             ///< iFFT size
+            void* ifft_work;       ///< Work area required by inverse Kiss FFT
+            kiss_fft_cfg ifft_cfg; ///< Inverse Kiss FFT housekeeping object
+        #endif
+        kiss_fft_scalar *timedata;
+        kiss_fft_cpx *freqdata;
+    #else
+        fftwf_plan fft_plan;
+        float *timedata;
+        fftwf_complex *freqdata;
+    #endif
 } monitor_t;
 
 void monitor_init(monitor_t* me, const monitor_config_t* cfg);

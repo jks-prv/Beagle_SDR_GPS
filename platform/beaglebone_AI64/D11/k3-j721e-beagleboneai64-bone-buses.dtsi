@@ -29,7 +29,7 @@
     #define PIN_SPI_CS0         (INPUT_DISABLE | PULL_UP)   // PIN_OUT_PULLUP
     #define PIN_SPI_CLK	        (INPUT_EN | PULL_UP)        // PIN_IO_PULLUP
     #define PIN_SPI_MOSI        (INPUT_DISABLE | PULL_UP)   // PIN_OUT_PULLUP
-    #define PIN_SPI_MISO        (INPUT_EN | OUTPUT_DISABLE | PULL_UP)  // PIN_IN_PULLUP
+    #define PIN_SPI_MISO        (INPUT_EN | OUTPUT_DISABLE | PULL_UP)   // PIN_IN_PULLUP
 #endif
 
 /********/

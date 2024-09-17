@@ -340,8 +340,11 @@ function w3_call(func, arg0, arg1, arg2, arg3, arg4)
       } else
 	   if (isFunction(func)) {
          rv = func(arg0, arg1, arg2, arg3, arg4);
-	   } else
+	   } else {
 	      console.log('w3_call: func not a string or function');
+	      console.log(JSON.stringify(func));
+	      //kiwi_trace();
+	   }
 	} catch(ex) {
 		console.log('w3_call: while in func this exception occured:');
 		console.log(ex);
@@ -815,15 +818,16 @@ function w3_iterate_children(el_id, func)
 }
 
 // excludes text and comment nodes
-function w3_iterateDeep_children(el_id, func)
+function w3_iterateDeep_children(el_id, func, level)
 {
 	var el = w3_el(el_id);
+	if (isUndefined(level)) level = 0;
 	
 	for (var i=0; i < el.children.length; i++) {    // el.children is a collection, can't use forEach()
 		var child_el = el.children[i];
-		func(child_el);
+		func(child_el, level, i);
 		if (child_el.hasChildNodes)
-			w3_iterateDeep_children(child_el, func);
+			w3_iterateDeep_children(child_el, func, level+1);
 	}
 }
 
@@ -857,16 +861,20 @@ function w3_width_height(el_id, w, h)
 // bounding box measured from the origin of parent
 function w3_boundingBox_children(el_id, debug)
 {
-	var bbox = { x1:1e99, x2:0, y1:1e99, y2:0, w:0, h:0 };
-	w3_iterateDeep_children(el_id, function(el) {
-		if (el.nodeName != 'DIV' && el.nodeName != 'IMG')
+   var el = w3_el(el_id);
+	var bbox = { id:el_id, x1:1e99, x2:0, y1:1e99, y2:0, w:0, h:0 };
+	var found = false;
+	w3_iterateDeep_children(el_id, function(el, level, i) {
+		if (el.nodeName != 'DIV' && el.nodeName != 'SPAN' && el.nodeName != 'IMG')
 			return;
 		var position = css_style(el, 'position');
 		if (position == 'static')
 		   return;
 		if (el.offsetHeight == 0)
 		   return;
+		if (debug) console.log('level='+ level +' i='+ i);
 		if (debug) console.log(el);
+		if (!found) { bbox.el = el; found = true; }
 		//console.log(el.offsetParent);
 		if (debug) console.log(el.nodeName +' el.oL='+ el.offsetLeft +' el.oW='+ el.offsetWidth +' el.oT='+ el.offsetTop +' el.oH='+ el.offsetHeight +' '+ position);
 
@@ -882,7 +890,8 @@ function w3_boundingBox_children(el_id, debug)
 	bbox.w = bbox.x2 - bbox.x1;
 	bbox.h = bbox.y2 - bbox.y1;
 	if (bbox.w == -1e+99) { bbox.w = bbox.h = 0; }
-	if (debug) w3_console.log(bbox, 'w3_boundingBox_children');
+	//if (debug) w3_console.log(bbox, 'w3_boundingBox_children');
+	if (debug) console.log(bbox);
 	return bbox;
 }
 
@@ -1722,11 +1731,18 @@ function w3_copy_to_clipboard(val)
    document.body.removeChild(el);
 }
 
-function w3_isScrolling(id)
+function w3_isScrollingY(id)
 {
    var el = w3_el(id);
    if (!el) return null;
    return (el.scrollHeight > el.clientHeight);
+}
+
+function w3_isScrollingX(id)
+{
+   var el = w3_el(id);
+   if (!el) return null;
+   return (el.scrollWidth > el.clientWidth);
 }
 
 // see: developer.mozilla.org/en-US/docs/Web/API/Element/scrollHeight#determine_if_an_element_has_been_totally_scrolled
@@ -3133,7 +3149,7 @@ function w3int_select(psa, label, title, path, sel, opts_s, cb, cb_param)
 	
 	var inline = psa.includes('w3-label-inline');
 	var bold = !psa.includes('w3-label-not-bold');
-	var spacing = (label != '' && !inline)? 'w3-margin-T-8' : '';
+	var spacing = (label != '' && !inline && !psa.includes('w3-margin-T-'))? 'w3-margin-T-8' : '';
 	if (inline) spacing += 'w3-margin-left';
 	if (cb == undefined) cb = '';
 	var onchange = 'onchange="w3int_select_change(event, '+ sq(path) +', '+ sq(cb) +', '+ sq(cb_param) +')"';
@@ -3669,7 +3685,7 @@ function w3int_menu_move(which, x, y)
    //console.log('w3int_menu_move '+ which);
    var el = document.elementFromPoint(x, y);
    if (!el) return;
-   if (w3_isScrolling(w3int.menu_cur_id)) return;
+   if (w3_isScrollingY(w3int.menu_cur_id)) return;
    var rtn = (!el || !w3_contains(el, 'w3-menu-item'));
    //console.log(which +' '+ x +':'+ y +':'+ el.id);
    //var el2 = w3_el(w3int.menu_cur_id);
@@ -4351,6 +4367,20 @@ function w3_code(psa)
 			s += '<code '+ w3_psa(psa3.right) +'>'+ arguments[i] + '</code>';
 		}
 	s += '</code></pre>';
+	//console.log(s);
+	return s;
+}
+
+function w3_header(psa, size)
+{
+   var psa3 = w3_psa3(psa);
+   //console.log(psa3);
+   var narg = arguments.length;
+	var s = '<header '+ w3_psa(psa3.middle) +'><h'+ size +' '+ w3_psa(psa3.right) +'>';
+		for (var i=2; i < narg; i++) {
+			s += arguments[i];
+		}
+	s += '</h'+ size +'></header>';
 	//console.log(s);
 	return s;
 }

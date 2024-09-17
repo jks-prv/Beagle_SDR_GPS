@@ -186,7 +186,7 @@ function gen_controls_setup()
 
 	toggle_or_set_spec(toggle_e.SET, spec.RF);
 	spec.saved_audio_comp = ext_get_audio_comp();
-	if (spec.saved_audio_comp) ext_set_audio_comp(false);
+	if (spec.saved_audio_comp) ext_set_audio_comp(false, /* NO_WRITE_COOKIE */ true);
 	ext_send('SET wf_comp=0');
 	if (kiwi.ext_clk) w3_select_set_disabled('id-gen-mode', gen.SELF_TEST, true, 'no self-test available when ext clk used');
 	if (do_sweep) gen_sweep_cb();
@@ -340,6 +340,7 @@ function sig_gen_blur()
 	if (spec.saved_audio_comp) ext_set_audio_comp(true);
 	ext_send('SET wf_comp=1');
    toggle_or_set_spec(toggle_e.SET, spec.NONE);
+   setTimeout(function() { wf_autoscale_cb(); }, 1500);
 }
 
 function sig_gen_help(show)

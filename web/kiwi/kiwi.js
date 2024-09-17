@@ -24,6 +24,12 @@ var kiwi = {
    test_cfg_save_seq: false,
    log_cfg_save_seq: false,
    
+   WIN_WIDTH_MIN: 1400,
+   
+   mdev: false,
+   mdev_s: '',
+   mnew: false,
+
    skip_small_screen_check: false,
    noLocalStorage: false,
    
@@ -708,7 +714,7 @@ function kiwi_geojson()
 ////////////////////////////////
 
 var server_time_utc, server_time_local, server_time_tzid, server_time_tzname, server_tz;
-var time_display_current = true;
+var time_display_current = 0;
 
 function time_display_cb(o)
 {
@@ -766,23 +772,25 @@ function time_display_setup(ext_name_or_id)
 	
 	var el = w3_el(ext_name_or_id);
 	el.innerHTML =
-		w3_div('id-time-display-inner',
-			w3_div('id-time-display-text-inner',
-            w3_inline('',
-               w3_div('id-time-display-UTC'),
-               w3_div('cl-time-display-text-suffix', 'UTC')
-            ),
-            w3_inline('',
-               w3_div('id-time-display-local'),
-               w3_div('cl-time-display-text-suffix', 'Local')
-            ),
-            w3_div('id-time-display-tzname')
-			)
-		) +
-		w3_div('id-time-display-logo-inner',
-			w3_div('id-time-display-logo-text', 'Powered by'),
-			'<a href="https://github.com/ha7ilm/openwebrx" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>'
-		);
+	   w3_div('',
+         w3_div('id-time-display-inner',
+            w3_div('id-time-display-text-inner',
+               w3_inline('',
+                  w3_div('id-time-display-UTC'),
+                  w3_div('cl-time-display-text-suffix', 'UTC')
+               ),
+               w3_inline('',
+                  w3_div('id-time-display-local'),
+                  w3_div('cl-time-display-text-suffix', 'Local')
+               ),
+               w3_div('id-time-display-tzname')
+            )
+         ),
+         w3_div('id-time-display-logo-inner',
+            w3_div('id-time-display-logo-text', 'Powered by'),
+            '<a href="https://github.com/ha7ilm/openwebrx" target="_blank"><img id="id-time-display-logo" src="gfx/openwebrx-top-logo.png" /></a>'
+         )
+      );
 
 	time_display(time_display_current);
 }
@@ -2478,8 +2486,10 @@ function cpu_stats_cb(o, uptime_secs, ecpu, waterfall_fps)
 
 	var o = kiwi_dhms(uptime_secs);
 	w3_innerHTML('id-status-config',
-      w3_text('w3-text-css-orange', 'KiwiSDR '+ kiwi.model),
-      w3_text('', ' up '+ o.dhms +', '+ kiwi_config_str)
+	   w3_inline('',
+         w3_text('w3-text-css-orange', 'KiwiSDR '+ kiwi.model),
+         w3_text('', ' up '+ o.dhms +', '+ kiwi_config_str)
+      )
 	);
 
 	s = ' | Uptime: ';
@@ -2559,6 +2569,7 @@ function update_cb(fail_reason, pending, in_progress, rx_chans, gps_chans, vmaj,
 			   case 4: r = 'Git clone damaged!'; break;
 			   case 5: r = 'Makefile update failed -- check /root/build.log file'; break;
 			   case 6: r = 'Build failed, check /root/build.log file'; break;
+			   case 7: r = 'Parse of Makefile.1 failed!'; break;
 			   default: r = 'Unknown reason, code='+ fail_reason; break;
 			}
 			s += '<br>'+ r;
@@ -2576,10 +2587,13 @@ function update_cb(fail_reason, pending, in_progress, rx_chans, gps_chans, vmaj,
 		if (pmaj == -1) {
 			s += '<br>Error determining the latest version -- check log';
 		} else {
-			if (vmaj == pmaj && vmin == pmin)
-				s += '<br>Running most current version';
-			else
+			if (vmaj == pmaj && vmin == pmin) {
+				s += '<br>Running the most current version';
+			} else {
 				s += '<br>Available version: v'+ pmaj +'.'+ pmin;
+				if (adm.update_major_only && pmaj <= vmaj)
+				   s += ' (but major version number unchanged)';
+			}
 		}
 		msg_update.innerHTML = s;
 	}
@@ -2796,7 +2810,8 @@ var toggle_e = {
 	SET_URL: 2,
 	FROM_COOKIE: 4,
 	WRITE_COOKIE: 8,
-	NO_CLOSE_EXT: 16
+	NO_CLOSE_EXT: 16,
+	NO_WRITE_COOKIE: 32
 };
 
 // return value depending on flags: cookie value, set value, default value, no change
@@ -2909,6 +2924,7 @@ function kiwi_init_cfg(stream_name)
    w3_innerHTML('id-owner-info', w3_json_to_html('kiwi_init_cfg', ext_get_cfg_param_string('cfg.owner_info')));
 }
 
+// called by both user and admin
 function kiwi_snr_stats(all, hf)
 {
    //console.log('SNR ', all, ':', hf, ' dB ');
@@ -2929,6 +2945,9 @@ function kiwi_snr_stats(all, hf)
          w3_els('id-msg-snr', function(el) { w3_innerHTML(el, 'SNR: ', all, ' dB (0-30 MHz), ', hf, ' dB (1.8-30 MHz)'); });
       }
    }
+   
+   if (!isAdmin())
+      w3_call('position_top_bar');
 }
 
 
@@ -3415,4 +3434,22 @@ function kiwi_trace(msg)
 function kiwi_trace_mobile(msg)
 {
    alert(msg +' '+ Error().stack);
+}
+
+function mdev_init()
+{
+   if (kiwi_url_param('mdev')) kiwi.mdev = true;
+   if (kiwi_url_param('mnew')) kiwi.mnew = true;
+}
+
+function mdev_log(s)
+{
+   if (!kiwi.mdev || !dbgUs) return;
+   
+   if (isAdmin()) {
+      w3_innerHTML('id-mdev-msg', 'Admin interface '+ s);
+   } else {
+      kiwi.mdev_s = s;
+      mkenvelopes();
+   }
 }

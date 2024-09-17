@@ -74,8 +74,8 @@ void rx_set_freq_offset_kHz(double foff_kHz)
     freq.isOffset = (foff_kHz != 0);
     freq.offset_kHz = foff_kHz;
     freq.offmax_kHz = foff_kHz + ui_srate_kHz;
-    freq.offset_Hz = (u4_t) (foff_kHz * 1e3);
-    printf("FOFF foff_kHz=%.2f\n", foff_kHz);
+    freq.offset_Hz = (u64_t) (foff_kHz * 1e3);
+    printf("FOFF foff_kHz=%.2f offset_Hz=%lld\n", foff_kHz, freq.offset_Hz);
 }
 
 bool rx_freq_inRange(double freq_kHz)
@@ -787,7 +787,7 @@ static void dump_info_handler(int arg)
         sb = kstr_asprintf(sb, ", \"fixes\": %d, \"fixes_min\": %d }", gps.fixes, gps.fixes_min);
     #endif
 
-    sb = kstr_asprintf(sb, " }' > /root/kiwi.config/info.json");
+    sb = kstr_cat(sb, " }' > /root/kiwi.config/info.json");
     non_blocking_cmd_system_child("kiwi.info", kstr_sp(sb), NO_WAIT);
     kstr_free(sb);
 	sig_arm(SIGHUP, dump_info_handler);
@@ -833,7 +833,7 @@ static bool geoloc_json(conn_t *conn, const char *geo_host_ip_s, const char *cou
 {
 	char *cmd_p;
 	
-    asprintf(&cmd_p, "curl -s --ipv4 \"%s\" 2>&1", geo_host_ip_s);
+    asprintf(&cmd_p, "curl -Ls --ipv4 \"%s\" 2>&1", geo_host_ip_s);
     //cprintf(conn, "GEOLOC: <%s>\n", cmd_p);
     
     // NB: don't use non_blocking_cmd() here to prevent audio gliches
@@ -1055,6 +1055,30 @@ int dB_wire_to_dBm(int db_value)
 	if (db_value > 255) db_value = 255;
 	int dBm = -(255 - db_value);
 	return (dBm + waterfall_cal);
+}
+
+// fast, but approximate, dB = 10 * log10(x)
+//
+// log10f is exactly log2(x)/log2(10.0f)
+// This is a fast approximation to log2():
+// log2f_approx = C[0]*F*F*F + C[1]*F*F + C[2]*F + C[3] + E
+// see: openaudio.blogspot.com/2017/02/faster-log10-and-pow.html
+float dB_fast(float x)
+{
+    float log2f_approx, F;
+    if (x == 0) return -300;    // clamped to -300 dB
+    int E;
+    F = frexpf(fabsf(x), &E);
+    log2f_approx = 1.23149591368684f;
+    log2f_approx *= F;
+    log2f_approx += -4.11852516267426f;
+    log2f_approx *= F;
+    log2f_approx += 6.02197014179219f;
+    log2f_approx *= F;
+    log2f_approx += -3.13396450166353f;
+    log2f_approx += E;
+    #define LOG2OF10_TIMES10 3.010299956639812f
+    return (log2f_approx * LOG2OF10_TIMES10);
 }
 
 

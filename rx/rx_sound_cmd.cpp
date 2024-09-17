@@ -87,6 +87,17 @@ void rx_sound_set_freq(conn_t *conn, double freq, bool spectral_inversion)
     }
 }
 
+static void rx_gen_disable(snd_t *s)
+{
+    g_genampl = s->genattn = 0;
+    s->gen_enable = false;
+    if (do_sdr) {
+        spi_set3(CmdSetGenFreq, 0, 0, 0);
+        spi_set(CmdSetGenAttn, 0, 0);
+        ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, 0);
+    }
+}
+
 void rx_gen_set_freq(conn_t *conn, snd_t *s)
 {
     int rx_chan = conn->rx_channel;
@@ -98,7 +109,7 @@ void rx_gen_set_freq(conn_t *conn, snd_t *s)
     //cprintf(conn, "%s %.3f kHz phase %.3f 0x%012llx self_test=%d\n", gen_freq? "GEN_ON":"GEN_OFF", gen_freq, f_phase, i_phase, self_test? 1:0);
     if (do_sdr) {
         spi_set3(CmdSetGenFreq, rx_chan, (u4_t) ((i_phase >> 16) & 0xffffffff), (u2_t) (i_phase & 0xffff));
-        ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, gen_freq? (CTRL_USE_GEN | self_test):0);
+        ctrl_clr_set(CTRL_USE_GEN | CTRL_STEN, gen_freq? (CTRL_USE_GEN | self_test) : 0);
     }
     g_genfreq = gen_freq * kHz / ui_srate;
 }
@@ -377,9 +388,13 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
             did_cmd = true;
             if (rx_chan == 0) {
                 //cprintf(conn, "SET gen=%lf\n", &s->gen);
-                if (s->gen != 0 && !s->gen_enable) s->gen_enable = true;
-                rx_gen_set_freq(conn, s);
-                if (s->gen == 0 && s->gen_enable) s->gen_enable = false;
+                if (s->gen == 0 && s->genattn == 0) {
+                    rx_gen_disable(s);
+                } else {
+                    if (s->gen != 0 && !s->gen_enable) s->gen_enable = true;
+                    rx_gen_set_freq(conn, s);
+                    if (s->gen == 0 && s->gen_enable) s->gen_enable = false;
+                }
             }
         }
         break;
@@ -389,11 +404,16 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
         n = sscanf(cmd, "SET genattn=%d", &_genattn);
         if (n == 1) {
             did_cmd = true;
-            if (rx_chan == 0 && s->genattn != _genattn) {
-                s->genattn = _genattn;
-                if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) s->genattn);
-                //cprintf(conn, "GEN_ATTN %d 0x%x\n", s->genattn, s->genattn);
-                if (rx_chan == 0) g_genampl = s->genattn / (float)((1<<17)-1);
+            if (rx_chan == 0) {
+                if (s->gen == 0 && _genattn == 0) {
+                    rx_gen_disable(s);
+                } else
+                if (s->genattn != _genattn) {
+                    s->genattn = _genattn;
+                    if (do_sdr) spi_set(CmdSetGenAttn, 0, (u4_t) s->genattn);
+                    //cprintf(conn, "GEN_ATTN %d 0x%x\n", s->genattn, s->genattn);
+                    g_genampl = s->genattn / (float) ((1 << 17) - 1);
+                }
             }
         }
         break;

@@ -37,12 +37,12 @@ Boston, MA  02110-1301, USA.
 #include <sys/stat.h>
 
 bool update_pending = false, update_task_running = false, update_in_progress = false;
-int pending_maj = -1, pending_min = -1;
+static int pending_maj = -1, pending_min = -1;
 
 enum fail_reason_e {
     FAIL_NONE = 0,
     FAIL_FS_FULL = 1, FAIL_NO_INET = 2, FAIL_NO_GITHUB = 3, FAIL_GIT = 4,
-    FAIL_MAKEFILE = 5, FAIL_BUILD = 6
+    FAIL_MAKEFILE = 5, FAIL_BUILD = 6, FAIL_PARSE = 7
 };
 fail_reason_e fail_reason;
 
@@ -181,7 +181,7 @@ static void _update_task(void *param)
 	bool force_check = (conn && conn->update_check == FORCE_CHECK);
 	bool force_build = (conn && conn->update_check == FORCE_BUILD);
 	bool report = (force_check || force_build);
-	bool ver_changed, update_install;
+	bool ver_changed, full_ver_changed, major_only, update_install;
 	int status;
 	fail_reason = FAIL_NONE;
 	
@@ -250,19 +250,44 @@ static void _update_task(void *param)
 	}
 	
 	FILE *fp;
-	scallz("fopen Makefile.1", (fp = fopen("/root/" REPO_NAME "/Makefile.1", "r")));
+	fp = fopen("/root/" REPO_NAME "/Makefile.1", "r");
+	    if (fp == NULL) {
+            lprintf("UPDATE: Makefile.1 open failed -- check /root/build.log file\n");
+            fail_reason = FAIL_MAKEFILE;
+            if (report) report_result(conn);
+            goto common_return;
+	    }
 		int n1, n2;
 		n1 = fscanf(fp, "VERSION_MAJ = %d\n", &pending_maj);
 		n2 = fscanf(fp, "VERSION_MIN = %d\n", &pending_min);
 	fclose(fp);
 	
-	ver_changed = (n1 == 1 && n2 == 1 && (pending_maj > version_maj  || (pending_maj == version_maj && pending_min > version_min)));
+	//#define TEST_MAJ_VER_CHG
+	#ifdef TEST_MAJ_VER_CHG
+	    pending_maj++;
+	    pending_min = 0;
+	#endif
+	
+	ver_changed = full_ver_changed = false;
+	major_only = admcfg_true("update_major_only");
+	if (n1 == 1 && n2 == 1) {
+	    ver_changed = (pending_maj > version_maj);
+	    if (!ver_changed && !major_only)
+	        ver_changed = (pending_min > version_min);
+	    full_ver_changed = (pending_maj > version_maj  || (pending_maj == version_maj && pending_min > version_min));
+	} else {
+        fail_reason = FAIL_PARSE;
+	    lprintf("UPDATE: CAUTION parse of Makefile.1 failed!\n");
+		goto common_return;
+	}
+    
+    lprintf("UPDATE: %s current %d.%d, new %d.%d%s\n", ver_changed? "CHANGED" : "NO CHANGE",
+        version_maj, version_min, pending_maj, pending_min, major_only? " (update on major version number change only)" : "");
 	update_install = (admcfg_bool("update_install", NULL, CFG_REQUIRED) == true);
 	
 	if (force_check) {
 		if (ver_changed)
-			lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but check only\n",
-				version_maj, version_min, pending_maj, pending_min);
+			lprintf("UPDATE: version changed, but check only\n");
 		else
 			lprintf("UPDATE: running most current version\n");
 		
@@ -271,14 +296,11 @@ static void _update_task(void *param)
 	} else
 
 	if (ver_changed && !update_install && !force_build) {
-		lprintf("UPDATE: version changed (current %d.%d, new %d.%d), but update install not enabled\n",
-			version_maj, version_min, pending_maj, pending_min);
+		lprintf("UPDATE: version changed, but update install not enabled\n");
 	} else
 	
 	if (ver_changed || force_build) {
-		lprintf("UPDATE: version changed%s, current %d.%d, new %d.%d\n",
-			force_build? " (forced)":"",
-			version_maj, version_min, pending_maj, pending_min);
+		lprintf("UPDATE: version changed%s\n", force_build? " (forced)":"");
 		lprintf("UPDATE: building new version..\n");
 
         #ifndef PLATFORM_raspberrypi
@@ -308,8 +330,6 @@ static void _update_task(void *param)
 		    lprintf("UPDATE: rebooting Beagle..\n");
 		    system("sleep 3; reboot");
 		}
-	} else {
-		lprintf("UPDATE: version %d.%d is current\n", version_maj, version_min);
 	}
 	
 	if (do_daily_restart) {

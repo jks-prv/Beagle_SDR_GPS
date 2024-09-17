@@ -42,7 +42,7 @@ module fir_iq #(
     reg signed  [WIDTH-1:0] bufI[NTAPS-1:0], bufQ[NTAPS-1:0];
     wire signed [COEFF-1:0] taps[(NTAPS-1)/2:0];
 
-    if (RX_CFG == 3) begin // N=5,R=2,M=1, cutoff at 8 kHz
+    if (RX_CFG == 3) begin // N=5,R=2,M=1, NTAPS=65, 20.25 kHz, cutoff at 8 kHz
         assign taps[ 0]  = COEFF'('sh0005f);
         assign taps[ 1]  = COEFF'('sh3ffa4);
         assign taps[ 2]  = COEFF'('sh3ff6c);
@@ -76,7 +76,7 @@ module fir_iq #(
         assign taps[30]  = COEFF'('sh00f77);
         assign taps[31]  = COEFF'('sh0ac26);
         assign taps[32]  = COEFF'('sh0fd54);
-    end else if (RX_CFG == 14) begin // N=5,R=3,M=1
+    end else if (RX_CFG == 14) begin // N=5,R=3,M=1 NTAPS=17, 12 kHz, cutoff at 5.35 kHz
         assign taps[ 0]  = COEFF'('sh001dd);
         assign taps[ 1]  = COEFF'('sh001dd);
         assign taps[ 2]  = COEFF'('sh001dd);
@@ -86,7 +86,7 @@ module fir_iq #(
         assign taps[ 6]  = COEFF'('sh04205);
         assign taps[ 7]  = COEFF'('sh084ab);
         assign taps[ 8]  = COEFF'('sh0a235);
-     end else begin // N=5,R=3,M=1 cuttoff at 5.35 kHz
+     end else begin // N=5,R=3,M=1 NTAPS=65, 12 kHz, cutoff at 5.35 kHz
         assign taps[ 0]  = COEFF'('sh00071);
         assign taps[ 1]  = COEFF'('sh3ffae);
         assign taps[ 2]  = COEFF'('sh3ff5b);
@@ -162,7 +162,7 @@ module fir_iq #(
                 bufI <= {bufI[NTAPS-2:0], in_data_i};
                 bufQ <= {bufQ[NTAPS-2:0], in_data_q};
             end else if (state == STATE_LATCH_INPUT && next_state == STATE_COMPUTE_SUM) begin
-                //NOP
+                // NOP
             end else if (state == STATE_COMPUTE_SUM && next_state == STATE_COPY_OUTPUT) begin
                 decim_by_2 <= decim_by_2 ^ 1'b1; // toggle
                 out_data_i <= accI[ACCOUT -:WIDTH];

@@ -10,7 +10,9 @@ extern "C"
 #endif
 
 #define FTX_PAYLOAD_LENGTH_BYTES 10 ///< number of bytes to hold 77 bits of FTx payload data
-#define FTX_MAX_MESSAGE_LENGTH   35 ///< max message length = callsign[13] + space + callsign[13] + space + report[6] + terminator
+#define FTX_NFIELDS 4
+#define FTX_FIELD_SZ 32
+#define FTX_MAX_MESSAGE_LENGTH  (FTX_NFIELDS*FTX_FIELD_SZ + (FTX_NFIELDS-1)*1 + SPACE_FOR_NULL)
 
 /// Structure that holds the decoded message
 typedef struct

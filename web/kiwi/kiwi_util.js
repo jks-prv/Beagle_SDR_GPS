@@ -339,6 +339,14 @@ function kiwi_dedup_array(a, func)
    return ra;
 }
 
+// turn something iterable with forEach, like a nodeList, into a proper array (which a nodeList is not)
+function iterable_to_array(iter)
+{
+   var a = [];
+   iter.forEach(function(e) { a.push(e); });
+   return a;
+}
+
 function kiwi_char_iter(s, func)
 {
    var ra = [];
@@ -707,6 +715,8 @@ function _change(v)
 
 // usage: console_log('id', arg0, arg1 ...)
 // prints: "<id>: 'arg0'=<arg0_value> 'arg1'=<arg1_value> ..."
+// i.e. the string 'argN', not the name of the argN parameter (unfortunately)
+// see console_nv() below for partial solution to this problem
 function console_log()
 {
    //console.log('console_log: '+ typeof(arguments));
@@ -2395,6 +2405,8 @@ function open_websocket(stream, open_cb, open_cb_param, msg_cb, recv_cb, error_c
          } catch(ex) { console.log(ex); }
 		}
 	};
+	
+	mdev_init();
 	
 	return ws;
 }

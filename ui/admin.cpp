@@ -571,7 +571,7 @@ void c2s_admin(void *param)
 
                 if (reg) {
                     // FIXME: validate unencoded user & host for allowed characters
-                    asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s&a=%d\"", proxy_server, user_m, host_m, rev_auto);
+                    asprintf(&cmd_p, "curl -Ls --ipv4 --connect-timeout 15 \"%s/?u=%s&h=%s&a=%d\"", proxy_server, user_m, host_m, rev_auto);
                     reply = non_blocking_cmd(cmd_p, &status);
                     printf("proxy register: %s\n", cmd_p);
                     if (reply == NULL || status < 0 || !WIFEXITED(status) || WEXITSTATUS(status) != 0) {
@@ -792,7 +792,7 @@ void c2s_admin(void *param)
                 // proxy always uses a fixed port number
                 int dom_sel = cfg_int("sdr_hu_dom_sel", NULL, CFG_REQUIRED);
                 int server_port = (dom_sel == DOM_SEL_REV)? PROXY_SERVER_PORT : net.port_ext;
-                asprintf(&cmd_p, "curl -s --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
+                asprintf(&cmd_p, "curl -Ls --ipv4 --connect-timeout 15 \"kiwisdr.com/php/check_port_open.php/?url=%s:%d\"",
                     server_url, server_port);
                 reply = non_blocking_cmd(cmd_p, &status);
                 printf("check_port_open: %s\n", cmd_p);
@@ -1123,7 +1123,7 @@ void c2s_admin(void *param)
             n = strcmp(cmd, "SET gps_update");
             if (n == 0) {
                 if (gps.IQ_seq_w != gps.IQ_seq_r) {
-                    sb = kstr_asprintf(NULL, "{\"ch\":%d,\"IQ\":[", 0);
+                    sb = (char *) "{\"ch\":0,\"IQ\":[";
                     s4_t iq;
                     for (j = 0; j < GPS_IQ_SAMPS*NIQ; j++) {
                         #if GPS_INTEG_BITS == 16
@@ -1244,8 +1244,7 @@ void c2s_admin(void *param)
                     sb = kstr_asprintf(sb, ",\"map\":\"<a href='http://wikimapia.org/#lang=en&lat=%8.6f&lon=%8.6f&z=18&m=b' target='_blank'>wikimapia.org</a>\"",
                         gps.sgnLat, gps.sgnLon);
                 } else {
-                    //sb = kstr_asprintf(sb, ",\"lat\":null");
-                    sb = kstr_asprintf(sb, ",\"lat\":0");
+                    sb = kstr_cat(sb, ",\"lat\":0");
                 }
                 
                 sb = kstr_asprintf(sb, ",\"acq\":%d,\"track\":%d,\"good\":%d,\"fixes\":%d,\"fixes_min\":%d,\"adc_clk\":%.6f,\"adc_corr\":%d,\"is_corr\":%d,\"a\":\"%s\"}",
