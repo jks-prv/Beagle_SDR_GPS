@@ -1094,6 +1094,7 @@ function demod_envelope_where_clicked(x, y, drag_ranges, key_modifiers)
 {
 	// Check exactly what the user has clicked based on ranges returned by demod_envelope_draw().
 	var pbh = Math.round(scale_canvas_h/2);
+	if (kiwi_isMobile()) pbh += 6;      // tooltip seems to respond to a larger touch point
 	in_range = function(x, g_range) { return g_range.x1 <= x && g_range.x2 >= x && y <= pbh; };
 	dr = demodulator.draggable_ranges;
 	//console.log('demod_envelope_where_clicked x='+ x +' y='+ y +' in_pb='+ TF(y <= pbh) +' allow_pb_adj='+ drag_ranges.allow_pb_adj);
@@ -1125,6 +1126,7 @@ function demod_envelope_where_clicked(x, y, drag_ranges, key_modifiers)
 	}
 
    //canvas_log(x +'|'+ y +' '+ JSON.stringify(drag_ranges.ending) +' '+ pbh);
+   //canvas_log(y);
 	return dr.none;   // User doesn't drag the envelope for this demodulator
 }
 
