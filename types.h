@@ -64,6 +64,13 @@ typedef int (*funcPR_t)(void *);
 #define	FLIP32(i)			((B0(i) << 24) | (B1(i) << 16) | (B2(i) << 8) | (B3(i) << 0))
 #define	FLIP16(i)			((B0(i) << 8) | (B1(i) << 0))
 
+#define	B7(i)				(((i) >> 56) & 0xff)
+#define	B6(i)				(((i) >> 48) & 0xff)
+#define	B5(i)				(((i) >> 40) & 0xff)
+#define	B4(i)				(((i) >> 32) & 0xff)
+
+#define	FLIP64(i)			((B0(i) << 56) | (B1(i) << 48) | (B2(i) << 40) | (B3(i) << 32) | (B4(i) << 24) | (B5(i) << 16) | (B6(i) << 8) | (B7(i) << 0))
+
 #ifndef __cplusplus
  typedef	unsigned char	bool;
 #endif
