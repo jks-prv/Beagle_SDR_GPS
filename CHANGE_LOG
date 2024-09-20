@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.700  September 17, 2024
+v1.700,701  September 17, 2024
     User interface:
         Adjusting the passband edges should now work in most cases on mobile devices.
         If it doesn't remember that there are other ways to adjust the passband including sliders
