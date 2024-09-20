@@ -22,6 +22,7 @@
 #define PR_LEN_BYTE     hns(1)
 #define PR_LEN_SHORT    hns(2)
 #define PR_LEN_INT      hns(4)
+#define PR_LEN_INT5     hns(5)
 #define PR_LEN_STRING   0xffff
 #define PR_ENTERPRISE   hnl(30351)
 #define PR_TIME_SECS    hns(150)
@@ -118,7 +119,7 @@ struct {
     u4_t op1_ent = PR_ENTERPRISE;
     
     u2_t op2_el = PR_TX_FREQ;
-    u2_t op2_len = PR_LEN_INT;
+    u2_t op2_len = PR_LEN_INT5;
     u4_t op2_ent = PR_ENTERPRISE;
     
     u2_t op3_el = PR_TX_SNR;
@@ -317,12 +318,13 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr
     
     if (pr->task_created) {
         conn_t *conn = rx_channels[rx_chan].conn;
-        u4_t freq = conn->freqHz + ft8_conf.freq_offset_Hz + passband_freq;
+        u64_t freq = ft8_conf.freq_offset_Hz + conn->freqHz + passband_freq;
+        double freq_kHz = (double) freq / 1e3;
         const char *mode = (protocol == FTX_PROTOCOL_FT8)? "FT8" : "FT4";
         time_t time = (time_t) slot_time;
         rcfprintf(rx_chan, ft8_conf.syslog? (PRINTF_REG | PRINTF_LOG) : PRINTF_REG,
-            "PSKReporter spot %s %9.3f %8s %s %+3d %5dkm %s\n", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
-        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %+d %dkm %s", mode, (double) freq / 1e3, call, grid, snr, km, var_ctime_static(&time));
+            "PSKReporter spot %s %9.3f %8s %s %+3d %5dkm %s\n", mode, freq_kHz, call, grid, snr, km, var_ctime_static(&time));
+        ext_send_msg_encoded(rx_chan, false, "EXT", "debug", "%s %.3f %s %s %+d %dkm %s", mode, freq_kHz, call, grid, snr, km, var_ctime_static(&time));
     
         u1_t *bp = pr->bp;
         int so;
@@ -336,7 +338,12 @@ int PSKReporter_spot(int rx_chan, const char *call, u4_t passband_freq, s1_t snr
         bp += 2;
         
         bp = pr_emit_string(bp, call);
-        *(u4_t *) bp = hnl(freq); bp += 4;
+
+        // send 5-byte freq so 10 GHz can be accommodated
+        *(u1_t *) bp = B4(freq); bp += 1;
+        u4_t f32 = freq & 0xffffffff;
+        *(u4_t *) bp = hnl(f32); bp += 4;
+        
         *bp++ = (u1_t) snr;
         bp = pr_emit_string(bp, mode);
         bp = pr_emit_string(bp, grid);
