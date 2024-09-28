@@ -63,7 +63,7 @@ export LS_OPTIONS='--color=auto'
 
 # prevent gclone curl from timing out on slow Internet connections
 # see: git-scm.com/docs/git-config
-export GIT_HTTP_LOW_SPEED_LIMIT=1000
+export GIT_HTTP_LOW_SPEED_LIMIT=0
 export GIT_HTTP_LOW_SPEED_TIME=1000000
 
 _our_ip="$(/sbin/ip addr list eth0 |grep 'inet ' |cut -d' ' -f6|cut -d/ -f1)"
