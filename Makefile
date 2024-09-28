@@ -4,7 +4,7 @@ VERSION_MIN = 701
 # Caution: software update mechanism depends on format of first two lines in this file
 
 # use new binary distro mechanism
-#BINARY_DISTRO := true
+BINARY_DISTRO := true
 
 #
 # Makefile for KiwiSDR project
@@ -529,6 +529,10 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
+
+################################
+# BINARY_DISTRO
+################################
 PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
@@ -1435,6 +1439,10 @@ else
 endif
 endif
 
+
+################################
+# BINARY_DISTRO
+################################
 PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 
@@ -1466,6 +1474,7 @@ make_install_binary:
         endif
     endif
 	@echo "make_install_binary DONE"
+
 
 .PHONY: make_install
 make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
