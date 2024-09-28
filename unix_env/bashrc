@@ -212,6 +212,7 @@ alias li='for l in $(seq -40 -2); do printf "%s\n" "$l" ; done'
 # make
 alias m="make"
 alias mf="make force"
+alias mfa="make force ASAN=1 OPT=1"
 alias mskip="make skip"
 alias masm="make ASM_OUT=1"
 alias mh="make help"
