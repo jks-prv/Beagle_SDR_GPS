@@ -1667,7 +1667,6 @@ function dx_html_init()
          w3_div('id-search-wrap', w3_icon('', 'fa-repeat', 192))
       );
    w3_create_appendElement('id-kiwi-container', 'div', s);
-   
 }
 
 function dx_convert_label_foff_cb(path, idx)

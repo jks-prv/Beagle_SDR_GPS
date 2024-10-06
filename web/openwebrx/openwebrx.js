@@ -8230,7 +8230,7 @@ var dx = {
    DB_COMMUNITY: 2,
    DB_N: 3,
    db: 0,
-   db_s: [ 'stored (writeable)', '', 'community (downloaded)' ],
+   db_s: [ 'stored (writeable)', 'EiBi (read-only)', 'community (downloaded)' ],
    db_short_s: [ 'stored', 'EiBi', 'community' ],
    ignore_dx_update: false,
    last_community_download: '',
@@ -8360,7 +8360,6 @@ var dx = {
 
 function dx_init()
 {
-   dx.db_s[dx.DB_EiBi] = 'EiBi-'+ kiwi.eibi_abyy +' (read-only)';    // abyy value sent by server
    var open = false;
    dx.DX_DOW_BASE = dx.DX_DOW >> dx.DX_DOW_SFT;
 
