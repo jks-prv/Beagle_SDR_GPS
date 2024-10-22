@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 701
+VERSION_MIN = 702
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -574,6 +574,7 @@ force: make_prereq
 	@echo "   => cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)"
 	@echo "================"
 	@cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)
+	@sum $(PLAT_KIWI_BIN) $(PLAT_KIWID_BIN)
 	@echo "make force DONE"
 
 
