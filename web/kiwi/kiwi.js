@@ -2995,7 +2995,7 @@ function kiwi_msg(param, ws)     // #msg-proc #MSG
 			break;
 
 		case "abyy":
-			kiwi.eibi_abyy = param[1];
+         dx.db_s[dx.DB_EiBi] = 'EiBi-'+ param[1] +' (read-only)';    // abyy value sent by server
 			break;
 
 		case "client_public_ip":

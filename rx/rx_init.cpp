@@ -575,7 +575,7 @@ void update_vars_from_config(bool called_at_init)
     admcfg_default_string("duc_pass", "", &update_admcfg);
     admcfg_default_string("duc_host", "", &update_admcfg);
     admcfg_default_int("duc_update", 3, &update_admcfg);
-    admcfg_default_int("restart_update", 0, &update_admcfg);
+    admcfg_default_int("restart_update", 1, &update_admcfg);    // by default don't update after a restart
     admcfg_default_int("update_restart", 0, &update_admcfg);
     admcfg_default_bool("update_major_only", false, &update_admcfg);
     admcfg_default_string("ip_address.dns1", "1.1.1.1", &update_admcfg);

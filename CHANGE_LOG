@@ -2,6 +2,35 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.702  October 23, 2024
+    Binary updates:
+        After this release is installed Kiwis become eligible to receive binary updates.
+        That is, a full recompile from source code will not be required each time an update occurs.
+        So an update should take a few minutes instead of 20-30.
+    
+        This will only occur if a binary file in the bin/ directory exists with the correct
+        Debian version number (e.g. 8.5, 11.9) and platform name (e.g. BBG_BBB, BBAI, BBAI_64).
+        For example, bin/kiwid_v1.702_D11.9_BBG_BBB.bin will be copied to /usr/local/bin/kiwid
+        if validated. Otherwise recompilation from source will occur as a fallback.
+        
+        As a first test, for this release binaries will be installed for the default Kiwi-2
+        configuration: Debian 11.9 and BBG/BBB. This will also apply to BBG/BBB-based Kiwi-1s that
+        run D11.9. Setups with other characteristics will build from sources as usual.
+
+    In the frequency entry field fixed "set waterfall frequency" notation, e.g. #7020
+    Type the "H" key (capital H) for more information about "#". (thanks stan)
+    
+    FSK extension:
+        Added 50 Hz to shift menu.
+        Added HFGCC VLF freqs to DX community database.
+            (thanks NEET INTEL via x.com/neetintel/status/1837600716644389113)
+
+    Admin page:
+        Update tab: Don't update after a restart, wait for overnight update window.
+            Only applies to default set by first time software installs, i.e. won't disturb any
+            manual change you may have made. (requested by KiwiSDR NZ manufacturing team)
+        DX tab: Fixed missing entry in "Default DX label database" menu. (thanks ukoda)
+
 v1.700,701  September 17, 2024
     User interface:
         Adjusting the passband edges should now work in most cases on mobile devices.

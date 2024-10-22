@@ -407,7 +407,7 @@ function fsk_audio_data_cb(samps, nsamps)
    fsk.jnx.process_data(samps, nsamps);
 }
 
-var fsk_shift_s = [ 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
+var fsk_shift_s = [ 50, 85, 170, 200, 340, 425, 450, 500, 850, 1000, 'custom' ];
 var fsk_baud_s = [ 36, 45.45, 50, 75, 100, 150, 200, 300, 'custom' ];
 var fsk_framing_s = [ '5N1', '5N1V', '5N1.5', '5N2', '7N1', '8N1', '4/7', 'EFR', 'EFR2', 'CHU', '7/3' ];
 var fsk_encoding_s = [ 'ITA2', 'ASCII', 'CCIR476', 'DSC', 'Selcall' ];

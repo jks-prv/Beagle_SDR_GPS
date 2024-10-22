@@ -1,10 +1,10 @@
 VERSION_MAJ = 1
-VERSION_MIN = 701
+VERSION_MIN = 702
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
 # use new binary distro mechanism
-#BINARY_DISTRO := true
+BINARY_DISTRO := true
 
 #
 # Makefile for KiwiSDR project
@@ -518,8 +518,7 @@ GEN_ASM = $(GEN_DIR)/kiwi.gen.h verilog/kiwi.gen.vh
 GEN_OTHER_ASM = $(GEN_DIR)/other.gen.h verilog/other.gen.vh
 OUT_ASM = $(GEN_DIR)/kiwi.aout
 GEN_VERILOG = $(addprefix verilog/rx/,cic_rx1_12k.vh cic_rx1_20k.vh cic_rx2_12k.vh cic_rx2_20k.vh cic_rx3_12k.vh cic_rx3_20k.vh cic_wf1.vh cic_wf2.vh)
-GEN_NOIP2 = $(GEN_DIR)/noip2
-SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(GEN_DIR) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(GEN_OTHER) $(OUT_ASM) $(GEN_VERILOG) $(GEN_NOIP2)
+SUB_MAKE_DEPS = $(INSTALL_CERTIFICATES) $(GEN_DIR) $(CMD_DEPS) $(LIBS_DEP) $(GEN_ASM) $(GEN_OTHER_ASM) $(GEN_OTHER) $(OUT_ASM) $(GEN_VERILOG)
 
 .PHONY: make_prereq
 make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
@@ -529,6 +528,10 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 make_all: $(BUILD_DIR)/kiwi.bin
 	@echo "make_all DONE"
 
+
+################################
+# BINARY_DISTRO
+################################
 PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
@@ -571,6 +574,7 @@ force: make_prereq
 	@echo "   => cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)"
 	@echo "================"
 	@cp $(BUILD_DIR)/kiwid.bin $(PLAT_KIWID_BIN)
+	@sum $(PLAT_KIWI_BIN) $(PLAT_KIWID_BIN)
 	@echo "make force DONE"
 
 
@@ -664,14 +668,6 @@ asm_debug:
 	(cd e_cpu; make debug OTHER_DIR="$(OTHER_DIR2)")
 asm_stat:
 	(cd e_cpu; make stat OTHER_DIR="$(OTHER_DIR2)")
-
-
-
-################################
-# noip.com DDNS DUC
-################################
-$(GEN_NOIP2): pkgs/noip2/noip2.c
-	(cd pkgs/noip2; make)
 
 
 ################################
@@ -1435,6 +1431,10 @@ else
 endif
 endif
 
+
+################################
+# BINARY_DISTRO
+################################
 PLAT_KIWID_BIN := bin/kiwid_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 
@@ -1466,6 +1466,7 @@ make_install_binary:
         endif
     endif
 	@echo "make_install_binary DONE"
+
 
 .PHONY: make_install
 make_install: $(DO_ONCE) $(DTS_DEP_DST) $(BUILD_DIR)/kiwid.bin
@@ -1525,7 +1526,7 @@ make_install_files: $(DO_ONCE) $(DTS_DEP_DST)
 	    install -o root -g root unix_env/kiwid /etc/init.d
 	    install -o root -g root -m 0644 unix_env/kiwid.service /etc/systemd/system
 
-	    install -D -o root -g root $(GEN_DIR)/noip2 /usr/local/bin/noip2
+	    install -D -o root -g root pkgs/noip2/$(ARCH_DIR)/noip2 /usr/local/bin/noip2
 
 	    install -D -o root -g root -m 0644 $(DIR_CFG_SRC)/frpc.template.ini $(DIR_CFG)/frpc.template.ini
 	    install -D -o root -g root pkgs/frp/$(ARCH_DIR)/frpc /usr/local/bin/frpc
@@ -1791,7 +1792,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
     # selectively transfer files to the target so everything isn't compiled each time
     GET_TOOLS_EXCLUDE_RSYNC := true
     -include tools/Makefile
-    EXCLUDE_RSYNC = ".DS_Store" ".git" "/obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
+    EXCLUDE_RSYNC = ".DS_Store" ".git" "obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
         "verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js" "Makefile.1"
     RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) \
         $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(addprefix --exclude , $(TOOLS_EXCLUDE_RSYNC)) \

@@ -36,13 +36,13 @@ module fir_iq #(
     localparam COEFF = 18;
     localparam ACCW = WIDTH + COEFF;
     localparam ACCOUT = WIDTH + COEFF - 1;
-    localparam NTAPS = (RX_CFG == 14 ? 17 : 65); // needs to be of the form 2^N + 1
+    localparam NTAPS = (RX_CFG == 14 ? 17 : 65); // needs to be of the form 2N + 1 due to odd symmetry of taps table
 
     reg signed  [ACCW-1:0]  accI, accQ;
     reg signed  [WIDTH-1:0] bufI[NTAPS-1:0], bufQ[NTAPS-1:0];
     wire signed [COEFF-1:0] taps[(NTAPS-1)/2:0];
 
-    if (RX_CFG == 3) begin // N=5,R=2,M=1, NTAPS=65, 20.25 kHz, cutoff at 8 kHz
+    if (RX_CFG == 3) begin                      // N=5, R=2, M=1, NTAPS=65, 20.25 kHz, cutoff at 8 kHz (80%)
         assign taps[ 0]  = COEFF'('sh0005f);
         assign taps[ 1]  = COEFF'('sh3ffa4);
         assign taps[ 2]  = COEFF'('sh3ff6c);
@@ -76,7 +76,7 @@ module fir_iq #(
         assign taps[30]  = COEFF'('sh00f77);
         assign taps[31]  = COEFF'('sh0ac26);
         assign taps[32]  = COEFF'('sh0fd54);
-    end else if (RX_CFG == 14) begin // N=5,R=3,M=1 NTAPS=17, 12 kHz, cutoff at 5.35 kHz
+    end else if (RX_CFG == 14) begin            // N=5, R=3, M=1, NTAPS=17, 12 kHz, cutoff at 5.35 kHz (90%)
         assign taps[ 0]  = COEFF'('sh001dd);
         assign taps[ 1]  = COEFF'('sh001dd);
         assign taps[ 2]  = COEFF'('sh001dd);
@@ -86,7 +86,7 @@ module fir_iq #(
         assign taps[ 6]  = COEFF'('sh04205);
         assign taps[ 7]  = COEFF'('sh084ab);
         assign taps[ 8]  = COEFF'('sh0a235);
-     end else begin // N=5,R=3,M=1 NTAPS=65, 12 kHz, cutoff at 5.35 kHz
+     end else begin                             // N=5, R=3, M=1, NTAPS=65, 12 kHz, cutoff at 5.35 kHz (90%)
         assign taps[ 0]  = COEFF'('sh00071);
         assign taps[ 1]  = COEFF'('sh3ffae);
         assign taps[ 2]  = COEFF'('sh3ff5b);
