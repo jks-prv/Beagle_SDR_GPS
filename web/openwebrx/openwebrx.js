@@ -5597,9 +5597,9 @@ function waterfall_tune(f_kHz)
 {
    //console.log('waterfall_tune f_kHz='+ f_kHz);
    if (f_kHz == 0) {
-      waterfall_position(FSET_SET_FREQ, owrx.WF_POS_AT_FREQ, +ext_get_freq_kHz());
+      waterfall_position(owrx.FSET_SET_FREQ, owrx.WF_POS_AT_FREQ, +ext_get_freq_kHz());
    } else {
-      waterfall_position(FSET_SET_FREQ, owrx.WF_POS_AT_FREQ, f_kHz);
+      waterfall_position(owrx.FSET_SET_FREQ, owrx.WF_POS_AT_FREQ, f_kHz);
       owrx.waterfall_tuned = 1;
    }
    w3_field_select('id-freq-input', {mobile:1, log:2});
