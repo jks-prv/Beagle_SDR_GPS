@@ -98,7 +98,7 @@ SATELLITE Sats[] = {
 //  {202, 900, 01045},
 
     // Galileo E1B
-    // last checked: 24-May-2024
+    // last checked: 30-October-2024
     // www.gsc-europa.eu/system-service-status/constellation-information
     // en.wikipedia.org/wiki/List_of_Galileo_satellites
 //  { 1, 0, 0, E1B},    // gsat0210 removed from active service
@@ -106,7 +106,7 @@ SATELLITE Sats[] = {
     { 3, 0, 0, E1B},    // gsat0212
     { 4, 0, 0, E1B},    // gsat0213
     { 5, 0, 0, E1B},    // gsat0214
-//  { 6, 0, 0, E1B},    // gsat0227 Launched 2024-04-28 under commissioning
+    { 6, 0, 0, E1B},    // gsat0227 Active - NAGU 2024034 - https://www.gsc-europa.eu/notice-advisory-to-galileo-users-nagu-2024034
     { 7, 0, 0, E1B},    // gsat0207
     { 8, 0, 0, E1B},    // gsat0208
     { 9, 0, 0, E1B},    // gsat0209
@@ -116,20 +116,20 @@ SATELLITE Sats[] = {
     {13, 0, 0, E1B},    // gsat0220
 //  {14, 0, 0, E1B},    // gsat0202 unavailable
     {15, 0, 0, E1B},    // gsat0221
-//  {16, 0, 0, E1B},    // 
+//  {16, 0, 0, E1B},    // gsat0232 - Launched 2024-09-17 - under commissioning - NAGU 2024038 - https://www.gsc-europa.eu/notice-advisory-to-galileo-users-nagu-2024038
 //  {17, 0, 0, E1B},    // 
 //  {18, 0, 0, E1B},    // gsat0201 unavailable
     {19, 0, 0, E1B},    // gsat0103
-//  {20, 0, 0, E1B},    // gsat0104 not available
+//  {20, 0, 0, E1B},    // gsat0104 removed from active service - NAGU 2024015 - https://www.gsc-europa.eu/notice-advisory-to-galileo-users-nagu-2024015
     {21, 0, 0, E1B},    // gsat0215
 //  {22, 0, 0, E1B},    // gsat0204 removed from active service
-//  {23, 0, 0, E1B},    // 
+//  {23, 0, 0, E1B},    // gsat0226 - Launched 2024-09-17 - under commissioning - NAGU 2024038 - https://www.gsc-europa.eu/notice-advisory-to-galileo-users-nagu-2024038
     {24, 0, 0, E1B},    // gsat0205
     {25, 0, 0, E1B},    // gsat0216
     {26, 0, 0, E1B},    // gsat0203
     {27, 0, 0, E1B},    // gsat0217
 //  {28, 0, 0, E1B},    // 
-//  {29, 0, 0, E1B},    // gsat0225 Launched 2024-04-28 under commissioning
+    {29, 0, 0, E1B},    // gsat0225 Active - NAGU 2024033 - https://www.gsc-europa.eu/notice-advisory-to-galileo-users-nagu-2024033
     {30, 0, 0, E1B},    // gsat0206
     {31, 0, 0, E1B},    // gsat0218
 //  {32, 0, 0, E1B},    // 
