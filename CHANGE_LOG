@@ -2,6 +2,15 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
+v1.703  November 2, 2024
+    The binary install mechanism now covers a greater range of Debian minor releases numbers.
+        On on BBG/BBB Debian 8.5 - 8.11 and 11.9 - 11.11 are covered by this release.
+    
+    Iframe now allows a virtual alias name to be added to the extension menu.  (thanks DF6DBF)
+    ALE scanning no longer continuously resets the connection inactivity timer. (thanks HB9TMC)
+    Fixed installation of /bin/nc (netcat) used by KMtronic-UDP antenna switch. (thanks F5LFE)
+    Update to satellite table to reflect recent Galileo changes. (thanks F4FPR)
+
 v1.702  October 23, 2024
     Binary updates:
         After this release is installed Kiwis become eligible to receive binary updates.
