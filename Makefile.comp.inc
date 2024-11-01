@@ -244,8 +244,6 @@ ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
     else
         BAD_DEB_DETECT := true
     endif
-    
-    DEBMM := D$(DEBIAN_VERSION).$(DEBIAN_VERSION_MIN)
 endif
 
 

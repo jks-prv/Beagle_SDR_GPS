@@ -15,6 +15,7 @@ var extint = {
    extint_pwd_cb_param: null,
    extint_conn_type: null,
    ext_names: null,
+   hasIframeMenu: false,
    
    isAdmin_cb: null,
    srate: 0,
@@ -1184,7 +1185,11 @@ function extint_select(value)
       } else {
          extint_blur_prev(0);
          w3_call(extint.hide_func);
-         extint.current_ext_name = extint.ext_names[idx];
+         
+         // remap the iframe virtual menu name
+         var ext_name = extint.ext_names[idx];
+         if (extint.hasIframeMenu && ext_name == cfg.iframe.menu) ext_name = 'iframe';
+         extint.current_ext_name = ext_name;
 
          if (extint.first_ext_load) {
             extint_connect_server();
@@ -1203,6 +1208,15 @@ function extint_list_json(param)
    
    // add virtual entries for ui compatibility
    extint.former_exts.forEach(function(e,i) { extint.ext_names.push(e); });
+   console.log(extint.ext_names);
+   console.log(extint.ext_names.includes(cfg.iframe.menu));
+   
+   // careful: check that menu name doesn't match an existing one
+   if (isNonEmptyString(cfg.iframe.menu) && !extint.ext_names.includes(cfg.iframe.menu)) {
+      extint.ext_names.push(cfg.iframe.menu);
+      extint.hasIframeMenu = true;
+   }
+   
 	kiwi_dedup_array(extint.ext_names);
 	extint.ext_names.sort(kiwi_sort_ignore_case);
 	//console.log('ext_names=');

@@ -803,7 +803,9 @@ function ale_2g_pre_select_cb(path, val, first)
       var s, show_msg = 0;
       if (isNumber(o2)) {
          if (dbgUs) console.log(o2);
-         ale_2g_tune(o2);
+
+         // selecting numeric menu entry resets inactivity timer
+         ale_2g_tune(o2, true);
          s = (+o2).toFixedNZ(1) +' kHz';
          ale_2g_scanner(ale.SET, o1, j);  // specify scanlist so we can resume from here by clicking scan button
          show_msg = 1;
@@ -812,7 +814,9 @@ function ale_2g_pre_select_cb(path, val, first)
          if (dbgUs) console.log(o2[0]);   // ["scan", "props"]
          s = o2[0];
          if (dbgUs) console.log(o1);      // [["scan", "props"], freq, ...]
-         ale_2g_scanner(ale.START, o1);
+         
+         // selecting "scan" menu entry resets inactivity timer
+         ale_2g_scanner(ale.START, o1, undefined, /* from_menu */ true);
       } else
       if (isString(o2)) {
          console.log('$str freq');
@@ -832,12 +836,12 @@ function ale_2g_pre_select_cb(path, val, first)
    ale_2g_clear_menus(menu_n);
 }
 
-function ale_2g_tune(f_kHz)
+function ale_2g_tune(f_kHz, from_menu)
 {
    ale.freq_next = f_kHz;
    ale.tune_ack_expecting++;
    if (dbgUs) console.log('ale_2g_tune tx f='+ f_kHz.toFixed(2));
-   ext_send('SET tune='+ f_kHz.toFixed(2));
+   ext_send('SET tune='+ f_kHz.toFixed(2) + (from_menu? ',0' : ',1'));
 }
 
 function ale_2g_tune_ack(f_kHz, go_back_override)
@@ -907,7 +911,7 @@ function ale_2g_scan(scan)
 // ale_2g_scanner(ale.STOP);              [0] if scanning: pause, if not: stop scanning; without removing scanlist | always SHOW_SCAN
 // ale_2g_scanner(ale.START, scan_list);  [1] start, if scanlist: SHOW_STOP else SHOW_SCAN
 
-function ale_2g_scanner(idx, scan_list, new_idx)
+function ale_2g_scanner(idx, scan_list, new_idx, from_menu)
 {
    if (dbgUs) console.log('ale_2g_scanner idx='+ ((idx <= 1)? ale.scan_s[idx+2] : idx) +' scan_cur_idx='+ ale.scan_cur_idx
       +' new_idx(PARAM)='+ new_idx +' scan_list(PARAM)='+ kiwi_typeof(scan_list) +' ale.scan_list='+ kiwi_typeof(ale.scan_list));
@@ -930,6 +934,7 @@ function ale_2g_scanner(idx, scan_list, new_idx)
          idx = ale.scan_cur_idx;
          ale_2g_set_scan(ale.SHOW_STOP);
          ale_2g_scan(1);
+         from_menu = true;    // make resume reset inactivity timer
       } else {
          if (dbgUs) console.log('RESUME but no scan_list');
          ale.scan_cur_idx = 0;
@@ -995,7 +1000,7 @@ function ale_2g_scanner(idx, scan_list, new_idx)
    
    ale_2g_msg('w3-text-css-lime', ale.menu_s[ale.cur_menu] +', '+ ale.cur_header +': scanning '+ f.toFixedNZ(1) +' kHz');
    //console.log('ale_2g_scanner: '+ f_s +' idx_f='+ idx_f);
-   ale_2g_tune(f);
+   ale_2g_tune(f, from_menu);
 
    kiwi_clearTimeout(ale.scan_timeout);
    ale.scan_timeout = setTimeout(function() {

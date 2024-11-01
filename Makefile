@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 702
+VERSION_MIN = 703
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -287,7 +287,7 @@ else
 	LIBS += -lfftw3f -lutil
 	LIBS_DEP += /usr/lib/$(LIB_ARCH)/libfftw3f.a
 	CMD_DEPS = $(CMD_DEPS_DEBIAN) /usr/sbin/avahi-autoipd /usr/bin/upnpc /usr/bin/dig /usr/bin/pgmtoppm /sbin/ethtool /usr/bin/sshpass
-	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff /usr/bin/file
+	CMD_DEPS += /usr/bin/killall /usr/bin/dtc /usr/bin/curl /usr/bin/wget /usr/bin/htop /usr/bin/colordiff /usr/bin/file /bin/nc
 	DIR_CFG = /root/kiwi.config
 	CFG_PREFIX =
 
@@ -532,6 +532,19 @@ make_all: $(BUILD_DIR)/kiwi.bin
 ################################
 # BINARY_DISTRO
 ################################
+DEBMM := D$(DEBIAN_VERSION).$(DEBIAN_VERSION_MIN)
+ifeq ($(DEBIAN_VERSION),8)
+    MINR := $(shell [ $(DEBIAN_VERSION_MIN) -ge 5 ] && [ $(DEBIAN_VERSION_MIN) -le 11 ] && echo true)
+    ifeq ($(MINR),true)
+        DEBMM := D8.5-11
+    endif
+else ifeq ($(DEBIAN_VERSION),11)
+    MINR := $(shell [ $(DEBIAN_VERSION_MIN) -ge 9 ] && [ $(DEBIAN_VERSION_MIN) -le 11 ] && echo true)
+    ifeq ($(MINR),true)
+        DEBMM := D11.9-11
+    endif
+endif
+
 PLAT_KIWI_BIN := bin/kiwi_$(VER)_$(DEBMM)_$(PLAT).bin
 HAS_KIWI_BIN := $(shell test -x $(PLAT_KIWI_BIN) && echo true)
 
@@ -1792,7 +1805,7 @@ ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
     # selectively transfer files to the target so everything isn't compiled each time
     GET_TOOLS_EXCLUDE_RSYNC := true
     -include tools/Makefile
-    EXCLUDE_RSYNC = ".DS_Store" ".git" "obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
+    EXCLUDE_RSYNC = ".DS_Store" ".git" "obj" "/obj_O3" "/obj_keep" "*.dSYM" "*.bin.h" "*.aout" "e_cpu/a" "*.aout.h" "kiwi.gen.h" \
         "verilog/kiwi.gen.vh" "web/edata*" "node_modules" "morse-pro-compiled.js" "Makefile.1"
     RSYNC_ARGS = -av --delete $(addprefix --exclude , $(EXCLUDE_RSYNC)) \
         $(addprefix --exclude , $(EXT_EXCLUDE_RSYNC)) $(addprefix --exclude , $(TOOLS_EXCLUDE_RSYNC)) \

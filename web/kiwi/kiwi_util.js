@@ -3,7 +3,7 @@
 // Copyright (c) 2014-2024 John Seamons, ZL4VO/KF6VO
 
 
-// isUndeclared(v) => use inline "typeof(v) === 'undefined'" (i.e. can't pass undeclared v as func arg)
+// isUndeclared(v) => use inline "if (window.v) ..." (i.e. can't pass undeclared v as func arg)
 function isUndefined(v) { return (typeof(v) === 'undefined'); }
 function isDefined(v) { return (typeof(v) !== 'undefined'); }
 function isNull(v) { return (v === null); }

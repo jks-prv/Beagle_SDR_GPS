@@ -319,14 +319,15 @@ bool ale_2g_msgs(char *msg, int rx_chan)
 	}
 	
 	double freq;
-	if (sscanf(msg, "SET tune=%lf", &freq) == 1) {
+	int scan;
+	if (sscanf(msg, "SET tune=%lf,%d", &freq, &scan) == 2) {
 		//printf("ALE_2G: rx tune %.2f\n", freq);
 		//e->decode.set_freq(freq);
         ext_send_msg(rx_chan, false, "EXT tune_ack=%.2f", freq);
         //snd_send_msg_encoded(rx_chan, true, "MSG", "audio_flags2", "tune_ack:%.2f", frequency);
 
 		conn_t *conn = rx_channels[rx_chan].conn;
-        input_msg_internal(conn, "SET mod=x low_cut=0 high_cut=0 freq=%.2f", freq);
+        input_msg_internal(conn, "SET mod=x low_cut=0 high_cut=0 freq=%.2f param=%d", freq, scan? MODE_FLAGS_SCAN : 0);
 		e->freq = freq;
 		
 		//#define TEST_SCAN_STOP

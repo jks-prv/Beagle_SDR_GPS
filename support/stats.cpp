@@ -61,7 +61,8 @@ static void webserver_collect_print_stats(int print)
         //assert(c->type == STREAM_SOUND || c->type == STREAM_WATERFALL);
 		
 		u4_t now = timer_sec();
-		if (c->freqHz != c->last_freqHz || c->mode != c->last_mode || c->zoom != c->last_zoom) {
+		bool freqChange = (c->freqChangeLatch && (c->freqHz != c->last_freqHz));
+		if (freqChange || c->mode != c->last_mode || c->zoom != c->last_zoom) {
 			if (print) rx_loguser(c, LOG_UPDATE);
 			
             #ifdef OPTION_LOG_WF_ONLY_UPDATES

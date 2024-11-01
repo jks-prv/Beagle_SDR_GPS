@@ -76,6 +76,7 @@ typedef struct conn_st {
 	bool snd_cmd_recv_ok;
 	bool inactivity_timeout;
 	int freqHz, last_freqHz;
+	bool freqChangeLatch;
 	int mode, last_mode;
 	int zoom, last_zoom;	// zoom set in both
 	int last_tune_time, last_log_time;
