@@ -296,9 +296,20 @@ void rx_sound_cmd(conn_t *conn, double frate, int n, char *cmd)
             double nomfreq = s->freq;
             if (!no_pb_change && (s->hicut - s->locut) < 1000) nomfreq += (s->hicut + s->locut)/2/kHz;	// cw filter correction
             nomfreq = round(nomfreq*kHz);
-        
-            conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
             if (!no_mode_change) conn->mode = s->mode;
+        
+            // if freq change result of a scan don't let this reset inactivity timeout
+            if (s->mparam & MODE_FLAGS_SCAN) {
+                conn->freqChangeLatch = false;
+            } else {
+                conn->freqChangeLatch = true;
+            }
+
+            conn->freqHz = round(nomfreq/10.0)*10;	// round 10 Hz
+            if (conn->freqChangeLatch && (conn->freqHz != conn->last_freqHz)) {
+                conn->last_tune_time = timer_sec();
+                conn->last_freqHz = conn->freqHz;
+            }
         }
         kiwi_asfree(mode_m);
         break;

@@ -387,7 +387,9 @@ void c2s_waterfall(void *param)
                 
                 // changing waterfall resets inactivity timer
                 conn_t *csnd = conn_other(conn, STREAM_SOUND);
-                if (csnd) csnd->last_tune_time = timer_sec();
+                if (csnd && conn->freqChangeLatch) {
+                    csnd->last_tune_time = timer_sec();
+                }
                 
                 if (zoom != _zoom) {
                     zoom = _zoom;

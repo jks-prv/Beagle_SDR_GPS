@@ -37,6 +37,7 @@ Boston, MA  02110-1301, USA.
 #define CLIPPER_NBFM_VAL 8192
 
 #define MODE_FLAGS_SAM  0x0000000f
+#define MODE_FLAGS_SCAN 0x00000010
 
 
 typedef struct {
