@@ -3,6 +3,7 @@
 var iframe = {
    ext_name: 'iframe',    // NB: must match iframe.cpp:iframe_ext.name
    first_time: true,
+   menu: null,
    
    SRC_IFRAME: 0,
    SRC_HTML: 1,
@@ -131,6 +132,7 @@ function iframe_config_html()
          '', 5,
          w3_divs('/w3-margin-bottom',
             '&nbsp;',
+            w3_input_get('', 'Extension menu entry (optional)',    'iframe.menu',   'w3_string_set_cfg_cb', ''),
             w3_input_get('', 'Title text',    'iframe.title',   'w3_string_set_cfg_cb', ''),
             w3_input_get('', 'Window width',  'iframe.width',   'w3_num_set_cfg_cb', 0),
             w3_input_get('', 'Window height', 'iframe.height',  'w3_num_set_cfg_cb', 0),
