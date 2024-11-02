@@ -177,6 +177,7 @@ static bool file_auto_download_oneshot = false;
 static bool do_daily_restart = false;
 static void _update_task(void *param)
 {
+    int i;
 	conn_t *conn = (conn_t *) FROM_VOID_PARAM(param);
 	bool force_check = (conn && conn->update_check == FORCE_CHECK);
 	bool force_build = (conn && conn->update_check == FORCE_BUILD);
@@ -194,12 +195,23 @@ static void _update_task(void *param)
 	
     #define FS_USE "cd /root/" REPO_NAME "; df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%'"
     //#define FS_USE "cd /root/" REPO_NAME "; df . | tail -1 | /usr/bin/tr -s ' ' | cut -d' ' -f 5 | grep '100%' | true"
-    status = non_blocking_cmd_system_child("kiwi.ck_fs", FS_USE, POLL_MSEC(250));
-    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-        lprintf("UPDATE: Filesystem is FULL!\n");
-        fail_reason = FAIL_FS_FULL;
-		if (report) report_result(conn);
-		goto common_return;
+    #define CLEAN_LOGS "journalctl --vacuum-size=10M"
+    
+    for (i = 0; i < 2; i++) {
+        status = non_blocking_cmd_system_child("kiwi.ck_fs", FS_USE, POLL_MSEC(250));
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+            if (i != 0) {
+                lprintf("UPDATE: Filesystem is FULL!\n");
+                fail_reason = FAIL_FS_FULL;
+                if (report) report_result(conn);
+                goto common_return;
+            } else {
+                lprintf("UPDATE: Filesystem is full -- clean logs\n");
+                non_blocking_cmd_system_child("kiwi.ck_fs", CLEAN_LOGS, POLL_MSEC(250));
+            }
+        } else {
+            break;  // not 100% full
+        }
     }
 
     #define PING_INET "cd /root/" REPO_NAME "; ping -qc2 1.1.1.1 >/dev/null 2>&1"
@@ -229,13 +241,13 @@ static void _update_task(void *param)
     }
 
     #define CHECK_GIT "cd /root/" REPO_NAME "; git fetch origin >/dev/null 2>&1"
-    #define CHECK_GIT_NRETRY 3
+    #define CHECK_GIT_NRETRY 16
     //#define CHECK_GIT "false"
-    int i;
     for (i = 0; i < CHECK_GIT_NRETRY; i++) {
         status = non_blocking_cmd_system_child("kiwi.ck_git", CHECK_GIT, POLL_MSEC(250));
         if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
             break;
+        lprintf("UPDATE: Check git retry #%d\n", i);
     }
     if (i == CHECK_GIT_NRETRY) {
         lprintf("UPDATE: Git clone damaged!\n");
