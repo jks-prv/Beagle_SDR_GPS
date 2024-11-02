@@ -2,7 +2,7 @@ CHANGE_LOG
 
 For the Github commit log see here: github.com/jks-prv/Beagle_SDR_GPS/commits/master
 
-v1.703,704,705  November 2, 2024
+v1.703,704,705,706  November 2, 2024
     The binary install mechanism now covers a greater range of Debian minor releases numbers.
         On on BBG/BBB Debian 8.5 - 8.11 and 11.9 - 11.11 are covered by this release.
     
