@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 705
+VERSION_MIN = 706
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -1455,6 +1455,7 @@ HAS_KIWID_BIN := $(shell test -x $(PLAT_KIWID_BIN) && echo true)
 make_install_binary:
     ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
 	    @make make_install
+	    @make make_install_files
     else
         ifeq ($(BINARY_INSTALL),true)
 	        @echo "================"

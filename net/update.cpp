@@ -229,13 +229,19 @@ static void _update_task(void *param)
     }
 
     #define CHECK_GIT "cd /root/" REPO_NAME "; git fetch origin >/dev/null 2>&1"
+    #define CHECK_GIT_NRETRY 3
     //#define CHECK_GIT "false"
-    status = non_blocking_cmd_system_child("kiwi.ck_git", CHECK_GIT, POLL_MSEC(250));
-    if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
+    int i;
+    for (i = 0; i < CHECK_GIT_NRETRY; i++) {
+        status = non_blocking_cmd_system_child("kiwi.ck_git", CHECK_GIT, POLL_MSEC(250));
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+            break;
+    }
+    if (i == CHECK_GIT_NRETRY) {
         lprintf("UPDATE: Git clone damaged!\n");
         fail_reason = FAIL_GIT;
-		if (report) report_result(conn);
-		goto common_return;
+        if (report) report_result(conn);
+        goto common_return;
     }
 
 	// Run fetch in a Linux child process otherwise this thread will block and cause trouble
