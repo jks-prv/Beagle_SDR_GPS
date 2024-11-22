@@ -1,10 +1,10 @@
 VERSION_MAJ = 1
-VERSION_MIN = 707
+VERSION_MIN = 708
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
 # use new binary distro mechanism
-BINARY_DISTRO := true
+#BINARY_DISTRO := true
 
 #
 # Makefile for KiwiSDR project
@@ -41,8 +41,17 @@ include Makefile.comp.inc
 
 REPO_USER := jks-prv
 REPO_NAME := Beagle_SDR_GPS
+REPO_DIR  := /root/$(REPO_NAME)
 REPO_GIT  := $(REPO_USER)/$(REPO_NAME).git
 REPO := https://github.com/$(REPO_GIT)
+
+TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi 'rebase-test' /root/kiwi.config/admin.json && echo true))
+REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(TEST_SUBSET),true,))
+#REBASE_DISTRO := $(if $(IS_DEVSYS),,true)
+REPO_NAME_NEW := KiwiSDR
+REPO_DIR_NEW  := /root/$(REPO_NAME_NEW)
+REPO_GIT_NEW  := $(REPO_USER)/$(REPO_NAME_NEW).git
+REPO_NEW := https://github.com/$(REPO_GIT_NEW)
 
 ifeq ($(DEBIAN_DEVSYS),$(DEBIAN))
 
@@ -525,8 +534,12 @@ make_prereq: DISABLE_WS $(SUB_MAKE_DEPS)
 	@echo "make_prereq DONE"
 
 .PHONY: make_all
-make_all: $(BUILD_DIR)/kiwi.bin
-	@echo "make_all DONE"
+ifeq ($(REBASE_DISTRO),true)
+    make_all:
+else
+    make_all: $(BUILD_DIR)/kiwi.bin
+endif
+	    @echo "make_all DONE"
 
 
 ################################
@@ -1412,8 +1425,20 @@ install: make_prereq
     ifeq ($(BINARY_DISTRO),true)
 	    make make_install_binary
     else
-	    make make_install
-	    make make_install_files
+        ifeq ($(REBASE_DISTRO),true)
+	        @echo "==== REBASE distro ===="
+	        if [ "`pwd`" = $(REPO_DIR) ]; then \
+	            /usr/bin/du -sh .; \
+	            rm -rf $(REPO_DIR); \
+	            /usr/bin/du -sh .; \
+	            cd /root; git clone $(REPO_NEW); \
+	            /usr/bin/du -sh .; \
+	            cd $(REPO_DIR_NEW); make clean; make; make install; \
+	        fi
+        else
+	        make make_install
+	        make make_install_files
+        endif
     endif
 
 # copy binaries to Kiwi named $(KIWI_XC_HOST)

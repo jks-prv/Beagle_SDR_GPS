@@ -9,10 +9,12 @@ DEBIAN_DEVSYS := $(shell grep -q -s Debian /etc/dogtag; echo $$?)
 DEBIAN := 0
 NOT_DEBIAN := 1
 DEVSYS := 2
+IS_DEVSYS :=
 
 # double check for RPI
 ifeq ($(DEBIAN_DEVSYS),$(DEVSYS))
     DEBIAN_DEVSYS := $(shell grep -q -s dtparam /boot/config.txt; echo $$?)
+    IS_DEVSYS := true
 endif
 
 UNAME := $(shell uname)
