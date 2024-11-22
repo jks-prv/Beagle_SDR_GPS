@@ -45,9 +45,9 @@ REPO_DIR  := /root/$(REPO_NAME)
 REPO_GIT  := $(REPO_USER)/$(REPO_NAME).git
 REPO := https://github.com/$(REPO_GIT)
 
-#IS_SUBSET := $(shell grep -qi 'foo' $(DIR_CFG)/kiwi.json && echo true)
-#REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(IS_SUBSET),true,))
-REBASE_DISTRO := $(if $(IS_DEVSYS),,true)
+TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi 'rebase-test' /root/kiwi.config/admin.json && echo true))
+REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(TEST_SUBSET),true,))
+#REBASE_DISTRO := $(if $(IS_DEVSYS),,true)
 REPO_NAME_NEW := KiwiSDR
 REPO_DIR_NEW  := /root/$(REPO_NAME_NEW)
 REPO_GIT_NEW  := $(REPO_USER)/$(REPO_NAME_NEW).git
