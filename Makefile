@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 708
+VERSION_MIN = 709
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -45,7 +45,8 @@ REPO_DIR  := /root/$(REPO_NAME)
 REPO_GIT  := $(REPO_USER)/$(REPO_NAME).git
 REPO := https://github.com/$(REPO_GIT)
 
-TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi 'rebase-test' /root/kiwi.config/admin.json && echo true))
+#TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi 'rebase-test' /root/kiwi.config/admin.json && echo true))
+TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi '"admin_password": "[a-d]' /root/kiwi.config/admin.json && echo true))
 REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(TEST_SUBSET),true,))
 #REBASE_DISTRO := $(if $(IS_DEVSYS),,true)
 REPO_NAME_NEW := KiwiSDR
