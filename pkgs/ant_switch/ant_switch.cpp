@@ -588,9 +588,14 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
 
     if (strcmp(cmd, "ADM antsw_GetBackends") == 0) {
         char *reply = non_blocking_cmd(FRONTEND " be", NULL, poll_msec);
-        char *sp = kstr_sp(reply);
-        char *nl = strchr(sp, '\n');
-        if (nl) *nl = '\0';
+        char *sp;
+	    if (reply) {
+            sp = kstr_sp(reply);
+            char *nl = strchr(sp, '\n');
+            if (nl) *nl = '\0';
+        } else {
+            sp = (char *) "";
+        }
         send_msg_encoded(conn, "ADM", "antsw_backends", "%s", sp);
         kstr_free(reply);
         return true;
@@ -619,8 +624,10 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
         asprintf(&cmd, FRONTEND " bs %s", antenna);
         kiwi_asfree(antenna);
         reply = non_blocking_cmd(cmd, NULL, poll_msec);
-        printf("ant_switch ADM antsw_SetBackend: <%s>\n", kstr_sp(reply));
-        kstr_free(reply);
+	    if (reply) {
+            printf("ant_switch ADM antsw_SetBackend: <%s>\n", kstr_sp(reply));
+            kstr_free(reply);
+        }
         kiwi_asfree(cmd);
         ant_switch_get_backend_info();
         return true;
@@ -633,8 +640,10 @@ bool ant_switch_admin_msgs(conn_t *conn, char *cmd)
         asprintf(&cmd, FRONTEND " sa %s", ip_or_url);
         kiwi_asfree(ip_or_url);
         reply = non_blocking_cmd(cmd, NULL, poll_msec);
-        printf("ant_switch ADM antsw_SetIP_or_URL: <%s>\n", kstr_sp(reply));
-        kstr_free(reply);
+	    if (reply) {
+            printf("ant_switch ADM antsw_SetIP_or_URL: <%s>\n", kstr_sp(reply));
+            kstr_free(reply);
+        }
         kiwi_asfree(cmd);
         ant_switch_get_backend_info();
         return true;
