@@ -48,8 +48,11 @@ REPO := https://github.com/$(REPO_GIT)
 #TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi 'rebase-test' /root/kiwi.config/admin.json && echo true))
 TEST_SUBSET := $(if $(IS_DEVSYS),,$(shell grep -qi '"admin_password": "[a-h]' /root/kiwi.config/admin.json && echo true))
 #REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(shell [ $(DEBIAN_VERSION) -eq 8 ] && echo true),,true), $(if $(TEST_SUBSET),true,))
-REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(shell [ $(DEBIAN_VERSION) -eq 8 ] && echo true),,true))
-#REBASE_DISTRO := $(if $(IS_DEVSYS),,true)
+#REBASE_DISTRO := $(and $(if $(IS_DEVSYS),,true), $(if $(shell [ $(DEBIAN_VERSION) -eq 8 ] && echo true),,true))
+REBASE_DISTRO := $(if $(IS_DEVSYS),,true)
+REBASE_DISTRO_NOT_D8 := $(and $(if $(IS_DEVSYS),,true), $(if $(shell [ $(DEBIAN_VERSION) -ne 8 ] && echo true),true,))
+REBASE_DISTRO_D8 :=     $(and $(if $(IS_DEVSYS),,true), $(if $(shell [ $(DEBIAN_VERSION) -eq 8 ] && echo true),true,), $(if $(TEST_SUBSET),true,))
+
 REPO_NAME_NEW := KiwiSDR
 REPO_DIR_NEW  := /root/$(REPO_NAME_NEW)
 REPO_GIT_NEW  := $(REPO_USER)/$(REPO_NAME_NEW).git
@@ -1429,15 +1432,29 @@ install: make_prereq
 	    make make_install_binary
     else
         ifeq ($(REBASE_DISTRO),true)
-	        @echo "==== REBASE distro ===="
-	        if [ "`pwd`" = $(REPO_DIR) ]; then \
-	            /usr/bin/du -sh .; \
-	            rm -rf $(REPO_DIR); \
-	            /usr/bin/du -sh .; \
-	            cd /root; git clone $(REPO_NEW); \
-	            /usr/bin/du -sh .; \
-	            cd $(REPO_DIR_NEW); make clean; make; make install; \
-	        fi
+            ifeq ($(REBASE_DISTRO_D8),true)
+	            @echo "==== REBASE distro D8 ===="
+	            if [ "`pwd`" = $(REPO_DIR) ]; then \
+	                /usr/bin/du -sh .; \
+	                rm -rf $(REPO_DIR); \
+	                /usr/bin/du -sh .; \
+	                cd /root; git clone $(REPO_NEW); \
+	                /usr/bin/du -sh .; \
+	                dpkg --configure -a; \
+	                apt-get -f -y install; \
+	                cd $(REPO_DIR_NEW); make clean; make; make install; \
+	            fi
+            else ifeq ($(REBASE_DISTRO_NOT_D8),true)
+	            @echo "==== REBASE distro not D8 ===="
+	            if [ "`pwd`" = $(REPO_DIR) ]; then \
+	                /usr/bin/du -sh .; \
+	                rm -rf $(REPO_DIR); \
+	                /usr/bin/du -sh .; \
+	                cd /root; git clone $(REPO_NEW); \
+	                /usr/bin/du -sh .; \
+	                cd $(REPO_DIR_NEW); make clean; make; make install; \
+	            fi
+            endif
         else
 	        make make_install
 	        make make_install_files
