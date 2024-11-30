@@ -1,5 +1,5 @@
 VERSION_MAJ = 1
-VERSION_MIN = 710
+VERSION_MIN = 711
 
 # Caution: software update mechanism depends on format of first two lines in this file
 
@@ -633,6 +633,8 @@ build_makefile_inc:
 	@echo PLATFORMS = $(PLATFORMS)
 	@echo BINARY_DISTRO = $(BINARY_DISTRO)
 	@echo REBASE_DISTRO = $(REBASE_DISTRO)
+	@echo REBASE_DISTRO_NOT_D8 = $(REBASE_DISTRO_NOT_D8)
+	@echo REBASE_DISTRO_D8 = $(REBASE_DISTRO_D8)
 	@echo DEBUG = $(DEBUG)
 	@echo GDB = $(GDB)
 	@echo XC = $(XC)
